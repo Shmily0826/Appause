@@ -113,6 +113,12 @@ class AppGroupRepository(
         return launchDao.countRecordsSince(startOfDay)
     }
 
+    /** Observe how many times users completed the cooldown (today). */
+    fun observeProceededCount(since: Long): Flow<Int> = launchDao.observeProceededCount(since)
+
+    /** Observe how many times users cancelled (today). */
+    fun observeCancelledCount(since: Long): Flow<Int> = launchDao.observeCancelledCount(since)
+
     // ── Settings ──
 
     /** Observe the master toggle state. */

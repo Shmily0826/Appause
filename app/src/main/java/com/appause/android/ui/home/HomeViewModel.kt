@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 /**
  * ViewModel for the Home Screen.
@@ -51,6 +52,23 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = true
         )
+
+    // ── Today's Statistics ──
+    // Calculate midnight of today to filter records.
+    private val startOfToday: Long = Calendar.getInstance().apply {
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+
+    /** How many times the user completed the cooldown today. */
+    val proceededToday: StateFlow<Int> = repository.observeProceededCount(startOfToday)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    /** How many times the user cancelled today. */
+    val cancelledToday: StateFlow<Int> = repository.observeCancelledCount(startOfToday)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     /**
      * Whether the Accessibility Service is currently running.

@@ -61,6 +61,8 @@ fun HomeScreen(
     val groups by viewModel.groups.collectAsStateWithLifecycle()
     val isEnabled by viewModel.isEnabled.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
+    val proceededToday by viewModel.proceededToday.collectAsStateWithLifecycle()
+    val cancelledToday by viewModel.cancelledToday.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // Refresh service status every time the screen becomes visible
@@ -115,6 +117,11 @@ fun HomeScreen(
             // ── Master Toggle Card ──
             item {
                 MasterToggleCard(isEnabled = isEnabled, onToggle = viewModel::toggleEnabled)
+            }
+
+            // ── Today's Statistics ──
+            item {
+                TodayStatsCard(proceeded = proceededToday, cancelled = cancelledToday)
             }
 
             // ── Groups Section ──
@@ -213,6 +220,51 @@ private fun MasterToggleCard(isEnabled: Boolean, onToggle: () -> Unit) {
                 )
             }
             Switch(checked = isEnabled, onCheckedChange = { onToggle() })
+        }
+    }
+}
+
+/** Card showing today's interception statistics: waited vs cancelled. */
+@Composable
+private fun TodayStatsCard(proceeded: Int, cancelled: Int) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Today",
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                // "Waited" — user completed the cooldown and proceeded
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "$proceeded",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        text = "Waited",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                // "Cancelled" — user backed out during cooldown
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "$cancelled",
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                    Text(
+                        text = "Cancelled",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
         }
     }
 }
