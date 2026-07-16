@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!--
+        Package visibility (Android 11+, API 30+):
+        Apps cannot see other installed apps by default.
+        We declare which apps we need to query here.
+        MAIN + LAUNCHER = all apps with a home screen icon.
+    -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
+    </queries>
+
     <application
         android:name=".AppauseApp"
         android:allowBackup="true"
