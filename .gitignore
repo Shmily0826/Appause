@@ -1,0 +1,33 @@
+# Built files
+*.iml
+*.apk
+*.ap_
+*.aab
+
+# Build directories
+build/
+*/build/
+
+# Local configuration
+local.properties
+
+# Gradle
+.gradle/
+gradle-app.setting
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Signed files
+*.jks
+*.keystore
+
+# Generated
+captures/

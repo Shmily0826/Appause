@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AccessibilityService configuration.
+
+    typeWindowStateChanged: fires when a new Activity window becomes active.
+        This is how we detect which app is currently in the foreground.
+
+    feedbackGeneric: required by the system, but we don't actually provide
+        accessibility feedback. This is a detection-only service.
+
+    canRetrieveWindowContent="false": we only need the package name from events,
+        not the actual UI content. This is a privacy-friendly setting.
+
+    notificationTimeout="100": minimum 100ms between events to reduce spam.
+        Events still arrive frequently — we filter duplicates in code.
+
+    packageNames not set: means we receive events from ALL packages.
+        We filter in code to only care about apps in our configured groups.
+-->
+<accessibility-service
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:canRetrieveWindowContent="false"
+    android:notificationTimeout="100"
+    android:description="@string/accessibility_service_description" />

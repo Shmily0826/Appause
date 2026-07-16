@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:name=".AppauseApp"
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Appause">
+
+        <!-- Main Activity: hosts the Compose navigation graph -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Appause">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            PauseActivity: full-screen cooldown overlay.
+            Launched from AccessibilityService with FLAG_ACTIVITY_NEW_TASK.
+            Separate from MainActivity because the Service has no access
+            to the main Activity's NavController.
+        -->
+        <activity
+            android:name=".ui.pause.PauseActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Appause"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="singleInstance" />
+
+        <!--
+            AccessibilityService: detects foreground app changes.
+            Must be manually enabled by the user in system settings.
+            Permission BIND_ACCESSIBILITY_SERVICE is required by the system.
+        -->
+        <service
+            android:name=".service.AppauseAccessibilityService"
+            android:exported="false"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+
+    </application>
+
+</manifest>

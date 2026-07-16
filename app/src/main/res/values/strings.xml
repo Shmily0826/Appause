@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Appause</string>
+
+    <!--
+        Accessibility Service description.
+        This is shown in the system Accessibility Settings page.
+        Must describe honestly what the service does — it is an accessibility
+        feature, NOT a security or monitoring tool.
+    -->
+    <string name="accessibility_service_description">
+        Appause uses this service to detect when you open apps that you have chosen to pause.
+        It only reads which app is currently in the foreground. It does not collect,
+        record, or transmit any personal data.
+    </string>
+
+    <!-- Common UI strings (will be expanded in later phases) -->
+    <string name="default_prompt">Take a moment.</string>
+</resources>

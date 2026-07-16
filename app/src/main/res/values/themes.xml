@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Base XML theme — required for the app to launch.
+        The actual UI theming is done in Compose (ui/theme/Theme.kt).
+        This XML theme only affects system chrome (status bar, navigation bar).
+    -->
+    <style name="Theme.Appause" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/purple_40</item>
+    </style>
+</resources>
