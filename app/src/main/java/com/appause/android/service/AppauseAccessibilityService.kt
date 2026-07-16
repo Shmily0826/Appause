@@ -1,43 +1,55 @@
 package com.appause.android.service
 
 import android.accessibilityservice.AccessibilityService
+import android.content.Intent
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import com.appause.android.AppauseApp
+import com.appause.android.interception.InterceptionManager
+import com.appause.android.ui.pause.PauseActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /**
- * AppauseAccessibilityService — detects foreground app changes.
+ * AppauseAccessibilityService — detects foreground app changes and triggers cooldowns.
  *
- * This is a STUB implementation for Phase 1 (compilation only).
- * Full interception logic will be implemented in Phase 6.
+ * How it works:
+ * 1. System sends TYPE_WINDOW_STATE_CHANGED events when Activities appear.
+ * 2. We read the event's packageName to know which app is in the foreground.
+ * 3. We filter out irrelevant events (Appause, launcher, system UI, duplicates).
+ * 4. We check if the app belongs to any configured group (via Repository).
+ * 5. If yes, we launch PauseActivity to show the cooldown screen.
  *
- * What is AccessibilityService?
- * - A system-level service that receives UI events from ALL apps on the device.
- * - Originally designed to help users with disabilities (screen readers, etc.).
- * - We use it to detect when a new app comes to the foreground.
- * - The user MUST manually enable it in Settings → Accessibility → Appause.
- *
- * Lifecycle:
- * - System creates the service when the user enables it.
- * - onServiceConnected() is called once the service is bound.
- * - onAccessibilityEvent() fires for every matching event.
- * - onInterrupt() is called if the system needs to interrupt feedback.
- * - onUnbind() / onDestroy() when the service is stopped.
+ * Limitations:
+ * - Events fire for EVERY Activity transition across ALL apps.
+ * - Some OEM ROMs may not include packageName or may kill the service.
+ * - We handle null packageName and missing groups gracefully.
  *
  * IMPORTANT: This is an accessibility feature, NOT a monitoring tool.
- * We only read the package name from events — we never read UI content.
+ * We only read package names — we never read UI content or user data.
  */
 class AppauseAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "AppauseA11yService"
 
-        /**
-         * Whether the service is currently running.
-         * Used by the UI to show service status.
-         */
+        /** Whether the service is currently running. Used by UI to show status. */
         var isRunning: Boolean = false
             private set
     }
+
+    /** Coroutine scope for async work (survives individual event cancellations). */
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    /**
+     * Last seen foreground package. Used to skip duplicate events.
+     * When the same package appears in consecutive events (Activity switch within
+     * the same app), we skip it to avoid re-triggering the cooldown.
+     */
+    private var lastForegroundPackage: String? = null
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -46,13 +58,106 @@ class AppauseAccessibilityService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // Stub: will be implemented in Phase 6.
-        // For now, just log the event type for debugging.
-        val eventType = event?.eventType ?: return
-        if (eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            val packageName = event.packageName?.toString() ?: "unknown"
-            Log.d(TAG, "Window changed: $packageName")
+        if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+
+        val packageName = event.packageName?.toString() ?: return
+
+        // Use a coroutine because we need to suspend for Repository queries.
+        serviceScope.launch {
+            handleForegroundChange(packageName)
         }
+    }
+
+    /**
+     * Core interception logic. Called for every foreground app change.
+     *
+     * Decision flow:
+     * 1. Is Appause disabled? → skip
+     * 2. Is it Appause itself? → skip
+     * 3. Is it a system package (launcher, system UI)? → skip
+     * 4. Is it currently bypassed? → skip (user already completed cooldown)
+     * 5. Is it the same as last foreground? → skip (Activity switch, not app switch)
+     * 6. Does it belong to a configured group? → if yes, INTERCEPT
+     * 7. Otherwise → skip (not a target app)
+     */
+    private suspend fun handleForegroundChange(packageName: String) {
+        val app = applicationContext as AppauseApp
+        val repository = app.repository
+
+        // 1. Check if Appause is enabled
+        if (!repository.isEnabled.first()) return
+
+        // 2. Skip Appause itself
+        if (packageName == applicationContext.packageName) {
+            lastForegroundPackage = packageName
+            return
+        }
+
+        // 3. Skip common system packages (launcher, settings, etc.)
+        if (isSystemPackage(packageName)) {
+            lastForegroundPackage = packageName
+            return
+        }
+
+        // 4. Check bypass — if the app is bypassed, check if we should clean up
+        if (InterceptionManager.isBypassed(packageName)) {
+            lastForegroundPackage = packageName
+            return
+        }
+
+        // The foreground changed to a non-bypassed, non-system app.
+        // If the previous app WAS bypassed, the user left it → clean up.
+        lastForegroundPackage?.let { last ->
+            if (InterceptionManager.isBypassed(last)) {
+                InterceptionManager.clearBypass(last)
+            }
+        }
+
+        // 5. Skip duplicate events (same app, different Activity)
+        if (packageName == lastForegroundPackage) return
+
+        lastForegroundPackage = packageName
+
+        // 6. Check if this app belongs to any configured group
+        val group = repository.findGroupForPackage(packageName) ?: return
+
+        // 7. Intercept! Launch the Pause Screen.
+        Log.d(TAG, "Intercepting: $packageName (group: ${group.name}, cooldown: ${group.cooldownSeconds}s)")
+        launchPauseScreen(packageName, group.id, group.cooldownSeconds)
+    }
+
+    /**
+     * Check if a package is a system UI component we should always ignore.
+     * Covers the launcher, system UI, settings, and recents screen.
+     */
+    private fun isSystemPackage(packageName: String): Boolean {
+        return packageName.startsWith("com.android.systemui") ||
+            packageName.startsWith("com.android.launcher") ||
+            packageName == "com.android.settings" ||
+            packageName == "com.google.android.googlequicksearchbox" ||
+            packageName == "com.android.permissioncontroller" ||
+            packageName == "com.google.android.permissioncontroller"
+    }
+
+    /**
+     * Launch PauseActivity as a new task.
+     *
+     * Why FLAG_ACTIVITY_NEW_TASK?
+     * - We're launching from a Service, which has no Activity task.
+     * - NEW_TASK creates a separate task for the pause screen.
+     *
+     * Why FLAG_ACTIVITY_CLEAR_TOP?
+     * - If PauseActivity is already showing (rapid double-intercept),
+     *   this brings the existing instance to front instead of stacking.
+     */
+    private fun launchPauseScreen(packageName: String, groupId: Long, cooldownSeconds: Int) {
+        val intent = Intent(applicationContext, PauseActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            putExtra("target_package", packageName)
+            putExtra("group_id", groupId)
+            putExtra("cooldown_seconds", cooldownSeconds)
+        }
+        startActivity(intent)
     }
 
     override fun onInterrupt() {
