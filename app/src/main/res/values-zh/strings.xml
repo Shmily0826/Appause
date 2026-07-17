@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">Appause</string>
+
+    <!--
+        Accessibility Service description.
+        Shown in the system Accessibility Settings page.
+    -->
+    <string name="accessibility_service_description">
+        Appause 使用此服务来检测你何时打开了选择要暂停的应用。
+        它仅读取当前处于前台的应用。不会收集、
+        记录或传输任何个人数据。
+    </string>
+
+    <!-- Default prompt shown on the pause screen -->
+    <string name="default_prompt">暂停一下。</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Home Screen                                  -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="cd_settings">设置</string>
+    <string name="cd_create_group">创建分组</string>
+    <string name="cd_back">返回</string>
+    <string name="cd_delete_group">删除分组</string>
+
+    <string name="accessibility_service">无障碍服务</string>
+    <string name="service_running">运行中</string>
+    <string name="service_not_enabled">未启用</string>
+    <string name="tap_to_enable">点击此处前往系统设置启用。</string>
+
+    <string name="appause_enabled">已启用</string>
+    <string name="appause_disabled">已禁用</string>
+
+    <string name="today">今日</string>
+    <string name="stat_waited">等待</string>
+    <string name="stat_cancelled">取消</string>
+
+    <string name="your_groups">你的分组</string>
+    <string name="no_groups_hint">还没有分组。点击 + 创建你的第一个分组。</string>
+    <string name="cooldown_format">%d秒冷却</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Group Editor Screen                          -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="title_edit_group">编辑分组</string>
+    <string name="title_new_group">新建分组</string>
+    <string name="label_group_name">分组名称</string>
+    <string name="placeholder_group_name">例如：社交媒体</string>
+    <string name="cooldown_label">冷却时间：%d秒</string>
+    <string name="label_seconds">秒</string>
+    <string name="select_apps_button">选择应用（已选 %d 个）</string>
+    <string name="apps_in_group">此分组中的应用：</string>
+    <string name="and_more_apps">……还有 %d 个</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_save">保存</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- App Select Screen                            -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="title_select_apps">选择应用</string>
+    <string name="selected_count">已选 %d 个</string>
+    <string name="action_confirm">确认</string>
+    <string name="search_apps_hint">搜索应用……</string>
+    <string name="no_apps_match">没有匹配"%s"的应用</string>
+    <string name="no_launchable_apps">未找到可启动的应用</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Settings Screen                              -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="title_settings">设置</string>
+    <string name="open_accessibility_settings">打开无障碍设置</string>
+    <string name="default_prompt_title">默认提示语</string>
+    <string name="prompt_label">暂停画面信息</string>
+    <string name="debug_info">调试信息</string>
+    <string name="debug_android" formatted="false">Android: API %d (%s)</string>
+    <string name="debug_enabled" formatted="false">Appause 已启用：%s</string>
+    <string name="debug_service" formatted="false">服务运行中：%s</string>
+
+    <!-- Language -->
+    <string name="language">语言</string>
+    <string name="language_english">English</string>
+    <string name="language_chinese">中文</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Pause Screen                                 -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="pause_cancel">取消</string>
+    <string name="pause_continue">继续</string>
+</resources>

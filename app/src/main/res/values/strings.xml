@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App -->
     <string name="app_name">Appause</string>
 
     <!--
         Accessibility Service description.
-        This is shown in the system Accessibility Settings page.
-        Must describe honestly what the service does — it is an accessibility
-        feature, NOT a security or monitoring tool.
+        Shown in the system Accessibility Settings page.
     -->
     <string name="accessibility_service_description">
         Appause uses this service to detect when you open apps that you have chosen to pause.
@@ -14,6 +13,78 @@
         record, or transmit any personal data.
     </string>
 
-    <!-- Common UI strings (will be expanded in later phases) -->
+    <!-- Default prompt shown on the pause screen -->
     <string name="default_prompt">Take a moment.</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Home Screen                                  -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="cd_settings">Settings</string>
+    <string name="cd_create_group">Create group</string>
+    <string name="cd_back">Back</string>
+    <string name="cd_delete_group">Delete group</string>
+
+    <string name="accessibility_service">Accessibility Service</string>
+    <string name="service_running">Running</string>
+    <string name="service_not_enabled">Not enabled</string>
+    <string name="tap_to_enable">Tap here to enable in system settings.</string>
+
+    <string name="appause_enabled">Enabled</string>
+    <string name="appause_disabled">Disabled</string>
+
+    <string name="today">Today</string>
+    <string name="stat_waited">Waited</string>
+    <string name="stat_cancelled">Cancelled</string>
+
+    <string name="your_groups">Your Groups</string>
+    <string name="no_groups_hint">No groups yet. Tap + to create your first group.</string>
+    <string name="cooldown_format">%ds cooldown</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Group Editor Screen                          -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="title_edit_group">Edit Group</string>
+    <string name="title_new_group">New Group</string>
+    <string name="label_group_name">Group name</string>
+    <string name="placeholder_group_name">e.g., Social Media</string>
+    <string name="cooldown_label">Cooldown: %ds</string>
+    <string name="label_seconds">Seconds</string>
+    <string name="select_apps_button">Select Apps (%d selected)</string>
+    <string name="apps_in_group">Apps in this group:</string>
+    <string name="and_more_apps">… and %d more</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- App Select Screen                            -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="title_select_apps">Select Apps</string>
+    <string name="selected_count">%d selected</string>
+    <string name="action_confirm">Confirm</string>
+    <string name="search_apps_hint">Search apps…</string>
+    <string name="no_apps_match">No apps match \"%s\"</string>
+    <string name="no_launchable_apps">No launchable apps found</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Settings Screen                              -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="title_settings">Settings</string>
+    <string name="open_accessibility_settings">Open Accessibility Settings</string>
+    <string name="default_prompt_title">Default Prompt</string>
+    <string name="prompt_label">Pause screen message</string>
+    <string name="debug_info">Debug Info</string>
+    <string name="debug_android" formatted="false">Android: API %d (%s)</string>
+    <string name="debug_enabled" formatted="false">Appause enabled: %s</string>
+    <string name="debug_service" formatted="false">Service running: %s</string>
+
+    <!-- Language -->
+    <string name="language">Language</string>
+    <string name="language_english">English</string>
+    <string name="language_chinese">中文</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Pause Screen                                 -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="pause_cancel">Cancel</string>
+    <string name="pause_continue">Continue</string>
 </resources>

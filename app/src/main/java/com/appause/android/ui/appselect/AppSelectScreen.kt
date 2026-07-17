@@ -32,9 +32,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.appause.android.R
 
 /**
  * App Select Screen — pick apps to include in a group.
@@ -74,10 +76,10 @@ fun AppSelectScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Select Apps") },
+                title = { Text(stringResource(R.string.title_select_apps)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -96,7 +98,7 @@ fun AppSelectScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${selectedPackages.size} selected",
+                    text = stringResource(R.string.selected_count, selectedPackages.size),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Button(
@@ -108,7 +110,7 @@ fun AppSelectScreen(
                 ) {
                     Icon(Icons.Default.Check, contentDescription = null)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Confirm")
+                    Text(stringResource(R.string.action_confirm))
                 }
             }
         }
@@ -122,7 +124,7 @@ fun AppSelectScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = viewModel::updateSearchQuery,
-                placeholder = { Text("Search apps...") },
+                placeholder = { Text(stringResource(R.string.search_apps_hint)) },
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -181,8 +183,10 @@ fun AppSelectScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = if (searchQuery.isNotBlank()) "No apps match \"$searchQuery\""
-                                    else "No launchable apps found",
+                                    text = if (searchQuery.isNotBlank())
+                                        stringResource(R.string.no_apps_match, searchQuery)
+                                    else
+                                        stringResource(R.string.no_launchable_apps),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

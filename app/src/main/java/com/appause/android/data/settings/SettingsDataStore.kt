@@ -1,6 +1,7 @@
 package com.appause.android.data.settings
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -32,6 +33,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  * We use DataStore for settings that don't need relational structure:
  * - Master toggle (is Appause enabled?)
  * - Default prompt message
+ * - Language preference
  *
  * For structured data (groups, apps, records), we use Room instead.
  */
@@ -44,6 +46,11 @@ class SettingsDataStore(private val context: Context) {
     companion object {
         val IS_ENABLED_KEY = booleanPreferencesKey("is_enabled")
         val DEFAULT_PROMPT_KEY = stringPreferencesKey("default_prompt")
+        val LANGUAGE_KEY = stringPreferencesKey("language")
+
+        // SharedPreferences key for sync locale override (used in attachBaseContext)
+        private const val PREFS_NAME = "appause_locale_prefs"
+        private const val PREF_LANGUAGE_KEY = "language"
     }
 
     // ── Read operations (return Flow for reactive observation) ──
@@ -64,6 +71,14 @@ class SettingsDataStore(private val context: Context) {
         preferences[DEFAULT_PROMPT_KEY] ?: "Take a moment."
     }
 
+    /**
+     * The selected language code ("en" or "zh").
+     * Default: "en" (English).
+     */
+    val language: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[LANGUAGE_KEY] ?: "en"
+    }
+
     // ── Write operations (suspend functions — must be called from a coroutine) ──
 
     /** Update the master toggle. */
@@ -78,5 +93,37 @@ class SettingsDataStore(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[DEFAULT_PROMPT_KEY] = prompt
         }
+    }
+
+    /**
+     * Update the language preference.
+     * Also syncs to SharedPreferences for immediate locale override.
+     */
+    suspend fun setLanguage(languageCode: String) {
+        context.dataStore.edit { preferences ->
+            preferences[LANGUAGE_KEY] = languageCode
+        }
+        // Sync to SharedPreferences for attachBaseContext
+        syncLanguageToPrefs(languageCode)
+    }
+
+    // ── SharedPreferences sync for locale override ──
+
+    /**
+     * Read language from SharedPreferences synchronously.
+     * Used in attachBaseContext before DataStore is available.
+     */
+    fun getLanguageSync(): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(PREF_LANGUAGE_KEY, "en") ?: "en"
+    }
+
+    /**
+     * Sync language to SharedPreferences for immediate locale override.
+     * Called when language changes, before Activity recreation.
+     */
+    private fun syncLanguageToPrefs(languageCode: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(PREF_LANGUAGE_KEY, languageCode).apply()
     }
 }

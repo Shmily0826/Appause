@@ -1,9 +1,12 @@
 package com.appause.android
 
 import android.app.Application
+import android.content.Context
+import android.content.res.Configuration
 import com.appause.android.data.local.AppDatabase
 import com.appause.android.data.repository.AppGroupRepository
 import com.appause.android.data.settings.SettingsDataStore
+import java.util.Locale
 
 /**
  * Application class for Appause.
@@ -39,5 +42,25 @@ class AppauseApp : Application() {
      */
     val repository: AppGroupRepository by lazy {
         AppGroupRepository(database.appGroupDao(), database.appLaunchDao(), settingsDataStore)
+    }
+
+    /**
+     * Override locale before any component initializes.
+     * This ensures all strings use the user's selected language.
+     */
+    override fun attachBaseContext(base: Context) {
+        // Read language preference synchronously from SharedPreferences
+        val prefs = base.getSharedPreferences("appause_locale_prefs", Context.MODE_PRIVATE)
+        val languageCode = prefs.getString("language", "en") ?: "en"
+
+        // Apply locale override
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+
+        val config = Configuration(base.resources.configuration)
+        config.setLocale(locale)
+
+        val context = base.createConfigurationContext(config)
+        super.attachBaseContext(context)
     }
 }

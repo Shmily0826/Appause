@@ -1,6 +1,8 @@
 package com.appause.android.ui.navigation
 
+import android.app.Activity
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -110,8 +112,10 @@ fun AppNavGraph() {
 
         // ── Settings Screen ──
         composable(Routes.SETTINGS) {
+            val activity = LocalContext.current as? Activity
             SettingsScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onLanguageChanged = { activity?.recreate() }
             )
         }
     }

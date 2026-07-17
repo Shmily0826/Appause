@@ -127,9 +127,15 @@ class AppGroupRepository(
     /** Observe the default prompt message. */
     val defaultPrompt: Flow<String> = settings.defaultPrompt
 
+    /** Observe the language preference. */
+    val language: Flow<String> = settings.language
+
     /** Update the master toggle. */
     suspend fun setEnabled(enabled: Boolean) = settings.setEnabled(enabled)
 
     /** Update the default prompt message. */
     suspend fun setDefaultPrompt(prompt: String) = settings.setDefaultPrompt(prompt)
+
+    /** Update the language preference. */
+    suspend fun setLanguage(languageCode: String) = settings.setLanguage(languageCode)
 }

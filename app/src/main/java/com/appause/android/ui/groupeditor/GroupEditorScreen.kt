@@ -31,10 +31,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.appause.android.R
 
 /**
  * Group Editor Screen — create or edit an app group.
@@ -87,17 +89,20 @@ fun GroupEditorScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(if (isEditing) "Edit Group" else "New Group")
+                    Text(
+                        if (isEditing) stringResource(R.string.title_edit_group)
+                        else stringResource(R.string.title_new_group)
+                    )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 actions = {
                     if (isEditing) {
                         IconButton(onClick = viewModel::delete) {
-                            Icon(Icons.Default.Delete, contentDescription = "Delete group")
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.cd_delete_group))
                         }
                     }
                 },
@@ -119,15 +124,15 @@ fun GroupEditorScreen(
             OutlinedTextField(
                 value = name,
                 onValueChange = viewModel::updateName,
-                label = { Text("Group name") },
-                placeholder = { Text("e.g., Social Media") },
+                label = { Text(stringResource(R.string.label_group_name)) },
+                placeholder = { Text(stringResource(R.string.placeholder_group_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
             // ── Cooldown Seconds ──
             Text(
-                text = "Cooldown: ${cooldownSeconds}s",
+                text = stringResource(R.string.cooldown_label, cooldownSeconds),
                 style = MaterialTheme.typography.titleMedium
             )
             Slider(
@@ -142,7 +147,7 @@ fun GroupEditorScreen(
                 onValueChange = { value ->
                     value.toIntOrNull()?.let { viewModel.updateCooldown(it) }
                 },
-                label = { Text("Seconds") },
+                label = { Text(stringResource(R.string.label_seconds)) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true,
                 modifier = Modifier.width(120.dp)
@@ -155,7 +160,7 @@ fun GroupEditorScreen(
                 onClick = onNavigateToAppSelect,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Select Apps (${selectedPackages.size} selected)")
+                Text(stringResource(R.string.select_apps_button, selectedPackages.size))
             }
 
             // ── Selected Apps Preview ──
@@ -163,7 +168,7 @@ fun GroupEditorScreen(
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            text = "Apps in this group:",
+                            text = stringResource(R.string.apps_in_group),
                             style = MaterialTheme.typography.labelLarge
                         )
                         selectedPackages.take(5).forEach { pkg ->
@@ -175,7 +180,7 @@ fun GroupEditorScreen(
                         }
                         if (selectedPackages.size > 5) {
                             Text(
-                                text = "... and ${selectedPackages.size - 5} more",
+                                text = stringResource(R.string.and_more_apps, selectedPackages.size - 5),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -192,14 +197,14 @@ fun GroupEditorScreen(
                 horizontalArrangement = Arrangement.End
             ) {
                 OutlinedButton(onClick = onNavigateBack) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.action_cancel))
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Button(
                     onClick = viewModel::save,
                     enabled = name.isNotBlank()
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.action_save))
                 }
             }
         }

@@ -33,9 +33,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.appause.android.R
 import com.appause.android.data.local.AppGroup
 
 /**
@@ -76,7 +78,7 @@ fun HomeScreen(
                 title = { Text("Appause") },
                 actions = {
                     IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.cd_settings))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -89,7 +91,7 @@ fun HomeScreen(
             FloatingActionButton(
                 onClick = { onNavigateToGroupEditor(null) }
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Create group")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.cd_create_group))
             }
         }
     ) { innerPadding ->
@@ -128,7 +130,7 @@ fun HomeScreen(
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Your Groups",
+                    text = stringResource(R.string.your_groups),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -137,7 +139,7 @@ fun HomeScreen(
             if (groups.isEmpty()) {
                 item {
                     Text(
-                        text = "No groups yet. Tap + to create your first group.",
+                        text = stringResource(R.string.no_groups_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = 24.dp)
@@ -163,6 +165,7 @@ fun HomeScreen(
 private fun ServiceStatusCard(isServiceRunning: Boolean, onOpenSettings: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
+        onClick = { if (!isServiceRunning) onOpenSettings() },
         colors = CardDefaults.cardColors(
             containerColor = if (isServiceRunning)
                 MaterialTheme.colorScheme.primaryContainer
@@ -172,17 +175,20 @@ private fun ServiceStatusCard(isServiceRunning: Boolean, onOpenSettings: () -> U
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Accessibility Service",
+                text = stringResource(R.string.accessibility_service),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = if (isServiceRunning) "Running" else "Not enabled",
+                text = stringResource(
+                    if (isServiceRunning) R.string.service_running
+                    else R.string.service_not_enabled
+                ),
                 style = MaterialTheme.typography.bodyMedium
             )
             if (!isServiceRunning) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Tap here to enable in system settings.",
+                    text = stringResource(R.string.tap_to_enable),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                     modifier = Modifier
@@ -210,11 +216,14 @@ private fun MasterToggleCard(isEnabled: Boolean, onToggle: () -> Unit) {
         ) {
             Column {
                 Text(
-                    text = "Appause",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
-                    text = if (isEnabled) "Enabled" else "Disabled",
+                    text = stringResource(
+                        if (isEnabled) R.string.appause_enabled
+                        else R.string.appause_disabled
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -230,7 +239,7 @@ private fun TodayStatsCard(proceeded: Int, cancelled: Int) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Today",
+                text = stringResource(R.string.today),
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -246,7 +255,7 @@ private fun TodayStatsCard(proceeded: Int, cancelled: Int) {
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "Waited",
+                        text = stringResource(R.string.stat_waited),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -259,7 +268,7 @@ private fun TodayStatsCard(proceeded: Int, cancelled: Int) {
                         color = MaterialTheme.colorScheme.tertiary
                     )
                     Text(
-                        text = "Cancelled",
+                        text = stringResource(R.string.stat_cancelled),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -282,7 +291,7 @@ private fun GroupCard(group: AppGroup, onClick: () -> Unit) {
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = "${group.cooldownSeconds}s cooldown",
+                text = stringResource(R.string.cooldown_format, group.cooldownSeconds),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

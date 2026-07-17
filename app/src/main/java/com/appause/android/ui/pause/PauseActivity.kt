@@ -34,10 +34,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.appause.android.AppauseApp
+import com.appause.android.R
 import com.appause.android.interception.InterceptionManager
 import com.appause.android.ui.theme.AppauseTheme
 import kotlinx.coroutines.CoroutineScope
@@ -102,7 +104,8 @@ class PauseActivity : ComponentActivity() {
             AppauseTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     // Load default prompt from DataStore
-                    var prompt by remember { mutableStateOf("Take a moment.") }
+                    val defaultPromptText = stringResource(R.string.default_prompt)
+                    var prompt by remember { mutableStateOf(defaultPromptText) }
                     LaunchedEffect(Unit) {
                         repository.defaultPrompt.collect { prompt = it }
                     }
@@ -285,7 +288,7 @@ private fun PauseScreenContent(
             if (isPaused) {
                 TextButton(onClick = onCancel) {
                     Text(
-                        text = "Cancel",
+                        text = stringResource(R.string.pause_cancel),
                         style = MaterialTheme.typography.labelLarge
                     )
                 }
@@ -295,7 +298,7 @@ private fun PauseScreenContent(
                     modifier = Modifier.height(48.dp)
                 ) {
                     Text(
-                        text = "Continue",
+                        text = stringResource(R.string.pause_continue),
                         style = MaterialTheme.typography.labelLarge
                     )
                 }

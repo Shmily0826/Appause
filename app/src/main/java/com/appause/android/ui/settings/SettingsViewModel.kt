@@ -24,6 +24,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val defaultPrompt: StateFlow<String> = repository.defaultPrompt
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Take a moment.")
 
+    val language: StateFlow<String> = repository.language
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "en")
+
     private val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning
 
@@ -34,6 +37,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateDefaultPrompt(prompt: String) {
         viewModelScope.launch {
             repository.setDefaultPrompt(prompt)
+        }
+    }
+
+    fun setLanguage(languageCode: String) {
+        viewModelScope.launch {
+            repository.setLanguage(languageCode)
         }
     }
 }
