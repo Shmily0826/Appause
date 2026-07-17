@@ -49,6 +49,16 @@
             android:launchMode="singleInstance" />
 
         <!--
+            Receiver for AlarmManager fallback launch of PauseActivity.
+            On some OEM ROMs (e.g., MIUI), startActivity() from AccessibilityService
+            is silently deprioritized. AlarmManager has higher system authority
+            and reliably brings the Activity to the foreground.
+        -->
+        <receiver
+            android:name=".service.PauseAlarmReceiver"
+            android:exported="false" />
+
+        <!--
             AccessibilityService: detects foreground app changes.
             Must be manually enabled by the user in system settings.
             Permission BIND_ACCESSIBILITY_SERVICE is required by the system.

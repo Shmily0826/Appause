@@ -41,6 +41,7 @@ import androidx.core.graphics.drawable.toBitmap
 import com.appause.android.AppauseApp
 import com.appause.android.R
 import com.appause.android.interception.InterceptionManager
+import com.appause.android.service.AppauseAccessibilityService
 import com.appause.android.ui.theme.AppauseTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -189,6 +190,9 @@ class PauseActivity : ComponentActivity() {
     override fun onDestroy() {
         super.onDestroy()
         timerJob?.cancel()
+
+        // Reset the guard flag so the next target app open can trigger interception
+        AppauseAccessibilityService.pauseShown = false
 
         // If the user didn't proceed, clean up the bypass.
         // This handles cases like: system kills the Activity, user swipes from recents, etc.

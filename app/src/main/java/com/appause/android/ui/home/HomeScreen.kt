@@ -28,14 +28,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
 import com.appause.android.data.local.AppGroup
@@ -67,9 +70,21 @@ fun HomeScreen(
     val cancelledToday by viewModel.cancelledToday.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    // Refresh service status every time the screen becomes visible
-    LaunchedEffect(Unit) {
-        viewModel.refreshServiceStatus()
+    // Refresh service status every time the screen becomes visible.
+    // Unlike LaunchedEffect(Unit) which fires only once on first composition,
+    // this lifecycle observer fires on every ON_RESUME — so the status updates
+    // automatically when the user returns from accessibility settings.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshServiceStatus()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     Scaffold(

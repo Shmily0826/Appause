@@ -1,7 +1,12 @@
 package com.appause.android.service
 
 import android.accessibilityservice.AccessibilityService
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.appause.android.AppauseApp
@@ -39,6 +44,13 @@ class AppauseAccessibilityService : AccessibilityService() {
         /** Whether the service is currently running. Used by UI to show status. */
         var isRunning: Boolean = false
             private set
+
+        /**
+         * Guard flag: true while a PauseActivity launch is in progress.
+         * Prevents the direct startActivity() and AlarmManager backup from
+         * both creating the Activity simultaneously.
+         */
+        var pauseShown: Boolean = false
     }
 
     /** Coroutine scope for async work (survives individual event cancellations). */
@@ -118,6 +130,12 @@ class AppauseAccessibilityService : AccessibilityService() {
             return
         }
 
+        // 4.5. Skip if PauseActivity is currently showing (cooldown in progress)
+        if (pauseShown) {
+            Log.d(TAG, "SKIP: PauseActivity is showing ($packageName)")
+            return
+        }
+
         // The foreground changed to a non-bypassed, non-system app.
         // If the previous app WAS bypassed, the user left it → clean up.
         lastForegroundPackage?.let { last ->
@@ -169,18 +187,22 @@ class AppauseAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Launch PauseActivity as a new task.
+     * Launch PauseActivity using a triple-safety strategy for MIUI compatibility:
      *
-     * Why FLAG_ACTIVITY_NEW_TASK?
-     * - We're launching from a Service, which has no Activity task.
-     * - NEW_TASK creates a separate task for the pause screen.
+     * 1. Direct startActivity() — works on stock Android and most OEMs.
+     * 2. AlarmManager backup — fires 200ms later with system-level authority.
+     *    On MIUI, startActivity() from a Service is silently deprioritized,
+     *    but AlarmManager has higher priority and reliably brings the Activity forward.
+     * 3. moveTaskToFront retry — 500ms later, explicitly bring the task to front
+     *    as a last resort.
      *
-     * Why FLAG_ACTIVITY_CLEAR_TASK?
-     * - Clears any existing PauseActivity task before launching.
-     * - Ensures the new instance always appears on top, even on MIUI
-     *   where CLEAR_TOP alone may not bring the activity to foreground.
+     * A static `pauseShown` flag prevents the alarm from launching a duplicate
+     * Activity if the direct launch already succeeded.
      */
     private fun launchPauseScreen(packageName: String, groupId: Long, cooldownSeconds: Int) {
+        pauseShown = true
+
+        // 1. Direct launch (works on stock Android)
         val intent = Intent(applicationContext, PauseActivity::class.java).apply {
             addFlags(
                 Intent.FLAG_ACTIVITY_NEW_TASK
@@ -192,6 +214,49 @@ class AppauseAccessibilityService : AccessibilityService() {
             putExtra("cooldown_seconds", cooldownSeconds)
         }
         startActivity(intent)
+
+        // 2. AlarmManager backup — fires 200ms later
+        // On MIUI, AlarmManager has higher system authority than direct startActivity()
+        // and can reliably bring the Activity to the foreground.
+        val alarmIntent = Intent(applicationContext, PauseAlarmReceiver::class.java).apply {
+            putExtra("target_package", packageName)
+            putExtra("group_id", groupId)
+            putExtra("cooldown_seconds", cooldownSeconds)
+        }
+        val pendingIntent = PendingIntent.getBroadcast(
+            applicationContext,
+            0,
+            alarmIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        alarmManager.setAndAllowWhileIdle(
+            AlarmManager.RTC_WAKEUP,
+            System.currentTimeMillis() + 200,
+            pendingIntent
+        )
+        Log.d(TAG, "Scheduled alarm backup for PauseActivity in 200ms")
+
+        // 3. Delayed moveTaskToFront retry — explicitly bring the task forward
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (pauseShown) {
+                try {
+                    val am = getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
+                    for (task in am.appTasks) {
+                        val info = task.taskInfo
+                        if (info.topActivity?.className == PauseActivity::class.java.name) {
+                            task.moveToFront()
+                            Log.d(TAG, "moveToFront succeeded for PauseActivity task")
+                            break
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "moveToFront failed", e)
+                }
+            }
+            // Reset the guard flag so the next target app open can trigger interception
+            pauseShown = false
+        }, 500)
     }
 
     override fun onInterrupt() {
