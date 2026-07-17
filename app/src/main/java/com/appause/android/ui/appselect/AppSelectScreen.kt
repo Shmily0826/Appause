@@ -75,9 +75,17 @@ fun AppSelectScreen(
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     // Pre-select apps that are already in the group being edited
+    // Reads from both the parameter AND the companion cache
     LaunchedEffect(initialPackages) {
-        if (initialPackages.isNotEmpty()) {
-            viewModel.preSelectPackages(initialPackages.toSet())
+        val packages = if (initialPackages.isNotEmpty()) {
+            initialPackages.toSet()
+        } else {
+            AppSelectScreen.cachedInitialPackages?.toSet().also {
+                AppSelectScreen.cachedInitialPackages = null
+            } ?: emptySet()
+        }
+        if (packages.isNotEmpty()) {
+            viewModel.preSelectPackages(packages)
         }
     }
 
@@ -234,9 +242,11 @@ fun AppSelectScreen(
 }
 
 /**
- * Companion object for passing data back to GroupEditorScreen.
- * Set when user taps Confirm, read when GroupEditorScreen resumes.
+ * Companion object for passing data between GroupEditorScreen and AppSelectScreen.
+ * - cachedSelectedPackages: set when user taps Confirm, read by GroupEditorScreen on return.
+ * - cachedInitialPackages: set by GroupEditorScreen before navigating here, read on init.
  */
 object AppSelectScreen {
     var cachedSelectedPackages: List<String>? = null
+    var cachedInitialPackages: List<String>? = null
 }

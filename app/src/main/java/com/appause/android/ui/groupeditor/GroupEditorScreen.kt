@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
+import com.appause.android.ui.appselect.AppSelectScreen
 
 /**
  * Group Editor Screen — create or edit an app group.
@@ -157,7 +158,11 @@ fun GroupEditorScreen(
 
             // ── Select Apps Button ──
             OutlinedButton(
-                onClick = onNavigateToAppSelect,
+                onClick = {
+                    // Cache current selection so AppSelectScreen can pre-check them
+                    AppSelectScreen.cachedInitialPackages = selectedPackages.toList()
+                    onNavigateToAppSelect()
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.select_apps_button, selectedPackages.size))
