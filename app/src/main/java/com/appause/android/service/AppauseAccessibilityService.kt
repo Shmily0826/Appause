@@ -62,9 +62,15 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: return
 
+        Log.d(TAG, "Event received: package=$packageName, class=${event.className}")
+
         // Use a coroutine because we need to suspend for Repository queries.
         serviceScope.launch {
-            handleForegroundChange(packageName)
+            try {
+                handleForegroundChange(packageName)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error in handleForegroundChange for $packageName", e)
+            }
         }
     }
 
@@ -85,22 +91,29 @@ class AppauseAccessibilityService : AccessibilityService() {
         val repository = app.repository
 
         // 1. Check if Appause is enabled
-        if (!repository.isEnabled.first()) return
+        val isEnabled = repository.isEnabled.first()
+        if (!isEnabled) {
+            Log.d(TAG, "SKIP: Appause is disabled")
+            return
+        }
 
         // 2. Skip Appause itself
         if (packageName == applicationContext.packageName) {
+            Log.d(TAG, "SKIP: Appause itself")
             lastForegroundPackage = packageName
             return
         }
 
         // 3. Skip common system packages (launcher, settings, etc.)
         if (isSystemPackage(packageName)) {
+            Log.d(TAG, "SKIP: system package ($packageName)")
             lastForegroundPackage = packageName
             return
         }
 
         // 4. Check bypass — if the app is bypassed, check if we should clean up
         if (InterceptionManager.isBypassed(packageName)) {
+            Log.d(TAG, "SKIP: bypassed ($packageName)")
             lastForegroundPackage = packageName
             return
         }
@@ -109,26 +122,34 @@ class AppauseAccessibilityService : AccessibilityService() {
         // If the previous app WAS bypassed, the user left it → clean up.
         lastForegroundPackage?.let { last ->
             if (InterceptionManager.isBypassed(last)) {
+                Log.d(TAG, "Cleanup: clearing bypass for $last (user left the app)")
                 InterceptionManager.clearBypass(last)
             }
         }
 
         // 5. Skip duplicate events (same app, different Activity)
-        if (packageName == lastForegroundPackage) return
+        if (packageName == lastForegroundPackage) {
+            Log.d(TAG, "SKIP: duplicate event ($packageName)")
+            return
+        }
 
         lastForegroundPackage = packageName
 
         // 6. Check if this app belongs to any configured group
-        val group = repository.findGroupForPackage(packageName) ?: return
+        val group = repository.findGroupForPackage(packageName)
+        if (group == null) {
+            Log.d(TAG, "SKIP: not in any group ($packageName)")
+            return
+        }
 
         // 7. Intercept! Launch the Pause Screen.
-        Log.d(TAG, "Intercepting: $packageName (group: ${group.name}, cooldown: ${group.cooldownSeconds}s)")
+        Log.d(TAG, "INTERCEPT: $packageName → group=${group.name}, cooldown=${group.cooldownSeconds}s")
         launchPauseScreen(packageName, group.id, group.cooldownSeconds)
     }
 
     /**
      * Check if a package is a system UI component we should always ignore.
-     * Covers the launcher, system UI, settings, and recents screen.
+     * Covers the launcher, system UI, settings, recents screen, and OEM launchers.
      */
     private fun isSystemPackage(packageName: String): Boolean {
         return packageName.startsWith("com.android.systemui") ||
@@ -136,7 +157,15 @@ class AppauseAccessibilityService : AccessibilityService() {
             packageName == "com.android.settings" ||
             packageName == "com.google.android.googlequicksearchbox" ||
             packageName == "com.android.permissioncontroller" ||
-            packageName == "com.google.android.permissioncontroller"
+            packageName == "com.google.android.permissioncontroller" ||
+            // OEM launchers
+            packageName == "com.miui.home" ||              // Xiaomi
+            packageName == "com.huawei.android.launcher" || // Huawei
+            packageName == "com.sec.android.app.launcher" || // Samsung
+            packageName == "com.oppo.launcher" ||           // OPPO
+            packageName == "com.bbk.launcher2" ||           // Vivo
+            packageName == "com.oneplus.launcher" ||        // OnePlus
+            packageName == "com.motorola.launcher3"         // Motorola
     }
 
     /**
