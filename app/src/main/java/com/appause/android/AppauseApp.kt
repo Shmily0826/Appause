@@ -47,11 +47,26 @@ class AppauseApp : Application() {
     /**
      * Override locale before any component initializes.
      * This ensures all strings use the user's selected language.
+     *
+     * On first launch (no saved preference), detects the system language:
+     * - Chinese system → defaults to "zh"
+     * - Everything else → defaults to "en"
+     * The detected language is saved to SharedPreferences so it persists.
      */
     override fun attachBaseContext(base: Context) {
-        // Read language preference synchronously from SharedPreferences
         val prefs = base.getSharedPreferences("appause_locale_prefs", Context.MODE_PRIVATE)
-        val languageCode = prefs.getString("language", "en") ?: "en"
+
+        val languageCode = if (prefs.contains("language")) {
+            // User has previously chosen a language — use it
+            prefs.getString("language", "en") ?: "en"
+        } else {
+            // First launch — detect from system locale
+            val systemLang = Locale.getDefault().language
+            val detected = if (systemLang == "zh") "zh" else "en"
+            // Persist so next launch is instant
+            prefs.edit().putString("language", detected).apply()
+            detected
+        }
 
         // Apply locale override
         val locale = Locale(languageCode)

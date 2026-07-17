@@ -65,18 +65,19 @@ class SettingsDataStore(private val context: Context) {
 
     /**
      * The default prompt message shown on the Pause Screen.
-     * Default: "Take a moment."
+     * Empty string means "use localized default" — the UI falls back to stringResource().
+     * This avoids storing a language-specific string that becomes stale after language switch.
      */
     val defaultPrompt: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[DEFAULT_PROMPT_KEY] ?: "Take a moment."
+        preferences[DEFAULT_PROMPT_KEY] ?: ""
     }
 
     /**
      * The selected language code ("en" or "zh").
-     * Default: "en" (English).
+     * Falls back to SharedPreferences (which has system-detected value from attachBaseContext).
      */
     val language: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[LANGUAGE_KEY] ?: "en"
+        preferences[LANGUAGE_KEY] ?: getLanguageSync()
     }
 
     // ── Write operations (suspend functions — must be called from a coroutine) ──
@@ -111,11 +112,18 @@ class SettingsDataStore(private val context: Context) {
 
     /**
      * Read language from SharedPreferences synchronously.
-     * Used in attachBaseContext before DataStore is available.
+     * Used in attachBaseContext and DataStore Flow fallback.
+     * On first launch, detects from system locale.
      */
     fun getLanguageSync(): String {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(PREF_LANGUAGE_KEY, "en") ?: "en"
+        return if (prefs.contains(PREF_LANGUAGE_KEY)) {
+            prefs.getString(PREF_LANGUAGE_KEY, "en") ?: "en"
+        } else {
+            val detected = if (java.util.Locale.getDefault().language == "zh") "zh" else "en"
+            prefs.edit().putString(PREF_LANGUAGE_KEY, detected).apply()
+            detected
+        }
     }
 
     /**

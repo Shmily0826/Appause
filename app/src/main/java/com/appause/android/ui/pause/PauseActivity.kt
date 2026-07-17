@@ -104,10 +104,13 @@ class PauseActivity : ComponentActivity() {
             AppauseTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     // Load default prompt from DataStore
+                    // If stored prompt is blank, use localized default
                     val defaultPromptText = stringResource(R.string.default_prompt)
                     var prompt by remember { mutableStateOf(defaultPromptText) }
                     LaunchedEffect(Unit) {
-                        repository.defaultPrompt.collect { prompt = it }
+                        repository.defaultPrompt.collect { stored ->
+                            prompt = if (stored.isBlank()) defaultPromptText else stored
+                        }
                     }
 
                     // Countdown state

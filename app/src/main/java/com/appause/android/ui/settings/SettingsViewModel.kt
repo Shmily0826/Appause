@@ -22,10 +22,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     val defaultPrompt: StateFlow<String> = repository.defaultPrompt
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Take a moment.")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
     val language: StateFlow<String> = repository.language
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "en")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000),
+            (application as AppauseApp).settingsDataStore.getLanguageSync())
 
     private val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning

@@ -162,6 +162,7 @@ fun SettingsScreen(
                         value = defaultPrompt,
                         onValueChange = viewModel::updateDefaultPrompt,
                         label = { Text(stringResource(R.string.prompt_label)) },
+                        placeholder = { Text(stringResource(R.string.default_prompt)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
