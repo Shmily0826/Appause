@@ -63,9 +63,9 @@ class AppSelectViewModel(application: Application) : AndroidViewModel(applicatio
                 apps
             } else {
                 val lowerQuery = query.lowercase()
+                // Search by app name only — users see app names, not package names
                 apps.filter { app ->
-                    app.appName.lowercase().contains(lowerQuery) ||
-                        app.packageName.lowercase().contains(lowerQuery)
+                    app.appName.lowercase().contains(lowerQuery)
                 }
             }
         }.let { flow ->
