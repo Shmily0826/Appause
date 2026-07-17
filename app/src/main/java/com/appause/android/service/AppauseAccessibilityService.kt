@@ -175,13 +175,18 @@ class AppauseAccessibilityService : AccessibilityService() {
      * - We're launching from a Service, which has no Activity task.
      * - NEW_TASK creates a separate task for the pause screen.
      *
-     * Why FLAG_ACTIVITY_CLEAR_TOP?
-     * - If PauseActivity is already showing (rapid double-intercept),
-     *   this brings the existing instance to front instead of stacking.
+     * Why FLAG_ACTIVITY_CLEAR_TASK?
+     * - Clears any existing PauseActivity task before launching.
+     * - Ensures the new instance always appears on top, even on MIUI
+     *   where CLEAR_TOP alone may not bring the activity to foreground.
      */
     private fun launchPauseScreen(packageName: String, groupId: Long, cooldownSeconds: Int) {
         val intent = Intent(applicationContext, PauseActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK
+                    or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            )
             putExtra("target_package", packageName)
             putExtra("group_id", groupId)
             putExtra("cooldown_seconds", cooldownSeconds)
