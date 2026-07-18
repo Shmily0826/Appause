@@ -1,9 +1,15 @@
 package com.appause.android.service
 
 import android.accessibilityservice.AccessibilityService
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import androidx.core.app.NotificationCompat
 import com.appause.android.AppauseApp
+import com.appause.android.R
 import com.appause.android.interception.InterceptionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +39,8 @@ class AppauseAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "AppauseA11yService"
+        private const val NOTIFICATION_CHANNEL_ID = "appause_monitoring"
+        private const val NOTIFICATION_ID = 1
 
         /** Whether the service is currently running. Used by UI to show status. */
         var isRunning: Boolean = false
@@ -67,6 +75,35 @@ class AppauseAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         isRunning = true
         Log.d(TAG, "AccessibilityService connected and running")
+
+        // Show a persistent notification to indicate the service is actively monitoring.
+        // This also acts as a foreground service notification, which helps prevent
+        // the system from killing the service in the background.
+        createNotificationChannel()
+        val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText(getString(R.string.notification_monitoring))
+            .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
+            .setOngoing(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+        startForeground(NOTIFICATION_ID, notification)
+    }
+
+    /**
+     * Create the notification channel for the monitoring notification.
+     * Required on Android 8.0 (API 26) and above.
+     */
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            NOTIFICATION_CHANNEL_ID,
+            getString(R.string.notification_channel_name),
+            NotificationManager.IMPORTANCE_LOW // LOW = no sound, no vibration
+        ).apply {
+            description = getString(R.string.notification_channel_desc)
+        }
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.createNotificationChannel(channel)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {

@@ -88,11 +88,12 @@ class PauseActivity : ComponentActivity() {
 
     /**
      * Override locale so the pause screen uses the correct language.
-     * See MainActivity.attachBaseContext for detailed explanation.
+     * Default: system language (Chinese system → "zh", otherwise → "en").
      */
     override fun attachBaseContext(base: Context) {
         val prefs = base.getSharedPreferences("appause_locale_prefs", Context.MODE_PRIVATE)
-        val languageCode = prefs.getString("language", "en") ?: "en"
+        val languageCode = prefs.getString("language", null)
+            ?: if (Locale.getDefault().language == "zh") "zh" else "en"
 
         val locale = Locale(languageCode)
         Locale.setDefault(locale)
@@ -104,6 +105,18 @@ class PauseActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Apply locale to Activity resources before Compose renders.
+        // See MainActivity.onCreate for detailed explanation.
+        val prefs = getSharedPreferences("appause_locale_prefs", Context.MODE_PRIVATE)
+        val languageCode = prefs.getString("language", null)
+            ?: if (Locale.getDefault().language == "zh") "zh" else "en"
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+        val config = Configuration(resources.configuration)
+        config.setLocale(locale)
+        @Suppress("DEPRECATION")
+        resources.updateConfiguration(config, resources.displayMetrics)
+
         super.onCreate(savedInstanceState)
 
         // Load target app info from PackageManager (icon + display name).

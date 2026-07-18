@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import com.appause.android.ui.navigation.AppNavGraph
 import com.appause.android.ui.theme.AppauseTheme
 import java.util.Locale
-
 /**
  * MainActivity — the single Activity that hosts all Compose screens.
  *
@@ -41,10 +40,14 @@ class MainActivity : ComponentActivity() {
      *   including after Activity.recreate() (triggered by language switch).
      * - On MIUI and some OEM ROMs, the Activity context doesn't inherit
      *   the Application-level locale override, so we must apply it here too.
+     *
+     * Default behavior: if no language preference is saved, fall back to
+     * the system language (Chinese system → "zh", otherwise → "en").
      */
     override fun attachBaseContext(base: Context) {
         val prefs = base.getSharedPreferences("appause_locale_prefs", Context.MODE_PRIVATE)
-        val languageCode = prefs.getString("language", "en") ?: "en"
+        val languageCode = prefs.getString("language", null)
+            ?: if (Locale.getDefault().language == "zh") "zh" else "en"
 
         val locale = Locale(languageCode)
         Locale.setDefault(locale)
@@ -56,6 +59,21 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Apply locale to Activity resources BEFORE super.onCreate().
+        // attachBaseContext() only updates the base context's configuration.
+        // On some devices/OEM ROMs, the Activity's own Resources object
+        // (used by Compose for stringResource) doesn't pick up the change.
+        // Updating it here ensures stringResource() returns localized strings.
+        val prefs = getSharedPreferences("appause_locale_prefs", Context.MODE_PRIVATE)
+        val languageCode = prefs.getString("language", null)
+            ?: if (Locale.getDefault().language == "zh") "zh" else "en"
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+        val config = Configuration(resources.configuration)
+        config.setLocale(locale)
+        @Suppress("DEPRECATION")
+        resources.updateConfiguration(config, resources.displayMetrics)
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 

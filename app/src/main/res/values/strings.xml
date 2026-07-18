@@ -105,4 +105,11 @@
     <string name="stats_overview">Overview</string>
     <string name="stats_top_apps">Top Apps</string>
     <string name="stats_no_data">No data yet. Start using Appause to see your statistics.</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Monitoring Notification                      -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="notification_channel_name">Monitoring</string>
+    <string name="notification_channel_desc">Shows when Appause is actively monitoring app usage</string>
+    <string name="notification_monitoring">Monitoring app usage in the background</string>
 </resources>

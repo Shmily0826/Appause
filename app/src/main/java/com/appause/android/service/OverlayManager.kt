@@ -2,9 +2,9 @@ package com.appause.android.service
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.graphics.drawable.Drawable
 import android.util.Log
-import android.view.Gravity
 import android.view.WindowManager
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -91,10 +91,13 @@ class OverlayManager {
             return
         }
 
-        val context = service.applicationContext
+        // Use service context (not applicationContext) for proper theme attributes.
+        // AccessibilityService extends Service, which is a valid ContextWrapper
+        // with the app's theme applied. applicationContext may lack theme attrs
+        // that Compose/Material3 needs for rendering.
+        val context = service
 
         // Load target app info from PackageManager (icon + display name).
-        // We do this outside Compose because PackageManager needs Context.
         val pm = context.packageManager
         val appName = try {
             pm.getApplicationLabel(pm.getApplicationInfo(targetPackage, 0)).toString()
@@ -108,10 +111,10 @@ class OverlayManager {
         }
 
         // Get repository and default prompt
-        val repository = (context as AppauseApp).repository
+        val repository = (context.applicationContext as AppauseApp).repository
         val defaultPromptText = context.resources.getString(R.string.default_prompt)
 
-        // Create WindowManager
+        // Create WindowManager from service context
         val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         // Create the Compose view that will host our UI
@@ -120,17 +123,19 @@ class OverlayManager {
         // Set up window layout parameters:
         // - TYPE_ACCESSIBILITY_OVERLAY: draws above all apps, no special permission needed
         // - MATCH_PARENT: covers the entire screen
+        // - FLAG_LAYOUT_IN_SCREEN: ensures the overlay covers the full screen including
+        //   system bar areas (status bar, navigation bar). Without this, some OEM ROMs
+        //   leave gaps around the edges.
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-            // Focusable so we capture all input; not touch-modal is default for this type
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             android.graphics.PixelFormat.TRANSLUCENT
         )
 
         // Set up lifecycle for Compose (needed for LaunchedEffect timers).
-        // Without this, Compose doesn't know when to start/stop effects.
         val lifecycleContainer = LifecycleContainer()
         composeView.setViewTreeLifecycleOwner(lifecycleContainer)
         composeView.setViewTreeSavedStateRegistryOwner(lifecycleContainer)
@@ -173,6 +178,17 @@ class OverlayManager {
                             }
                             InterceptionManager.clearBypass(targetPackage)
                             dismiss()
+                            // Send user to home screen so they don't land on the target app.
+                            // Same behavior as PauseActivity.handleCancel().
+                            val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                                addCategory(Intent.CATEGORY_HOME)
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            try {
+                                context.startActivity(homeIntent)
+                            } catch (e: Exception) {
+                                Log.w(TAG, "Failed to send to home", e)
+                            }
                         },
                         onContinueWithReason = { reason ->
                             // Log the successful proceed with the selected reason
@@ -186,17 +202,41 @@ class OverlayManager {
             }
         }
 
-        // Add the overlay to the screen
-        windowManager.addView(composeView, params)
-        overlayView = composeView
+        // Add the overlay to the screen.
+        // If this fails (e.g., OEM restriction), fall back to launching PauseActivity.
+        try {
+            windowManager.addView(composeView, params)
+            overlayView = composeView
 
-        // Create a coroutine scope for this overlay's lifetime
-        overlayScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+            // Create a coroutine scope for this overlay's lifetime
+            overlayScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-        // Mark that the pause screen is showing (prevents re-triggering)
-        AppauseAccessibilityService.pauseShown = true
+            // Mark that the pause screen is showing (prevents re-triggering)
+            AppauseAccessibilityService.pauseShown = true
 
-        Log.d(TAG, "Overlay shown for $targetPackage, cooldown=${cooldownSeconds}s")
+            Log.d(TAG, "Overlay shown for $targetPackage, cooldown=${cooldownSeconds}s")
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to add overlay to WindowManager, falling back to PauseActivity", e)
+            // Clean up the failed overlay
+            lifecycleContainer.destroy()
+
+            // Fallback: launch PauseActivity directly.
+            // This may not work on some OEM ROMs (MIUI blocks background startActivity),
+            // but it's better than showing nothing at all.
+            try {
+                val intent = Intent(context, com.appause.android.ui.pause.PauseActivity::class.java).apply {
+                    putExtra("target_package", targetPackage)
+                    putExtra("group_id", groupId)
+                    putExtra("cooldown_seconds", cooldownSeconds)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                }
+                context.startActivity(intent)
+                AppauseAccessibilityService.pauseShown = true
+                Log.d(TAG, "Fallback: PauseActivity launched for $targetPackage")
+            } catch (e2: Exception) {
+                Log.e(TAG, "Both overlay and startActivity failed for $targetPackage", e2)
+            }
+        }
     }
 
     /**

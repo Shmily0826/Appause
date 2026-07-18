@@ -105,4 +105,11 @@
     <string name="stats_overview">概览</string>
     <string name="stats_top_apps">拦截最多的应用</string>
     <string name="stats_no_data">暂无数据。开始使用 Appause 后即可查看统计。</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Monitoring Notification                      -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="notification_channel_name">监测</string>
+    <string name="notification_channel_desc">显示 Appause 正在监测应用使用情况</string>
+    <string name="notification_monitoring">正在后台监测应用使用</string>
 </resources>

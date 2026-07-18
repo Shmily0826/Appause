@@ -2,6 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!--
+        FOREGROUND_SERVICE: needed to show the persistent monitoring notification.
+        POST_NOTIFICATIONS: required on Android 13+ (API 33) to post notifications.
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
         Package visibility (Android 11+, API 30+):
         Apps cannot see other installed apps by default.
         We declare which apps we need to query here.
@@ -66,6 +74,7 @@
         <service
             android:name=".service.AppauseAccessibilityService"
             android:exported="false"
+            android:foregroundServiceType="specialUse"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
@@ -73,6 +82,10 @@
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
+            <!-- Required for foregroundServiceType="specialUse" on Android 14+ -->
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="accessibility_app_monitoring" />
         </service>
 
     </application>
