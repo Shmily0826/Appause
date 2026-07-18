@@ -117,20 +117,27 @@ class OverlayManager {
         // Create WindowManager from service context
         val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
-        // Create the Compose view that will host our UI
-        val composeView = ComposeView(context)
+        // Create the Compose view that will host our UI.
+        // fitsSystemWindows = false prevents the view from adding padding
+        // for system bars (status bar, nav bar). Without this, Compose's
+        // Surface adds top padding that leaves a gap behind the status bar.
+        val composeView = ComposeView(context).apply {
+            fitsSystemWindows = false
+        }
 
         // Set up window layout parameters:
         // - TYPE_ACCESSIBILITY_OVERLAY: draws above all apps, no special permission needed
         // - MATCH_PARENT: covers the entire screen
-        // - FLAG_LAYOUT_IN_SCREEN: ensures the overlay covers the full screen including
-        //   system bar areas (status bar, navigation bar). Without this, some OEM ROMs
-        //   leave gaps around the edges.
+        // - FLAG_LAYOUT_IN_SCREEN: positions the window across the full screen
+        // - FLAG_LAYOUT_NO_LIMITS: extends the window behind status bar and
+        //   navigation bar, eliminating the white gap at the top of the screen
+        // - FLAG_NOT_FOCUSABLE: allows the window to receive touch events
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             android.graphics.PixelFormat.TRANSLUCENT
         )

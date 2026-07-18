@@ -9,7 +9,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -26,8 +25,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -232,10 +229,16 @@ class PauseActivity : ComponentActivity() {
 /**
  * The visual content of the Pause Screen.
  *
- * Three-state machine:
- * 1. COUNTING_DOWN: show ring + countdown number + Cancel button.
- * 2. SELECTING_REASON: show checkmark + "Why?" prompt + 4 reason buttons.
- * 3. DONE: (handled by parent — the Activity/overlay is dismissed).
+ * Layout (top to bottom):
+ * 1. App icon + name
+ * 2. Prompt message (e.g., "Take a moment.")
+ * 3. Countdown ring with animated number (or checkmark when finished)
+ * 4. 2x2 reason selection grid (always visible)
+ * 5. Cancel button
+ *
+ * The reason buttons are available from the start — the user can select
+ * a reason at any time during the countdown, not just after it finishes.
+ * Selecting a reason immediately dismisses the overlay.
  *
  * @param smoothProgress 0.0 to 1.0 continuous progress (updated ~60fps by CountdownState).
  * @param isFinished true when countdown reaches zero.
@@ -253,7 +256,7 @@ internal fun PauseScreenContent(
     onCancel: () -> Unit,
     onContinueWithReason: (String) -> Unit
 ) {
-    // Track whether the user has selected a reason (to avoid double-taps)
+    // Track whether the user has selected a reason (disables all buttons)
     var reasonSelected by remember { mutableStateOf(false) }
 
     Box(
@@ -288,30 +291,22 @@ internal fun PauseScreenContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── Prompt Message (changes to intent prompt after countdown) ──
-            Crossfade(
-                targetState = isFinished,
-                label = "prompt_text"
-            ) { finished ->
-                Text(
-                    text = if (!finished) prompt
-                        else stringResource(R.string.intent_prompt),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            // ── Prompt Message ──
+            Text(
+                text = prompt,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // ── Countdown Ring + Number ──
             Box(contentAlignment = Alignment.Center) {
-                // Custom Canvas ring with color gradient and pulsing glow
                 CountdownRing(
                     progress = smoothProgress,
                     isFinished = isFinished
                 )
 
-                // Animated countdown number — slides up and fades when digit changes.
                 AnimatedContent(
                     targetState = if (isFinished) -1 else secondsLeft,
                     transitionSpec = {
@@ -332,72 +327,65 @@ internal fun PauseScreenContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // ── Action area — crossfades between Cancel and intent selection grid ──
-            // Why show reason buttons instead of a simple "Continue"?
-            // The user already waited through the cooldown. This brief friction
-            // makes them reflect on WHY they're opening the app, which is
-            // the core purpose of Appause — mindful usage, not mindless tapping.
-            Crossfade(
-                targetState = isFinished,
-                label = "action_button"
-            ) { finished ->
-                if (!finished) {
-                    TextButton(onClick = onCancel) {
-                        Text(
-                            text = stringResource(R.string.pause_cancel),
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-                } else {
-                    // Intent selection grid — 2x2 layout of reason buttons
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            ReasonButton(
-                                text = stringResource(R.string.intent_work),
-                                enabled = !reasonSelected,
-                                onClick = {
-                                    reasonSelected = true
-                                    onContinueWithReason("work")
-                                }
-                            )
-                            ReasonButton(
-                                text = stringResource(R.string.intent_bored),
-                                enabled = !reasonSelected,
-                                onClick = {
-                                    reasonSelected = true
-                                    onContinueWithReason("bored")
-                                }
-                            )
+            // ── Reason selection grid — always visible from the start ──
+            // The user can pick a reason at any time during the countdown.
+            // This gives them agency: they don't have to wait for the timer
+            // to tell us why they're opening the app.
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ReasonButton(
+                        text = stringResource(R.string.intent_work),
+                        enabled = !reasonSelected,
+                        onClick = {
+                            reasonSelected = true
+                            onContinueWithReason("work")
                         }
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            ReasonButton(
-                                text = stringResource(R.string.intent_messages),
-                                enabled = !reasonSelected,
-                                onClick = {
-                                    reasonSelected = true
-                                    onContinueWithReason("messages")
-                                }
-                            )
-                            ReasonButton(
-                                text = stringResource(R.string.intent_other),
-                                enabled = !reasonSelected,
-                                onClick = {
-                                    reasonSelected = true
-                                    onContinueWithReason("other")
-                                }
-                            )
+                    )
+                    ReasonButton(
+                        text = stringResource(R.string.intent_bored),
+                        enabled = !reasonSelected,
+                        onClick = {
+                            reasonSelected = true
+                            onContinueWithReason("bored")
                         }
-                    }
+                    )
                 }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ReasonButton(
+                        text = stringResource(R.string.intent_messages),
+                        enabled = !reasonSelected,
+                        onClick = {
+                            reasonSelected = true
+                            onContinueWithReason("messages")
+                        }
+                    )
+                    ReasonButton(
+                        text = stringResource(R.string.intent_other),
+                        enabled = !reasonSelected,
+                        onClick = {
+                            reasonSelected = true
+                            onContinueWithReason("other")
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ── Cancel button — always visible below the reason grid ──
+            TextButton(
+                onClick = onCancel,
+                enabled = !reasonSelected
+            ) {
+                Text(
+                    text = stringResource(R.string.pause_cancel),
+                    style = MaterialTheme.typography.labelLarge
+                )
             }
         }
     }
