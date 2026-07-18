@@ -1,17 +1,10 @@
 package com.appause.android.service
 
 import android.accessibilityservice.AccessibilityService
-import android.app.AlarmManager
-import android.app.PendingIntent
-import android.content.Context
-import android.content.Intent
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import com.appause.android.AppauseApp
 import com.appause.android.interception.InterceptionManager
-import com.appause.android.ui.pause.PauseActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,15 +39,22 @@ class AppauseAccessibilityService : AccessibilityService() {
             private set
 
         /**
-         * Guard flag: true while a PauseActivity launch is in progress.
-         * Prevents the direct startActivity() and AlarmManager backup from
-         * both creating the Activity simultaneously.
+         * Guard flag: true while the cooldown overlay is showing.
+         * Prevents re-triggering interception while a cooldown is in progress.
          */
         var pauseShown: Boolean = false
     }
 
     /** Coroutine scope for async work (survives individual event cancellations). */
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    /**
+     * The overlay manager that shows the cooldown screen.
+     * Uses TYPE_ACCESSIBILITY_OVERLAY to draw above all apps —
+     * this works reliably on every OEM ROM (MIUI, ColorOS, etc.)
+     * without needing the SYSTEM_ALERT_WINDOW permission.
+     */
+    private val overlayManager = OverlayManager()
 
     /**
      * Last seen foreground package. Used to skip duplicate events.
@@ -130,9 +130,16 @@ class AppauseAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 4.5. Skip if PauseActivity is currently showing (cooldown in progress)
+        // 4.5. Skip if cooldown overlay is currently showing
         if (pauseShown) {
-            Log.d(TAG, "SKIP: PauseActivity is showing ($packageName)")
+            Log.d(TAG, "SKIP: cooldown overlay is showing ($packageName)")
+            // Still clean up bypass if the user left a bypassed app
+            lastForegroundPackage?.let { last ->
+                if (InterceptionManager.isBypassed(last) && last != packageName) {
+                    Log.d(TAG, "Cleanup: clearing bypass for $last (user left the app)")
+                    InterceptionManager.clearBypass(last)
+                }
+            }
             return
         }
 
@@ -160,9 +167,9 @@ class AppauseAccessibilityService : AccessibilityService() {
             return
         }
 
-        // 7. Intercept! Launch the Pause Screen.
+        // 7. Intercept! Show the cooldown overlay.
         Log.d(TAG, "INTERCEPT: $packageName → group=${group.name}, cooldown=${group.cooldownSeconds}s")
-        launchPauseScreen(packageName, group.id, group.cooldownSeconds)
+        showCooldownOverlay(packageName, group.id, group.cooldownSeconds)
     }
 
     /**
@@ -187,76 +194,18 @@ class AppauseAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Launch PauseActivity using a triple-safety strategy for MIUI compatibility:
+     * Show the cooldown overlay using TYPE_ACCESSIBILITY_OVERLAY.
      *
-     * 1. Direct startActivity() — works on stock Android and most OEMs.
-     * 2. AlarmManager backup — fires 200ms later with system-level authority.
-     *    On MIUI, startActivity() from a Service is silently deprioritized,
-     *    but AlarmManager has higher priority and reliably brings the Activity forward.
-     * 3. moveTaskToFront retry — 500ms later, explicitly bring the task to front
-     *    as a last resort.
-     *
-     * A static `pauseShown` flag prevents the alarm from launching a duplicate
-     * Activity if the direct launch already succeeded.
+     * Why an overlay instead of launching an Activity?
+     * - On MIUI (Xiaomi) and other OEM ROMs, startActivity() from a Service
+     *   is silently blocked — the Activity never appears on screen.
+     * - TYPE_ACCESSIBILITY_OVERLAY draws above ALL apps without needing
+     *   the SYSTEM_ALERT_WINDOW permission. It works on every OEM ROM.
+     * - The overlay captures all touches, so the user can only interact
+     *   with the Cancel or Continue buttons.
      */
-    private fun launchPauseScreen(packageName: String, groupId: Long, cooldownSeconds: Int) {
-        pauseShown = true
-
-        // 1. Direct launch (works on stock Android)
-        val intent = Intent(applicationContext, PauseActivity::class.java).apply {
-            addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK
-                    or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            )
-            putExtra("target_package", packageName)
-            putExtra("group_id", groupId)
-            putExtra("cooldown_seconds", cooldownSeconds)
-        }
-        startActivity(intent)
-
-        // 2. AlarmManager backup — fires 200ms later
-        // On MIUI, AlarmManager has higher system authority than direct startActivity()
-        // and can reliably bring the Activity to the foreground.
-        val alarmIntent = Intent(applicationContext, PauseAlarmReceiver::class.java).apply {
-            putExtra("target_package", packageName)
-            putExtra("group_id", groupId)
-            putExtra("cooldown_seconds", cooldownSeconds)
-        }
-        val pendingIntent = PendingIntent.getBroadcast(
-            applicationContext,
-            0,
-            alarmIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        alarmManager.setAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            System.currentTimeMillis() + 200,
-            pendingIntent
-        )
-        Log.d(TAG, "Scheduled alarm backup for PauseActivity in 200ms")
-
-        // 3. Delayed moveTaskToFront retry — explicitly bring the task forward
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (pauseShown) {
-                try {
-                    val am = getSystemService(Context.ACTIVITY_SERVICE) as android.app.ActivityManager
-                    for (task in am.appTasks) {
-                        val info = task.taskInfo
-                        if (info.topActivity?.className == PauseActivity::class.java.name) {
-                            task.moveToFront()
-                            Log.d(TAG, "moveToFront succeeded for PauseActivity task")
-                            break
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.w(TAG, "moveToFront failed", e)
-                }
-            }
-            // Reset the guard flag so the next target app open can trigger interception
-            pauseShown = false
-        }, 500)
+    private fun showCooldownOverlay(packageName: String, groupId: Long, cooldownSeconds: Int) {
+        overlayManager.show(this, packageName, groupId, cooldownSeconds)
     }
 
     override fun onInterrupt() {
@@ -266,6 +215,12 @@ class AppauseAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         super.onDestroy()
         isRunning = false
+
+        // Clean up the overlay if it's showing when the service is destroyed
+        if (overlayManager.isShowing) {
+            overlayManager.dismiss()
+        }
+
         Log.d(TAG, "AccessibilityService destroyed")
     }
 }

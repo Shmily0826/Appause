@@ -1,5 +1,7 @@
 package com.appause.android
 
+import android.content.Context
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,6 +11,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.appause.android.ui.navigation.AppNavGraph
 import com.appause.android.ui.theme.AppauseTheme
+import java.util.Locale
 
 /**
  * MainActivity — the single Activity that hosts all Compose screens.
@@ -29,6 +32,28 @@ import com.appause.android.ui.theme.AppauseTheme
  * 5. AppNavGraph() — render the navigation host with all screens.
  */
 class MainActivity : ComponentActivity() {
+
+    /**
+     * Override locale for this Activity.
+     * Why here AND in AppauseApp.attachBaseContext?
+     * - Application.attachBaseContext runs once when the process starts.
+     * - Activity.attachBaseContext runs every time an Activity is created,
+     *   including after Activity.recreate() (triggered by language switch).
+     * - On MIUI and some OEM ROMs, the Activity context doesn't inherit
+     *   the Application-level locale override, so we must apply it here too.
+     */
+    override fun attachBaseContext(base: Context) {
+        val prefs = base.getSharedPreferences("appause_locale_prefs", Context.MODE_PRIVATE)
+        val languageCode = prefs.getString("language", "en") ?: "en"
+
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+
+        val config = Configuration(base.resources.configuration)
+        config.setLocale(locale)
+
+        super.attachBaseContext(base.createConfigurationContext(config))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

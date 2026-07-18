@@ -1,6 +1,8 @@
 package com.appause.android.ui.pause
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -48,6 +50,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 /**
  * PauseActivity — the cooldown screen shown when a user opens a target app.
@@ -80,6 +83,23 @@ class PauseActivity : ComponentActivity() {
 
     /** Timer coroutine — cancelled if the Activity is destroyed early. */
     private var timerJob: Job? = null
+
+    /**
+     * Override locale so the pause screen uses the correct language.
+     * See MainActivity.attachBaseContext for detailed explanation.
+     */
+    override fun attachBaseContext(base: Context) {
+        val prefs = base.getSharedPreferences("appause_locale_prefs", Context.MODE_PRIVATE)
+        val languageCode = prefs.getString("language", "en") ?: "en"
+
+        val locale = Locale(languageCode)
+        Locale.setDefault(locale)
+
+        val config = Configuration(base.resources.configuration)
+        config.setLocale(locale)
+
+        super.attachBaseContext(base.createConfigurationContext(config))
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -204,10 +224,11 @@ class PauseActivity : ComponentActivity() {
 
 /**
  * The visual content of the Pause Screen.
- * Clean, minimal layout focused on the countdown experience.
+ * Clean, minimal layout with countdown ring and action button.
+ * Shared between PauseActivity and OverlayManager.
  */
 @Composable
-private fun PauseScreenContent(
+internal fun PauseScreenContent(
     appName: String,
     appIcon: Drawable?,
     prompt: String,
