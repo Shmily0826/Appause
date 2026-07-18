@@ -61,6 +61,7 @@ import com.appause.android.data.local.AppGroup
 fun HomeScreen(
     onNavigateToGroupEditor: (Long?) -> Unit,
     onNavigateToSettings: () -> Unit,
+    onNavigateToStats: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val groups by viewModel.groups.collectAsStateWithLifecycle()
@@ -138,7 +139,11 @@ fun HomeScreen(
 
             // ── Today's Statistics ──
             item {
-                TodayStatsCard(proceeded = proceededToday, cancelled = cancelledToday)
+                TodayStatsCard(
+                    proceeded = proceededToday,
+                    cancelled = cancelledToday,
+                    onClick = onNavigateToStats
+                )
             }
 
             // ── Groups Section ──
@@ -248,10 +253,13 @@ private fun MasterToggleCard(isEnabled: Boolean, onToggle: () -> Unit) {
     }
 }
 
-/** Card showing today's interception statistics: waited vs cancelled. */
+/** Card showing today's interception statistics: waited vs cancelled. Tappable to open full stats. */
 @Composable
-private fun TodayStatsCard(proceeded: Int, cancelled: Int) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+private fun TodayStatsCard(proceeded: Int, cancelled: Int, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = stringResource(R.string.today),

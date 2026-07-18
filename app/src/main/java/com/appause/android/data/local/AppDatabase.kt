@@ -5,6 +5,8 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Room Database — the central database class for Appause.
@@ -30,7 +32,7 @@ import androidx.room.TypeConverters
         GroupApp::class,
         AppLaunchRecord::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false  // Simplified for v1; enable for production migration tracking
 )
 @TypeConverters(Converters::class)
@@ -43,6 +45,22 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun appLaunchDao(): AppLaunchDao
 
     companion object {
+        /**
+         * Migration from version 1 to 2: add "reason" column for intent tracking.
+         *
+         * Why ALTER TABLE instead of recreating?
+         * - We cannot drop and recreate the table because we would lose all
+         *   existing launch records (the user's history).
+         * - NOT NULL DEFAULT '' ensures old rows get an empty string,
+         *   matching the Kotlin default value.
+         */
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE app_launch_records ADD COLUMN reason TEXT NOT NULL DEFAULT ''"
+                )
+            }
+        }
         /**
          * Singleton instance.
          *
@@ -66,6 +84,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "appause.db"
                 )
+                    .addMigrations(MIGRATION_1_2)
                     .build()
                     .also { INSTANCE = it }
             }

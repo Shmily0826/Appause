@@ -12,6 +12,7 @@ import com.appause.android.ui.appselect.AppSelectScreen
 import com.appause.android.ui.groupeditor.GroupEditorScreen
 import com.appause.android.ui.home.HomeScreen
 import com.appause.android.ui.settings.SettingsScreen
+import com.appause.android.ui.stats.StatsScreen
 
 /**
  * Navigation routes — simple string constants.
@@ -27,6 +28,7 @@ object Routes {
     const val GROUP_EDITOR_WITH_ID = "group_editor/{groupId}"
     const val APP_SELECT = "app_select"
     const val SETTINGS = "settings"
+    const val STATS = "stats"
 
     /** Build a route string for editing an existing group. */
     fun groupEditor(groupId: Long): String = "group_editor/$groupId"
@@ -72,6 +74,9 @@ fun AppNavGraph() {
                 },
                 onNavigateToSettings = {
                     navController.navigate(Routes.SETTINGS)
+                },
+                onNavigateToStats = {
+                    navController.navigate(Routes.STATS)
                 }
             )
         }
@@ -116,6 +121,13 @@ fun AppNavGraph() {
             SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onLanguageChanged = { activity?.recreate() }
+            )
+        }
+
+        // ── Statistics Screen ──
+        composable(Routes.STATS) {
+            StatsScreen(
+                onNavigateBack = { navController.popBackStack() }
             )
         }
     }

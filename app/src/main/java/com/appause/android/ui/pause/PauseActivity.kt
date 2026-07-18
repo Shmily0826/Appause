@@ -8,27 +8,34 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,8 +54,6 @@ import com.appause.android.service.AppauseAccessibilityService
 import com.appause.android.ui.theme.AppauseTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Locale
 
@@ -80,9 +85,6 @@ class PauseActivity : ComponentActivity() {
 
     /** Tracks whether the user tapped Continue (vs Cancel or back press). */
     private var userProceeded = false
-
-    /** Timer coroutine — cancelled if the Activity is destroyed early. */
-    private var timerJob: Job? = null
 
     /**
      * Override locale so the pause screen uses the correct language.
@@ -134,17 +136,9 @@ class PauseActivity : ComponentActivity() {
                         }
                     }
 
-                    // Countdown state
-                    var secondsLeft by remember { mutableIntStateOf(cooldownSeconds) }
-                    val isPaused = secondsLeft > 0
-
-                    // Countdown timer — ticks every second
-                    LaunchedEffect(cooldownSeconds) {
-                        timerJob = coroutineContext[Job]
-                        while (secondsLeft > 0) {
-                            delay(1000L)
-                            secondsLeft--
-                        }
+                    // Countdown state — shared helper provides smooth progress (~60fps)
+                    // instead of stepping once per second. Also handles the onFinished callback.
+                    val countdown = rememberCountdownState(cooldownSeconds) {
                         // Timer finished → start bypass so the user can enter the app
                         InterceptionManager.startBypass(targetPackage)
                     }
@@ -153,11 +147,12 @@ class PauseActivity : ComponentActivity() {
                         appName = appName,
                         appIcon = appIcon,
                         prompt = prompt,
-                        secondsLeft = secondsLeft,
+                        secondsLeft = countdown.secondsLeft,
+                        smoothProgress = countdown.smoothProgress,
                         totalSeconds = cooldownSeconds,
-                        isPaused = isPaused,
+                        isFinished = countdown.isFinished,
                         onCancel = { handleCancel() },
-                        onContinue = { handleContinue() }
+                        onContinueWithReason = { reason -> handleContinueWithReason(reason) }
                     )
 
                     // Back button acts as Cancel
@@ -191,17 +186,17 @@ class PauseActivity : ComponentActivity() {
     }
 
     /**
-     * User tapped Continue after the countdown finished.
+     * User selected a reason after the countdown finished.
      * The bypass is already active (set by the LaunchedEffect when timer hit 0).
-     * Just finish this Activity — the target app is underneath.
+     * Log the reason and finish this Activity — the target app is underneath.
      */
-    private fun handleContinue() {
+    private fun handleContinueWithReason(reason: String) {
         userProceeded = true
 
-        // Log the successful proceed
+        // Log the successful proceed with the selected reason
         val repository = (application as AppauseApp).repository
         CoroutineScope(Dispatchers.IO).launch {
-            repository.logLaunch(targetPackage, groupId, "proceeded")
+            repository.logLaunch(targetPackage, groupId, "proceeded", reason)
         }
 
         finish()
@@ -209,7 +204,6 @@ class PauseActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        timerJob?.cancel()
 
         // Reset the guard flag so the next target app open can trigger interception
         AppauseAccessibilityService.pauseShown = false
@@ -224,8 +218,15 @@ class PauseActivity : ComponentActivity() {
 
 /**
  * The visual content of the Pause Screen.
- * Clean, minimal layout with countdown ring and action button.
- * Shared between PauseActivity and OverlayManager.
+ *
+ * Three-state machine:
+ * 1. COUNTING_DOWN: show ring + countdown number + Cancel button.
+ * 2. SELECTING_REASON: show checkmark + "Why?" prompt + 4 reason buttons.
+ * 3. DONE: (handled by parent — the Activity/overlay is dismissed).
+ *
+ * @param smoothProgress 0.0 to 1.0 continuous progress (updated ~60fps by CountdownState).
+ * @param isFinished true when countdown reaches zero.
+ * @param onContinueWithReason Called with the selected reason string when user picks one.
  */
 @Composable
 internal fun PauseScreenContent(
@@ -233,11 +234,15 @@ internal fun PauseScreenContent(
     appIcon: Drawable?,
     prompt: String,
     secondsLeft: Int,
+    smoothProgress: Float,
     totalSeconds: Int,
-    isPaused: Boolean,
+    isFinished: Boolean,
     onCancel: () -> Unit,
-    onContinue: () -> Unit
+    onContinueWithReason: (String) -> Unit
 ) {
+    // Track whether the user has selected a reason (to avoid double-taps)
+    var reasonSelected by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -270,67 +275,142 @@ internal fun PauseScreenContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── Prompt Message ──
-            Text(
-                text = prompt,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // ── Prompt Message (changes to intent prompt after countdown) ──
+            Crossfade(
+                targetState = isFinished,
+                label = "prompt_text"
+            ) { finished ->
+                Text(
+                    text = if (!finished) prompt
+                        else stringResource(R.string.intent_prompt),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             Spacer(modifier = Modifier.height(48.dp))
 
             // ── Countdown Ring + Number ──
             Box(contentAlignment = Alignment.Center) {
-                // Animated progress ring
-                val progress by animateFloatAsState(
-                    targetValue = if (totalSeconds > 0)
-                        (totalSeconds - secondsLeft).toFloat() / totalSeconds
-                    else 1f,
-                    label = "countdown"
-                )
-                CircularProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier.size(140.dp),
-                    strokeWidth = 6.dp,
-                    color = if (isPaused)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.tertiary
+                // Custom Canvas ring with color gradient and pulsing glow
+                CountdownRing(
+                    progress = smoothProgress,
+                    isFinished = isFinished
                 )
 
-                // Large countdown number
-                Text(
-                    text = if (isPaused) "$secondsLeft" else "✓",
-                    style = MaterialTheme.typography.displayLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isPaused)
-                        MaterialTheme.colorScheme.onSurface
-                    else
-                        MaterialTheme.colorScheme.tertiary
-                )
+                // Animated countdown number — slides up and fades when digit changes.
+                AnimatedContent(
+                    targetState = if (isFinished) -1 else secondsLeft,
+                    transitionSpec = {
+                        (slideInVertically { it } + fadeIn()) togetherWith
+                            (slideOutVertically { -it } + fadeOut())
+                    },
+                    label = "countdown_number"
+                ) { number ->
+                    Text(
+                        text = if (number >= 0) "$number" else "\u2713",
+                        style = MaterialTheme.typography.displayLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (number >= 0)
+                            MaterialTheme.colorScheme.onSurface
+                        else
+                            MaterialTheme.colorScheme.tertiary
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // ── Action Button ──
-            if (isPaused) {
-                TextButton(onClick = onCancel) {
-                    Text(
-                        text = stringResource(R.string.pause_cancel),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
-            } else {
-                Button(
-                    onClick = onContinue,
-                    modifier = Modifier.height(48.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.pause_continue),
-                        style = MaterialTheme.typography.labelLarge
-                    )
+            // ── Action area — crossfades between Cancel and intent selection grid ──
+            // Why show reason buttons instead of a simple "Continue"?
+            // The user already waited through the cooldown. This brief friction
+            // makes them reflect on WHY they're opening the app, which is
+            // the core purpose of Appause — mindful usage, not mindless tapping.
+            Crossfade(
+                targetState = isFinished,
+                label = "action_button"
+            ) { finished ->
+                if (!finished) {
+                    TextButton(onClick = onCancel) {
+                        Text(
+                            text = stringResource(R.string.pause_cancel),
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                } else {
+                    // Intent selection grid — 2x2 layout of reason buttons
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ReasonButton(
+                                text = stringResource(R.string.intent_work),
+                                enabled = !reasonSelected,
+                                onClick = {
+                                    reasonSelected = true
+                                    onContinueWithReason("work")
+                                }
+                            )
+                            ReasonButton(
+                                text = stringResource(R.string.intent_bored),
+                                enabled = !reasonSelected,
+                                onClick = {
+                                    reasonSelected = true
+                                    onContinueWithReason("bored")
+                                }
+                            )
+                        }
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ReasonButton(
+                                text = stringResource(R.string.intent_messages),
+                                enabled = !reasonSelected,
+                                onClick = {
+                                    reasonSelected = true
+                                    onContinueWithReason("messages")
+                                }
+                            )
+                            ReasonButton(
+                                text = stringResource(R.string.intent_other),
+                                enabled = !reasonSelected,
+                                onClick = {
+                                    reasonSelected = true
+                                    onContinueWithReason("other")
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+/**
+ * A single reason button in the intent selection grid.
+ * Styled as an outlined button to feel lighter than a primary action —
+ * the user is making a choice, not confirming a dangerous operation.
+ */
+@Composable
+private fun ReasonButton(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier
+            .width(140.dp)
+            .height(44.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge
+        )
     }
 }

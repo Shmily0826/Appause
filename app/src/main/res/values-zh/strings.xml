@@ -87,4 +87,22 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="pause_cancel">取消</string>
     <string name="pause_continue">继续</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Intent Tracking (Pause Screen)               -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="intent_prompt">你为什么要打开这个应用？</string>
+    <string name="intent_work">工作需要</string>
+    <string name="intent_bored">无聊</string>
+    <string name="intent_messages">查消息</string>
+    <string name="intent_other">其他</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Statistics Screen                            -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="stats_title">统计</string>
+    <string name="stats_weekly">本周</string>
+    <string name="stats_overview">概览</string>
+    <string name="stats_top_apps">拦截最多的应用</string>
+    <string name="stats_no_data">暂无数据。开始使用 Appause 后即可查看统计。</string>
 </resources>

@@ -2,9 +2,12 @@ package com.appause.android.data.repository
 
 import com.appause.android.data.local.AppGroup
 import com.appause.android.data.local.AppGroupDao
+import com.appause.android.data.local.AppInterceptionCount
 import com.appause.android.data.local.AppLaunchDao
 import com.appause.android.data.local.AppLaunchRecord
+import com.appause.android.data.local.DailyStats
 import com.appause.android.data.local.GroupApp
+import com.appause.android.data.local.TotalRatio
 import com.appause.android.data.settings.SettingsDataStore
 import kotlinx.coroutines.flow.Flow
 
@@ -97,13 +100,17 @@ class AppGroupRepository(
 
     // ── Launch records ──
 
-    /** Log an interception event. */
-    suspend fun logLaunch(packageName: String, groupId: Long, action: String) {
+    /**
+     * Log an interception event.
+     * @param reason Why the user opened the app (empty for cancellations).
+     */
+    suspend fun logLaunch(packageName: String, groupId: Long, action: String, reason: String = "") {
         launchDao.insertRecord(
             AppLaunchRecord(
                 packageName = packageName,
                 groupId = groupId,
-                action = action
+                action = action,
+                reason = reason
             )
         )
     }
@@ -138,4 +145,18 @@ class AppGroupRepository(
 
     /** Update the language preference. */
     suspend fun setLanguage(languageCode: String) = settings.setLanguage(languageCode)
+
+    // ── Statistics ──
+
+    /** Observe daily interception stats (proceeded vs cancelled per day). */
+    fun observeDailyStats(since: Long): Flow<List<DailyStats>> =
+        launchDao.observeDailyStats(since)
+
+    /** Observe top 5 most-intercepted apps. */
+    fun observeTopApps(since: Long): Flow<List<AppInterceptionCount>> =
+        launchDao.observeTopApps(since)
+
+    /** Observe total proceeded vs cancelled ratio. */
+    fun observeTotalRatio(since: Long): Flow<TotalRatio> =
+        launchDao.observeTotalRatio(since)
 }

@@ -37,5 +37,13 @@ data class AppLaunchRecord(
      * - "cancelled": user tapped Cancel and went back to home screen
      * - "proceeded": user waited for the countdown and tapped Continue
      */
-    val action: String
+    val action: String,
+
+    /**
+     * Why the user opened the app (intent tracking).
+     * Filled in when user taps Continue and selects a reason.
+     * Empty for cancellations or records before this feature existed.
+     * Examples: "work", "bored", "messages", "other".
+     */
+    val reason: String = ""
 )

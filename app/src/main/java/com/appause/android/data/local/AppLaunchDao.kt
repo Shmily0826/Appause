@@ -38,4 +38,53 @@ interface AppLaunchDao {
     /** Delete records older than a given timestamp (for cleanup). */
     @Query("DELETE FROM app_launch_records WHERE timestamp < :before")
     suspend fun deleteOldRecords(before: Long)
+
+    // ── Statistics Queries ──
+
+    /**
+     * Daily interception stats grouped by date.
+     * Used by the weekly bar chart to draw proceeded vs cancelled bars per day.
+     *
+     * strftime('%Y-%m-%d', timestamp/1000, 'unixepoch', 'localtime') converts
+     * epoch milliseconds to a local date string like "2026-07-18".
+     * COALESCE ensures the SUM is 0 (not null) when no rows match.
+     */
+    @Query("""
+        SELECT strftime('%Y-%m-%d', timestamp / 1000, 'unixepoch', 'localtime') AS day,
+               COALESCE(SUM(CASE WHEN action = 'proceeded' THEN 1 ELSE 0 END), 0) AS proceeded,
+               COALESCE(SUM(CASE WHEN action = 'cancelled' THEN 1 ELSE 0 END), 0) AS cancelled
+        FROM app_launch_records
+        WHERE timestamp >= :since
+        GROUP BY strftime('%Y-%m-%d', timestamp / 1000, 'unixepoch', 'localtime')
+        ORDER BY day ASC
+    """)
+    fun observeDailyStats(since: Long): Flow<List<DailyStats>>
+
+    /**
+     * Top 5 most-intercepted apps.
+     * Used by the "Top Apps" list on the stats screen.
+     * Ordered by count descending so the most intercepted app appears first.
+     */
+    @Query("""
+        SELECT packageName, COUNT(*) AS interceptionCount
+        FROM app_launch_records
+        WHERE timestamp >= :since
+        GROUP BY packageName
+        ORDER BY interceptionCount DESC
+        LIMIT 5
+    """)
+    fun observeTopApps(since: Long): Flow<List<AppInterceptionCount>>
+
+    /**
+     * Total proceeded vs cancelled ratio for a time range.
+     * Used by the donut chart to show the overall split.
+     * COALESCE wraps each SUM so that null becomes 0 when there are no records.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(CASE WHEN action = 'proceeded' THEN 1 ELSE 0 END), 0) AS proceeded,
+               COALESCE(SUM(CASE WHEN action = 'cancelled' THEN 1 ELSE 0 END), 0) AS cancelled
+        FROM app_launch_records
+        WHERE timestamp >= :since
+    """)
+    fun observeTotalRatio(since: Long): Flow<TotalRatio>
 }

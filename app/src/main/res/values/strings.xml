@@ -87,4 +87,22 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="pause_cancel">Cancel</string>
     <string name="pause_continue">Continue</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Intent Tracking (Pause Screen)               -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="intent_prompt">Why are you opening this app?</string>
+    <string name="intent_work">Work</string>
+    <string name="intent_bored">Bored</string>
+    <string name="intent_messages">Check messages</string>
+    <string name="intent_other">Other</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Statistics Screen                            -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="stats_title">Statistics</string>
+    <string name="stats_weekly">This Week</string>
+    <string name="stats_overview">Overview</string>
+    <string name="stats_top_apps">Top Apps</string>
+    <string name="stats_no_data">No data yet. Start using Appause to see your statistics.</string>
 </resources>

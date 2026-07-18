@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -27,12 +26,12 @@ import com.appause.android.AppauseApp
 import com.appause.android.R
 import com.appause.android.interception.InterceptionManager
 import com.appause.android.ui.pause.PauseScreenContent
+import com.appause.android.ui.pause.rememberCountdownState
 import com.appause.android.ui.theme.AppauseTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -153,15 +152,8 @@ class OverlayManager {
                         }
                     }
 
-                    // Countdown state — ticks every second
-                    var secondsLeft by remember { mutableIntStateOf(cooldownSeconds) }
-                    val isPaused = secondsLeft > 0
-
-                    LaunchedEffect(cooldownSeconds) {
-                        while (secondsLeft > 0) {
-                            delay(1000L)
-                            secondsLeft--
-                        }
+                    // Countdown state — shared helper provides smooth progress (~60fps)
+                    val countdown = rememberCountdownState(cooldownSeconds) {
                         // Timer finished → start bypass so user can enter the app
                         InterceptionManager.startBypass(targetPackage)
                     }
@@ -170,9 +162,10 @@ class OverlayManager {
                         appName = appName,
                         appIcon = appIcon,
                         prompt = prompt,
-                        secondsLeft = secondsLeft,
+                        secondsLeft = countdown.secondsLeft,
+                        smoothProgress = countdown.smoothProgress,
                         totalSeconds = cooldownSeconds,
-                        isPaused = isPaused,
+                        isFinished = countdown.isFinished,
                         onCancel = {
                             // Log the cancellation
                             CoroutineScope(Dispatchers.IO).launch {
@@ -181,10 +174,10 @@ class OverlayManager {
                             InterceptionManager.clearBypass(targetPackage)
                             dismiss()
                         },
-                        onContinue = {
-                            // Log the successful proceed
+                        onContinueWithReason = { reason ->
+                            // Log the successful proceed with the selected reason
                             CoroutineScope(Dispatchers.IO).launch {
-                                repository.logLaunch(targetPackage, groupId, "proceeded")
+                                repository.logLaunch(targetPackage, groupId, "proceeded", reason)
                             }
                             dismiss()
                         }
