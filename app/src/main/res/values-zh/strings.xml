@@ -64,6 +64,12 @@
     <string name="search_apps_hint">搜索应用……</string>
     <string name="no_apps_match">没有匹配"%s"的应用</string>
     <string name="no_launchable_apps">未找到可启动的应用</string>
+    <string name="cant_find_app">找不到应用？通过包名添加</string>
+    <string name="manual_entry_hint">输入完整的包名（例如 com.example.app）</string>
+    <string name="action_add">添加</string>
+    <string name="error_empty_package">请输入包名</string>
+    <string name="error_already_listed">该应用已在列表中</string>
+    <string name="error_not_installed">未在此设备上找到该应用</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Settings Screen                              -->

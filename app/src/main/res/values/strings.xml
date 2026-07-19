@@ -64,6 +64,12 @@
     <string name="search_apps_hint">Search apps…</string>
     <string name="no_apps_match">No apps match \"%s\"</string>
     <string name="no_launchable_apps">No launchable apps found</string>
+    <string name="cant_find_app">Can\'t find an app? Add by package name</string>
+    <string name="manual_entry_hint">Enter the full package name (e.g. com.example.app)</string>
+    <string name="action_add">Add</string>
+    <string name="error_empty_package">Please enter a package name</string>
+    <string name="error_already_listed">This app is already in the list</string>
+    <string name="error_not_installed">App not found on this device</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Settings Screen                              -->

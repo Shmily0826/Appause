@@ -198,6 +198,8 @@ class OverlayManager {
                             }
                         },
                         onContinueWithReason = { reason ->
+                            // Start bypass immediately so the user can enter the target app
+                            InterceptionManager.startBypass(targetPackage)
                             // Log the successful proceed with the selected reason
                             CoroutineScope(Dispatchers.IO).launch {
                                 repository.logLaunch(targetPackage, groupId, "proceeded", reason)

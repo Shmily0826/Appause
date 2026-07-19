@@ -196,12 +196,16 @@ class PauseActivity : ComponentActivity() {
     }
 
     /**
-     * User selected a reason after the countdown finished.
-     * The bypass is already active (set by the LaunchedEffect when timer hit 0).
-     * Log the reason and finish this Activity — the target app is underneath.
+     * User selected a reason (either during countdown or after it finished).
+     * Start bypass immediately so the user can enter the target app right away,
+     * log the reason, and finish this Activity — the target app is underneath.
      */
     private fun handleContinueWithReason(reason: String) {
         userProceeded = true
+
+        // Start bypass NOW — don't wait for the countdown to finish.
+        // This lets the user enter the target app immediately.
+        InterceptionManager.startBypass(targetPackage)
 
         // Log the successful proceed with the selected reason
         val repository = (application as AppauseApp).repository
