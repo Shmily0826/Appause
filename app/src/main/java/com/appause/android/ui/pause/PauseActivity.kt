@@ -196,16 +196,12 @@ class PauseActivity : ComponentActivity() {
     }
 
     /**
-     * User selected a reason (either during countdown or after it finished).
-     * Start bypass immediately so the user can enter the target app right away,
-     * log the reason, and finish this Activity — the target app is underneath.
+     * User selected a reason after the countdown finished.
+     * The bypass is already active (set by the LaunchedEffect when timer hit 0).
+     * Log the reason and finish this Activity — the target app is underneath.
      */
     private fun handleContinueWithReason(reason: String) {
         userProceeded = true
-
-        // Start bypass NOW — don't wait for the countdown to finish.
-        // This lets the user enter the target app immediately.
-        InterceptionManager.startBypass(targetPackage)
 
         // Log the successful proceed with the selected reason
         val repository = (application as AppauseApp).repository
@@ -237,12 +233,11 @@ class PauseActivity : ComponentActivity() {
  * 1. App icon + name
  * 2. Prompt message (e.g., "Take a moment.")
  * 3. Countdown ring with animated number (or checkmark when finished)
- * 4. 2x2 reason selection grid (always visible)
+ * 4. 2x2 reason selection grid (disabled until countdown finishes)
  * 5. Cancel button
  *
- * The reason buttons are available from the start — the user can select
- * a reason at any time during the countdown, not just after it finishes.
- * Selecting a reason immediately dismisses the overlay.
+ * The reason buttons are disabled during the countdown — the user must
+ * complete the full cooldown before choosing a reason and proceeding.
  *
  * @param smoothProgress 0.0 to 1.0 continuous progress (updated ~60fps by CountdownState).
  * @param isFinished true when countdown reaches zero.
@@ -333,10 +328,9 @@ internal fun PauseScreenContent(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // ── Reason selection grid — always visible from the start ──
-            // The user can pick a reason at any time during the countdown.
-            // This gives them agency: they don't have to wait for the timer
-            // to tell us why they're opening the app.
+            // ── Reason selection grid — enabled only after countdown finishes ──
+            // The user must complete the cooldown before proceeding.
+            // Once the timer hits 0, they pick a reason and enter the app.
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -344,7 +338,7 @@ internal fun PauseScreenContent(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ReasonButton(
                         text = stringResource(R.string.intent_work),
-                        enabled = !reasonSelected,
+                        enabled = isFinished && !reasonSelected,
                         onClick = {
                             reasonSelected = true
                             onContinueWithReason("work")
@@ -352,7 +346,7 @@ internal fun PauseScreenContent(
                     )
                     ReasonButton(
                         text = stringResource(R.string.intent_bored),
-                        enabled = !reasonSelected,
+                        enabled = isFinished && !reasonSelected,
                         onClick = {
                             reasonSelected = true
                             onContinueWithReason("bored")
@@ -362,7 +356,7 @@ internal fun PauseScreenContent(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ReasonButton(
                         text = stringResource(R.string.intent_messages),
-                        enabled = !reasonSelected,
+                        enabled = isFinished && !reasonSelected,
                         onClick = {
                             reasonSelected = true
                             onContinueWithReason("messages")
@@ -370,7 +364,7 @@ internal fun PauseScreenContent(
                     )
                     ReasonButton(
                         text = stringResource(R.string.intent_other),
-                        enabled = !reasonSelected,
+                        enabled = isFinished && !reasonSelected,
                         onClick = {
                             reasonSelected = true
                             onContinueWithReason("other")

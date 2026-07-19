@@ -98,6 +98,11 @@ class AppGroupRepository(
         return groupDao.getGroupById(groupId)
     }
 
+    /** Get all package names that are assigned to any group (for recommended apps). */
+    suspend fun getAllGroupedPackageNames(): List<String> {
+        return groupDao.getAllGroupedPackageNames()
+    }
+
     // ── Launch records ──
 
     /**

@@ -31,8 +31,9 @@ import kotlinx.coroutines.withContext
  * - selectedPackages: which apps the user has checked (multi-select)
  * - filteredApps: derived from allApps + searchQuery (shown in the UI)
  * - isLoading: whether the app list is still being loaded
+ * - recommendedApps: apps already in other groups (quick-pick suggestions)
  *
- * The UI observes filteredApps and selectedPackages to render the screen.
+ * The UI observes filteredApps, selectedPackages, and recommendedApps to render the screen.
  */
 class AppSelectViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -53,11 +54,11 @@ class AppSelectViewModel(application: Application) : AndroidViewModel(applicatio
     /** Whether the app list is still loading. */
     private val _isLoading = MutableStateFlow(true)
 
-    /** Text typed by the user in the "add by package name" field. */
-    private val _manualPackageInput = MutableStateFlow("")
-
-    /** Error message shown when manual add fails (null = no error). */
-    private val _manualAddError = MutableStateFlow<String?>(null)
+    /**
+     * Apps that are already in other groups — shown as quick-pick suggestions.
+     * These are the user's "learning apps" that they've previously categorised.
+     */
+    private val _recommendedApps = MutableStateFlow<List<AppInfo>>(emptyList())
 
     /**
      * Filtered list: allApps filtered by searchQuery.
@@ -86,13 +87,13 @@ class AppSelectViewModel(application: Application) : AndroidViewModel(applicatio
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
     val selectedPackages: StateFlow<Set<String>> = _selectedPackages.asStateFlow()
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    val manualPackageInput: StateFlow<String> = _manualPackageInput.asStateFlow()
-    val manualAddError: StateFlow<String?> = _manualAddError.asStateFlow()
+    val recommendedApps: StateFlow<List<AppInfo>> = _recommendedApps.asStateFlow()
 
     // ── Initialization ──
 
     init {
         loadApps()
+        loadRecommendedApps()
     }
 
     /**
@@ -111,6 +112,36 @@ class AppSelectViewModel(application: Application) : AndroidViewModel(applicatio
             }
             _allApps.value = apps
             _isLoading.value = false
+        }
+    }
+
+    /**
+     * Load apps that are already assigned to any group.
+     *
+     * These are shown as "recommended" suggestions at the top of the screen,
+     * so the user can quickly add apps they've previously categorised as
+     * learning/productivity apps to new groups.
+     *
+     * Flow:
+     * 1. Query all package names from group_apps table
+     * 2. For each, resolve the display name via PackageManager
+     * 3. Filter out apps that are no longer installed
+     */
+    private fun loadRecommendedApps() {
+        viewModelScope.launch {
+            val recommended = withContext(Dispatchers.IO) {
+                val groupedPackages = repository.getAllGroupedPackageNames()
+                groupedPackages.mapNotNull { packageName ->
+                    val appName = appQueryService.getAppName(packageName)
+                    if (appName != null) {
+                        AppInfo(packageName = packageName, appName = appName)
+                    } else {
+                        // App was uninstalled — skip it
+                        null
+                    }
+                }
+            }
+            _recommendedApps.value = recommended
         }
     }
 
@@ -153,72 +184,5 @@ class AppSelectViewModel(application: Application) : AndroidViewModel(applicatio
     /** Get the final list of selected package names (to pass back to the group editor). */
     fun getSelectedPackageNames(): List<String> {
         return _selectedPackages.value.toList()
-    }
-
-    // ── Manual package entry ──
-
-    /** Update the text in the "add by package name" input field. */
-    fun updateManualPackageInput(text: String) {
-        _manualPackageInput.value = text
-        // Clear any previous error when the user starts typing again
-        _manualAddError.value = null
-    }
-
-    /** Clear the manual add error message. */
-    fun clearManualAddError() {
-        _manualAddError.value = null
-    }
-
-    /**
-     * Add an app by its package name (for apps not shown in the auto-detected list).
-     *
-     * Flow:
-     * 1. Validate the package name is not blank
-     * 2. Check if it's already in the list (avoid duplicates)
-     * 3. Verify the app is actually installed via PackageManager
-     * 4. Resolve the display name
-     * 5. Add to allApps and auto-select it
-     *
-     * Runs on Dispatchers.IO because PackageManager calls can be slow.
-     */
-    fun addManualPackage() {
-        val packageName = _manualPackageInput.value.trim()
-        if (packageName.isBlank()) {
-            _manualAddError.value = "error_empty_package"
-            return
-        }
-
-        // Check for duplicates
-        if (_allApps.value.any { it.packageName == packageName }) {
-            _manualAddError.value = "error_already_listed"
-            return
-        }
-
-        viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                // Verify the app exists on the device
-                if (!appQueryService.isAppInstalled(packageName)) {
-                    return@withContext null
-                }
-                // Resolve the user-visible name
-                val appName = appQueryService.getAppName(packageName) ?: packageName
-                AppInfo(packageName = packageName, appName = appName)
-            }
-
-            if (result == null) {
-                _manualAddError.value = "error_not_installed"
-                return@launch
-            }
-
-            // Add to the app list and auto-select
-            _allApps.value = (_allApps.value + result).sortedBy { it.appName.lowercase() }
-            val current = _selectedPackages.value.toMutableSet()
-            current.add(result.packageName)
-            _selectedPackages.value = current
-
-            // Clear the input field on success
-            _manualPackageInput.value = ""
-            _manualAddError.value = null
-        }
     }
 }

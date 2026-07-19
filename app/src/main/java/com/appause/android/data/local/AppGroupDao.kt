@@ -87,4 +87,12 @@ interface AppGroupDao {
     /** Remove all apps from a specific group (used when editing group membership). */
     @Query("DELETE FROM group_apps WHERE groupId = :groupId")
     suspend fun removeAllAppsFromGroup(groupId: Long)
+
+    /**
+     * Get all package names that are assigned to any group.
+     * Used by the "recommended apps" feature — shows apps the user has
+     * already added to other groups as quick-pick suggestions.
+     */
+    @Query("SELECT packageName FROM group_apps")
+    suspend fun getAllGroupedPackageNames(): List<String>
 }
