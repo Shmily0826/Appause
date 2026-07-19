@@ -41,9 +41,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun setLanguage(languageCode: String) {
+    fun setLanguage(languageCode: String, onComplete: () -> Unit = {}) {
         viewModelScope.launch {
             repository.setLanguage(languageCode)
+            // Language is now saved to both DataStore and SharedPreferences.
+            // Run the callback (typically an app restart) so the new locale
+            // is guaranteed to be read by attachBaseContext on the new Activity.
+            onComplete()
         }
     }
 }

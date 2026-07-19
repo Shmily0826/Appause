@@ -1,7 +1,10 @@
 package com.appause.android.ui.settings
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -95,8 +98,8 @@ fun SettingsScreen(
                             selected = language == "en",
                             onClick = {
                                 if (language != "en") {
-                                    viewModel.setLanguage("en")
-                                    onLanguageChanged()
+                                    // Save language first, then restart the app
+                                    viewModel.setLanguage("en", onLanguageChanged)
                                 }
                             }
                         )
@@ -111,8 +114,8 @@ fun SettingsScreen(
                             selected = language == "zh",
                             onClick = {
                                 if (language != "zh") {
-                                    viewModel.setLanguage("zh")
-                                    onLanguageChanged()
+                                    // Save language first, then restart the app
+                                    viewModel.setLanguage("zh", onLanguageChanged)
                                 }
                             }
                         )
@@ -149,6 +152,49 @@ fun SettingsScreen(
                         }
                     ) {
                         Text(stringResource(R.string.open_accessibility_settings))
+                    }
+                }
+            }
+
+            // ── Battery Optimization ──
+            // MIUI and other OEM ROMs aggressively kill background processes,
+            // which disconnects the accessibility service. Requesting battery
+            // optimization exemption tells the system to keep the process alive.
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+            val isIgnoringBattery = powerManager.isIgnoringBatteryOptimizations(context.packageName)
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        stringResource(R.string.battery_optimization),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(
+                            if (isIgnoringBattery) R.string.battery_exempted
+                            else R.string.battery_not_exempted
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isIgnoringBattery)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.error
+                    )
+                    if (!isIgnoringBattery) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                // Request battery optimization exemption.
+                                // This opens a system dialog asking the user to confirm.
+                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = Uri.parse("package:${context.packageName}")
+                                }
+                                context.startActivity(intent)
+                            }
+                        ) {
+                            Text(stringResource(R.string.request_battery_exempt))
+                        }
                     }
                 }
             }

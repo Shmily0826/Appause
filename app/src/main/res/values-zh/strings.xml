@@ -112,4 +112,12 @@
     <string name="notification_channel_name">监测</string>
     <string name="notification_channel_desc">显示 Appause 正在监测应用使用情况</string>
     <string name="notification_monitoring">正在后台监测应用使用</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Battery Optimization                         -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="battery_optimization">电池优化</string>
+    <string name="battery_exempted">已豁免 — 服务将在后台保持运行</string>
+    <string name="battery_not_exempted">未豁免 — 服务可能在后台被终止</string>
+    <string name="request_battery_exempt">请求豁免</string>
 </resources>

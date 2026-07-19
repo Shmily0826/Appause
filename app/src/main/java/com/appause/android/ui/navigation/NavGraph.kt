@@ -1,6 +1,7 @@
 package com.appause.android.ui.navigation
 
 import android.app.Activity
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
@@ -120,7 +121,24 @@ fun AppNavGraph() {
             val activity = LocalContext.current as? Activity
             SettingsScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onLanguageChanged = { activity?.recreate() }
+                onLanguageChanged = {
+                    // Fully restart the app to apply the new locale.
+                    // recreate() doesn't reliably update Compose string resources
+                    // on MIUI because it preserves the old configuration context.
+                    // finish() + startActivity() creates a brand new Activity with
+                    // a fresh attachBaseContext() that reads the updated locale.
+                    activity?.let { act ->
+                        val restartIntent = act.packageManager
+                            .getLaunchIntentForPackage(act.packageName)
+                        restartIntent?.addFlags(
+                            Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+                        )
+                        act.finish()
+                        if (restartIntent != null) {
+                            act.startActivity(restartIntent)
+                        }
+                    }
+                }
             )
         }
 

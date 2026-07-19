@@ -112,4 +112,12 @@
     <string name="notification_channel_name">Monitoring</string>
     <string name="notification_channel_desc">Shows when Appause is actively monitoring app usage</string>
     <string name="notification_monitoring">Monitoring app usage in the background</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Battery Optimization                         -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="battery_optimization">Battery Optimization</string>
+    <string name="battery_exempted">Exempted — service will stay alive in background</string>
+    <string name="battery_not_exempted">Not exempted — service may be killed in background</string>
+    <string name="request_battery_exempt">Request Exemption</string>
 </resources>
