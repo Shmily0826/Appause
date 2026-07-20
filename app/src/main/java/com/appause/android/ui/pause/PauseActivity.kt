@@ -18,13 +18,23 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -40,18 +50,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.appause.android.AppauseApp
 import com.appause.android.R
+import com.appause.android.data.query.AppInfo
+import com.appause.android.data.query.AppQueryService
 import com.appause.android.interception.InterceptionManager
 import com.appause.android.service.AppauseAccessibilityService
 import com.appause.android.ui.theme.AppauseTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 /**
@@ -133,6 +147,9 @@ class PauseActivity : ComponentActivity() {
         // Get the default prompt message from settings.
         val repository = (application as AppauseApp).repository
 
+        // Query service for resolving recommended app names (needs Context).
+        val appQueryService = AppQueryService(application)
+
         setContent {
             AppauseTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -143,6 +160,22 @@ class PauseActivity : ComponentActivity() {
                     LaunchedEffect(Unit) {
                         repository.defaultPrompt.collect { stored ->
                             prompt = if (stored.isBlank()) defaultPromptText else stored
+                        }
+                    }
+
+                    // Recommended learning apps — apps the user has already added to
+                    // other groups. Shown during the cooldown as "try one of these
+                    // instead" suggestions. Excludes the target app itself.
+                    var recommendedApps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
+                    LaunchedEffect(Unit) {
+                        recommendedApps = withContext(Dispatchers.IO) {
+                            repository.getAllGroupedPackageNames()
+                                .filter { it != targetPackage }
+                                .mapNotNull { pkg ->
+                                    appQueryService.getAppName(pkg)?.let { name ->
+                                        AppInfo(packageName = pkg, appName = name)
+                                    }
+                                }
                         }
                     }
 
@@ -162,7 +195,9 @@ class PauseActivity : ComponentActivity() {
                         totalSeconds = cooldownSeconds,
                         isFinished = countdown.isFinished,
                         onCancel = { handleCancel() },
-                        onContinueWithReason = { reason -> handleContinueWithReason(reason) }
+                        onContinueWithReason = { reason -> handleContinueWithReason(reason) },
+                        recommendedApps = recommendedApps,
+                        onOpenRecommendedApp = { pkg -> openRecommendedApp(pkg) }
                     )
 
                     // Back button acts as Cancel
@@ -170,6 +205,24 @@ class PauseActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /**
+     * User tapped a recommended (learning) app during the cooldown.
+     * Open that app instead of the distracting target.
+     *
+     * We clear the bypass for the target so that the next time the user
+     * opens the target, the cooldown will trigger again.
+     */
+    private fun openRecommendedApp(packageName: String) {
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName) ?: return
+
+        // The user chose an alternative app — they are NOT proceeding to the target.
+        // Clear any bypass so the target is intercepted again next time.
+        InterceptionManager.clearBypass(targetPackage)
+
+        startActivity(launchIntent)
+        finish()
     }
 
     /**
@@ -233,15 +286,18 @@ class PauseActivity : ComponentActivity() {
  * 1. App icon + name
  * 2. Prompt message (e.g., "Take a moment.")
  * 3. Countdown ring with animated number (or checkmark when finished)
- * 4. 2x2 reason selection grid (disabled until countdown finishes)
- * 5. Cancel button
+ * 4. 2x2 reason selection grid (always enabled, single-select)
+ * 5. Continue button (enabled only after countdown finishes)
+ * 6. Cancel button
  *
- * The reason buttons are disabled during the countdown — the user must
- * complete the full cooldown before choosing a reason and proceeding.
+ * The reason buttons can be tapped at any time during the countdown — the
+ * user answers "why are you opening this app?" while the cooldown runs.
+ * Selecting a reason only records the choice; it does NOT dismiss the screen.
+ * The user must still wait for the countdown, then tap Continue to enter.
  *
  * @param smoothProgress 0.0 to 1.0 continuous progress (updated ~60fps by CountdownState).
  * @param isFinished true when countdown reaches zero.
- * @param onContinueWithReason Called with the selected reason string when user picks one.
+ * @param onContinueWithReason Called with the selected reason when the user taps Continue.
  */
 @Composable
 internal fun PauseScreenContent(
@@ -253,10 +309,15 @@ internal fun PauseScreenContent(
     totalSeconds: Int,
     isFinished: Boolean,
     onCancel: () -> Unit,
-    onContinueWithReason: (String) -> Unit
+    onContinueWithReason: (String) -> Unit,
+    recommendedApps: List<AppInfo> = emptyList(),
+    onOpenRecommendedApp: ((String) -> Unit)? = null
 ) {
-    // Track whether the user has selected a reason (disables all buttons)
-    var reasonSelected by remember { mutableStateOf(false) }
+    // The reason the user has selected (null = not selected yet).
+    // Selecting a reason does NOT dismiss the screen — the user must still
+    // wait for the countdown to finish. This lets them answer early while
+    // the cooldown runs, without being able to skip the cooldown.
+    var selectedReason by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -326,11 +387,40 @@ internal fun PauseScreenContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // ── Reason selection grid — enabled only after countdown finishes ──
-            // The user must complete the cooldown before proceeding.
-            // Once the timer hits 0, they pick a reason and enter the app.
+            // ── Recommended learning apps ──
+            // Apps the user has already categorised into other groups (e.g. learning
+            // apps). Shown during the cooldown as "try one of these instead" — a
+            // nudge toward a productive app instead of the distracting one.
+            if (recommendedApps.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.pause_recommended_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    items(recommendedApps, key = { it.packageName }) { app ->
+                        RecommendedAppChip(
+                            app = app,
+                            onClick = { onOpenRecommendedApp?.invoke(app.packageName) }
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+            } else {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            // ── Reason selection grid — always enabled, single-select ──
+            // The user can pick a reason at any time during the countdown.
+            // Selecting one only records the choice — it does NOT let them
+            // enter the app early. They must still wait for the timer.
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -338,48 +428,51 @@ internal fun PauseScreenContent(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ReasonButton(
                         text = stringResource(R.string.intent_work),
-                        enabled = isFinished && !reasonSelected,
-                        onClick = {
-                            reasonSelected = true
-                            onContinueWithReason("work")
-                        }
+                        selected = selectedReason == "work",
+                        onClick = { selectedReason = "work" }
                     )
                     ReasonButton(
                         text = stringResource(R.string.intent_bored),
-                        enabled = isFinished && !reasonSelected,
-                        onClick = {
-                            reasonSelected = true
-                            onContinueWithReason("bored")
-                        }
+                        selected = selectedReason == "bored",
+                        onClick = { selectedReason = "bored" }
                     )
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ReasonButton(
                         text = stringResource(R.string.intent_messages),
-                        enabled = isFinished && !reasonSelected,
-                        onClick = {
-                            reasonSelected = true
-                            onContinueWithReason("messages")
-                        }
+                        selected = selectedReason == "messages",
+                        onClick = { selectedReason = "messages" }
                     )
                     ReasonButton(
                         text = stringResource(R.string.intent_other),
-                        enabled = isFinished && !reasonSelected,
-                        onClick = {
-                            reasonSelected = true
-                            onContinueWithReason("other")
-                        }
+                        selected = selectedReason == "other",
+                        onClick = { selectedReason = "other" }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // ── Cancel button — always visible below the reason grid ──
-            TextButton(
-                onClick = onCancel,
-                enabled = !reasonSelected
+            // ── Continue button — the ONLY way to enter the app ──
+            // Disabled until the countdown finishes. When tapped, logs the
+            // selected reason (empty if none) and proceeds to the target app.
+            Button(
+                onClick = { onContinueWithReason(selectedReason ?: "") },
+                enabled = isFinished,
+                modifier = Modifier
+                    .width(200.dp)
+                    .height(48.dp)
             ) {
+                Text(
+                    text = stringResource(R.string.pause_continue),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ── Cancel button — always available ──
+            TextButton(onClick = onCancel) {
                 Text(
                     text = stringResource(R.string.pause_cancel),
                     style = MaterialTheme.typography.labelLarge
@@ -391,25 +484,87 @@ internal fun PauseScreenContent(
 
 /**
  * A single reason button in the intent selection grid.
- * Styled as an outlined button to feel lighter than a primary action —
- * the user is making a choice, not confirming a dangerous operation.
+ * Always tappable — selecting a reason only records the choice, it does
+ * not dismiss the screen. The selected button is highlighted with a filled
+ * style so the user can see their current choice.
  */
 @Composable
 private fun ReasonButton(
     text: String,
-    enabled: Boolean,
+    selected: Boolean,
     onClick: () -> Unit
 ) {
     OutlinedButton(
         onClick = onClick,
-        enabled = enabled,
         modifier = Modifier
             .width(140.dp)
-            .height(44.dp)
+            .height(44.dp),
+        colors = if (selected) {
+            // Highlight the selected reason with the primary container color
+            ButtonDefaults.outlinedButtonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        } else {
+            ButtonDefaults.outlinedButtonColors()
+        }
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelLarge
         )
+    }
+}
+
+/**
+ * A compact chip for a recommended (learning) app shown during the cooldown.
+ * Displays the app icon and name; tapping it opens that app as an alternative
+ * to the distracting target.
+ */
+@Composable
+private fun RecommendedAppChip(
+    app: AppInfo,
+    onClick: () -> Unit
+) {
+    // Load the app icon from PackageManager — cached per package name.
+    val context = LocalContext.current
+    val iconBitmap = remember(app.packageName) {
+        try {
+            context.packageManager
+                .getApplicationIcon(app.packageName)
+                .toBitmap(width = 64, height = 64)
+                .asImageBitmap()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    Card(
+        onClick = onClick,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (iconBitmap != null) {
+                Image(
+                    bitmap = iconBitmap,
+                    contentDescription = app.appName,
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
+            Text(
+                text = app.appName,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+        }
     }
 }

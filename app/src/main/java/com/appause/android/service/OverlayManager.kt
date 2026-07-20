@@ -24,6 +24,8 @@ import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.appause.android.AppauseApp
 import com.appause.android.R
+import com.appause.android.data.query.AppInfo
+import com.appause.android.data.query.AppQueryService
 import com.appause.android.interception.InterceptionManager
 import com.appause.android.ui.pause.PauseScreenContent
 import com.appause.android.ui.pause.rememberCountdownState
@@ -33,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * OverlayManager — shows the cooldown screen as a system overlay.
@@ -153,6 +156,9 @@ class OverlayManager {
         lifecycleContainer.resume()
 
         // Build the Compose UI
+        // Query service for resolving recommended app names.
+        val appQueryService = AppQueryService(context.applicationContext)
+
         composeView.setContent {
             AppauseTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -161,6 +167,22 @@ class OverlayManager {
                     LaunchedEffect(Unit) {
                         repository.defaultPrompt.collect { stored ->
                             prompt = if (stored.isBlank()) defaultPromptText else stored
+                        }
+                    }
+
+                    // Recommended learning apps — apps the user has already added to
+                    // other groups, shown as "try one of these instead" suggestions.
+                    // Excludes the target app itself.
+                    var recommendedApps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
+                    LaunchedEffect(Unit) {
+                        recommendedApps = withContext(Dispatchers.IO) {
+                            repository.getAllGroupedPackageNames()
+                                .filter { it != targetPackage }
+                                .mapNotNull { pkg ->
+                                    appQueryService.getAppName(pkg)?.let { name ->
+                                        AppInfo(packageName = pkg, appName = name)
+                                    }
+                                }
                         }
                     }
 
@@ -201,6 +223,21 @@ class OverlayManager {
                             // Log the successful proceed with the selected reason
                             CoroutineScope(Dispatchers.IO).launch {
                                 repository.logLaunch(targetPackage, groupId, "proceeded", reason)
+                            }
+                            dismiss()
+                        },
+                        recommendedApps = recommendedApps,
+                        onOpenRecommendedApp = { pkg ->
+                            // Open the recommended (learning) app instead of the target.
+                            val launchIntent = context.packageManager.getLaunchIntentForPackage(pkg)
+                            if (launchIntent != null) {
+                                InterceptionManager.clearBypass(targetPackage)
+                                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                try {
+                                    context.startActivity(launchIntent)
+                                } catch (e: Exception) {
+                                    Log.w(TAG, "Failed to open recommended app", e)
+                                }
                             }
                             dismiss()
                         }

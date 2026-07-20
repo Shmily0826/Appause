@@ -98,6 +98,9 @@
     <string name="intent_messages">Check messages</string>
     <string name="intent_other">Other</string>
 
+    <!-- Recommended apps shown during the cooldown -->
+    <string name="pause_recommended_hint">Try one of these instead?</string>
+
     <!-- ═══════════════════════════════════════════ -->
     <!-- Statistics Screen                            -->
     <!-- ═══════════════════════════════════════════ -->

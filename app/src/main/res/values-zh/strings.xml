@@ -98,6 +98,9 @@
     <string name="intent_messages">查消息</string>
     <string name="intent_other">其他</string>
 
+    <!-- 冷却期间显示的推荐应用 -->
+    <string name="pause_recommended_hint">不如试试这些应用？</string>
+
     <!-- ═══════════════════════════════════════════ -->
     <!-- Statistics Screen                            -->
     <!-- ═══════════════════════════════════════════ -->
