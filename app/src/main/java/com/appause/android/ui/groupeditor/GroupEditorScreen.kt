@@ -160,6 +160,14 @@ fun GroupEditorScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
+            // Explain why the Save button is greyed out until a name is entered.
+            if (name.isBlank()) {
+                Text(
+                    text = stringResource(R.string.group_name_required_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             // ── Group Type ──
             Text(

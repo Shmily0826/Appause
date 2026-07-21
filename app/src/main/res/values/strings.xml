@@ -47,6 +47,7 @@
     <string name="title_new_group">New Group</string>
     <string name="label_group_name">Group name</string>
     <string name="placeholder_group_name">e.g., Social Media</string>
+    <string name="group_name_required_hint">Enter a group name to enable Save</string>
     <string name="group_type_label">Group type</string>
     <string name="group_type_pause">Pause</string>
     <string name="group_type_pause_desc">Distracting apps — opening them starts a cooldown</string>

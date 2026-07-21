@@ -47,6 +47,7 @@
     <string name="title_new_group">新建分组</string>
     <string name="label_group_name">分组名称</string>
     <string name="placeholder_group_name">例如：社交媒体</string>
+    <string name="group_name_required_hint">输入分组名称后才能保存</string>
     <string name="group_type_label">分组类型</string>
     <string name="group_type_pause">暂停</string>
     <string name="group_type_pause_desc">容易分心的应用 — 打开时会进入冷却</string>
