@@ -206,6 +206,11 @@ class OverlayManager {
                                 repository.logLaunch(targetPackage, groupId, "cancelled")
                             }
                             InterceptionManager.clearBypass(targetPackage)
+                            // Suppress the stale window event that fires for the target
+                            // app right before the launcher takes over — otherwise the
+                            // overlay re-appears on the home screen after Cancel.
+                            // Must be set BEFORE dismiss() (which resets pauseShown).
+                            AppauseAccessibilityService.justCancelledPackage = targetPackage
                             dismiss()
                             // Send user to home screen so they don't land on the target app.
                             // Same behavior as PauseActivity.handleCancel().

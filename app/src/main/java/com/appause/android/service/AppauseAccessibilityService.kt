@@ -51,6 +51,28 @@ class AppauseAccessibilityService : AccessibilityService() {
          * Prevents re-triggering interception while a cooldown is in progress.
          */
         var pauseShown: Boolean = false
+
+        /**
+         * The package the user just cancelled out of on the Pause screen.
+         *
+         * Why we need this (this was a real bug):
+         * - When the user taps Cancel, we dismiss the overlay and send them home.
+         * - But the target app's window fires one more TYPE_WINDOW_STATE_CHANGED
+         *   event in the brief moment before the launcher takes over the screen.
+         * - By then `pauseShown` is already false, and `lastForegroundPackage`
+         *   has been overwritten (by the overlay's own Appause-owned window event),
+         *   so the duplicate check no longer protects us.
+         * - Result: the cooldown overlay popped up again on the home screen
+         *   without the user opening any app.
+         *
+         * How it works:
+         * - Set to the target package right before we dismiss on Cancel.
+         * - handleForegroundChange ignores events for this package.
+         * - Cleared as soon as any OTHER app (e.g. the launcher) becomes
+         *   foreground, so a genuine re-open of the app later is intercepted
+         *   normally.
+         */
+        var justCancelledPackage: String? = null
     }
 
     /** Coroutine scope for async work (survives individual event cancellations). */
@@ -151,6 +173,19 @@ class AppauseAccessibilityService : AccessibilityService() {
             Log.d(TAG, "SKIP: Appause itself")
             lastForegroundPackage = packageName
             return
+        }
+
+        // 2.5. Suppress the stale event that fires for the app the user just
+        //      cancelled out of (see justCancelledPackage docs). Without this,
+        //      the overlay re-appears on the home screen right after Cancel.
+        if (justCancelledPackage != null) {
+            if (packageName == justCancelledPackage) {
+                Log.d(TAG, "SKIP: stale event for just-cancelled app ($packageName)")
+                return
+            }
+            // A different app came to the foreground (e.g. the launcher after we
+            // sent the user home) → the cancel suppression is no longer needed.
+            justCancelledPackage = null
         }
 
         // 3. Skip common system packages (launcher, settings, etc.)

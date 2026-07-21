@@ -242,6 +242,11 @@ class PauseActivity : ComponentActivity() {
         // Clean up any bypass state
         InterceptionManager.clearBypass(targetPackage)
 
+        // Suppress the stale window event that fires for the target app right
+        // before the launcher takes over — otherwise the cooldown re-triggers
+        // on the home screen. (Same guard as the overlay path in OverlayManager.)
+        AppauseAccessibilityService.justCancelledPackage = targetPackage
+
         // Go to home screen — NOT just finish(), because that would reveal the target app
         val homeIntent = Intent(Intent.ACTION_MAIN).apply {
             addCategory(Intent.CATEGORY_HOME)
