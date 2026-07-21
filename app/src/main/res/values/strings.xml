@@ -47,6 +47,12 @@
     <string name="title_new_group">New Group</string>
     <string name="label_group_name">Group name</string>
     <string name="placeholder_group_name">e.g., Social Media</string>
+    <string name="group_type_label">Group type</string>
+    <string name="group_type_pause">Pause</string>
+    <string name="group_type_pause_desc">Distracting apps — opening them starts a cooldown</string>
+    <string name="group_type_learning">Learning</string>
+    <string name="group_type_learning_desc">Recommended apps — suggested during cooldowns, never blocked</string>
+    <string name="badge_learning">Learning</string>
     <string name="cooldown_label">Cooldown: %ds</string>
     <string name="label_seconds">Seconds</string>
     <string name="select_apps_button">Select Apps (%d selected)</string>

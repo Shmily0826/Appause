@@ -36,6 +36,13 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
     private val _cooldownSeconds = MutableStateFlow(10)
     val cooldownSeconds: StateFlow<Int> = _cooldownSeconds.asStateFlow()
 
+    /**
+     * Group type: [AppGroup.TYPE_PAUSE] or [AppGroup.TYPE_LEARNING].
+     * Defaults to "pause" (the classic distracting-app group).
+     */
+    private val _type = MutableStateFlow(AppGroup.TYPE_PAUSE)
+    val type: StateFlow<String> = _type.asStateFlow()
+
     private val _selectedPackages = MutableStateFlow<List<String>>(emptyList())
     val selectedPackages: StateFlow<List<String>> = _selectedPackages.asStateFlow()
 
@@ -65,6 +72,7 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
             if (group != null) {
                 _name.value = group.name
                 _cooldownSeconds.value = group.cooldownSeconds
+                _type.value = group.type
                 _selectedPackages.value = repository.getPackageNamesInGroup(groupId)
             }
         }
@@ -74,6 +82,10 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
 
     fun updateName(newName: String) {
         _name.value = newName
+    }
+
+    fun updateType(newType: String) {
+        _type.value = newType
     }
 
     fun updateCooldown(seconds: Int) {
@@ -104,7 +116,8 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
             val group = AppGroup(
                 id = existingGroupId,
                 name = groupName,
-                cooldownSeconds = _cooldownSeconds.value
+                cooldownSeconds = _cooldownSeconds.value,
+                type = _type.value
             )
             repository.saveGroupWithApps(group, _selectedPackages.value)
             _saveCompleted.value = true

@@ -170,13 +170,13 @@ class OverlayManager {
                         }
                     }
 
-                    // Recommended learning apps — apps the user has already added to
-                    // other groups, shown as "try one of these instead" suggestions.
-                    // Excludes the target app itself.
+                    // Recommended learning apps — apps the user has added to their
+                    // "learning" groups, shown as "try one of these instead"
+                    // suggestions. Excludes the target app itself.
                     var recommendedApps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
                     LaunchedEffect(Unit) {
                         recommendedApps = withContext(Dispatchers.IO) {
-                            repository.getAllGroupedPackageNames()
+                            repository.getLearningGroupPackageNames()
                                 .filter { it != targetPackage }
                                 .mapNotNull { pkg ->
                                     appQueryService.getAppName(pkg)?.let { name ->

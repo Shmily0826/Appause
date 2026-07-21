@@ -89,18 +89,30 @@ class AppGroupRepository(
     }
 
     /**
-     * Find which group an app belongs to.
-     * Returns null if the app is not in any group.
+     * Find which group an app belongs to, for interception purposes.
+     * Returns null if the app is not in any group, OR if it belongs to a
+     * "learning" group — learning apps are recommendations, never distractions,
+     * so they must never trigger the cooldown screen.
      * This is called by the AccessibilityService for every app launch.
      */
     suspend fun findGroupForPackage(packageName: String): AppGroup? {
         val groupId = groupDao.findGroupIdForPackage(packageName) ?: return null
-        return groupDao.getGroupById(groupId)
+        val group = groupDao.getGroupById(groupId) ?: return null
+        if (group.type == AppGroup.TYPE_LEARNING) return null
+        return group
     }
 
     /** Get all package names that are assigned to any group (for recommended apps). */
     suspend fun getAllGroupedPackageNames(): List<String> {
         return groupDao.getAllGroupedPackageNames()
+    }
+
+    /**
+     * Get package names of apps in "learning" groups.
+     * These are the apps shown as suggestions on the cooldown screen.
+     */
+    suspend fun getLearningGroupPackageNames(): List<String> {
+        return groupDao.getLearningGroupPackageNames()
     }
 
     // ── Launch records ──

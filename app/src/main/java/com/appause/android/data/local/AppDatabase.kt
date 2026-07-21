@@ -32,7 +32,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GroupApp::class,
         AppLaunchRecord::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false  // Simplified for v1; enable for production migration tracking
 )
 @TypeConverters(Converters::class)
@@ -61,6 +61,22 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             }
         }
+
+        /**
+         * Migration from version 2 to 3: add "type" column to app_groups.
+         *
+         * Existing groups all become "pause" groups (the classic behavior —
+         * they get intercepted). The new "learning" type is opt-in: users
+         * create learning groups to collect apps that are recommended
+         * during cooldowns instead of being intercepted.
+         */
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE app_groups ADD COLUMN type TEXT NOT NULL DEFAULT 'pause'"
+                )
+            }
+        }
         /**
          * Singleton instance.
          *
@@ -84,7 +100,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "appause.db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { INSTANCE = it }
             }

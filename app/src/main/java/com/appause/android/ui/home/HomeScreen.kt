@@ -2,6 +2,7 @@ package com.appause.android.ui.home
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -304,20 +306,47 @@ private fun TodayStatsCard(proceeded: Int, cancelled: Int, onClick: () -> Unit) 
 /** Card representing a single app group in the list. */
 @Composable
 private fun GroupCard(group: AppGroup, onClick: () -> Unit) {
+    val isLearning = group.type == AppGroup.TYPE_LEARNING
     Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick // Material 3 Card supports onClick directly
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = group.name,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (isLearning) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    LearningBadge()
+                }
+            }
             Text(
-                text = group.name,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = stringResource(R.string.cooldown_format, group.cooldownSeconds),
+                text = if (isLearning) {
+                    stringResource(R.string.group_type_learning_desc)
+                } else {
+                    stringResource(R.string.cooldown_format, group.cooldownSeconds)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
+}
+
+/** Small pill badge marking a group as a "Learning" group. */
+@Composable
+private fun LearningBadge() {
+    Text(
+        text = stringResource(R.string.badge_learning),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSecondaryContainer,
+        modifier = Modifier
+            .background(
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                shape = MaterialTheme.shapes.small
+            )
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    )
 }

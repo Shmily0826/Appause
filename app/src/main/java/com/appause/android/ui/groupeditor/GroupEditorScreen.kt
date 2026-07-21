@@ -1,5 +1,6 @@
 package com.appause.android.ui.groupeditor
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -37,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
+import com.appause.android.data.local.AppGroup
 import com.appause.android.ui.appselect.AppSelectScreen
 
 /**
@@ -66,6 +69,7 @@ fun GroupEditorScreen(
     viewModel: GroupEditorViewModel = viewModel()
 ) {
     val name by viewModel.name.collectAsStateWithLifecycle()
+    val type by viewModel.type.collectAsStateWithLifecycle()
     val cooldownSeconds by viewModel.cooldownSeconds.collectAsStateWithLifecycle()
     val selectedPackages by viewModel.selectedPackages.collectAsStateWithLifecycle()
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
@@ -131,28 +135,55 @@ fun GroupEditorScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // ── Cooldown Seconds ──
+            // ── Group Type ──
             Text(
-                text = stringResource(R.string.cooldown_label, cooldownSeconds),
+                text = stringResource(R.string.group_type_label),
                 style = MaterialTheme.typography.titleMedium
             )
-            Slider(
-                value = cooldownSeconds.toFloat(),
-                onValueChange = { viewModel.updateCooldown(it.toInt()) },
-                valueRange = 1f..60f,
-                steps = 58,
-                modifier = Modifier.fillMaxWidth()
-            )
-            OutlinedTextField(
-                value = cooldownSeconds.toString(),
-                onValueChange = { value ->
-                    value.toIntOrNull()?.let { viewModel.updateCooldown(it) }
-                },
-                label = { Text(stringResource(R.string.label_seconds)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.width(120.dp)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                TypeOptionCard(
+                    title = stringResource(R.string.group_type_pause),
+                    description = stringResource(R.string.group_type_pause_desc),
+                    selected = type == AppGroup.TYPE_PAUSE,
+                    onClick = { viewModel.updateType(AppGroup.TYPE_PAUSE) },
+                    modifier = Modifier.weight(1f)
+                )
+                TypeOptionCard(
+                    title = stringResource(R.string.group_type_learning),
+                    description = stringResource(R.string.group_type_learning_desc),
+                    selected = type == AppGroup.TYPE_LEARNING,
+                    onClick = { viewModel.updateType(AppGroup.TYPE_LEARNING) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            // ── Cooldown Seconds (pause groups only — learning groups are never blocked) ──
+            if (type == AppGroup.TYPE_PAUSE) {
+                Text(
+                    text = stringResource(R.string.cooldown_label, cooldownSeconds),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Slider(
+                    value = cooldownSeconds.toFloat(),
+                    onValueChange = { viewModel.updateCooldown(it.toInt()) },
+                    valueRange = 1f..60f,
+                    steps = 58,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = cooldownSeconds.toString(),
+                    onValueChange = { value ->
+                        value.toIntOrNull()?.let { viewModel.updateCooldown(it) }
+                    },
+                    label = { Text(stringResource(R.string.label_seconds)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.width(120.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -212,6 +243,63 @@ fun GroupEditorScreen(
                     Text(stringResource(R.string.action_save))
                 }
             }
+        }
+    }
+}
+
+/**
+ * A selectable card for choosing the group type (Pause vs Learning).
+ *
+ * When [selected] is true the card is highlighted with the primary container
+ * color and a thicker primary border, so the current choice is obvious.
+ */
+@Composable
+private fun TypeOptionCard(
+    title: String,
+    description: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        ),
+        border = BorderStroke(
+            width = if (selected) 2.dp else 1.dp,
+            color = if (selected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.outlineVariant
+            }
+        )
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                }
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
         }
     }
 }
