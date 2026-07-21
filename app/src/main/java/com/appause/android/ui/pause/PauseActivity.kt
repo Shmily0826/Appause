@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -53,6 +54,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.appause.android.AppauseApp
@@ -421,32 +424,46 @@ internal fun PauseScreenContent(
             // The user can pick a reason at any time during the countdown.
             // Selecting one only records the choice — it does NOT let them
             // enter the app early. They must still wait for the timer.
+            // Buttons share each row's width equally so long labels (e.g.
+            // "Check messages") are never truncated.
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     ReasonButton(
                         text = stringResource(R.string.intent_work),
                         selected = selectedReason == "work",
-                        onClick = { selectedReason = "work" }
+                        onClick = { selectedReason = "work" },
+                        modifier = Modifier.weight(1f)
                     )
                     ReasonButton(
                         text = stringResource(R.string.intent_bored),
                         selected = selectedReason == "bored",
-                        onClick = { selectedReason = "bored" }
+                        onClick = { selectedReason = "bored" },
+                        modifier = Modifier.weight(1f)
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     ReasonButton(
                         text = stringResource(R.string.intent_messages),
                         selected = selectedReason == "messages",
-                        onClick = { selectedReason = "messages" }
+                        onClick = { selectedReason = "messages" },
+                        modifier = Modifier.weight(1f)
                     )
                     ReasonButton(
                         text = stringResource(R.string.intent_other),
                         selected = selectedReason == "other",
-                        onClick = { selectedReason = "other" }
+                        onClick = { selectedReason = "other" },
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -492,13 +509,13 @@ internal fun PauseScreenContent(
 private fun ReasonButton(
     text: String,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     OutlinedButton(
         onClick = onClick,
-        modifier = Modifier
-            .width(140.dp)
-            .height(44.dp),
+        // Flexible width (caller applies Row weight); keep a comfortable min height.
+        modifier = modifier.heightIn(min = 44.dp),
         colors = if (selected) {
             // Highlight the selected reason with the primary container color
             ButtonDefaults.outlinedButtonColors(
@@ -511,7 +528,10 @@ private fun ReasonButton(
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.labelLarge
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
         )
     }
 }
