@@ -115,6 +115,15 @@ class AppGroupRepository(
         return groupDao.getLearningGroupPackageNames()
     }
 
+    /**
+     * Get a map of groupId -> number of apps in that group.
+     * Groups with no apps are absent from the map (treat as 0 in the UI).
+     * Used by the Home screen to show "N apps" on each group card.
+     */
+    suspend fun getAppCounts(): Map<Long, Int> {
+        return groupDao.getAppCounts().associate { it.groupId to it.appCount }
+    }
+
     // ── Launch records ──
 
     /**

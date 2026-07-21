@@ -13,8 +13,8 @@ android {
         applicationId = "com.appause.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "0.1.13"
+        versionCode = 16
+        versionName = "0.2.0"
     }
 
     buildTypes {
@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.material.icons.extended)
     debugImplementation(libs.androidx.ui.tooling)
 
     // Navigation

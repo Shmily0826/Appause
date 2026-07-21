@@ -32,6 +32,35 @@
 
 ## Log
 
+### 2026-07-21 (Bugfix + UI/UX overhaul)
+- Fixed: pause screen re-appearing on the launcher after Cancel (stale window
+  event race) via `justCancelledPackage` suppression guard in
+  AppauseAccessibilityService / OverlayManager / PauseActivity. Committed be349fa.
+- Theme: disabled Material You dynamic color (root cause of the uniform
+  grey-purple look); added a fixed refined light palette to Color.kt and mapped
+  all structural tokens (background/surface/containers/outline) in Theme.kt.
+- Home: status header split into two states — service OFF shows a light-red
+  warning card with "Open settings" and NO switch (fixes the contradictory
+  "Not enabled" + enabled-looking switch); service ON shows "Service active"
+  with the master toggle. Stats relabeled Completed/Avoided. Group cards got a
+  chevron + pluralized app counts. FAB is now extended ("+ New group").
+- Terminology (UI only, data values unchanged): Pause → Cooldown,
+  Learning → Recommended; stats Waited/Cancelled → Completed/Avoided.
+- Group Editor: type cards equal-height with top-right check + light borders;
+  slider is now a continuous track (removed steps=58 tick dots) with an inline
+  "Cooldown [ 10 ] sec" input, bidirectionally synced and clamped to 1–60;
+  Add-apps row with light border + plural counts; selected apps as an
+  independent section with dividers, per-app "Remove %s" a11y labels and an
+  empty state; delete now requires a confirmation dialog with a
+  count/type-aware message; bottom bar is keyboard- (imePadding) and
+  nav-bar-aware.
+- Strings: added plurals (group_app_count, apps_selected, selected_count,
+  delete messages) in EN + ZH; new status/empty-state/dialog copy in both
+  languages.
+- BUILD SUCCESSFUL — app-debug.apk (~18MB) via `gradlew assembleDebug`.
+- Version bumped to 0.2.0 (versionCode 16) — UI overhaul marks the start of
+  the 0.2.x series.
+
 ### 2026-07-16 (Phases 6–8)
 - Phases 6–8 completed together: full interception + pause screen + polish.
 - Created InterceptionManager.kt (bypass singleton with timeout).

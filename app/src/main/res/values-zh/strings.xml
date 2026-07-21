@@ -29,16 +29,29 @@
     <string name="service_not_enabled">未启用</string>
     <string name="tap_to_enable">点击此处前往系统设置启用。</string>
 
+    <!-- 状态头部卡片：系统权限状态 -->
+    <string name="service_not_enabled_title">服务未启用</string>
+    <string name="service_not_enabled_desc">请开启无障碍权限以使用 Appause。</string>
+    <string name="service_active">服务运行中</string>
+    <string name="open_settings">打开设置</string>
+
     <string name="appause_enabled">已启用</string>
     <string name="appause_disabled">已禁用</string>
+    <string name="cd_master_toggle">开/关 Appause</string>
 
     <string name="today">今日</string>
-    <string name="stat_waited">等待</string>
-    <string name="stat_cancelled">取消</string>
+    <string name="stat_waited">完成</string>
+    <string name="stat_cancelled">避开</string>
 
     <string name="your_groups">你的分组</string>
-    <string name="no_groups_hint">还没有分组。点击 + 创建你的第一个分组。</string>
-    <string name="cooldown_format">%d秒冷却</string>
+    <string name="no_groups_hint">还没有分组。点击"新建分组"创建你的第一个分组。</string>
+    <string name="new_group">新建分组</string>
+    <string name="cooldown_format">打开前冷却 %d 秒</string>
+    <string name="badge_pause">冷却</string>
+    <plurals name="group_app_count">
+        <item quantity="other">%d 个应用</item>
+    </plurals>
+    <string name="group_no_apps">暂无应用</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Group Editor Screen                          -->
@@ -49,24 +62,46 @@
     <string name="placeholder_group_name">例如：社交媒体</string>
     <string name="group_name_required_hint">输入分组名称后才能保存</string>
     <string name="group_type_label">分组类型</string>
-    <string name="group_type_pause">暂停</string>
-    <string name="group_type_pause_desc">容易分心的应用 — 打开时会进入冷却</string>
-    <string name="group_type_learning">学习</string>
-    <string name="group_type_learning_desc">推荐的应用 — 冷却时推荐，不会被拦截</string>
-    <string name="badge_learning">学习</string>
-    <string name="cooldown_label">冷却时间：%d秒</string>
+    <string name="group_type_pause">冷却</string>
+    <string name="group_type_pause_desc">打开所选应用前先进入冷却。</string>
+    <string name="group_type_learning">推荐</string>
+    <string name="group_type_learning_desc">冷却时推荐使用，不会被拦截。</string>
+    <string name="badge_learning">推荐</string>
+    <string name="cooldown_label">冷却时间</string>
+    <string name="cooldown_seconds_suffix">秒</string>
+    <string name="cooldown_range_start">1秒</string>
+    <string name="cooldown_range_end">60秒</string>
     <string name="label_seconds">秒</string>
     <string name="select_apps_button">选择应用（已选 %d 个）</string>
-    <string name="apps_in_group">此分组中的应用：</string>
+    <string name="add_apps">添加应用</string>
+    <string name="cd_add_apps">向此分组添加应用</string>
+    <plurals name="apps_selected">
+        <item quantity="other">已选 %d 个应用</item>
+    </plurals>
+    <string name="cd_remove_app">移除应用</string>
+    <string name="cd_remove_app_named">移除 %s</string>
+    <string name="apps_in_group">此分组中的应用</string>
+    <string name="no_apps_selected_title">未选择应用</string>
+    <string name="no_apps_selected_desc">至少添加一个应用才能使用此分组。</string>
     <string name="and_more_apps">……还有 %d 个</string>
     <string name="action_cancel">取消</string>
     <string name="action_save">保存</string>
+    <string name="action_delete">删除</string>
+    <string name="delete_group_title">删除"%s"？</string>
+    <plurals name="delete_message_cooldown">
+        <item quantity="other">%s 将不再使用此冷却规则。</item>
+    </plurals>
+    <plurals name="delete_message_recommended">
+        <item quantity="other">%s 将不再在冷却时被推荐。</item>
+    </plurals>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- App Select Screen                            -->
     <!-- ═══════════════════════════════════════════ -->
     <string name="title_select_apps">选择应用</string>
-    <string name="selected_count">已选 %d 个</string>
+    <plurals name="selected_count">
+        <item quantity="other">已选 %d 个应用</item>
+    </plurals>
     <string name="action_confirm">确认</string>
     <string name="search_apps_hint">搜索应用……</string>
     <string name="no_apps_match">没有匹配"%s"的应用</string>

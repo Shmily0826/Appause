@@ -1,14 +1,11 @@
 package com.appause.android.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
 /**
  * Appause Material 3 Theme.
@@ -18,15 +15,20 @@ import androidx.compose.ui.platform.LocalContext
  * - Every Composable inside MaterialTheme { } automatically inherits these styles.
  * - You access them via MaterialTheme.colorScheme, MaterialTheme.typography, etc.
  *
- * Dynamic Color (Android 12+):
- * - On Android 12 (API 31) and above, the system can generate a color scheme
- *   from the user's wallpaper. This is called "dynamic color" or "Material You".
- * - We use dynamic color when available, and fall back to our custom colors on older devices.
+ * Why a FIXED color scheme (no Material You / dynamic color)?
+ * - Dynamic color derives the whole palette from the user's wallpaper. In
+ *   practice that made every card on screen blend into the same grey-purple,
+ *   destroying the visual hierarchy.
+ * - We intentionally use a fixed, calm blue-purple palette so the app always
+ *   has a clear hierarchy:
+ *       page background  -> cool near-white
+ *       content cards    -> white with a hairline border
+ *       selected state   -> light blue-purple + primary border
+ *       error state      -> light red background + deep red text
  *
  * Dark Mode:
  * - We support both light and dark themes.
  * - isSystemInDarkTheme() checks the user's system setting.
- * - The app automatically switches between light and dark color schemes.
  *
  * How to use in Composables:
  * ```kotlin
@@ -38,24 +40,79 @@ import androidx.compose.ui.platform.LocalContext
  * ```
  */
 
-/** Light color scheme — shown when the system is in light mode. */
+/**
+ * Light color scheme — a calm blue-purple theme with a clear hierarchy.
+ *
+ * Key structural tokens:
+ * - background  : cool near-white page canvas
+ * - surface     : white cards (read clearly against the background)
+ * - surfaceVariant : light blue-grey for subtle secondary surfaces
+ * - primaryContainer : light blue-purple "selected" fill
+ * - errorContainer : light red "error" fill with deep red content
+ */
 private val LightColorScheme = lightColorScheme(
     primary = md_primary_40,
+    onPrimary = Color.White,
+    primaryContainer = md_primary_container_light,
+    onPrimaryContainer = md_on_primary_container_light,
+
     secondary = md_secondary_40,
+    onSecondary = Color.White,
+    secondaryContainer = md_secondary_container_light,
+    onSecondaryContainer = md_on_secondary_container_light,
+
     tertiary = md_tertiary_40,
+    onTertiary = Color.White,
+    tertiaryContainer = md_tertiary_container_light,
+    onTertiaryContainer = md_on_tertiary_container_light,
+
     error = md_error_40,
-    background = md_neutral_99,
-    surface = md_neutral_99
+    onError = Color.White,
+    errorContainer = md_error_container_light,
+    onErrorContainer = md_on_error_container_light,
+
+    background = md_bg_light,
+    onBackground = Color(0xFF1A1C22),
+    surface = md_surface_light,
+    onSurface = Color(0xFF1A1C22),
+    surfaceVariant = md_surface_variant_light,
+    onSurfaceVariant = Color(0xFF44474F),
+
+    outline = md_outline_light,
+    outlineVariant = md_outline_variant_light
 )
 
 /** Dark color scheme — shown when the system is in dark mode. */
 private val DarkColorScheme = darkColorScheme(
     primary = md_primary_80,
+    onPrimary = Color(0xFF002A78),
+    primaryContainer = Color(0xFF24379B),
+    onPrimaryContainer = Color(0xFFDCE3FF),
+
     secondary = md_secondary_80,
+    onSecondary = Color(0xFF00372E),
+    secondaryContainer = Color(0xFF005044),
+    onSecondaryContainer = Color(0xFFC9F2E8),
+
     tertiary = md_tertiary_80,
+    onTertiary = Color(0xFF452B00),
+    tertiaryContainer = Color(0xFF634000),
+    onTertiaryContainer = Color(0xFFFFE0C2),
+
     error = md_error_80,
-    background = md_neutral_10,
-    surface = md_neutral_10
+    onError = Color(0xFF690005),
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
+
+    background = Color(0xFF14161C),
+    onBackground = Color(0xFFE5E7EF),
+    surface = Color(0xFF1A1D24),
+    onSurface = Color(0xFFE5E7EF),
+    surfaceVariant = Color(0xFF2A2E38),
+    onSurfaceVariant = Color(0xFFB9BCC8),
+
+    outline = Color(0xFF8A8FA0),
+    outlineVariant = Color(0xFF3A3F4C)
 )
 
 @Composable
@@ -63,18 +120,9 @@ fun AppauseTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    // Choose the color scheme based on:
-    // 1. Android 12+ with dynamic color? Use the system's wallpaper-derived colors.
-    // 2. Otherwise, use our custom light/dark color schemes.
-    val colorScheme = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context)
-            else dynamicLightColorScheme(context)
-        }
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
+    // Use the fixed Appause palette. We deliberately do NOT use Material You
+    // (dynamic color) — see the note at the top of this file.
+    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

@@ -108,4 +108,14 @@ interface AppGroupDao {
             "(SELECT id FROM app_groups WHERE type = 'learning')"
     )
     suspend fun getLearningGroupPackageNames(): List<String>
+
+    /**
+     * Count how many apps belong to each group, for all groups at once.
+     * Returns one row per group that has at least one app (groups with no
+     * apps are simply absent — treat them as a count of 0).
+     *
+     * The column alias `appCount` must match [GroupAppCount.appCount].
+     */
+    @Query("SELECT groupId, COUNT(packageName) AS appCount FROM group_apps GROUP BY groupId")
+    suspend fun getAppCounts(): List<GroupAppCount>
 }

@@ -81,13 +81,33 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
 
+    /**
+     * Number of apps in each group (groupId -> count).
+     * Backs the "N apps" row on each group card.
+     * Groups with no apps are absent from the map (the UI treats that as 0).
+     */
+    private val _appCounts = MutableStateFlow<Map<Long, Int>>(emptyMap())
+    val appCounts: StateFlow<Map<Long, Int>> = _appCounts.asStateFlow()
+
     init {
         refreshServiceStatus()
+        loadAppCounts()
     }
 
     /** Re-check the accessibility service status. Called when the screen resumes. */
     fun refreshServiceStatus() {
         _isServiceRunning.value = AppauseAccessibilityService.isRunning
+    }
+
+    /**
+     * Load the number of apps in each group.
+     * Called on init and again whenever the screen resumes (so the counts
+     * refresh after the user edits a group and navigates back).
+     */
+    fun loadAppCounts() {
+        viewModelScope.launch {
+            _appCounts.value = repository.getAppCounts()
+        }
     }
 
     /** Toggle the master on/off switch. */

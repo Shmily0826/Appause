@@ -29,16 +29,30 @@
     <string name="service_not_enabled">Not enabled</string>
     <string name="tap_to_enable">Tap here to enable in system settings.</string>
 
+    <!-- Status header card: service permission state -->
+    <string name="service_not_enabled_title">Service not enabled</string>
+    <string name="service_not_enabled_desc">Enable accessibility permission to use Appause.</string>
+    <string name="service_active">Service active</string>
+    <string name="open_settings">Open settings</string>
+
     <string name="appause_enabled">Enabled</string>
     <string name="appause_disabled">Disabled</string>
+    <string name="cd_master_toggle">Toggle Appause on or off</string>
 
     <string name="today">Today</string>
-    <string name="stat_waited">Waited</string>
-    <string name="stat_cancelled">Cancelled</string>
+    <string name="stat_waited">Completed</string>
+    <string name="stat_cancelled">Avoided</string>
 
     <string name="your_groups">Your Groups</string>
-    <string name="no_groups_hint">No groups yet. Tap + to create your first group.</string>
-    <string name="cooldown_format">%ds cooldown</string>
+    <string name="no_groups_hint">No groups yet. Tap \"New group\" to create your first group.</string>
+    <string name="new_group">New group</string>
+    <string name="cooldown_format">%ds cooldown before opening</string>
+    <string name="badge_pause">Cooldown</string>
+    <plurals name="group_app_count">
+        <item quantity="one">%d app</item>
+        <item quantity="other">%d apps</item>
+    </plurals>
+    <string name="group_no_apps">No apps yet</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Group Editor Screen                          -->
@@ -49,24 +63,50 @@
     <string name="placeholder_group_name">e.g., Social Media</string>
     <string name="group_name_required_hint">Enter a group name to enable Save</string>
     <string name="group_type_label">Group type</string>
-    <string name="group_type_pause">Pause</string>
-    <string name="group_type_pause_desc">Distracting apps — opening them starts a cooldown</string>
-    <string name="group_type_learning">Learning</string>
-    <string name="group_type_learning_desc">Recommended apps — suggested during cooldowns, never blocked</string>
-    <string name="badge_learning">Learning</string>
-    <string name="cooldown_label">Cooldown: %ds</string>
+    <string name="group_type_pause">Cooldown</string>
+    <string name="group_type_pause_desc">Adds a cooldown before opening selected apps.</string>
+    <string name="group_type_learning">Recommended</string>
+    <string name="group_type_learning_desc">Suggested during cooldowns and never blocked.</string>
+    <string name="badge_learning">Recommended</string>
+    <string name="cooldown_label">Cooldown</string>
+    <string name="cooldown_seconds_suffix">sec</string>
+    <string name="cooldown_range_start">1s</string>
+    <string name="cooldown_range_end">60s</string>
     <string name="label_seconds">Seconds</string>
     <string name="select_apps_button">Select Apps (%d selected)</string>
-    <string name="apps_in_group">Apps in this group:</string>
+    <string name="add_apps">Add apps</string>
+    <string name="cd_add_apps">Add apps to this group</string>
+    <plurals name="apps_selected">
+        <item quantity="one">%d app selected</item>
+        <item quantity="other">%d apps selected</item>
+    </plurals>
+    <string name="cd_remove_app">Remove app</string>
+    <string name="cd_remove_app_named">Remove %s</string>
+    <string name="apps_in_group">Apps in this group</string>
+    <string name="no_apps_selected_title">No apps selected</string>
+    <string name="no_apps_selected_desc">Add at least one app to use this group.</string>
     <string name="and_more_apps">… and %d more</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_save">Save</string>
+    <string name="action_delete">Delete</string>
+    <string name="delete_group_title">Delete \"%s\"?</string>
+    <plurals name="delete_message_cooldown">
+        <item quantity="one">%s will no longer use this cooldown rule.</item>
+        <item quantity="other">%s and %d other apps will no longer use this cooldown rule.</item>
+    </plurals>
+    <plurals name="delete_message_recommended">
+        <item quantity="one">%s will no longer be suggested during cooldowns.</item>
+        <item quantity="other">%s and %d other apps will no longer be suggested during cooldowns.</item>
+    </plurals>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- App Select Screen                            -->
     <!-- ═══════════════════════════════════════════ -->
     <string name="title_select_apps">Select Apps</string>
-    <string name="selected_count">%d selected</string>
+    <plurals name="selected_count">
+        <item quantity="one">%d app selected</item>
+        <item quantity="other">%d apps selected</item>
+    </plurals>
     <string name="action_confirm">Confirm</string>
     <string name="search_apps_hint">Search apps…</string>
     <string name="no_apps_match">No apps match \"%s\"</string>

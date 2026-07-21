@@ -105,6 +105,14 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    /**
+     * Remove a single app from the current selection.
+     * Backs the "remove" (×) button on each app row in the editor.
+     */
+    fun removePackage(packageName: String) {
+        _selectedPackages.value = _selectedPackages.value.filter { it != packageName }
+    }
+
     // ── Actions ──
 
     /** Save the group (create new or update existing). */
