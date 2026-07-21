@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -23,7 +22,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -54,11 +53,12 @@ import com.appause.android.R
  * Shows all launchable apps on the device with checkboxes.
  * Supports search and multi-select.
  *
- * "Recommended" section:
- * - Shows apps the user has already added to other groups.
- * - These are quick-pick suggestions — tapping a chip toggles selection.
- * - Helps users quickly re-add apps they've previously categorised
- *   (e.g., learning apps) to new groups.
+ * One app, one group:
+ * - An app can only belong to a single group (group_apps primary key).
+ * - Apps already assigned to ANOTHER group are shown dimmed with a disabled
+ *   checkbox and an "already in another group" note, so they can't be
+ *   accidentally stolen from that group. To move an app, first remove it
+ *   from its current group.
  *
  * Data passing:
  * - When user confirms selection, results are cached in [cachedSelectedPackages].
@@ -76,7 +76,7 @@ fun AppSelectScreen(
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val selectedPackages by viewModel.selectedPackages.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val recommendedApps by viewModel.recommendedApps.collectAsStateWithLifecycle()
+    val takenPackages by viewModel.takenPackages.collectAsStateWithLifecycle()
 
     // Pre-select apps that are already in the group being edited
     // Reads from both the parameter AND the companion cache
@@ -91,6 +91,9 @@ fun AppSelectScreen(
         if (packages.isNotEmpty()) {
             viewModel.preSelectPackages(packages)
         }
+        // Mark apps owned by OTHER groups as "taken" so they can't be selected
+        // (an app can only belong to one group — see AppSelectViewModel).
+        viewModel.loadTakenPackages(packages)
     }
 
     Scaffold(
@@ -151,37 +154,6 @@ fun AppSelectScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp)
             )
 
-            // ── Recommended Apps (quick-pick from existing groups) ──
-            // Only show when there are recommended apps and no active search
-            if (recommendedApps.isNotEmpty() && searchQuery.isBlank()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.recommended_apps),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    // Horizontal scrollable row of chips
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        items(recommendedApps, key = { it.packageName }) { app ->
-                            val isSelected = selectedPackages.contains(app.packageName)
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = { viewModel.toggleSelection(app.packageName) },
-                                label = { Text(app.appName) }
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-            }
-
             // ── App List ──
             if (isLoading) {
                 Box(
@@ -197,6 +169,8 @@ fun AppSelectScreen(
                 ) {
                     items(filteredApps, key = { it.packageName }) { app ->
                         val isSelected = selectedPackages.contains(app.packageName)
+                        // Apps already in ANOTHER group can't be selected (one app, one group).
+                        val isTaken = takenPackages.contains(app.packageName)
                         // Load icon from PackageManager — cached by remember per item
                         val context = LocalContext.current
                         val iconBitmap = remember(app.packageName) {
@@ -212,14 +186,16 @@ fun AppSelectScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .alpha(if (isTaken) 0.45f else 1f),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Checkbox(
                                 checked = isSelected,
                                 onCheckedChange = {
                                     viewModel.toggleSelection(app.packageName)
-                                }
+                                },
+                                enabled = !isTaken
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             // App icon
@@ -239,7 +215,11 @@ fun AppSelectScreen(
                                     style = MaterialTheme.typography.bodyLarge
                                 )
                                 Text(
-                                    text = app.packageName,
+                                    text = if (isTaken) {
+                                        stringResource(R.string.app_in_other_group)
+                                    } else {
+                                        app.packageName
+                                    },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

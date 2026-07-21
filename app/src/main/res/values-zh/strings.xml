@@ -70,7 +70,7 @@
     <string name="search_apps_hint">搜索应用……</string>
     <string name="no_apps_match">没有匹配"%s"的应用</string>
     <string name="no_launchable_apps">未找到可启动的应用</string>
-    <string name="recommended_apps">推荐（来自你的其他分组）</string>
+    <string name="app_in_other_group">已在其他分组</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Settings Screen                              -->

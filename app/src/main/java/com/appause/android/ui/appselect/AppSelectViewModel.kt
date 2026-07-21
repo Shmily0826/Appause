@@ -31,9 +31,10 @@ import kotlinx.coroutines.withContext
  * - selectedPackages: which apps the user has checked (multi-select)
  * - filteredApps: derived from allApps + searchQuery (shown in the UI)
  * - isLoading: whether the app list is still being loaded
- * - recommendedApps: apps already in other groups (quick-pick suggestions)
+ * - takenPackages: apps already in OTHER groups (shown but not selectable,
+ *   because an app can only belong to one group)
  *
- * The UI observes filteredApps, selectedPackages, and recommendedApps to render the screen.
+ * The UI observes filteredApps, selectedPackages, and takenPackages to render the screen.
  */
 class AppSelectViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -55,10 +56,15 @@ class AppSelectViewModel(application: Application) : AndroidViewModel(applicatio
     private val _isLoading = MutableStateFlow(true)
 
     /**
-     * Apps that are already in other groups — shown as quick-pick suggestions.
-     * These are the user's "learning apps" that they've previously categorised.
+     * Package names already assigned to OTHER groups.
+     *
+     * An app can only belong to ONE group (group_apps uses packageName as its
+     * primary key). If we let the user check an app that's already in another
+     * group, saving would silently MOVE it here (Room's REPLACE strategy) and
+     * the other group would lose it — that's the "groups interfere with each
+     * other" bug. So these apps are shown but NOT selectable.
      */
-    private val _recommendedApps = MutableStateFlow<List<AppInfo>>(emptyList())
+    private val _takenPackages = MutableStateFlow<Set<String>>(emptySet())
 
     /**
      * Filtered list: allApps filtered by searchQuery.
@@ -87,13 +93,12 @@ class AppSelectViewModel(application: Application) : AndroidViewModel(applicatio
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
     val selectedPackages: StateFlow<Set<String>> = _selectedPackages.asStateFlow()
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-    val recommendedApps: StateFlow<List<AppInfo>> = _recommendedApps.asStateFlow()
+    val takenPackages: StateFlow<Set<String>> = _takenPackages.asStateFlow()
 
     // ── Initialization ──
 
     init {
         loadApps()
-        loadRecommendedApps()
     }
 
     /**
@@ -116,32 +121,20 @@ class AppSelectViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     /**
-     * Load apps that are already assigned to any group.
+     * Compute which apps are already taken by OTHER groups.
      *
-     * These are shown as "recommended" suggestions at the top of the screen,
-     * so the user can quickly add apps they've previously categorised as
-     * learning/productivity apps to new groups.
+     * @param currentGroupPackages apps that already belong to the group being
+     * edited — these stay selectable (they're this group's own apps).
      *
-     * Flow:
-     * 1. Query all package names from group_apps table
-     * 2. For each, resolve the display name via PackageManager
-     * 3. Filter out apps that are no longer installed
+     * Everything else that appears in group_apps belongs to a different group
+     * and is marked "taken" so the user can't accidentally steal it.
      */
-    private fun loadRecommendedApps() {
+    fun loadTakenPackages(currentGroupPackages: Set<String>) {
         viewModelScope.launch {
-            val recommended = withContext(Dispatchers.IO) {
-                val groupedPackages = repository.getAllGroupedPackageNames()
-                groupedPackages.mapNotNull { packageName ->
-                    val appName = appQueryService.getAppName(packageName)
-                    if (appName != null) {
-                        AppInfo(packageName = packageName, appName = appName)
-                    } else {
-                        // App was uninstalled — skip it
-                        null
-                    }
-                }
+            val taken = withContext(Dispatchers.IO) {
+                repository.getAllGroupedPackageNames().toSet() - currentGroupPackages
             }
-            _recommendedApps.value = recommended
+            _takenPackages.value = taken
         }
     }
 
@@ -152,8 +145,10 @@ class AppSelectViewModel(application: Application) : AndroidViewModel(applicatio
         _searchQuery.value = query
     }
 
-    /** Toggle an app's selection state. */
+    /** Toggle an app's selection state. Apps taken by other groups are ignored. */
     fun toggleSelection(packageName: String) {
+        // Apps that already belong to another group can't be selected — see takenPackages.
+        if (packageName in _takenPackages.value) return
         val current = _selectedPackages.value.toMutableSet()
         if (current.contains(packageName)) {
             current.remove(packageName)
