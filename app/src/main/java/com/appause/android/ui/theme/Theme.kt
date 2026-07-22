@@ -28,7 +28,10 @@ import androidx.compose.ui.graphics.Color
  *
  * Dark Mode:
  * - We support both light and dark themes.
- * - isSystemInDarkTheme() checks the user's system setting.
+ * - The user picks a mode in Settings: "light", "dark", or "system".
+ * - "system" follows the device setting via isSystemInDarkTheme().
+ * - Activities resolve the mode with appauseDarkTheme() and pass the result
+ *   as the darkTheme parameter below.
  *
  * How to use in Composables:
  * ```kotlin
@@ -129,4 +132,21 @@ fun AppauseTheme(
         typography = Typography,
         content = content
     )
+}
+
+/**
+ * Resolve whether to use the dark color scheme for a stored theme mode.
+ *
+ * - "light"  → always light
+ * - "dark"   → always dark
+ * - "system" (or anything else) → follow the device setting
+ *
+ * This is a @Composable because the "system" case needs isSystemInDarkTheme(),
+ * which can only be read inside composition.
+ */
+@Composable
+fun appauseDarkTheme(themeMode: String): Boolean = when (themeMode) {
+    "light" -> false
+    "dark" -> true
+    else -> isSystemInDarkTheme()
 }

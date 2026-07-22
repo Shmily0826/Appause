@@ -28,6 +28,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000),
             (application as AppauseApp).settingsDataStore.getLanguageSync())
 
+    val themeMode: StateFlow<String> = repository.themeMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000),
+            (application as AppauseApp).settingsDataStore.getThemeModeSync())
+
     private val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning
 
@@ -48,6 +52,17 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             // Run the callback (typically an app restart) so the new locale
             // is guaranteed to be read by attachBaseContext on the new Activity.
             onComplete()
+        }
+    }
+
+    /**
+     * Persist the chosen theme mode ("system", "light", or "dark").
+     * No restart needed — the Activities observe themeMode and recompose
+     * with the new color scheme immediately.
+     */
+    fun setThemeMode(mode: String) {
+        viewModelScope.launch {
+            repository.setThemeMode(mode)
         }
     }
 }

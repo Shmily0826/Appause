@@ -8,9 +8,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.appause.android.ui.navigation.AppNavGraph
 import com.appause.android.ui.theme.AppauseTheme
+import com.appause.android.ui.theme.appauseDarkTheme
 import java.util.Locale
 /**
  * MainActivity — the single Activity that hosts all Compose screens.
@@ -78,7 +81,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
-            AppauseTheme {
+            // Observe the user's theme mode (light / dark / system). The
+            // synchronous value is used as the initial state so dark-mode users
+            // don't see a light flash before the DataStore Flow emits.
+            val app = application as AppauseApp
+            val themeMode by app.settingsDataStore.themeMode
+                .collectAsState(initial = app.settingsDataStore.getThemeModeSync())
+
+            AppauseTheme(darkTheme = appauseDarkTheme(themeMode)) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     AppNavGraph()
                 }

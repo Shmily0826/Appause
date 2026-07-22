@@ -57,6 +57,7 @@ fun SettingsScreen(
     val defaultPrompt by viewModel.defaultPrompt.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     LaunchedEffect(Unit) { viewModel.refreshServiceStatus() }
@@ -121,6 +122,49 @@ fun SettingsScreen(
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(stringResource(R.string.language_chinese))
+                    }
+                }
+            }
+
+            // ── Theme ──
+            // Light / Dark / Follow system. The choice is applied reactively
+            // (no restart) because the Activities observe the theme mode.
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(stringResource(R.string.theme), style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        RadioButton(
+                            selected = themeMode == "light",
+                            onClick = { if (themeMode != "light") viewModel.setThemeMode("light") }
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.theme_light))
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        RadioButton(
+                            selected = themeMode == "dark",
+                            onClick = { if (themeMode != "dark") viewModel.setThemeMode("dark") }
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.theme_dark))
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        RadioButton(
+                            selected = themeMode == "system",
+                            onClick = { if (themeMode != "system") viewModel.setThemeMode("system") }
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(stringResource(R.string.theme_system))
                     }
                 }
             }

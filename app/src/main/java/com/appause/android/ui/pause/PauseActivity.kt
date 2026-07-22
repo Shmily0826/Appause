@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,6 +66,7 @@ import com.appause.android.data.query.AppQueryService
 import com.appause.android.interception.InterceptionManager
 import com.appause.android.service.AppauseAccessibilityService
 import com.appause.android.ui.theme.AppauseTheme
+import com.appause.android.ui.theme.appauseDarkTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -154,7 +156,13 @@ class PauseActivity : ComponentActivity() {
         val appQueryService = AppQueryService(application)
 
         setContent {
-            AppauseTheme {
+            // Match the user's chosen theme (light / dark / system), using the
+            // synchronous value as initial state to avoid a theme flash.
+            val settingsDataStore = (application as AppauseApp).settingsDataStore
+            val themeMode by settingsDataStore.themeMode
+                .collectAsState(initial = settingsDataStore.getThemeModeSync())
+
+            AppauseTheme(darkTheme = appauseDarkTheme(themeMode)) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     // Load default prompt from DataStore
                     // If stored prompt is blank, use localized default

@@ -32,6 +32,17 @@
 
 ## Log
 
+### 2026-07-22 (In-app dark mode)
+- Added a user-selectable theme mode in Settings: Light / Dark / Follow system.
+- Persisted in DataStore (`theme_mode`), mirrored to SharedPreferences for a
+  flicker-free synchronous read on cold start.
+- MainActivity and PauseActivity now observe the mode and resolve the dark
+  flag via a new `appauseDarkTheme()` helper; switching applies reactively
+  with no restart. The existing dark palette is used as-is.
+- New strings (EN + ZH): theme, theme_light, theme_dark, theme_system.
+- Version bumped to 0.2.1 (versionCode 17).
+- BUILD SUCCESSFUL via `gradlew assembleDebug`.
+
 ### 2026-07-21 (Bugfix + UI/UX overhaul)
 - Fixed: pause screen re-appearing on the launcher after Cancel (stale window
   event race) via `justCancelledPackage` suppression guard in

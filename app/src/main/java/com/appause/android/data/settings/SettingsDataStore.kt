@@ -47,10 +47,12 @@ class SettingsDataStore(private val context: Context) {
         val IS_ENABLED_KEY = booleanPreferencesKey("is_enabled")
         val DEFAULT_PROMPT_KEY = stringPreferencesKey("default_prompt")
         val LANGUAGE_KEY = stringPreferencesKey("language")
+        val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
 
         // SharedPreferences key for sync locale override (used in attachBaseContext)
         private const val PREFS_NAME = "appause_locale_prefs"
         private const val PREF_LANGUAGE_KEY = "language"
+        private const val PREF_THEME_MODE_KEY = "theme_mode"
     }
 
     // ── Read operations (return Flow for reactive observation) ──
@@ -80,6 +82,15 @@ class SettingsDataStore(private val context: Context) {
         preferences[LANGUAGE_KEY] ?: getLanguageSync()
     }
 
+    /**
+     * The selected theme mode: "system" (follow the device), "light", or "dark".
+     * Default: "system" — the app honors the device's light/dark setting until
+     * the user explicitly picks one.
+     */
+    val themeMode: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[THEME_MODE_KEY] ?: "system"
+    }
+
     // ── Write operations (suspend functions — must be called from a coroutine) ──
 
     /** Update the master toggle. */
@@ -106,6 +117,36 @@ class SettingsDataStore(private val context: Context) {
         }
         // Sync to SharedPreferences for attachBaseContext
         syncLanguageToPrefs(languageCode)
+    }
+
+    /**
+     * Update the theme mode preference ("system", "light", or "dark").
+     * The UI observes themeMode and recomposes immediately — no restart needed.
+     * Also mirrored to SharedPreferences so the next cold start can read it
+     * synchronously and apply the right theme on the first frame.
+     */
+    suspend fun setThemeMode(mode: String) {
+        context.dataStore.edit { preferences ->
+            preferences[THEME_MODE_KEY] = mode
+        }
+        syncThemeModeToPrefs(mode)
+    }
+
+    /**
+     * Read the theme mode from SharedPreferences synchronously.
+     * Used as the initial value when the Activity starts observing themeMode,
+     * so dark-mode users don't see a light flash before the Flow emits.
+     * Defaults to "system" when nothing has been saved yet.
+     */
+    fun getThemeModeSync(): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(PREF_THEME_MODE_KEY, "system") ?: "system"
+    }
+
+    /** Mirror the theme mode into SharedPreferences for synchronous startup reads. */
+    private fun syncThemeModeToPrefs(mode: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(PREF_THEME_MODE_KEY, mode).apply()
     }
 
     // ── SharedPreferences sync for locale override ──

@@ -163,6 +163,9 @@ class AppGroupRepository(
     /** Observe the language preference. */
     val language: Flow<String> = settings.language
 
+    /** Observe the theme mode preference ("system", "light", or "dark"). */
+    val themeMode: Flow<String> = settings.themeMode
+
     /** Update the master toggle. */
     suspend fun setEnabled(enabled: Boolean) = settings.setEnabled(enabled)
 
@@ -171,6 +174,9 @@ class AppGroupRepository(
 
     /** Update the language preference. */
     suspend fun setLanguage(languageCode: String) = settings.setLanguage(languageCode)
+
+    /** Update the theme mode preference. */
+    suspend fun setThemeMode(mode: String) = settings.setThemeMode(mode)
 
     // ── Statistics ──
 
