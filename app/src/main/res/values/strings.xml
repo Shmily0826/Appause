@@ -46,6 +46,7 @@
     <string name="cd_master_toggle">Toggle Appause on or off</string>
 
     <string name="today">Today</string>
+    <string name="view_details">Details</string>
     <string name="stat_waited">Completed</string>
     <string name="stat_cancelled">Avoided</string>
 

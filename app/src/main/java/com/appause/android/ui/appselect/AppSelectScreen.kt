@@ -1,6 +1,7 @@
 package com.appause.android.ui.appselect
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -195,14 +196,17 @@ fun AppSelectScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 16.dp, vertical = 4.dp)
-                                .alpha(if (isTaken) 0.45f else 1f),
+                                .alpha(if (isTaken) 0.45f else 1f)
+                                .then(
+                                    if (!isTaken) Modifier.clickable {
+                                        viewModel.toggleSelection(app.packageName)
+                                    } else Modifier
+                                ),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Checkbox(
                                 checked = isSelected,
-                                onCheckedChange = {
-                                    viewModel.toggleSelection(app.packageName)
-                                },
+                                onCheckedChange = null, // Row handles the toggle
                                 enabled = !isTaken
                             )
                             Spacer(modifier = Modifier.width(8.dp))

@@ -46,6 +46,7 @@
     <string name="cd_master_toggle">开/关 Appause</string>
 
     <string name="today">今日</string>
+    <string name="view_details">详情</string>
     <string name="stat_waited">完成</string>
     <string name="stat_cancelled">阻止</string>
 
