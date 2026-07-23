@@ -34,6 +34,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -172,13 +173,13 @@ class OverlayManager {
                         }
                     }
 
-                    // Recommended learning apps — apps the user has added to their
-                    // "learning" groups, shown as "try one of these instead"
-                    // suggestions. Excludes the target app itself.
+                    // Recommended apps — the global list the user configured,
+                    // shown as "try one of these instead" suggestions.
+                    // Excludes the target app itself.
                     var recommendedApps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
                     LaunchedEffect(Unit) {
                         recommendedApps = withContext(Dispatchers.IO) {
-                            repository.getLearningGroupPackageNames()
+                            repository.recommendedApps.first()
                                 .filter { it != targetPackage }
                                 .mapNotNull { pkg ->
                                     appQueryService.getAppName(pkg)?.let { name ->

@@ -13,6 +13,7 @@ import androidx.navigation.navArgument
 import com.appause.android.ui.appselect.AppSelectScreen
 import com.appause.android.ui.groupeditor.GroupEditorScreen
 import com.appause.android.ui.home.HomeScreen
+import com.appause.android.ui.recommended.RecommendedAppsScreen
 import com.appause.android.ui.settings.SettingsScreen
 import com.appause.android.ui.stats.StatsScreen
 
@@ -29,6 +30,7 @@ object Routes {
     const val GROUP_EDITOR = "group_editor"
     const val GROUP_EDITOR_WITH_ID = "group_editor/{groupId}"
     const val APP_SELECT = "app_select"
+    const val RECOMMENDED = "recommended"
     const val SETTINGS = "settings"
     const val STATS = "stats"
 
@@ -90,6 +92,9 @@ fun AppNavGraph() {
                 },
                 onNavigateToStats = {
                     navController.navigate(Routes.STATS)
+                },
+                onNavigateToRecommended = {
+                    navController.navigate(Routes.RECOMMENDED)
                 }
             )
         }
@@ -123,6 +128,14 @@ fun AppNavGraph() {
         composable(Routes.APP_SELECT) {
             AppSelectScreen(
                 onNavigateBack = safePopBackStack
+            )
+        }
+
+        // ── Recommended Apps Screen ──
+        composable(Routes.RECOMMENDED) {
+            RecommendedAppsScreen(
+                onNavigateBack = safePopBackStack,
+                onNavigateToAppSelect = { navController.navigate(Routes.APP_SELECT) }
             )
         }
 

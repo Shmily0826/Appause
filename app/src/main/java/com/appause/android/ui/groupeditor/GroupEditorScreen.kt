@@ -107,7 +107,6 @@ fun GroupEditorScreen(
     viewModel: GroupEditorViewModel = viewModel()
 ) {
     val name by viewModel.name.collectAsStateWithLifecycle()
-    val type by viewModel.type.collectAsStateWithLifecycle()
     val cooldownSeconds by viewModel.cooldownSeconds.collectAsStateWithLifecycle()
     val reRemindEnabled by viewModel.reRemindEnabled.collectAsStateWithLifecycle()
     val reRemindMinutes by viewModel.reRemindMinutes.collectAsStateWithLifecycle()
@@ -226,40 +225,8 @@ fun GroupEditorScreen(
                 )
             }
 
-            // ── Group Type ──
-            Text(
-                text = stringResource(R.string.group_type_label),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Max),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                TypeOptionCard(
-                    title = stringResource(R.string.group_type_pause),
-                    description = stringResource(R.string.group_type_pause_desc),
-                    selected = type == AppGroup.TYPE_PAUSE,
-                    onClick = { viewModel.updateType(AppGroup.TYPE_PAUSE) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                )
-                TypeOptionCard(
-                    title = stringResource(R.string.group_type_learning),
-                    description = stringResource(R.string.group_type_learning_desc),
-                    selected = type == AppGroup.TYPE_LEARNING,
-                    onClick = { viewModel.updateType(AppGroup.TYPE_LEARNING) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                )
-            }
-
-            // ── Cooldown + Re-remind (pause groups only) ──
-            if (type == AppGroup.TYPE_PAUSE) {
-                Spacer(modifier = Modifier.height(8.dp))
+            // ── Cooldown + Re-remind ──
+            Spacer(modifier = Modifier.height(8.dp))
 
                 // Cooldown time — unified slider + input component
                 TimeSliderInput(
@@ -317,7 +284,6 @@ fun GroupEditorScreen(
                         modifier = Modifier.padding(start = 4.dp)
                     )
                 }
-            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -434,8 +400,7 @@ fun GroupEditorScreen(
         val quantity = selectedPackages.size.coerceAtLeast(1)
         val otherCount = (selectedPackages.size - 1).coerceAtLeast(0)
         val message = pluralStringResource(
-            if (type == AppGroup.TYPE_LEARNING) R.plurals.delete_message_recommended
-            else R.plurals.delete_message_cooldown,
+            R.plurals.delete_message_cooldown,
             quantity,
             firstAppLabel,
             otherCount
@@ -682,84 +647,6 @@ private fun TimeSliderInput(
                 text = rangeEndLabel,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Group type selector card
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * A selectable card for choosing the group type (Cooldown vs Recommended).
- * Selected state: primary-container background + 2dp primary border + check icon.
- */
-@Composable
-private fun TypeOptionCard(
-    title: String,
-    description: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
-        ),
-        border = BorderStroke(
-            width = if (selected) 2.dp else 1.dp,
-            color = if (selected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.outlineVariant
-            }
-        )
-    ) {
-        Box {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = if (selected) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    }
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (selected) {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-            }
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = if (selected) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    Color.Transparent
-                },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .size(18.dp)
             )
         }
     }

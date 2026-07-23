@@ -153,6 +153,15 @@
     <string name="theme_system">Follow system</string>
 
     <!-- ═══════════════════════════════════════════ -->
+    <!-- Recommended Apps                             -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="recommended_apps_title">Recommended Apps</string>
+    <string name="recommended_apps_home_desc">Apps suggested during cooldowns</string>
+    <string name="recommended_apps_desc">These apps are shown as suggestions on the cooldown screen — \"try one of these instead?\"</string>
+    <string name="recommended_apps_empty">No recommended apps yet. Add some to see them suggested during cooldowns.</string>
+    <string name="recommended_apps_count">%d apps</string>
+
+    <!-- ═══════════════════════════════════════════ -->
     <!-- Pause Screen                                 -->
     <!-- ═══════════════════════════════════════════ -->
     <string name="pause_cancel">Cancel</string>

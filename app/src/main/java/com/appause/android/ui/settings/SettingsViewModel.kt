@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
-import com.appause.android.service.AppauseAccessibilityService
+import com.appause.android.service.AccessibilityServiceChecker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +36,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning
 
     fun refreshServiceStatus() {
-        _isServiceRunning.value = AppauseAccessibilityService.isRunning
+        _isServiceRunning.value = AccessibilityServiceChecker.isEnabled(getApplication())
     }
 
     fun updateDefaultPrompt(prompt: String) {

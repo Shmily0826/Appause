@@ -110,10 +110,18 @@ class AppGroupRepository(
     /**
      * Get package names of apps in "learning" groups.
      * These are the apps shown as suggestions on the cooldown screen.
+     * @deprecated Use [recommendedApps] instead — learning groups are being
+     * replaced by a single global recommended-apps list.
      */
     suspend fun getLearningGroupPackageNames(): List<String> {
         return groupDao.getLearningGroupPackageNames()
     }
+
+    /** Global recommended apps (shown on the cooldown screen). */
+    val recommendedApps: Flow<Set<String>> = settings.recommendedApps
+
+    /** Update the global recommended apps list. */
+    suspend fun setRecommendedApps(packages: Set<String>) = settings.setRecommendedApps(packages)
 
     /**
      * Get a map of groupId -> number of apps in that group.

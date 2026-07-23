@@ -5,7 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
 import com.appause.android.data.local.AppGroup
-import com.appause.android.service.AppauseAccessibilityService
+import com.appause.android.service.AccessibilityServiceChecker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -71,12 +71,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     /**
-     * Whether the Accessibility Service is currently running.
+     * Whether the Accessibility Service is enabled by the user.
      * This is a simple snapshot — checked when the screen appears.
      *
-     * Note: we read the static flag from AppauseAccessibilityService.
-     * A more robust approach would use AccessibilityManager to query
-     * the system, but the static flag is simpler for v1.
+     * We query the SYSTEM setting (Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
+     * via AccessibilityServiceChecker, NOT an in-process flag. The system setting
+     * survives process death, so reopening the app no longer falsely reports the
+     * service as disabled (which used to nag the user to re-grant permission).
      */
     private val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
@@ -96,7 +97,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     /** Re-check the accessibility service status. Called when the screen resumes. */
     fun refreshServiceStatus() {
-        _isServiceRunning.value = AppauseAccessibilityService.isRunning
+        _isServiceRunning.value = AccessibilityServiceChecker.isEnabled(getApplication())
     }
 
     /**

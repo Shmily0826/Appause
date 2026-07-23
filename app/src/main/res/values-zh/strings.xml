@@ -148,6 +148,15 @@
     <string name="theme_system">跟随系统</string>
 
     <!-- ═══════════════════════════════════════════ -->
+    <!-- Recommended Apps                             -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="recommended_apps_title">推荐应用</string>
+    <string name="recommended_apps_home_desc">冷却时推荐使用的替代应用</string>
+    <string name="recommended_apps_desc">冷却页面上会推荐这些应用——"不如试试这些？"</string>
+    <string name="recommended_apps_empty">还没有推荐应用。添加后会在冷却时作为替代建议显示。</string>
+    <string name="recommended_apps_count">%d 个应用</string>
+
+    <!-- ═══════════════════════════════════════════ -->
     <!-- Pause Screen                                 -->
     <!-- ═══════════════════════════════════════════ -->
     <string name="pause_cancel">取消</string>

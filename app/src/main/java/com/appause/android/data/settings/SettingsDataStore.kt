@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -48,6 +49,7 @@ class SettingsDataStore(private val context: Context) {
         val DEFAULT_PROMPT_KEY = stringPreferencesKey("default_prompt")
         val LANGUAGE_KEY = stringPreferencesKey("language")
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
+        val RECOMMENDED_APPS_KEY = stringSetPreferencesKey("recommended_apps")
 
         // SharedPreferences key for sync locale override (used in attachBaseContext)
         private const val PREFS_NAME = "appause_locale_prefs"
@@ -91,6 +93,15 @@ class SettingsDataStore(private val context: Context) {
         preferences[THEME_MODE_KEY] ?: "system"
     }
 
+    /**
+     * The global set of recommended app package names.
+     * These are shown as suggestions on the cooldown screen ("try one of these instead").
+     * Replaces the old per-group "learning" type — now a single global list.
+     */
+    val recommendedApps: Flow<Set<String>> = context.dataStore.data.map { preferences ->
+        preferences[RECOMMENDED_APPS_KEY] ?: emptySet()
+    }
+
     // ── Write operations (suspend functions — must be called from a coroutine) ──
 
     /** Update the master toggle. */
@@ -130,6 +141,13 @@ class SettingsDataStore(private val context: Context) {
             preferences[THEME_MODE_KEY] = mode
         }
         syncThemeModeToPrefs(mode)
+    }
+
+    /** Update the global recommended apps list. */
+    suspend fun setRecommendedApps(packages: Set<String>) {
+        context.dataStore.edit { preferences ->
+            preferences[RECOMMENDED_APPS_KEY] = packages
+        }
     }
 
     /**

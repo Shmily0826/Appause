@@ -83,6 +83,7 @@ fun HomeScreen(
     onNavigateToGroupEditor: (Long?) -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToStats: () -> Unit,
+    onNavigateToRecommended: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val groups by viewModel.groups.collectAsStateWithLifecycle()
@@ -167,6 +168,38 @@ fun HomeScreen(
                     cancelled = cancelledToday,
                     onClick = onNavigateToStats
                 )
+            }
+
+            // ── Recommended Apps entry ──
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onNavigateToRecommended
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.recommended_apps_title),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                text = stringResource(R.string.recommended_apps_home_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
 
             // ── Groups Section ──
