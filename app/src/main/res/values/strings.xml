@@ -35,6 +35,12 @@
     <string name="service_active">Service active</string>
     <string name="open_settings">Open settings</string>
 
+    <!-- OEM guidance dialog (Xiaomi / Huawei background management) -->
+    <string name="service_off_help">Why it keeps turning off</string>
+    <string name="service_help_title">Keeping the service running</string>
+    <string name="got_it">Got it</string>
+    <string name="service_help_body">On Xiaomi (HyperOS/MIUI) and Huawei (HarmonyOS/EMUI) devices, the system may turn off Appause\'s accessibility service after you clear background apps or restart the phone. This is the system\'s background management, not an Appause bug.\n\nTo keep it running:\n• Allow Appause to autostart in your phone\'s app settings.\n• Set battery optimization to no restrictions.\n• Lock Appause in the recent-tasks screen.\n\nThen re-enable the service in Accessibility settings.</string>
+
     <string name="appause_enabled">Enabled</string>
     <string name="appause_disabled">Disabled</string>
     <string name="cd_master_toggle">Toggle Appause on or off</string>

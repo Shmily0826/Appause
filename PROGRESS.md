@@ -32,6 +32,24 @@
 
 ## Log
 
+### 2026-07-23 (Accessibility service persistence fix)
+- Root cause: the static `isRunning` flag in AppauseAccessibilityService reset
+  to false whenever the OS killed the process, causing a false "Service not
+  enabled" report even though the system permission was still granted.
+- Fix: removed the static flag entirely. Added `AccessibilityServiceChecker`
+  object that reads `Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES` directly —
+  the system-level record that survives process death and reboot.
+  HomeViewModel and SettingsViewModel now call this checker instead of the flag.
+- OEM guidance: on Xiaomi (HyperOS/MIUI) and Huawei (HarmonyOS/EMUI) the system
+  genuinely removes the service from the enabled list after a force-stop or
+  reboot. This cannot be re-enabled programmatically (AGENTS.md rule 3).
+  Added a "Why it keeps turning off" button on the warning card that opens an
+  AlertDialog explaining the cause and listing the manual steps: allow autostart,
+  set battery to no restrictions, lock in recents, then re-enable in settings.
+- New strings (EN + ZH): service_off_help, service_help_title, service_help_body,
+  got_it.
+- BUILD SUCCESSFUL via `gradlew assembleDebug`.
+
 ### 2026-07-22 (In-app dark mode)
 - Added a user-selectable theme mode in Settings: Light / Dark / Follow system.
 - Persisted in DataStore (`theme_mode`), mirrored to SharedPreferences for a
