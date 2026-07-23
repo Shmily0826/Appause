@@ -78,6 +78,14 @@
     <string name="cooldown_seconds_suffix">sec</string>
     <string name="cooldown_range_start">1s</string>
     <string name="cooldown_range_end">60s</string>
+
+    <!-- Re-remind (periodic nudge while inside a distracting app) -->
+    <string name="re_remind_label">Re-remind</string>
+    <string name="re_remind_desc">Pop up the cooldown screen again after using the app for a while.</string>
+    <string name="re_remind_off">Off</string>
+    <string name="re_remind_value">%d min</string>
+    <string name="re_remind_range_end">60 min</string>
+
     <string name="label_seconds">Seconds</string>
     <string name="select_apps_button">Select Apps (%d selected)</string>
     <string name="add_apps">Add apps</string>

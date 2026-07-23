@@ -32,7 +32,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GroupApp::class,
         AppLaunchRecord::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false  // Simplified for v1; enable for production migration tracking
 )
 @TypeConverters(Converters::class)
@@ -77,6 +77,20 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             }
         }
+
+        /**
+         * Migration from version 3 to 4: add "reRemindMinutes" column to app_groups.
+         *
+         * Existing groups get 0 (disabled). Users can opt in per-group via the
+         * group editor slider.
+         */
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE app_groups ADD COLUMN reRemindMinutes INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
         /**
          * Singleton instance.
          *
@@ -100,7 +114,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "appause.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { INSTANCE = it }
             }

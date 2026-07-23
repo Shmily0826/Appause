@@ -105,6 +105,7 @@ fun GroupEditorScreen(
     val name by viewModel.name.collectAsStateWithLifecycle()
     val type by viewModel.type.collectAsStateWithLifecycle()
     val cooldownSeconds by viewModel.cooldownSeconds.collectAsStateWithLifecycle()
+    val reRemindMinutes by viewModel.reRemindMinutes.collectAsStateWithLifecycle()
     val selectedPackages by viewModel.selectedPackages.collectAsStateWithLifecycle()
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
     val saveCompleted by viewModel.saveCompleted.collectAsStateWithLifecycle()
@@ -327,6 +328,56 @@ fun GroupEditorScreen(
                         Spacer(modifier = Modifier.weight(1f))
                         Text(
                             text = stringResource(R.string.cooldown_range_end),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // ── Re-remind (pop up the cooldown screen again after N minutes) ──
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.re_remind_label),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        // Show current value: "Off" or "N min"
+                        Text(
+                            text = if (reRemindMinutes == 0) {
+                                stringResource(R.string.re_remind_off)
+                            } else {
+                                stringResource(R.string.re_remind_value, reRemindMinutes)
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (reRemindMinutes > 0) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.re_remind_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    // 0 = off, 1–60 = interval in minutes
+                    Slider(
+                        value = reRemindMinutes.toFloat(),
+                        onValueChange = { viewModel.updateReRemind(it.toInt()) },
+                        valueRange = 0f..60f,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = stringResource(R.string.re_remind_off),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = stringResource(R.string.re_remind_range_end),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

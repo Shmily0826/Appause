@@ -32,6 +32,21 @@
 
 ## Log
 
+### 2026-07-23 (Re-remind feature + wording fix)
+- New feature: per-group "Re-remind" — after the user completes the cooldown
+  and enters the app, the cooldown screen pops up again after N minutes if
+  they're still inside. Configurable per group via a 0–60 min slider in the
+  group editor (0 = off). Only applies to Cooldown (pause) groups.
+- Implementation: AppGroup.reRemindMinutes field + MIGRATION_3_4 (DB v4);
+  AccessibilityService.scheduleReRemind() uses a coroutine delay + checks
+  lastForegroundPackage before re-showing the overlay; timer is cancelled
+  when the user leaves the app.
+- Wording: stat_cancelled ZH "避开" → "阻止"; OEM guidance text made generic
+  ("some Android devices" instead of naming only Xiaomi/Huawei).
+- New strings (EN + ZH): re_remind_label, re_remind_desc, re_remind_off,
+  re_remind_value, re_remind_range_end.
+- BUILD SUCCESSFUL via `gradlew assembleDebug`.
+
 ### 2026-07-23 (Accessibility service persistence fix)
 - Root cause: the static `isRunning` flag in AppauseAccessibilityService reset
   to false whenever the OS killed the process, causing a false "Service not

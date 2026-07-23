@@ -13,7 +13,9 @@ import com.appause.android.R
 import com.appause.android.interception.InterceptionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -41,10 +43,6 @@ class AppauseAccessibilityService : AccessibilityService() {
         private const val TAG = "AppauseA11yService"
         private const val NOTIFICATION_CHANNEL_ID = "appause_monitoring"
         private const val NOTIFICATION_ID = 1
-
-        /** Whether the service is currently running. Used by UI to show status. */
-        var isRunning: Boolean = false
-            private set
 
         /**
          * Guard flag: true while the cooldown overlay is showing.
@@ -93,9 +91,19 @@ class AppauseAccessibilityService : AccessibilityService() {
      */
     private var lastForegroundPackage: String? = null
 
+    /**
+     * Scheduled re-remind timers, keyed by target package name.
+     *
+     * When the user completes a cooldown and enters the app, we schedule a
+     * delayed job. If the user is still in the app when the timer fires,
+     * we clear the bypass and show the cooldown overlay again.
+     *
+     * Cancelled when the user leaves the app (bypass cleanup).
+     */
+    private val reRemindJobs = mutableMapOf<String, Job>()
+
     override fun onServiceConnected() {
         super.onServiceConnected()
-        isRunning = true
         Log.d(TAG, "AccessibilityService connected and running")
 
         // Show a persistent notification to indicate the service is actively monitoring.
@@ -210,6 +218,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                 if (InterceptionManager.isBypassed(last) && last != packageName) {
                     Log.d(TAG, "Cleanup: clearing bypass for $last (user left the app)")
                     InterceptionManager.clearBypass(last)
+                    cancelReRemind(last)
                 }
             }
             return
@@ -221,6 +230,7 @@ class AppauseAccessibilityService : AccessibilityService() {
             if (InterceptionManager.isBypassed(last)) {
                 Log.d(TAG, "Cleanup: clearing bypass for $last (user left the app)")
                 InterceptionManager.clearBypass(last)
+                cancelReRemind(last)
             }
         }
 
@@ -241,7 +251,7 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         // 7. Intercept! Show the cooldown overlay.
         Log.d(TAG, "INTERCEPT: $packageName → group=${group.name}, cooldown=${group.cooldownSeconds}s")
-        showCooldownOverlay(packageName, group.id, group.cooldownSeconds)
+        showCooldownOverlay(packageName, group.id, group.cooldownSeconds, group.reRemindMinutes)
     }
 
     /**
@@ -276,8 +286,58 @@ class AppauseAccessibilityService : AccessibilityService() {
      * - The overlay captures all touches, so the user can only interact
      *   with the Cancel or Continue buttons.
      */
-    private fun showCooldownOverlay(packageName: String, groupId: Long, cooldownSeconds: Int) {
-        overlayManager.show(this, packageName, groupId, cooldownSeconds)
+    private fun showCooldownOverlay(
+        packageName: String,
+        groupId: Long,
+        cooldownSeconds: Int,
+        reRemindMinutes: Int = 0
+    ) {
+        overlayManager.show(this, packageName, groupId, cooldownSeconds, reRemindMinutes)
+    }
+
+    /**
+     * Schedule a re-remind timer for the given package.
+     *
+     * Called by OverlayManager after the user taps "Continue" and the group
+     * has reRemindMinutes > 0. When the timer fires:
+     * - If the user is still in the target app → clear bypass, show overlay again.
+     * - If the user already left → do nothing (bypass was already cleaned up).
+     *
+     * Only one timer per package is active at a time (previous is cancelled).
+     */
+    fun scheduleReRemind(targetPackage: String, groupId: Long, cooldownSeconds: Int, minutes: Int) {
+        if (minutes <= 0) return
+
+        // Cancel any existing timer for this package (e.g., from a previous Continue)
+        cancelReRemind(targetPackage)
+
+        Log.d(TAG, "Scheduling re-remind for $targetPackage in $minutes min")
+
+        val job = serviceScope.launch {
+            delay(minutes * 60 * 1000L)
+
+            // Timer fired — check if the user is still in the target app
+            if (lastForegroundPackage == targetPackage && !pauseShown) {
+                Log.d(TAG, "Re-remind fired: user still in $targetPackage, showing overlay")
+                InterceptionManager.clearBypass(targetPackage)
+                showCooldownOverlay(targetPackage, groupId, cooldownSeconds, minutes)
+            } else {
+                Log.d(TAG, "Re-remind fired but user left $targetPackage, skipping")
+            }
+
+            // Remove from map (job completed)
+            reRemindJobs.remove(targetPackage)
+        }
+
+        reRemindJobs[targetPackage] = job
+    }
+
+    /**
+     * Cancel a pending re-remind timer for the given package.
+     * Called when the user leaves the app (bypass cleanup) or the service is destroyed.
+     */
+    private fun cancelReRemind(packageName: String) {
+        reRemindJobs.remove(packageName)?.cancel()
     }
 
     override fun onInterrupt() {
@@ -286,7 +346,10 @@ class AppauseAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         super.onDestroy()
-        isRunning = false
+
+        // Cancel all pending re-remind timers
+        reRemindJobs.values.forEach { it.cancel() }
+        reRemindJobs.clear()
 
         // Clean up the overlay if it's showing when the service is destroyed
         if (overlayManager.isShowing) {

@@ -43,6 +43,14 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
     private val _type = MutableStateFlow(AppGroup.TYPE_PAUSE)
     val type: StateFlow<String> = _type.asStateFlow()
 
+    /**
+     * Re-remind interval in minutes (0 = disabled, 1–60 = active).
+     * After the user enters the app, the cooldown screen pops up again
+     * after this many minutes if they're still inside.
+     */
+    private val _reRemindMinutes = MutableStateFlow(0)
+    val reRemindMinutes: StateFlow<Int> = _reRemindMinutes.asStateFlow()
+
     private val _selectedPackages = MutableStateFlow<List<String>>(emptyList())
     val selectedPackages: StateFlow<List<String>> = _selectedPackages.asStateFlow()
 
@@ -73,6 +81,7 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
                 _name.value = group.name
                 _cooldownSeconds.value = group.cooldownSeconds
                 _type.value = group.type
+                _reRemindMinutes.value = group.reRemindMinutes
                 _selectedPackages.value = repository.getPackageNamesInGroup(groupId)
             }
         }
@@ -91,6 +100,11 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
     fun updateCooldown(seconds: Int) {
         // Clamp to valid range: 1–300 seconds
         _cooldownSeconds.value = seconds.coerceIn(1, 300)
+    }
+
+    fun updateReRemind(minutes: Int) {
+        // Clamp to valid range: 0–60 minutes (0 = disabled)
+        _reRemindMinutes.value = minutes.coerceIn(0, 60)
     }
 
     /**
@@ -125,7 +139,8 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
                 id = existingGroupId,
                 name = groupName,
                 cooldownSeconds = _cooldownSeconds.value,
-                type = _type.value
+                type = _type.value,
+                reRemindMinutes = _reRemindMinutes.value
             )
             repository.saveGroupWithApps(group, _selectedPackages.value)
             _saveCompleted.value = true

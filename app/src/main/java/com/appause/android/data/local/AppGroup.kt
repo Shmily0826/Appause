@@ -54,7 +54,20 @@ data class AppGroup(
      * Stored as a plain String (not an enum) because Room persists it directly
      * and a String keeps the SQL migration simple.
      */
-    val type: String = TYPE_PAUSE
+    val type: String = TYPE_PAUSE,
+
+    /**
+     * Re-remind interval in minutes. Range: 0–60.
+     *
+     * - 0 = disabled (no re-remind).
+     * - 1–60 = after the user completes the cooldown and enters the app,
+     *   the cooldown screen pops up again after this many minutes — but only
+     *   if the user is still inside the target app.
+     *
+     * Only meaningful for [TYPE_PAUSE] groups. Learning groups are never
+     * intercepted, so re-remind does not apply to them.
+     */
+    val reRemindMinutes: Int = 0
 ) {
     companion object {
         /** Distracting apps that get intercepted with a cooldown. */

@@ -47,7 +47,7 @@
 
     <string name="today">今日</string>
     <string name="stat_waited">完成</string>
-    <string name="stat_cancelled">放弃</string>
+    <string name="stat_cancelled">阻止</string>
 
     <string name="your_groups">你的分组</string>
     <string name="no_groups_hint">还没有分组。点击"新建分组"创建你的第一个分组。</string>
@@ -77,6 +77,14 @@
     <string name="cooldown_seconds_suffix">秒</string>
     <string name="cooldown_range_start">1秒</string>
     <string name="cooldown_range_end">60秒</string>
+
+    <!-- 再次提醒（使用一段时间后重新弹出冷却页） -->
+    <string name="re_remind_label">再次提醒</string>
+    <string name="re_remind_desc">使用一段时间后再次弹出冷却页面。</string>
+    <string name="re_remind_off">关闭</string>
+    <string name="re_remind_value">%d 分钟</string>
+    <string name="re_remind_range_end">60 分钟</string>
+
     <string name="label_seconds">秒</string>
     <string name="select_apps_button">选择应用（已选 %d 个）</string>
     <string name="add_apps">添加应用</string>
