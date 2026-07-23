@@ -44,11 +44,18 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
     val type: StateFlow<String> = _type.asStateFlow()
 
     /**
-     * Re-remind interval in minutes (0 = disabled, 1–60 = active).
-     * After the user enters the app, the cooldown screen pops up again
-     * after this many minutes if they're still inside.
+     * Whether re-remind is enabled. Separate from the interval value so that
+     * turning it off doesn't lose the user's chosen interval.
      */
-    private val _reRemindMinutes = MutableStateFlow(0)
+    private val _reRemindEnabled = MutableStateFlow(false)
+    val reRemindEnabled: StateFlow<Boolean> = _reRemindEnabled.asStateFlow()
+
+    /**
+     * Re-remind interval in minutes (1–60). Always holds a valid value even
+     * when re-remind is disabled, so re-enabling restores the last setting.
+     * Persisted as 0 in the DB when disabled.
+     */
+    private val _reRemindMinutes = MutableStateFlow(10)
     val reRemindMinutes: StateFlow<Int> = _reRemindMinutes.asStateFlow()
 
     private val _selectedPackages = MutableStateFlow<List<String>>(emptyList())
@@ -81,7 +88,9 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
                 _name.value = group.name
                 _cooldownSeconds.value = group.cooldownSeconds
                 _type.value = group.type
-                _reRemindMinutes.value = group.reRemindMinutes
+                // DB stores 0 = disabled, 1–60 = enabled with that interval.
+                _reRemindEnabled.value = group.reRemindMinutes > 0
+                _reRemindMinutes.value = group.reRemindMinutes.coerceIn(1, 60)
                 _selectedPackages.value = repository.getPackageNamesInGroup(groupId)
             }
         }
@@ -102,9 +111,13 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
         _cooldownSeconds.value = seconds.coerceIn(1, 300)
     }
 
+    fun updateReRemindEnabled(enabled: Boolean) {
+        _reRemindEnabled.value = enabled
+    }
+
     fun updateReRemind(minutes: Int) {
-        // Clamp to valid range: 0–60 minutes (0 = disabled)
-        _reRemindMinutes.value = minutes.coerceIn(0, 60)
+        // Clamp to valid range: 1–60 minutes
+        _reRemindMinutes.value = minutes.coerceIn(1, 60)
     }
 
     /**
@@ -140,7 +153,8 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
                 name = groupName,
                 cooldownSeconds = _cooldownSeconds.value,
                 type = _type.value,
-                reRemindMinutes = _reRemindMinutes.value
+                // DB: 0 = disabled, 1–60 = enabled with that interval
+                reRemindMinutes = if (_reRemindEnabled.value) _reRemindMinutes.value else 0
             )
             repository.saveGroupWithApps(group, _selectedPackages.value)
             _saveCompleted.value = true

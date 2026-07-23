@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -44,7 +45,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -60,11 +63,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -75,6 +81,10 @@ import com.appause.android.R
 import com.appause.android.data.local.AppGroup
 import com.appause.android.ui.appselect.AppSelectScreen
 
+// Inactive track uses a low-saturation blue-grey to stay consistent with the
+// app's blue theme (the default M3 inactive track can look greenish/minty).
+private val InactiveTrackColor = Color(0xFFD8DEE9)
+
 /**
  * Group Editor Screen — create or edit an app group.
  *
@@ -82,17 +92,11 @@ import com.appause.android.ui.appselect.AppSelectScreen
  * - Top bar with back button, title, and delete button (edit mode only)
  * - Group name text field
  * - Group type selector (Cooldown vs Recommended)
- * - Cooldown header with inline value input + continuous slider (pause only)
+ * - Cooldown time setting (slider + number input, bidirectionally synced)
+ * - Re-remind setting (switch + slider + number input)
  * - "Add apps" list item (navigates to App Select screen)
  * - "Apps in this group" section (icon + name + remove button, or empty state)
  * - Pinned Save/Cancel bottom bar (keyboard- and nav-bar-aware)
- *
- * Data flow:
- * 1. User enters name and cooldown → stored in ViewModel state
- * 2. User taps "Add apps" → navigates to AppSelectScreen
- * 3. User picks apps → confirmed → cached in AppSelectScreen.cachedSelectedPackages
- * 4. User returns here → LaunchedEffect reads cache → updates ViewModel
- * 5. User taps Save → ViewModel writes to Repository → navigates back
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -105,27 +109,14 @@ fun GroupEditorScreen(
     val name by viewModel.name.collectAsStateWithLifecycle()
     val type by viewModel.type.collectAsStateWithLifecycle()
     val cooldownSeconds by viewModel.cooldownSeconds.collectAsStateWithLifecycle()
+    val reRemindEnabled by viewModel.reRemindEnabled.collectAsStateWithLifecycle()
     val reRemindMinutes by viewModel.reRemindMinutes.collectAsStateWithLifecycle()
     val selectedPackages by viewModel.selectedPackages.collectAsStateWithLifecycle()
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
     val saveCompleted by viewModel.saveCompleted.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    // Delete confirmation dialog visibility. The group is only removed after
-    // the user explicitly confirms — never on a single tap of the trash icon.
     var showDeleteDialog by remember { mutableStateOf(false) }
-
-    // Local text mirror of the cooldown value so the input field can be
-    // edited freely (including being momentarily empty) while staying in
-    // sync with the slider in both directions.
-    var cooldownText by remember { mutableStateOf(cooldownSeconds.toString()) }
-    LaunchedEffect(cooldownSeconds) {
-        // Slider moved (or value was clamped) → update the text field,
-        // unless it already shows the same number.
-        if (cooldownText.toIntOrNull() != cooldownSeconds) {
-            cooldownText = cooldownSeconds.toString()
-        }
-    }
 
     // Load existing group data when editing
     LaunchedEffect(groupId) {
@@ -142,9 +133,7 @@ fun GroupEditorScreen(
         if (saveCompleted) onNavigateBack()
     }
 
-    // Display name of the first selected app — used in the delete dialog
-    // message ("YouTube will no longer use this cooldown rule.").
-    // Falls back to the group name when the group has no apps yet.
+    // Display name of the first selected app — used in the delete dialog message.
     val firstAppLabel = remember(selectedPackages, name) {
         selectedPackages.firstOrNull()?.let { pkg ->
             try {
@@ -184,10 +173,6 @@ fun GroupEditorScreen(
             )
         },
         bottomBar = {
-            // Pinned Save/Cancel bar — always visible even when the form is long.
-            // imePadding() lifts the bar above the soft keyboard so Save is never
-            // covered while typing; navigationBarsPadding() keeps it clear of the
-            // gesture bar / 3-button bar when the keyboard is hidden.
             Surface(
                 tonalElevation = 3.dp,
                 modifier = Modifier
@@ -218,10 +203,12 @@ fun GroupEditorScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Spacer(modifier = Modifier.height(4.dp))
+
             // ── Group Name ──
             OutlinedTextField(
                 value = name,
@@ -231,7 +218,6 @@ fun GroupEditorScreen(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            // Explain why the Save button is greyed out until a name is entered.
             if (name.isBlank()) {
                 Text(
                     text = stringResource(R.string.group_name_required_hint),
@@ -245,8 +231,6 @@ fun GroupEditorScreen(
                 text = stringResource(R.string.group_type_label),
                 style = MaterialTheme.typography.titleMedium
             )
-            // IntrinsicSize.Max makes both cards share the same height even if
-            // one description wraps to more lines than the other.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -273,88 +257,38 @@ fun GroupEditorScreen(
                 )
             }
 
-            // ── Cooldown (pause groups only — recommended groups are never blocked) ──
+            // ── Cooldown + Re-remind (pause groups only) ──
             if (type == AppGroup.TYPE_PAUSE) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    // Header row: "Cooldown" title … [ 10 ] sec
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = stringResource(R.string.cooldown_label),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        // Compact value input, kept in sync with the slider below.
-                        OutlinedTextField(
-                            value = cooldownText,
-                            onValueChange = { value ->
-                                // Digits only, max 2 chars (valid range is 1–60).
-                                val digits = value.filter { it.isDigit() }.take(2)
-                                cooldownText = digits
-                                digits.toIntOrNull()?.let { entered ->
-                                    // Out-of-range input is clamped immediately;
-                                    // the LaunchedEffect above writes the clamped
-                                    // value back into the field.
-                                    viewModel.updateCooldown(entered.coerceIn(1, 60))
-                                }
-                            },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
-                            modifier = Modifier.width(72.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.cooldown_seconds_suffix),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    // Continuous slider — no `steps` parameter, so Compose draws a
-                    // smooth track with a single round thumb instead of the dense
-                    // row of tick dots the old `steps = 58` produced.
-                    Slider(
-                        value = cooldownSeconds.toFloat(),
-                        onValueChange = { viewModel.updateCooldown(it.toInt()) },
-                        valueRange = 1f..60f,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    // Range hints under the slider ends.
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = stringResource(R.string.cooldown_range_start),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(
-                            text = stringResource(R.string.cooldown_range_end),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // ── Re-remind (pop up the cooldown screen again after N minutes) ──
+                // Cooldown time — unified slider + input component
+                TimeSliderInput(
+                    title = stringResource(R.string.cooldown_label),
+                    value = cooldownSeconds,
+                    unit = stringResource(R.string.cooldown_seconds_suffix),
+                    minValue = 1,
+                    maxValue = 60,
+                    onValueChange = viewModel::updateCooldown,
+                    rangeStartLabel = stringResource(R.string.cooldown_range_start),
+                    rangeEndLabel = stringResource(R.string.cooldown_range_end)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Re-remind: Switch header + description
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Text(
                             text = stringResource(R.string.re_remind_label),
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.weight(1f)
                         )
-                        Spacer(modifier = Modifier.weight(1f))
-                        // Show current value: "Off" or "N min"
-                        Text(
-                            text = if (reRemindMinutes == 0) {
-                                stringResource(R.string.re_remind_off)
-                            } else {
-                                stringResource(R.string.re_remind_value, reRemindMinutes)
-                            },
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = if (reRemindMinutes > 0) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            }
+                        Switch(
+                            checked = reRemindEnabled,
+                            onCheckedChange = viewModel::updateReRemindEnabled
                         )
                     }
                     Text(
@@ -362,37 +296,36 @@ fun GroupEditorScreen(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    // 0 = off, 1–60 = interval in minutes
-                    Slider(
-                        value = reRemindMinutes.toFloat(),
-                        onValueChange = { viewModel.updateReRemind(it.toInt()) },
-                        valueRange = 0f..60f,
-                        modifier = Modifier.fillMaxWidth()
+                }
+
+                // Interval slider + input (visible only when switch is on)
+                if (reRemindEnabled) {
+                    TimeSliderInput(
+                        title = stringResource(R.string.re_remind_interval_label),
+                        value = reRemindMinutes,
+                        unit = stringResource(R.string.re_remind_unit),
+                        minValue = 1,
+                        maxValue = 60,
+                        onValueChange = viewModel::updateReRemind,
+                        rangeStartLabel = stringResource(R.string.re_remind_range_start),
+                        rangeEndLabel = stringResource(R.string.re_remind_range_end)
                     )
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = stringResource(R.string.re_remind_off),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(
-                            text = stringResource(R.string.re_remind_range_end),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.re_remind_disabled_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
                 }
             }
 
-            // ── Add Apps (standard list-item entry) ──
-            // Full-width tappable row: [+ icon] Add apps …… N apps selected >
-            // Resolve the label outside the semantics lambda — stringResource()
-            // needs a @Composable context and semantics {} is not one.
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // ── Add Apps ──
             val addAppsLabel = stringResource(R.string.cd_add_apps)
             Card(
                 onClick = {
-                    // Cache current selection so AppSelectScreen can pre-check them
                     AppSelectScreen.cachedInitialPackages = selectedPackages.toList()
                     onNavigateToAppSelect()
                 },
@@ -439,13 +372,12 @@ fun GroupEditorScreen(
                 }
             }
 
-            // ── Selected Apps — independent section title + list (or empty state) ──
+            // ── Selected Apps ──
             Text(
                 text = stringResource(R.string.apps_in_group),
                 style = MaterialTheme.typography.titleMedium
             )
             if (selectedPackages.isEmpty()) {
-                // Clear empty state instead of hiding the section entirely.
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
@@ -480,7 +412,6 @@ fun GroupEditorScreen(
                                 packageName = pkg,
                                 onRemove = { viewModel.removePackage(pkg) }
                             )
-                            // Divider between rows (not after the last one).
                             if (index < selectedPackages.lastIndex) {
                                 HorizontalDivider(
                                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -491,13 +422,14 @@ fun GroupEditorScreen(
                     }
                 }
             }
+
+            // Bottom spacing so content isn't hidden behind the bottom bar
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 
     // ── Delete confirmation dialog ──
     if (showDeleteDialog) {
-        // Quantity drives the plural form; when the group has no apps we still
-        // use the singular phrasing with the group name as the subject.
         val quantity = selectedPackages.size.coerceAtLeast(1)
         val otherCount = (selectedPackages.size - 1).coerceAtLeast(0)
         val message = pluralStringResource(
@@ -531,17 +463,155 @@ fun GroupEditorScreen(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Reusable time setting component
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A unified time-setting control used by both "Cooldown" and "Re-remind".
+ *
+ * Layout:
+ *   Row 1: [title]                    [ input ] [unit]
+ *   Row 2: [slider with circular thumb, continuous track]
+ *   Row 3: [rangeStart]              [rangeEnd]
+ *
+ * Bidirectional sync:
+ * - Dragging the slider updates the input text in real time.
+ * - Typing in the input updates the slider position (clamped to range).
+ * - Final validation (clamp + correct text) happens on focus loss or IME Done,
+ *   NOT on every keystroke — so the user can type "10" without being
+ *   interrupted after typing "1".
+ */
+@Composable
+private fun TimeSliderInput(
+    title: String,
+    value: Int,
+    unit: String,
+    minValue: Int,
+    maxValue: Int,
+    onValueChange: (Int) -> Unit,
+    rangeStartLabel: String,
+    rangeEndLabel: String,
+    enabled: Boolean = true,
+    modifier: Modifier = Modifier
+) {
+    val focusManager = LocalFocusManager.current
+
+    // Local text mirror — allows the user to type freely (including being
+    // momentarily empty) without the slider fighting back on every keystroke.
+    var textValue by remember { mutableStateOf(value.toString()) }
+    var isEditing by remember { mutableStateOf(false) }
+
+    // When the slider moves (or the value is loaded/clamped externally),
+    // sync the text field — but only when the user isn't actively typing.
+    LaunchedEffect(value) {
+        if (!isEditing) {
+            textValue = value.toString()
+        }
+    }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        // Row 1: title … [input] unit
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            // Compact number input — 64dp wide, centered digits.
+            OutlinedTextField(
+                value = textValue,
+                onValueChange = { newText ->
+                    // Digits only, max 2 characters (range is at most 1–60).
+                    val digits = newText.filter { it.isDigit() }.take(2)
+                    textValue = digits
+                    // Update the slider immediately with the clamped value,
+                    // but don't correct the text yet (user may be mid-input).
+                    digits.toIntOrNull()?.let { parsed ->
+                        onValueChange(parsed.coerceIn(minValue, maxValue))
+                    }
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = { focusManager.clearFocus() }
+                ),
+                singleLine = true,
+                enabled = enabled,
+                textStyle = LocalTextStyle.current.copy(
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
+                ),
+                modifier = Modifier
+                    .width(64.dp)
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            isEditing = true
+                        } else if (isEditing) {
+                            // Focus lost → final validation: clamp and correct text.
+                            isEditing = false
+                            val validated = textValue.toIntOrNull()
+                                ?.coerceIn(minValue, maxValue) ?: value
+                            textValue = validated.toString()
+                            onValueChange(validated)
+                        }
+                    }
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = unit,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Row 2: Slider — standard circular thumb, continuous track.
+        // No `steps` parameter → smooth track, no dense tick dots.
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onValueChange(it.toInt()) },
+            valueRange = minValue.toFloat()..maxValue.toFloat(),
+            enabled = enabled,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = InactiveTrackColor,
+                disabledThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                disabledActiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f),
+                disabledInactiveTrackColor = InactiveTrackColor.copy(alpha = 0.38f)
+            ),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        // Row 3: range endpoint labels
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = rangeStartLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = rangeEndLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Group type selector card
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
  * A selectable card for choosing the group type (Cooldown vs Recommended).
- *
- * Selected state is conveyed three ways (never by color alone):
- * a light primary-container background, a 2dp primary border, and a check
- * icon pinned to the top-right corner. Unselected cards are white with a
- * light grey outline.
- *
- * Both cards are given equal height by the parent Row (IntrinsicSize.Max +
- * fillMaxHeight), and the description uses the normal bodySmall size — no
- * extra shrinking, so text scales properly with the system font size.
+ * Selected state: primary-container background + 2dp primary border + check icon.
  */
 @Composable
 private fun TypeOptionCard(
@@ -596,8 +666,6 @@ private fun TypeOptionCard(
                     }
                 )
             }
-            // Check icon pinned to the top-right corner. It always occupies its
-            // space (transparent when unselected) so the layout doesn't shift.
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = null,
@@ -615,19 +683,18 @@ private fun TypeOptionCard(
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Selected app row
+// ─────────────────────────────────────────────────────────────────────────────
+
 /**
- * One selected app shown as: icon + name + a remove (×) button.
- *
- * The icon and display name are resolved from PackageManager on demand and
- * cached with remember — we never store Drawables in the ViewModel.
- * The remove button's accessibility label includes the app name
- * (e.g. "Remove YouTube") so TalkBack users know exactly what they're removing.
+ * One selected app: icon + name + remove (×) button.
+ * The remove button's touch target is the full IconButton (≥48dp).
  */
 @Composable
 private fun SelectedAppRow(packageName: String, onRemove: () -> Unit) {
     val context = LocalContext.current
 
-    // Load the app icon on demand (cached per package name).
     val iconBitmap = remember(packageName) {
         try {
             context.packageManager
@@ -639,7 +706,6 @@ private fun SelectedAppRow(packageName: String, onRemove: () -> Unit) {
         }
     }
 
-    // Resolve the user-visible app name; fall back to the raw package name.
     val appName = remember(packageName) {
         try {
             val info = context.packageManager.getApplicationInfo(packageName, 0)
@@ -664,7 +730,6 @@ private fun SelectedAppRow(packageName: String, onRemove: () -> Unit) {
                     .clip(RoundedCornerShape(8.dp))
             )
         } else {
-            // Placeholder when the icon can't be loaded (e.g. app was uninstalled).
             Icon(
                 imageVector = Icons.Default.Apps,
                 contentDescription = appName,
@@ -678,7 +743,6 @@ private fun SelectedAppRow(packageName: String, onRemove: () -> Unit) {
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f)
         )
-        // IconButton provides a ≥48dp touch target by default.
         IconButton(onClick = onRemove) {
             Icon(
                 imageVector = Icons.Default.Close,

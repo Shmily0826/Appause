@@ -82,9 +82,11 @@
     <!-- Re-remind (periodic nudge while inside a distracting app) -->
     <string name="re_remind_label">Re-remind</string>
     <string name="re_remind_desc">Pop up the cooldown screen again after using the app for a while.</string>
-    <string name="re_remind_off">Off</string>
-    <string name="re_remind_value">%d min</string>
+    <string name="re_remind_interval_label">Interval</string>
+    <string name="re_remind_unit">min</string>
+    <string name="re_remind_range_start">1 min</string>
     <string name="re_remind_range_end">60 min</string>
+    <string name="re_remind_disabled_hint">Disabled</string>
 
     <string name="label_seconds">Seconds</string>
     <string name="select_apps_button">Select Apps (%d selected)</string>

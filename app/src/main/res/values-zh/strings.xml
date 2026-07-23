@@ -81,9 +81,11 @@
     <!-- 再次提醒（使用一段时间后重新弹出冷却页） -->
     <string name="re_remind_label">再次提醒</string>
     <string name="re_remind_desc">使用一段时间后再次弹出冷却页面。</string>
-    <string name="re_remind_off">关闭</string>
-    <string name="re_remind_value">%d 分钟</string>
+    <string name="re_remind_interval_label">提醒间隔</string>
+    <string name="re_remind_unit">分钟</string>
+    <string name="re_remind_range_start">1 分钟</string>
     <string name="re_remind_range_end">60 分钟</string>
+    <string name="re_remind_disabled_hint">已关闭</string>
 
     <string name="label_seconds">秒</string>
     <string name="select_apps_button">选择应用（已选 %d 个）</string>
