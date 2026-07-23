@@ -186,21 +186,33 @@ class AppauseAccessibilityService : AccessibilityService() {
         // 2.5. Suppress the stale event that fires for the app the user just
         //      cancelled out of (see justCancelledPackage docs). Without this,
         //      the overlay re-appears on the home screen right after Cancel.
-        if (justCancelledPackage != null) {
-            if (packageName == justCancelledPackage) {
-                Log.d(TAG, "SKIP: stale event for just-cancelled app ($packageName)")
-                return
-            }
-            // A different app came to the foreground (e.g. the launcher after we
-            // sent the user home) → the cancel suppression is no longer needed.
-            justCancelledPackage = null
+        if (justCancelledPackage != null && packageName == justCancelledPackage) {
+            Log.d(TAG, "SKIP: stale event for just-cancelled app ($packageName)")
+            return
         }
 
-        // 3. Skip common system packages (launcher, settings, etc.)
+        // 3. Skip common system packages (launcher, settings, recents, etc.)
         if (isSystemPackage(packageName)) {
             Log.d(TAG, "SKIP: system package ($packageName)")
+            // The user left the previous app (via Home, Recents, etc.).
+            // If it was bypassed, clear the bypass so re-entering triggers
+            // the cooldown again. Without this, switching away and back
+            // via Recents would skip interception entirely.
+            lastForegroundPackage?.let { last ->
+                if (InterceptionManager.isBypassed(last)) {
+                    Log.d(TAG, "Cleanup: clearing bypass for $last (user went to system UI)")
+                    InterceptionManager.clearBypass(last)
+                    cancelReRemind(last)
+                }
+            }
             lastForegroundPackage = packageName
             return
+        }
+
+        // 3.5. A real (non-system) app came to the foreground.
+        //      Clear the cancel suppression — the user has moved on.
+        if (justCancelledPackage != null) {
+            justCancelledPackage = null
         }
 
         // 4. Check bypass — if the app is bypassed, check if we should clean up
