@@ -52,6 +52,8 @@
 
     <string name="your_groups">你的分组</string>
     <string name="no_groups_hint">还没有分组。点击"新建分组"创建你的第一个分组。</string>
+    <string name="expand_groups">展开全部（还有 %d 个）</string>
+    <string name="collapse_groups">收起</string>
     <string name="new_group">新建分组</string>
     <string name="cooldown_format">打开前冷却 %d 秒</string>
     <string name="badge_pause">冷却</string>

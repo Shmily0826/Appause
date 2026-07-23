@@ -132,6 +132,12 @@ class AppGroupRepository(
         return groupDao.getAppCounts().associate { it.groupId to it.appCount }
     }
 
+    /** Interception counts per group since a given time (for frequency sorting). */
+    suspend fun getGroupInterceptionCounts(since: Long): Map<Long, Int> {
+        return launchDao.getGroupInterceptionCounts(since)
+            .associate { it.groupId to it.interceptionCount }
+    }
+
     // ── Launch records ──
 
     /**

@@ -87,6 +87,8 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val groups by viewModel.groups.collectAsStateWithLifecycle()
+    val sortedGroups by viewModel.sortedGroups.collectAsStateWithLifecycle()
+    val groupsExpanded by viewModel.groupsExpanded.collectAsStateWithLifecycle()
     val isEnabled by viewModel.isEnabled.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
     val proceededToday by viewModel.proceededToday.collectAsStateWithLifecycle()
@@ -215,7 +217,7 @@ fun HomeScreen(
                 )
             }
 
-            if (groups.isEmpty()) {
+            if (sortedGroups.isEmpty()) {
                 item {
                     Text(
                         text = stringResource(R.string.no_groups_hint),
@@ -225,12 +227,35 @@ fun HomeScreen(
                     )
                 }
             } else {
-                items(groups, key = { it.id }) { group ->
+                // Show top 4 groups (sorted by usage frequency) when collapsed
+                val visibleGroups = if (groupsExpanded || sortedGroups.size <= 4) {
+                    sortedGroups
+                } else {
+                    sortedGroups.take(4)
+                }
+                items(visibleGroups, key = { it.id }) { group ->
                     GroupCard(
                         group = group,
                         appCount = appCounts[group.id] ?: 0,
                         onClick = { onNavigateToGroupEditor(group.id) }
                     )
+                }
+                // Expand/collapse button when there are more than 4 groups
+                if (sortedGroups.size > 4) {
+                    item {
+                        TextButton(
+                            onClick = viewModel::toggleGroupsExpanded,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = if (groupsExpanded) {
+                                    stringResource(R.string.collapse_groups)
+                                } else {
+                                    stringResource(R.string.expand_groups, sortedGroups.size - 4)
+                                }
+                            )
+                        }
+                    }
                 }
             }
 

@@ -52,6 +52,8 @@
 
     <string name="your_groups">Your Groups</string>
     <string name="no_groups_hint">No groups yet. Tap \"New group\" to create your first group.</string>
+    <string name="expand_groups">Show all (%d more)</string>
+    <string name="collapse_groups">Collapse</string>
     <string name="new_group">New group</string>
     <string name="cooldown_format">%ds cooldown before opening</string>
     <string name="badge_pause">Cooldown</string>

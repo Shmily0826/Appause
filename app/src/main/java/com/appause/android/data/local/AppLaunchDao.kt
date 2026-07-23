@@ -87,4 +87,19 @@ interface AppLaunchDao {
         WHERE timestamp >= :since
     """)
     fun observeTotalRatio(since: Long): Flow<TotalRatio>
+
+    /**
+     * Interception count per group (last 7 days).
+     * Joins launch records with group_apps to aggregate by groupId.
+     * Used to sort groups by usage frequency on the Home screen.
+     */
+    @Query("""
+        SELECT ga.groupId AS groupId, COUNT(*) AS interceptionCount
+        FROM app_launch_records r
+        JOIN group_apps ga ON r.packageName = ga.packageName
+        WHERE r.timestamp >= :since
+        GROUP BY ga.groupId
+        ORDER BY interceptionCount DESC
+    """)
+    suspend fun getGroupInterceptionCounts(since: Long): List<GroupInterceptionCount>
 }

@@ -90,6 +90,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _appCounts = MutableStateFlow<Map<Long, Int>>(emptyMap())
     val appCounts: StateFlow<Map<Long, Int>> = _appCounts.asStateFlow()
 
+    /**
+     * Groups sorted by interception frequency (most active first).
+     * Falls back to creation order for groups with no recent interceptions.
+     */
+    private val _sortedGroups = MutableStateFlow<List<AppGroup>>(emptyList())
+    val sortedGroups: StateFlow<List<AppGroup>> = _sortedGroups.asStateFlow()
+
+    /** Whether the full group list is expanded (shows all groups, not just top 4). */
+    private val _groupsExpanded = MutableStateFlow(false)
+    val groupsExpanded: StateFlow<Boolean> = _groupsExpanded.asStateFlow()
+
     init {
         refreshServiceStatus()
         loadAppCounts()
@@ -101,14 +112,24 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Load the number of apps in each group.
-     * Called on init and again whenever the screen resumes (so the counts
-     * refresh after the user edits a group and navigates back).
+     * Load app counts and group interception frequency, then sort groups.
+     * Called on init and again whenever the screen resumes.
      */
     fun loadAppCounts() {
         viewModelScope.launch {
             _appCounts.value = repository.getAppCounts()
+            // Sort groups by 7-day interception frequency (most active first)
+            val sevenDaysAgo = System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000L
+            val counts = repository.getGroupInterceptionCounts(sevenDaysAgo)
+            _sortedGroups.value = groups.value.sortedByDescending { group ->
+                counts[group.id] ?: 0
+            }
         }
+    }
+
+    /** Toggle expand/collapse of the group list. */
+    fun toggleGroupsExpanded() {
+        _groupsExpanded.value = !_groupsExpanded.value
     }
 
     /** Toggle the master on/off switch. */

@@ -37,3 +37,9 @@ data class AppInterceptionCount(
     val packageName: String,
     val interceptionCount: Int
 )
+
+/** Interception count per group (for sorting groups by usage frequency). */
+data class GroupInterceptionCount(
+    val groupId: Long,
+    val interceptionCount: Int
+)
