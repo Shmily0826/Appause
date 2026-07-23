@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -195,7 +196,8 @@ fun AppSelectScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .heightIn(min = 56.dp)
+                                .padding(horizontal = 16.dp, vertical = 10.dp)
                                 .alpha(if (isTaken) 0.45f else 1f)
                                 .then(
                                     if (!isTaken) Modifier.clickable {

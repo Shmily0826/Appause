@@ -174,7 +174,10 @@ fun HomeScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    onClick = onNavigateToRecommended
+                    onClick = onNavigateToRecommended,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
                 ) {
                     Row(
                         modifier = Modifier
