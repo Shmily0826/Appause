@@ -39,7 +39,7 @@
     <string name="service_off_help">为什么总是被关闭</string>
     <string name="service_help_title">让服务保持运行</string>
     <string name="got_it">知道了</string>
-    <string name="service_help_body">在小米（HyperOS/MIUI）和华为（HarmonyOS/EMUI）设备上，清理后台或重启手机后，系统可能会关闭 Appause 的无障碍服务。这是系统的后台管理行为，并非 Appause 的故障。\n\n要让服务保持运行：\n• 在手机的应用设置中允许 Appause 自启动。\n• 将电池优化设为无限制。\n• 在最近任务界面锁定 Appause。\n\n之后再回到无障碍设置中重新开启服务。</string>
+    <string name="service_help_body">在部分安卓设备上（尤其是小米、华为等后台管理较严格的机型），清理后台或重启手机后，系统可能会关闭 Appause 的无障碍服务。这是系统的后台管理行为，并非 Appause 的故障。\n\n要让服务保持运行：\n• 在手机的应用设置中允许 Appause 自启动。\n• 将电池优化设为无限制。\n• 在最近任务界面锁定 Appause。\n\n之后再回到无障碍设置中重新开启服务。</string>
 
     <string name="appause_enabled">已启用</string>
     <string name="appause_disabled">已禁用</string>
@@ -47,7 +47,7 @@
 
     <string name="today">今日</string>
     <string name="stat_waited">完成</string>
-    <string name="stat_cancelled">避开</string>
+    <string name="stat_cancelled">放弃</string>
 
     <string name="your_groups">你的分组</string>
     <string name="no_groups_hint">还没有分组。点击"新建分组"创建你的第一个分组。</string>
