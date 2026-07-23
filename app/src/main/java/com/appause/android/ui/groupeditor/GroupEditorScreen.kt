@@ -298,17 +298,16 @@ fun GroupEditorScreen(
                     )
                 }
 
-                // Interval slider + input (visible only when switch is on)
+                // Interval input (visible only when switch is on) — no slider,
+                // just a compact number input for precise manual entry.
                 if (reRemindEnabled) {
-                    TimeSliderInput(
+                    TimeInputRow(
                         title = stringResource(R.string.re_remind_interval_label),
                         value = reRemindMinutes,
                         unit = stringResource(R.string.re_remind_unit),
                         minValue = 1,
                         maxValue = 60,
-                        onValueChange = viewModel::updateReRemind,
-                        rangeStartLabel = stringResource(R.string.re_remind_range_start),
-                        rangeEndLabel = stringResource(R.string.re_remind_range_end)
+                        onValueChange = viewModel::updateReRemind
                     )
                 } else {
                     Text(
@@ -322,7 +321,13 @@ fun GroupEditorScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ── Add Apps ──
+            // ── Apps in this group ──
+            Text(
+                text = stringResource(R.string.apps_in_group),
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            // Add Apps button
             val addAppsLabel = stringResource(R.string.cd_add_apps)
             Card(
                 onClick = {
@@ -372,11 +377,7 @@ fun GroupEditorScreen(
                 }
             }
 
-            // ── Selected Apps ──
-            Text(
-                text = stringResource(R.string.apps_in_group),
-                style = MaterialTheme.typography.titleMedium
-            )
+            // App list or empty state
             if (selectedPackages.isEmpty()) {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -464,8 +465,89 @@ fun GroupEditorScreen(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Reusable time setting component
+// Reusable time setting components
 // ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A compact input-only time setting row (no slider).
+ * Used for "Re-remind interval" where the user prefers manual entry.
+ *
+ * Layout: [title]                    [ input ] [unit]
+ *
+ * Same validation logic as TimeSliderInput: clamp on focus loss / IME Done.
+ */
+@Composable
+private fun TimeInputRow(
+    title: String,
+    value: Int,
+    unit: String,
+    minValue: Int,
+    maxValue: Int,
+    onValueChange: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val focusManager = LocalFocusManager.current
+    var textValue by remember { mutableStateOf(value.toString()) }
+    var isEditing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(value) {
+        if (!isEditing) {
+            textValue = value.toString()
+        }
+    }
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        OutlinedTextField(
+            value = textValue,
+            onValueChange = { newText ->
+                val digits = newText.filter { it.isDigit() }.take(2)
+                textValue = digits
+                digits.toIntOrNull()?.let { parsed ->
+                    onValueChange(parsed.coerceIn(minValue, maxValue))
+                }
+            },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = { focusManager.clearFocus() }
+            ),
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurface
+            ),
+            modifier = Modifier
+                .width(64.dp)
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused) {
+                        isEditing = true
+                    } else if (isEditing) {
+                        isEditing = false
+                        val validated = textValue.toIntOrNull()
+                            ?.coerceIn(minValue, maxValue) ?: value
+                        textValue = validated.toString()
+                        onValueChange(validated)
+                    }
+                }
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = unit,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
 /**
  * A unified time-setting control used by both "Cooldown" and "Re-remind".

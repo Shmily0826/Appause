@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -59,6 +60,17 @@ object Routes {
 fun AppNavGraph() {
     val navController = rememberNavController()
 
+    // Guard against rapid back-button taps: only pop when the current
+    // destination is fully RESUMED. During a navigation transition the
+    // incoming entry is not yet RESUMED, so a second tap is ignored
+    // instead of popping past the start destination (white screen bug).
+    val safePopBackStack: () -> Unit = {
+        val entry = navController.currentBackStackEntry
+        if (entry != null && entry.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            navController.popBackStack()
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = Routes.HOME
@@ -83,15 +95,13 @@ fun AppNavGraph() {
         }
 
         // ── Group Editor Screen ──
-        // Default route (new group): groupId defaults to -1
         composable(Routes.GROUP_EDITOR) {
             GroupEditorScreen(
                 groupId = -1L,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = safePopBackStack,
                 onNavigateToAppSelect = { navController.navigate(Routes.APP_SELECT) }
             )
         }
-        // Route with groupId argument (editing existing group)
         composable(
             route = Routes.GROUP_EDITOR_WITH_ID,
             arguments = listOf(
@@ -104,7 +114,7 @@ fun AppNavGraph() {
             val groupId = backStackEntry.arguments?.getLong("groupId") ?: -1L
             GroupEditorScreen(
                 groupId = groupId,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = safePopBackStack,
                 onNavigateToAppSelect = { navController.navigate(Routes.APP_SELECT) }
             )
         }
@@ -112,7 +122,7 @@ fun AppNavGraph() {
         // ── App Select Screen ──
         composable(Routes.APP_SELECT) {
             AppSelectScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = safePopBackStack
             )
         }
 
@@ -120,13 +130,8 @@ fun AppNavGraph() {
         composable(Routes.SETTINGS) {
             val activity = LocalContext.current as? Activity
             SettingsScreen(
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = safePopBackStack,
                 onLanguageChanged = {
-                    // Fully restart the app to apply the new locale.
-                    // recreate() doesn't reliably update Compose string resources
-                    // on MIUI because it preserves the old configuration context.
-                    // finish() + startActivity() creates a brand new Activity with
-                    // a fresh attachBaseContext() that reads the updated locale.
                     activity?.let { act ->
                         val restartIntent = act.packageManager
                             .getLaunchIntentForPackage(act.packageName)
@@ -145,7 +150,7 @@ fun AppNavGraph() {
         // ── Statistics Screen ──
         composable(Routes.STATS) {
             StatsScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = safePopBackStack
             )
         }
     }
