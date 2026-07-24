@@ -174,8 +174,7 @@ fun AppSelectScreen(
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     items(filteredApps, key = { it.packageName }) { app ->
                         val isSelected = selectedPackages.contains(app.packageName)
@@ -196,8 +195,8 @@ fun AppSelectScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(min = 56.dp)
-                                .padding(horizontal = 16.dp, vertical = 10.dp)
+                                .heightIn(min = 64.dp)
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
                                 .alpha(if (isTaken) 0.45f else 1f)
                                 .then(
                                     if (!isTaken) Modifier.clickable {
