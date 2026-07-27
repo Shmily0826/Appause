@@ -3,7 +3,7 @@ package com.appause.android.data.query
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.util.Log
+import com.appause.android.util.AppLogger
 
 /**
  * AppQueryService — queries the device for launchable (user-visible) apps.
@@ -98,7 +98,7 @@ class AppQueryService(private val context: Context) {
         return try {
             context.packageManager.getLaunchIntentForPackage(packageName) != null
         } catch (e: Exception) {
-            Log.w(TAG, "Error checking package $packageName: ${e.message}")
+            AppLogger.w(TAG, "Error checking package $packageName: ${e.message}")
             false
         }
     }

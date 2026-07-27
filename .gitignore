@@ -31,3 +31,16 @@ Thumbs.db
 
 # Generated
 captures/
+
+# Signing (never commit keys or signing configs)
+signing.properties
+key.properties
+*.p12
+*.pfx
+*.keystore.*
+
+# Heap dumps
+*.hprof
+
+# Agent / internal tooling (not part of the app)
+.workbuddy/

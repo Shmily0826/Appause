@@ -51,6 +51,14 @@ class SettingsDataStore(private val context: Context) {
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         val RECOMMENDED_APPS_KEY = stringSetPreferencesKey("recommended_apps")
 
+        // ── Pro / license (monetization, plan A scaffolding) ──
+        // pro_unlocked: whether the user has unlocked Appause Pro.
+        // license_token: the (signed) license string used to re-activate the
+        //   app after a factory reset or device switch. Plan B adds real
+        //   server-side signature verification; for now it is just stored.
+        val PRO_UNLOCKED_KEY = booleanPreferencesKey("pro_unlocked")
+        val LICENSE_TOKEN_KEY = stringPreferencesKey("license_token")
+
         // SharedPreferences key for sync locale override (used in attachBaseContext)
         private const val PREFS_NAME = "appause_locale_prefs"
         private const val PREF_LANGUAGE_KEY = "language"
@@ -102,6 +110,22 @@ class SettingsDataStore(private val context: Context) {
         preferences[RECOMMENDED_APPS_KEY] ?: emptySet()
     }
 
+    /**
+     * Whether Appause Pro is unlocked.
+     * Default: false — everyone starts on the free tier.
+     */
+    val isPro: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[PRO_UNLOCKED_KEY] ?: false
+    }
+
+    /**
+     * The stored license token (empty until a license is imported or unlocked).
+     * Used by export/import to let the user restore Pro offline.
+     */
+    val licenseToken: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[LICENSE_TOKEN_KEY] ?: ""
+    }
+
     // ── Write operations (suspend functions — must be called from a coroutine) ──
 
     /** Update the master toggle. */
@@ -147,6 +171,20 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setRecommendedApps(packages: Set<String>) {
         context.dataStore.edit { preferences ->
             preferences[RECOMMENDED_APPS_KEY] = packages
+        }
+    }
+
+    /** Mark Appause Pro as unlocked (or locked). */
+    suspend fun setProUnlocked(unlocked: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PRO_UNLOCKED_KEY] = unlocked
+        }
+    }
+
+    /** Store the license token (used for offline re-activation). */
+    suspend fun setLicenseToken(token: String) {
+        context.dataStore.edit { preferences ->
+            preferences[LICENSE_TOKEN_KEY] = token
         }
     }
 

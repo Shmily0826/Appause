@@ -3,8 +3,8 @@ package com.appause.android.service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import com.appause.android.ui.pause.PauseActivity
+import com.appause.android.util.AppLogger
 
 /**
  * PauseAlarmReceiver — launches PauseActivity when triggered by AlarmManager.
@@ -27,9 +27,9 @@ class PauseAlarmReceiver : BroadcastReceiver() {
         // If PauseActivity was already brought to foreground by the direct startActivity(),
         // skip the alarm backup to avoid recreating the Activity.
         if (!AppauseAccessibilityService.pauseShown) {
-            Log.d(TAG, "pauseShown is false — direct launch may have failed, launching via alarm")
+            AppLogger.d(TAG, "pauseShown is false — direct launch may have failed, launching via alarm")
         } else {
-            Log.d(TAG, "pauseShown is true — direct launch likely succeeded, skipping alarm")
+            AppLogger.d(TAG, "pauseShown is true — direct launch likely succeeded, skipping alarm")
             return
         }
 

@@ -13,6 +13,7 @@ import androidx.navigation.navArgument
 import com.appause.android.ui.appselect.AppSelectScreen
 import com.appause.android.ui.groupeditor.GroupEditorScreen
 import com.appause.android.ui.home.HomeScreen
+import com.appause.android.ui.pro.ProScreen
 import com.appause.android.ui.recommended.RecommendedAppsScreen
 import com.appause.android.ui.settings.SettingsScreen
 import com.appause.android.ui.stats.StatsScreen
@@ -33,6 +34,7 @@ object Routes {
     const val RECOMMENDED = "recommended"
     const val SETTINGS = "settings"
     const val STATS = "stats"
+    const val PRO = "pro"
 
     /** Build a route string for editing an existing group. */
     fun groupEditor(groupId: Long): String = "group_editor/$groupId"
@@ -95,6 +97,9 @@ fun AppNavGraph() {
                 },
                 onNavigateToRecommended = {
                     navController.navigate(Routes.RECOMMENDED)
+                },
+                onNavigateToPro = {
+                    navController.navigate(Routes.PRO)
                 }
             )
         }
@@ -144,6 +149,9 @@ fun AppNavGraph() {
             val activity = LocalContext.current as? Activity
             SettingsScreen(
                 onNavigateBack = safePopBackStack,
+                onNavigateToPro = {
+                    navController.navigate(Routes.PRO)
+                },
                 onLanguageChanged = {
                     activity?.let { act ->
                         val restartIntent = act.packageManager
@@ -163,6 +171,13 @@ fun AppNavGraph() {
         // ── Statistics Screen ──
         composable(Routes.STATS) {
             StatsScreen(
+                onNavigateBack = safePopBackStack
+            )
+        }
+
+        // ── Appause Pro Screen ──
+        composable(Routes.PRO) {
+            ProScreen(
                 onNavigateBack = safePopBackStack
             )
         }

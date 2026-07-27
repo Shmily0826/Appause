@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.graphics.drawable.Drawable
-import android.util.Log
+import com.appause.android.util.AppLogger
 import android.view.WindowManager
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -93,7 +93,7 @@ class OverlayManager {
     ) {
         // Prevent duplicate overlays
         if (overlayView != null) {
-            Log.d(TAG, "Overlay already showing, skipping")
+            AppLogger.d(TAG, "Overlay already showing, skipping")
             return
         }
 
@@ -224,7 +224,7 @@ class OverlayManager {
                             try {
                                 context.startActivity(homeIntent)
                             } catch (e: Exception) {
-                                Log.w(TAG, "Failed to send to home", e)
+                                AppLogger.w(TAG, "Failed to send to home", e)
                             }
                         },
                         onContinueWithReason = { reason ->
@@ -252,7 +252,7 @@ class OverlayManager {
                                 try {
                                     context.startActivity(launchIntent)
                                 } catch (e: Exception) {
-                                    Log.w(TAG, "Failed to open recommended app", e)
+                                    AppLogger.w(TAG, "Failed to open recommended app", e)
                                 }
                             }
                             dismiss()
@@ -274,9 +274,9 @@ class OverlayManager {
             // Mark that the pause screen is showing (prevents re-triggering)
             AppauseAccessibilityService.pauseShown = true
 
-            Log.d(TAG, "Overlay shown for $targetPackage, cooldown=${cooldownSeconds}s")
+            AppLogger.d(TAG, "Overlay shown for $targetPackage, cooldown=${cooldownSeconds}s")
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to add overlay to WindowManager, falling back to PauseActivity", e)
+            AppLogger.w(TAG, "Failed to add overlay to WindowManager, falling back to PauseActivity", e)
             // Clean up the failed overlay
             lifecycleContainer.destroy()
 
@@ -292,9 +292,9 @@ class OverlayManager {
                 }
                 context.startActivity(intent)
                 AppauseAccessibilityService.pauseShown = true
-                Log.d(TAG, "Fallback: PauseActivity launched for $targetPackage")
+                AppLogger.d(TAG, "Fallback: PauseActivity launched for $targetPackage")
             } catch (e2: Exception) {
-                Log.e(TAG, "Both overlay and startActivity failed for $targetPackage", e2)
+                AppLogger.e(TAG, "Both overlay and startActivity failed for $targetPackage", e2)
             }
         }
     }
@@ -310,9 +310,9 @@ class OverlayManager {
         try {
             val windowManager = view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
             windowManager.removeView(view)
-            Log.d(TAG, "Overlay dismissed")
+            AppLogger.d(TAG, "Overlay dismissed")
         } catch (e: Exception) {
-            Log.w(TAG, "Error removing overlay", e)
+            AppLogger.w(TAG, "Error removing overlay", e)
         }
 
         // Clean up the lifecycle so Compose effects stop running

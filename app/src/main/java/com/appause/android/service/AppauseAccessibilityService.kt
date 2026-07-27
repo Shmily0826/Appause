@@ -4,8 +4,9 @@ import android.accessibilityservice.AccessibilityService
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.os.Build
-import android.util.Log
+import com.appause.android.util.AppLogger
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.app.NotificationCompat
 import com.appause.android.AppauseApp
@@ -18,6 +19,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
 
 /**
  * AppauseAccessibilityService — detects foreground app changes and triggers cooldowns.
@@ -47,7 +49,11 @@ class AppauseAccessibilityService : AccessibilityService() {
         /**
          * Guard flag: true while the cooldown overlay is showing.
          * Prevents re-triggering interception while a cooldown is in progress.
+         *
+         * @Volatile so the broadcast-thread PauseAlarmReceiver sees the latest
+         * value when it reads this flag off the main thread.
          */
+        @Volatile
         var pauseShown: Boolean = false
 
         /**
@@ -70,6 +76,7 @@ class AppauseAccessibilityService : AccessibilityService() {
          *   foreground, so a genuine re-open of the app later is intercepted
          *   normally.
          */
+        @Volatile
         var justCancelledPackage: String? = null
     }
 
@@ -91,6 +98,9 @@ class AppauseAccessibilityService : AccessibilityService() {
      */
     private var lastForegroundPackage: String? = null
 
+    /** Launcher packages resolved dynamically (covers all OEM launchers). */
+    private var homePackages: Set<String> = emptySet()
+
     /**
      * Scheduled re-remind timers, keyed by target package name.
      *
@@ -104,7 +114,11 @@ class AppauseAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        Log.d(TAG, "AccessibilityService connected and running")
+        AppLogger.d(TAG, "AccessibilityService connected and running")
+
+        // Resolve the device's launcher package(s) so isSystemPackage() can
+        // skip the home screen correctly on every OEM ROM.
+        refreshHomePackages()
 
         // Show a persistent notification to indicate the service is actively monitoring.
         // This also acts as a foreground service notification, which helps prevent
@@ -141,14 +155,14 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: return
 
-        Log.d(TAG, "Event received: package=$packageName, class=${event.className}")
+        AppLogger.d(TAG, "Event received: package=$packageName, class=${event.className}")
 
         // Use a coroutine because we need to suspend for Repository queries.
         serviceScope.launch {
             try {
                 handleForegroundChange(packageName)
             } catch (e: Exception) {
-                Log.e(TAG, "Error in handleForegroundChange for $packageName", e)
+                AppLogger.e(TAG, "Error in handleForegroundChange for $packageName", e)
             }
         }
     }
@@ -172,13 +186,13 @@ class AppauseAccessibilityService : AccessibilityService() {
         // 1. Check if Appause is enabled
         val isEnabled = repository.isEnabled.first()
         if (!isEnabled) {
-            Log.d(TAG, "SKIP: Appause is disabled")
+            AppLogger.d(TAG, "SKIP: Appause is disabled")
             return
         }
 
         // 2. Skip Appause itself
         if (packageName == applicationContext.packageName) {
-            Log.d(TAG, "SKIP: Appause itself")
+            AppLogger.d(TAG, "SKIP: Appause itself")
             lastForegroundPackage = packageName
             return
         }
@@ -187,20 +201,20 @@ class AppauseAccessibilityService : AccessibilityService() {
         //      cancelled out of (see justCancelledPackage docs). Without this,
         //      the overlay re-appears on the home screen right after Cancel.
         if (justCancelledPackage != null && packageName == justCancelledPackage) {
-            Log.d(TAG, "SKIP: stale event for just-cancelled app ($packageName)")
+            AppLogger.d(TAG, "SKIP: stale event for just-cancelled app ($packageName)")
             return
         }
 
         // 3. Skip common system packages (launcher, settings, recents, etc.)
         if (isSystemPackage(packageName)) {
-            Log.d(TAG, "SKIP: system package ($packageName)")
+            AppLogger.d(TAG, "SKIP: system package ($packageName)")
             // The user left the previous app (via Home, Recents, etc.).
             // If it was bypassed, clear the bypass so re-entering triggers
             // the cooldown again. Without this, switching away and back
             // via Recents would skip interception entirely.
             lastForegroundPackage?.let { last ->
                 if (InterceptionManager.isBypassed(last)) {
-                    Log.d(TAG, "Cleanup: clearing bypass for $last (user went to system UI)")
+                    AppLogger.d(TAG, "Cleanup: clearing bypass for $last (user went to system UI)")
                     InterceptionManager.clearBypass(last)
                     cancelReRemind(last)
                 }
@@ -217,18 +231,18 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         // 4. Check bypass — if the app is bypassed, check if we should clean up
         if (InterceptionManager.isBypassed(packageName)) {
-            Log.d(TAG, "SKIP: bypassed ($packageName)")
+            AppLogger.d(TAG, "SKIP: bypassed ($packageName)")
             lastForegroundPackage = packageName
             return
         }
 
         // 4.5. Skip if cooldown overlay is currently showing
         if (pauseShown) {
-            Log.d(TAG, "SKIP: cooldown overlay is showing ($packageName)")
+            AppLogger.d(TAG, "SKIP: cooldown overlay is showing ($packageName)")
             // Still clean up bypass if the user left a bypassed app
             lastForegroundPackage?.let { last ->
                 if (InterceptionManager.isBypassed(last) && last != packageName) {
-                    Log.d(TAG, "Cleanup: clearing bypass for $last (user left the app)")
+                    AppLogger.d(TAG, "Cleanup: clearing bypass for $last (user left the app)")
                     InterceptionManager.clearBypass(last)
                     cancelReRemind(last)
                 }
@@ -240,7 +254,7 @@ class AppauseAccessibilityService : AccessibilityService() {
         // If the previous app WAS bypassed, the user left it → clean up.
         lastForegroundPackage?.let { last ->
             if (InterceptionManager.isBypassed(last)) {
-                Log.d(TAG, "Cleanup: clearing bypass for $last (user left the app)")
+                AppLogger.d(TAG, "Cleanup: clearing bypass for $last (user left the app)")
                 InterceptionManager.clearBypass(last)
                 cancelReRemind(last)
             }
@@ -248,7 +262,7 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         // 5. Skip duplicate events (same app, different Activity)
         if (packageName == lastForegroundPackage) {
-            Log.d(TAG, "SKIP: duplicate event ($packageName)")
+            AppLogger.d(TAG, "SKIP: duplicate event ($packageName)")
             return
         }
 
@@ -257,34 +271,54 @@ class AppauseAccessibilityService : AccessibilityService() {
         // 6. Check if this app belongs to any configured group
         val group = repository.findGroupForPackage(packageName)
         if (group == null) {
-            Log.d(TAG, "SKIP: not in any group ($packageName)")
+            AppLogger.d(TAG, "SKIP: not in any group ($packageName)")
             return
         }
 
         // 7. Intercept! Show the cooldown overlay.
-        Log.d(TAG, "INTERCEPT: $packageName → group=${group.name}, cooldown=${group.cooldownSeconds}s")
+        AppLogger.d(TAG, "INTERCEPT: $packageName → group=${group.name}, cooldown=${group.cooldownSeconds}s")
         showCooldownOverlay(packageName, group.id, group.cooldownSeconds, group.reRemindMinutes)
     }
 
     /**
+     * Resolve the device's launcher package(s) via the HOME intent.
+     *
+     * Replaces a hard-coded OEM launcher list so we correctly skip the home
+     * screen on every device (Xiaomi, Huawei, OPPO, vivo, realme, Meizu,
+     * Honor, Nothing, etc.) without maintaining a fragile, always-incomplete list.
+     */
+    private fun refreshHomePackages() {
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        homePackages = try {
+            packageManager.queryIntentActivities(intent, 0)
+                .mapNotNull { it.activityInfo?.packageName }
+                .toSet()
+        } catch (e: Exception) {
+            emptySet()
+        }
+    }
+
+    /**
      * Check if a package is a system UI component we should always ignore.
-     * Covers the launcher, system UI, settings, recents screen, and OEM launchers.
+     *
+     * Instead of maintaining a hard-coded list of OEM launchers (which misses
+     * devices like realme, Meizu, Honor, Nothing, etc.), we resolve the
+     * launcher package(s) dynamically via the HOME intent in refreshHomePackages()
+     * and treat any of them as the home screen.
+     *
+     * We still hard-code a few non-launcher system components that should always
+     * be skipped (system UI, settings, permission controller, and the Google
+     * search box that owns the recents gesture on Pixel devices).
      */
     private fun isSystemPackage(packageName: String): Boolean {
+        // Any app that can handle the HOME intent is a launcher — skip it.
+        if (homePackages.contains(packageName)) return true
+        // Non-launcher system UI components we always ignore.
         return packageName.startsWith("com.android.systemui") ||
-            packageName.startsWith("com.android.launcher") ||
             packageName == "com.android.settings" ||
             packageName == "com.google.android.googlequicksearchbox" ||
             packageName == "com.android.permissioncontroller" ||
-            packageName == "com.google.android.permissioncontroller" ||
-            // OEM launchers
-            packageName == "com.miui.home" ||              // Xiaomi
-            packageName == "com.huawei.android.launcher" || // Huawei
-            packageName == "com.sec.android.app.launcher" || // Samsung
-            packageName == "com.oppo.launcher" ||           // OPPO
-            packageName == "com.bbk.launcher2" ||           // Vivo
-            packageName == "com.oneplus.launcher" ||        // OnePlus
-            packageName == "com.motorola.launcher3"         // Motorola
+            packageName == "com.google.android.permissioncontroller"
     }
 
     /**
@@ -323,18 +357,18 @@ class AppauseAccessibilityService : AccessibilityService() {
         // Cancel any existing timer for this package (e.g., from a previous Continue)
         cancelReRemind(targetPackage)
 
-        Log.d(TAG, "Scheduling re-remind for $targetPackage in $minutes min")
+        AppLogger.d(TAG, "Scheduling re-remind for $targetPackage in $minutes min")
 
         val job = serviceScope.launch {
             delay(minutes * 60 * 1000L)
 
             // Timer fired — check if the user is still in the target app
             if (lastForegroundPackage == targetPackage && !pauseShown) {
-                Log.d(TAG, "Re-remind fired: user still in $targetPackage, showing overlay")
+                AppLogger.d(TAG, "Re-remind fired: user still in $targetPackage, showing overlay")
                 InterceptionManager.clearBypass(targetPackage)
                 showCooldownOverlay(targetPackage, groupId, cooldownSeconds, minutes)
             } else {
-                Log.d(TAG, "Re-remind fired but user left $targetPackage, skipping")
+                AppLogger.d(TAG, "Re-remind fired but user left $targetPackage, skipping")
             }
 
             // Remove from map (job completed)
@@ -353,7 +387,7 @@ class AppauseAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        Log.d(TAG, "AccessibilityService interrupted")
+        AppLogger.d(TAG, "AccessibilityService interrupted")
     }
 
     override fun onDestroy() {
@@ -363,11 +397,15 @@ class AppauseAccessibilityService : AccessibilityService() {
         reRemindJobs.values.forEach { it.cancel() }
         reRemindJobs.clear()
 
+        // Cancel the service coroutine scope so any in-flight work is stopped
+        // (handleForegroundChange coroutines, etc.) instead of leaking.
+        serviceScope.cancel()
+
         // Clean up the overlay if it's showing when the service is destroyed
         if (overlayManager.isShowing) {
             overlayManager.dismiss()
         }
 
-        Log.d(TAG, "AccessibilityService destroyed")
+        AppLogger.d(TAG, "AccessibilityService destroyed")
     }
 }

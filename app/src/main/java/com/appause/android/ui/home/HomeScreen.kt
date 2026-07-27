@@ -63,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
 import com.appause.android.data.local.AppGroup
+import com.appause.android.data.pro.ProState
 
 /**
  * Home Screen — the main entry point of Appause.
@@ -84,6 +85,7 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToStats: () -> Unit,
     onNavigateToRecommended: () -> Unit,
+    onNavigateToPro: () -> Unit,
     viewModel: HomeViewModel = viewModel()
 ) {
     val groups by viewModel.groups.collectAsStateWithLifecycle()
@@ -94,6 +96,7 @@ fun HomeScreen(
     val proceededToday by viewModel.proceededToday.collectAsStateWithLifecycle()
     val cancelledToday by viewModel.cancelledToday.collectAsStateWithLifecycle()
     val appCounts by viewModel.appCounts.collectAsStateWithLifecycle()
+    val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // Refresh service status + app counts every time the screen becomes visible.
@@ -134,7 +137,16 @@ fun HomeScreen(
             // Extended FAB: icon + label makes the action explicit.
             // The visible "New group" text doubles as the accessibility label.
             ExtendedFloatingActionButton(
-                onClick = { onNavigateToGroupEditor(null) },
+                onClick = {
+                    // Free users are limited to a small number of groups.
+                    // Once they hit the limit, send them to the Pro screen
+                    // instead of opening the group editor.
+                    if (!isPro && groups.size >= ProState.FREE_GROUP_LIMIT) {
+                        onNavigateToPro()
+                    } else {
+                        onNavigateToGroupEditor(null)
+                    }
+                },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text(stringResource(R.string.new_group)) }
             )

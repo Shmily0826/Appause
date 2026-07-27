@@ -1,6 +1,6 @@
 package com.appause.android.interception
 
-import android.util.Log
+import com.appause.android.util.AppLogger
 
 /**
  * InterceptionManager — manages bypass state for intercepted apps.
@@ -54,7 +54,7 @@ object InterceptionManager {
      */
     fun startBypass(packageName: String) {
         bypassedPackages.add(packageName)
-        Log.d(TAG, "Bypass started: $packageName")
+        AppLogger.d(TAG, "Bypass started: $packageName")
     }
 
     /**
@@ -67,6 +67,6 @@ object InterceptionManager {
      */
     fun clearBypass(packageName: String) {
         bypassedPackages.remove(packageName)
-        Log.d(TAG, "Bypass cleared: $packageName")
+        AppLogger.d(TAG, "Bypass cleared: $packageName")
     }
 }

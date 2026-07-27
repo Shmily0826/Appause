@@ -200,4 +200,41 @@
     <string name="battery_exempted">已豁免 — 服务将在后台保持运行</string>
     <string name="battery_not_exempted">未豁免 — 服务可能在后台被终止</string>
     <string name="request_battery_exempt">请求豁免</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Appause Pro 页面                              -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="pro_title">Appause Pro</string>
+    <string name="pro_status_free">免费版</string>
+    <string name="pro_status_pro">已解锁 Pro</string>
+    <string name="pro_upgrade_desc">解锁更多分组、更长冷却、再次提醒、完整历史与自定义提示语。</string>
+    <string name="pro_feature_groups">分组数量</string>
+    <string name="pro_feature_cooldown">冷却上限</string>
+    <string name="pro_feature_reremind">再次提醒</string>
+    <string name="pro_feature_history">历史统计</string>
+    <string name="pro_feature_prompt">自定义提示</string>
+    <string name="pro_free_groups">最多 2 个</string>
+    <string name="pro_pro_groups">无限</string>
+    <string name="pro_free_cooldown">30 秒</string>
+    <string name="pro_pro_cooldown">60 秒</string>
+    <string name="pro_pro_reremind">已包含</string>
+    <string name="pro_free_history">7 天</string>
+    <string name="pro_pro_history">全部</string>
+    <string name="pro_pro_prompt">已包含</string>
+    <string name="pro_activate_title">激活 Appause Pro</string>
+    <string name="pro_enter_code">激活码</string>
+    <string name="pro_code_hint">粘贴你收到的激活码</string>
+    <string name="pro_activate">激活</string>
+    <string name="pro_debug_unlock">解锁（调试）</string>
+    <string name="pro_license_title">许可证</string>
+    <string name="pro_license_desc">恢复出厂或更换设备前导出许可证，之后导入即可离线恢复 Pro。</string>
+    <string name="pro_export">导出许可证</string>
+    <string name="pro_exported_title">你的许可证</string>
+    <string name="pro_exported_desc">复制并保存此码。重置后导入即可恢复 Pro，无需再次购买。</string>
+    <string name="pro_copy">复制</string>
+    <string name="pro_copied">已复制</string>
+    <string name="pro_debug_unlocked">已解锁 Pro（调试）</string>
+    <string name="pro_imported">许可证已导入</string>
+    <string name="pro_import_failed">激活码无效</string>
+    <string name="pro_settings_desc">解锁更多分组与功能</string>
 </resources>

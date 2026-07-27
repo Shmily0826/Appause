@@ -32,6 +32,24 @@
 
 ## Log
 
+### 2026-07-27 (ProState — monetization scaffolding, plan A)
+- Added offline buy-once monetization scaffolding (plan A), no backend.
+- New `data/pro/ProState.kt`: wraps SettingsDataStore; exposes `isPro` Flow,
+  `unlockPro()`, `exportLicense()`, `importLicense()`. Free limits as constants:
+  FREE_GROUP_LIMIT = 2, FREE_COOLDOWN_MAX_SECONDS = 30.
+- SettingsDataStore: added `pro_unlocked` + `license_token` keys (read/write).
+- AppauseApp: exposed `proState` lazy singleton.
+- New `ui/pro/ProScreen.kt` + `ProViewModel.kt`: free/Pro comparison, activate
+  (code input + debug unlock, BuildConfig.DEBUG only), export/import license
+  (copies token to clipboard). Reachable from Settings and from Home when the
+  free group limit is hit.
+- HomeViewModel: exposes `isPro`; HomeScreen FAB gates new-group creation on
+  the free group limit (routes to Pro screen when exceeded).
+- Strings (EN + ZH): pro_* (title, status, comparison rows, activate, debug
+  unlock, license export/import, messages) + pro_settings_desc.
+- Plan B (server verification, signed token, N-device re-activation) deferred.
+- BUILD SUCCESSFUL via `gradlew assembleDebug` (transient dex lock on retry).
+
 ### 2026-07-23 (Re-remind feature + wording fix)
 - New feature: per-group "Re-remind" — after the user completes the cooldown
   and enters the app, the cooldown screen pops up again after N minutes if
@@ -46,6 +64,41 @@
 - New strings (EN + ZH): re_remind_label, re_remind_desc, re_remind_off,
   re_remind_value, re_remind_range_end.
 - BUILD SUCCESSFUL via `gradlew assembleDebug`.
+
+### 2026-07-24 (P0/P1 technical hardening for distribution)
+- P0-2: replaced all `android.util.Log` with a debug-only `AppLogger`
+  (app/src/main/java/com/appause/android/util/AppLogger.kt); release builds
+  no longer write the user's installed package names to logcat (privacy fix
+  for an app that markets itself as local-only). Enabled `buildConfig = true`
+  in app/build.gradle.kts so `BuildConfig.DEBUG` is available.
+- P1-3: `isSystemPackage()` now resolves launcher packages dynamically via the
+  HOME intent (`refreshHomePackages()`) instead of a hard-coded OEM launcher
+  list — correctly skips the home screen on realme/Meizu/Honor/Nothing, etc.
+- P1-4: `AppauseAccessibilityService.onDestroy()` now calls `serviceScope.cancel()`
+  so in-flight coroutines are stopped instead of leaking.
+- P1-5: `pauseShown` and `justCancelledPackage` marked `@Volatile` for
+  cross-thread visibility (read by PauseAlarmReceiver on the broadcast thread).
+- BUILD SUCCESSFUL via `./gradlew assembleDebug` (note: the shell env's
+  JAVA_HOME pointed at a Java 7 dir and broke Gradle; override with
+  JAVA_HOME=/d/Dev-Setup/jdk = Temurin 17).
+
+### 2026-07-24 (Open-source / distribution prep)
+- Added `LICENSE` (MIT) for GitHub open-source release.
+- Added `PRIVACY.md` — bilingual (EN + ZH) privacy policy stating the app is
+  fully local: no account, no network, no analytics, no ads; AccessibilityService
+  reads package name only (`canRetrieveWindowContent = false`); permissions table.
+  Suitable as the privacy-policy URL for 酷安 / Play Data Safety.
+- Rewrote `README.md` into a publish-ready framework: features, screenshots
+  placeholder, how-it-works, permissions table, requirements, build-from-source
+  (with JDK 17 / JAVA_HOME note + signing guidance), install (GitHub Releases +
+  酷安), privacy link, status (0.2.1, all phases done), contributing, license,
+  disclaimer. Notes clearly that Appause is NOT on Google Play due to the
+  AccessibilityService policy.
+- Enhanced `.gitignore`: added signing-file patterns (`signing.properties`,
+  `key.properties`, `*.p12`, `*.pfx`, `*.keystore.*`), `*.hprof`, and
+  `.workbuddy/`. `local.properties` / `*.keystore` / `*.jks` were already ignored.
+- Confirmed no hard-coded signing config or secrets in build.gradle.kts or
+  gradle.properties.
 
 ### 2026-07-23 (Accessibility service persistence fix)
 - Root cause: the static `isRunning` flag in AppauseAccessibilityService reset

@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
 import com.appause.android.data.local.AppDatabase
+import com.appause.android.data.pro.ProState
 import com.appause.android.data.repository.AppGroupRepository
 import com.appause.android.data.settings.SettingsDataStore
 import java.util.Locale
@@ -34,6 +35,14 @@ class AppauseApp : Application() {
      */
     val settingsDataStore: SettingsDataStore by lazy {
         SettingsDataStore(this)
+    }
+
+    /**
+     * ProState — Appause Pro unlock status and license token.
+     * Wraps settingsDataStore; holds the free/paid gating logic.
+     */
+    val proState: ProState by lazy {
+        ProState(settingsDataStore)
     }
 
     /**
