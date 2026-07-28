@@ -165,4 +165,28 @@ Launch PauseActivity (full-screen cooldown)
 - Overlay/Bubble permission (use regular Activity instead)
 - Preventing bypass (user can always disable Accessibility Service)
 - Per-app prompt messages (only a global default)
-- Multiple languages (English only for v1)
+
+---
+
+## Post-MVP additions (current state)
+
+Some "out of scope for v1" items have since been added. This section records how
+the shipped app differs from the original v1 spec so the document stays honest.
+
+- **Appause Pro (Plan B) — paid activation.** A Cloudflare Worker (`worker/`)
+  issues device-bound RS256 license JWTs. The app verifies the token **on
+  device** (embedded server public key) and works offline afterwards. Free tier:
+  2 groups, 30s cooldown cap, 7-day stats. Pro: unlimited groups, 60s cooldown,
+  custom prompt, full history. *This is a paid license, not a backend/sync
+  account — no user data is uploaded.*
+- **Re-remind / session timer.** The original flow cleared the bypass the moment
+  the user left the target app. The shipped behavior is a session model: a
+  session keeps counting wall-clock time even during brief in-app switches
+  (opening images, comments, players), and a **real leave** (home screen, or 3+
+  minutes away) re-arms the cooldown. See ARCHITECTURE.md §6 for details.
+- **In-app feedback.** Settings → Feedback lets users file a bug or suggestion
+  via email or a pre-filled GitHub issue; device info is attached and shown
+  before sending. No telemetry is collected.
+- **Multiple languages.** English + 简体中文 are both supported (user-switchable
+  in Settings).
+- **Usage stats & recommended apps** shipped as part of the MVP.

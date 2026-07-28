@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +36,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -52,6 +56,7 @@ import com.appause.android.R
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToPro: () -> Unit,
+    onNavigateToFeedback: () -> Unit,
     onLanguageChanged: () -> Unit,
     viewModel: SettingsViewModel = viewModel()
 ) {
@@ -249,14 +254,25 @@ fun SettingsScreen(
             // ── Default Prompt ──
             // Custom prompt is a Pro feature. Free users see the field disabled
             // with a hint; tapping the card opens the Pro screen.
+            // NOTE: bind the TextField to LOCAL state, not directly to the async
+            // StateFlow. updateDefaultPrompt writes to DataStore asynchronously,
+            // so a direct binding makes `value` briefly revert to the previous
+            // text on every keystroke, clamping the cursor to position 0 (left).
+            var prompt by remember { mutableStateOf(defaultPrompt) }
+            LaunchedEffect(defaultPrompt) {
+                if (defaultPrompt != prompt) prompt = defaultPrompt
+            }
             if (isPro) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(stringResource(R.string.default_prompt_title), style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
-                            value = defaultPrompt,
-                            onValueChange = viewModel::updateDefaultPrompt,
+                            value = prompt,
+                            onValueChange = {
+                                prompt = it
+                                viewModel.updateDefaultPrompt(it)
+                            },
                             label = { Text(stringResource(R.string.prompt_label)) },
                             placeholder = { Text(stringResource(R.string.default_prompt)) },
                             singleLine = true,
@@ -310,6 +326,42 @@ fun SettingsScreen(
                         )
                         Text(
                             text = stringResource(R.string.pro_settings_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // ── Feedback ──
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = onNavigateToFeedback
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Feedback,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(end = 12.dp)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.feedback_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            text = stringResource(R.string.feedback_intro),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

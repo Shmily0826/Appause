@@ -252,4 +252,19 @@
     <string name="pro_imported">许可证已导入</string>
     <string name="pro_import_failed">许可证无效</string>
     <string name="pro_settings_desc">解锁更多分组与功能</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- 反馈页面                                       -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="feedback_title">反馈</string>
+    <string name="feedback_intro">遇到 Bug 或有好点子？告诉我们——会直接到开发者手里。</string>
+    <string name="feedback_bug">问题反馈</string>
+    <string name="feedback_suggestion">功能建议</string>
+    <string name="feedback_message_label">你的内容</string>
+    <string name="feedback_message_hint">描述你遇到的问题或建议……</string>
+    <string name="feedback_contact_label">联系方式（选填）</string>
+    <string name="feedback_contact_hint">留下邮箱，方便我们回复你</string>
+    <string name="feedback_auto_info">以下内容会自动附带：</string>
+    <string name="feedback_send_email">通过邮件发送</string>
+    <string name="feedback_open_issue">在 GitHub 提交</string>
 </resources>

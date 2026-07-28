@@ -257,4 +257,19 @@
     <string name="pro_imported">License imported</string>
     <string name="pro_import_failed">License invalid</string>
     <string name="pro_settings_desc">Unlock extra groups and features</string>
+
+    <!-- ═══════════════════════════════════════════ -->
+    <!-- Feedback Screen                              -->
+    <!-- ═══════════════════════════════════════════ -->
+    <string name="feedback_title">Feedback</string>
+    <string name="feedback_intro">Found a bug or have an idea? Tell us — it goes straight to the developer.</string>
+    <string name="feedback_bug">Bug report</string>
+    <string name="feedback_suggestion">Suggestion</string>
+    <string name="feedback_message_label">Your message</string>
+    <string name="feedback_message_hint">Describe the bug or your suggestion…</string>
+    <string name="feedback_contact_label">Contact (optional)</string>
+    <string name="feedback_contact_hint">Email so we can follow up</string>
+    <string name="feedback_auto_info">The following info is attached automatically:</string>
+    <string name="feedback_send_email">Send via Email</string>
+    <string name="feedback_open_issue">Open GitHub Issue</string>
 </resources>

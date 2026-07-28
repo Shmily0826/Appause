@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.appause.android.ui.appselect.AppSelectScreen
+import com.appause.android.ui.feedback.FeedbackScreen
 import com.appause.android.ui.groupeditor.GroupEditorScreen
 import com.appause.android.ui.home.HomeScreen
 import com.appause.android.ui.pro.ProScreen
@@ -35,6 +36,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val STATS = "stats"
     const val PRO = "pro"
+    const val FEEDBACK = "feedback"
 
     /** Build a route string for editing an existing group. */
     fun groupEditor(groupId: Long): String = "group_editor/$groupId"
@@ -154,6 +156,9 @@ fun AppNavGraph() {
                 onNavigateToPro = {
                     navController.navigate(Routes.PRO)
                 },
+                onNavigateToFeedback = {
+                    navController.navigate(Routes.FEEDBACK)
+                },
                 onLanguageChanged = {
                     activity?.let { act ->
                         val restartIntent = act.packageManager
@@ -180,6 +185,13 @@ fun AppNavGraph() {
         // ── Appause Pro Screen ──
         composable(Routes.PRO) {
             ProScreen(
+                onNavigateBack = safePopBackStack
+            )
+        }
+
+        // ── Feedback Screen ──
+        composable(Routes.FEEDBACK) {
+            FeedbackScreen(
                 onNavigateBack = safePopBackStack
             )
         }

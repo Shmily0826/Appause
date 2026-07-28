@@ -1,4 +1,4 @@
-# Appause v0.3.8 — 发布说明 (Release Notes)
+# Appause v0.3.9 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
 > 发布前请把下方下载链接里的 `USER` 替换为你的 GitHub 用户名。
@@ -13,9 +13,11 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 - **纯本地**：数据只存本机，不上传、不联网、无账号
 - 仅通过无障碍服务读取前台**应用包名**（不读屏幕内容、不监听输入）
 
-### 本次更新 (v0.3.8)
-- **修复拦截误触发**：重做了前台切换逻辑。现在进入被限制 App 后，App 内打开图片、评论、分享面板、外部播放器等瞬时切屏**不再反复弹冷却**；只有真正离开（切到桌面或停留 3 分钟以上）才会重新冷却。
-- **会话计时模型**：可选「再次提醒」按墙钟计时，离开 App 期间暂停但不清零，回来继续；离开满 3 分钟整体重置。
+### 本次更新 (v0.3.9)
+- **新增应用内反馈**：设置 → 反馈，可一键提交「问题反馈」或「功能建议」。应用版本、Android 版本、机型、语言会自动附带并显示给你确认，支持邮件或 GitHub Issue 两种方式，全程不收集任何遥测。
+- **文档同步**：README / PRIVACY / 架构等早期文档已更新到当前状态（含 Pro 一次性激活联网说明、反馈入口等）。
+
+> v0.3.8 重要修复回顾：重做前台切换逻辑，App 内打开图片/评论/分享面板不再反复弹冷却；会话计时 + 离开 3 分钟重新冷却。
 
 ### 这个版本包含
 - **应用分组**：把易分心的 App 归组，统一设置冷静时长
@@ -25,6 +27,7 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 - **深色模式**：随系统或手动切换
 - **推荐应用清单**：快速把常见分心 App 加进分组
 - **Pro 脚手架（内测）**：无限分组、更长冷却、自定义提示语等入口已就位（激活逻辑后续版本接入）
+- **应用内反馈**：设置里一键提交问题或建议，自动附带设备信息，不收集遥测
 
 ### 如何安装
 见 [INSTALL.md](INSTALL.md) —— 含「开启未知来源」「放行 Play Protect / 小米 / 华为 恐吓弹窗」「开启无障碍服务」「加后台白名单」完整步骤。
@@ -38,7 +41,7 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 - 当前为免费版，分组上限 2 个、冷却上限 30 秒（Pro 解锁更高上限，激活尚未开放）。
 
 ### 反馈与问题
-请在 [GitHub Issues](https://github.com/USER/Appause/issues) 提交，或邮件联系（见 PRIVACY.md）。
+请在 [GitHub Issues](https://github.com/Shmily0826/Appause/issues) 提交，或邮件联系（见 PRIVACY.md）。
 
 ---
 
@@ -50,9 +53,11 @@ Appause is a **local-first focus tool** built on Android's AccessibilityService.
 - **Fully local**: all data stays on your device. No network, no account, no upload.
 - Only reads the foreground **package name** via AccessibilityService (no screen content, no keylogging).
 
-### What's new in v0.3.8
-- **Fixed false re-triggers**: reworked the foreground-switch logic. Opening images, comments, share sheets, or external players inside a blocked app no longer re-pops the cooldown. A re-cooldown only happens on a real leave (Home screen, or staying away 3+ minutes).
-- **Session timer model**: optional re-remind counts wall-clock time; leaving the app pauses but doesn't reset it, and returning continues; a 3-minute away window fully re-arms.
+### What's new in v0.3.9
+- **In-app feedback**: Settings → Feedback lets you file a bug report or suggestion in one tap. App version, Android version, device model and language are attached automatically and shown for confirmation; send by email or a pre-filled GitHub issue. No telemetry is collected.
+- **Docs refreshed**: README / PRIVACY / Architecture and other early docs now match the current app (including the one-time Pro activation network note and the feedback entry point).
+
+> v0.3.8 highlights: reworked foreground-switch logic so opening images/comments/share sheets inside a blocked app no longer re-pops the cooldown; session timer + 3-minute leave re-arm.
 
 ### What's in this release
 - **App groups**: organize distracting apps and apply a single cooldown.
@@ -62,6 +67,7 @@ Appause is a **local-first focus tool** built on Android's AccessibilityService.
 - **Dark mode**: follows system or manual toggle.
 - **Recommended apps**: quick-add common distractors.
 - **Pro scaffolding (preview)**: entry points for unlimited groups / longer cooldown / custom text are in place (activation lands in a later build).
+- **In-app feedback**: one-tap bug report / suggestion from Settings, with auto-attached device info and no telemetry.
 
 ### Install
 See [INSTALL.md](INSTALL.md) for "install unknown apps", dismissing Play Protect / OEM warnings, enabling AccessibilityService, and keeping the service alive.
@@ -75,10 +81,10 @@ See [PRIVACY.md](PRIVACY.md) — we collect and upload **nothing**.
 - Free tier: max 2 groups, 30s cooldown cap (Pro raises limits; activation not yet open).
 
 ### Feedback
-File issues at [GitHub Issues](https://github.com/USER/Appause/issues).
+File issues at [GitHub Issues](https://github.com/Shmily0826/Appause/issues).
 
 ---
 
 ## 下载 / Download
-- GitHub Releases（主）: https://github.com/USER/Appause/releases/latest
+- GitHub Releases（主）: https://github.com/Shmily0826/Appause/releases/latest
 - 蓝奏云镜像（国内，备用）: _（替换为你的蓝奏云分享链接）_

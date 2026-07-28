@@ -64,4 +64,4 @@ Appause 通过本页面或网盘链接**直接分发 APK**（未上架传统应�
 4. Open Appause and enable the **AccessibilityService** when prompted, then
    exempt it from battery optimization so it is not killed in the background.
 
-[GitHub Releases]: https://github.com/your-username/appause/releases
+[GitHub Releases]: https://github.com/Shmily0826/Appause/releases

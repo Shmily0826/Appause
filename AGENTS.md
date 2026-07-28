@@ -104,13 +104,18 @@ This file defines rules that ALL AI agents (and human developers) MUST follow wh
 ## 8. What NOT to Do
 
 - Do not implement features from future phases.
-- Do not add backend, cloud sync, or authentication.
+- Do not add user accounts, cloud sync, or analytics SDKs. The Appause Pro
+  activation Worker (`worker/`) is the **only** permitted backend — it issues
+  device-bound license JWTs and must never receive, store, or sync user data.
+  Do not extend it into an account/sync system.
 - Do not add Flutter, React Native, or any cross-platform framework.
 - Do not use `SYSTEM_ALERT_WINDOW` (overlay) permission — use regular Activity for the pause screen.
 - Do not hardcode specific app package names (e.g., `com.zhiliaoapp.musically` for TikTok).
 - Do not create empty interfaces, abstract classes, or "architecture placeholders" that have no immediate use.
 - Do not add logging frameworks (use `android.util.Log` for debug logging).
-- Do not add crash reporting or analytics SDKs.
+- Do not add crash reporting or analytics SDKs. The in-app Feedback screen
+  (`ui/feedback`) uses system Intents (email / GitHub issue) only — never
+  send telemetry automatically.
 - Do not assume AccessibilityService works identically on all OEM ROMs.
 - Do not delete working code without a clear reason.
 - Do not rewrite the entire project when encountering a single error.

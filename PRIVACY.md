@@ -15,12 +15,20 @@ on the project repository.
 
 ### What we collect
 
-**Nothing.** Appause does not collect, transmit, or store any personal
-information outside of your own device.
+**Almost nothing.** Appause does not collect or transmit your personal
+information. Your app groups, cooldowns, and usage stats are stored **locally**
+and never leave your device.
 
 - There is no account, no login, and no registration.
-- The app makes **no network requests** of any kind — no servers, no analytics,
-  no crash reporters, no advertisements, and no third-party SDKs.
+- The app makes **no network requests during normal use** — no analytics, no
+  crash reporters, no advertisements, and no third-party SDKs.
+- The only network use is a **one-time** license redeem when you activate
+  Appause Pro. It sends a redemption code and a non-identifying device
+  fingerprint (a SHA-256 hash of an on-device key) to the activation server,
+  which returns a signed license token that is **verified on your device** and
+  works offline afterwards. No browsing history, messages, or app usage is sent.
+- Feedback is sent **only when you choose to** (Settings → Feedback). The app
+  never sends anything automatically.
 - All configuration (your app groups, cooldowns, and usage stats) is stored
   **locally** in an on-device database (Room) and preferences store (DataStore).
 
@@ -46,6 +54,7 @@ security tool.
 | AccessibilityService | To detect the foreground app by package name (as described above). |
 | Foreground Service | To keep foreground-app detection running while the device is in use. |
 | POST_NOTIFICATIONS (Android 13+) | To show the persistent "detection active" notification. |
+| INTERNET | Only for the **one-time** Appause Pro license redeem. Not used during normal use, and the app works fully offline otherwise. |
 
 ### Your control over data
 
@@ -74,11 +83,17 @@ or email [rng2018520@gmail.com](mailto:rng2018520@gmail.com).
 
 ### 我们收集什么
 
-**什么都没有。** Appause 不会以任何形式收集、上传或在设备之外存储任何个人信息。
+**几乎没有。** Appause 不会收集或上传你的个人信息。你的应用分组、冷却时间、
+使用统计都**仅保存在本机**，绝不会离开你的设备。
 
 - 没有账号、没有登录、没有注册。
-- 应用**不进行任何网络请求**——没有服务器、没有分析统计、没有崩溃上报、
+- 应用**在日常使用中不进行任何网络请求**——没有分析统计、没有崩溃上报、
   没有广告，也没有任何第三方 SDK。
+- 唯一的联网场景是激活 **Appause Pro 时的一次性兑换**：会发送兑换码和一个
+  不带个人身份的「设备指纹」（本机密钥的 SHA-256 哈希）到激活服务器，服务器
+  返回一张经过签名的许可证令牌，令牌在你的设备上**本地校验**，之后完全离线
+  可用。不会上传任何浏览记录、消息或使用行为。
+- 反馈**只有你主动选择时才会发送**（设置 → 反馈），应用不会自动上传任何内容。
 - 你的所有配置（应用分组、冷却时间、使用统计）都**仅保存在本机**的数据库
   （Room）和偏好存储（DataStore）中。
 
@@ -101,6 +116,7 @@ Appause 使用系统的 AccessibilityService，**仅用于**检测当前前台�
 | AccessibilityService | 如上所述，通过包名检测前台应用。 |
 | 前台服务 (Foreground Service) | 在设备使用期间保持前台应用检测持续运行。 |
 | POST_NOTIFICATIONS（Android 13+） | 显示常驻的"检测中"通知。 |
+| INTERNET（联网） | 仅用于激活 **Appause Pro 时的一次性许可证兑换**。日常使用不会联网，其余功能完全离线。 |
 
 ### 你对数据的控制权
 

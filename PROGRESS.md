@@ -32,6 +32,36 @@
 
 ## Log
 
+### 2026-07-28 (In-app feedback + doc refresh + v0.3.9)
+- Added an in-app **Feedback** flow (Settings → Feedback): choose Bug report /
+  Suggestion, write a message, optional contact email; device info (app version,
+  Android version, model, locale) is auto-attached and **shown before sending**.
+  Two channels, both system Intents only — no telemetry, no backend:
+  - Email: `ACTION_SENDTO` mailto to rng2018520@gmail.com (chooser).
+  - GitHub: opens the pre-filled "new issue" form with a [Bug]/[Suggestion]
+    title + matching label on Shmily0826/Appause.
+- New `ui/feedback/FeedbackScreen.kt`; `Routes.FEEDBACK`; `SettingsScreen` gained
+  `onNavigateToFeedback` + a Feedback card (Icons.Feedback); NavGraph wired.
+- Strings (EN + ZH): feedback_title/intro/bug/suggestion/message_*/contact_*/auto_info/send_email/open_issue.
+- Doc refresh to match the current app (the early docs still said v0.2.1 and
+  "fully local, no network", which is now partly false due to Pro activation):
+  - README: version → 0.3.9, added Pro + Feedback + session-timer features,
+    local-first wording, INTERNET permission note, a Feedback section, fixed
+    GitHub/contact links.
+  - PRIVACY: now states the only network use is a one-time Pro license redeem
+    (sends a non-identifying device fingerprint, returns an on-device-verified
+    token) + feedback is user-initiated; added INTERNET permission row (EN+ZH).
+  - INSTALL: real GitHub Releases URL (was your-username placeholder).
+  - REQUIREMENTS: added "Post-MVP additions" section (Pro/Plan B, session model,
+    feedback, i18n, stats) so the v1 spec stays honest.
+  - ARCHITECTURE: updated directory tree (data/pro, ui/pro, ui/feedback,
+    ui/stats, ui/recommended, worker/), added §6.4 session/leave-cooldown model.
+  - AGENTS: rule 8 now permits the Pro Worker as the only backend (no accounts/
+    sync/analytics); notes the feedback screen uses Intents only.
+  - RELEASE_NOTES: bumped to v0.3.9 with the feedback + docs notes; real GitHub URLs.
+- Version bump: `app/build.gradle.kts` versionCode 27 → 28, versionName 0.3.8 → 0.3.9.
+- Verified `./gradlew assembleDebug` → BUILD SUCCESSFUL.
+
 ### 2026-07-28 (Pro client gating — wire all paid features to isPro)
 - Extended plan-A Pro scaffolding: all four paid gates now read `isPro` (client-only, no backend).
 - `data/pro/ProState.kt`: added PRO_COOLDOWN_MAX_SECONDS=60, FREE_STATS_DAYS=7, PRO_STATS_DAYS=365.

@@ -67,46 +67,57 @@ Appause/
 │               ├── MainActivity.kt            # Single Activity host
 │               │
 │               ├── data/                       # ── Data Layer ──
-│               │   ├── local/
-│               │   │   ├── AppDatabase.kt     # Room database definition
-│               │   │   ├── AppGroup.kt        # Entity: app group
-│               │   │   ├── AppGroupDao.kt     # DAO: group queries
-│               │   │   ├── AppLaunchRecord.kt # Entity: launch log
-│               │   │   ├── AppLaunchDao.kt    # DAO: launch log queries
-│               │   │   └── Converters.kt      # Room type converters
+│               │   ├── local/                  # Room entities, DAOs, database
+│               │   │   ├── AppDatabase.kt
+│               │   │   ├── AppGroup.kt         # Entity: app group
+│               │   │   ├── GroupApp.kt         # Entity: group ↔ app link
+│               │   │   ├── AppLaunchRecord.kt  # Entity: launch log
+│               │   │   ├── AppGroupDao.kt / AppLaunchDao.kt
+│               │   │   ├── StatsModels.kt      # Stats query result types
+│               │   │   └── Converters.kt
+│               │   ├── query/                  # PackageManager app listing
+│               │   │   ├── AppInfo.kt
+│               │   │   └── AppQueryService.kt
 │               │   ├── repository/
 │               │   │   └── AppGroupRepository.kt  # Single source of truth
-│               │   └── settings/
-│               │       └── SettingsDataStore.kt   # DataStore preferences
+│               │   ├── settings/
+│               │   │   └── SettingsDataStore.kt   # DataStore preferences
+│               │   └── pro/                    # Appause Pro (Plan B)
+│               │       ├── ProState.kt         # isPro + redeem/import/export
+│               │       ├── LicenseVerifier.kt  # offline JWT (RS256) verify
+│               │       ├── DeviceKeyStore.kt   # Android Keystore device key
+│               │       ├── ServerKeys.kt       # embedded verify-only key
+│               │       └── ProConfig.kt        # worker base URL
 │               │
 │               ├── service/                    # ── Service Layer ──
-│               │   └── AppauseAccessibilityService.kt
+│               │   ├── AppauseAccessibilityService.kt  # event detection
+│               │   ├── OverlayManager.kt       # pause overlay lifecycle
+│               │   ├── AccessibilityServiceChecker.kt  # reads system state
+│               │   ├── PauseAlarmReceiver.kt   # schedule re-remind
+│               │   └── (res/xml/accessibility_service_config.xml)
 │               │
 │               ├── interception/               # ── Interception Logic ──
 │               │   └── InterceptionManager.kt  # Singleton: bypass state
 │               │
-│               └── ui/                         # ── UI Layer ──
-│                   ├── theme/
-│                   │   ├── Theme.kt
-│                   │   ├── Color.kt
-│                   │   └── Type.kt
-│                   ├── navigation/
-│                   │   └── NavGraph.kt        # Navigation routes
-│                   ├── home/
-│                   │   ├── HomeScreen.kt
-│                   │   └── HomeViewModel.kt
-│                   ├── groupeditor/
-│                   │   ├── GroupEditorScreen.kt
-│                   │   └── GroupEditorViewModel.kt
-│                   ├── appselect/
-│                   │   ├── AppSelectScreen.kt
-│                   │   └── AppSelectViewModel.kt
-│                   ├── pause/
-│                   │   ├── PauseActivity.kt   # Separate Activity!
-│                   │   └── PauseViewModel.kt
-│                   └── settings/
-│                       ├── SettingsScreen.kt
-│                       └── SettingsViewModel.kt
+│               └── ui/                         # ── UI Layer (Compose) ──
+│                   ├── theme/      (Theme.kt, Color.kt, Type.kt)
+│                   ├── navigation/ NavGraph.kt   # routes incl. Pro/Feedback
+│                   ├── home/        HomeScreen / HomeViewModel
+│                   ├── groupeditor/ GroupEditorScreen / ViewModel
+│                   ├── appselect/   AppSelectScreen / ViewModel
+│                   ├── pause/       PauseActivity (+ CountdownState/Ring)
+│                   ├── stats/       StatsScreen / ViewModel
+│                   ├── recommended/ RecommendedAppsScreen / ViewModel
+│                   ├── settings/    SettingsScreen / ViewModel
+│                   ├── pro/         ProScreen / ProViewModel
+│                   └── feedback/    FeedbackScreen (Intents only, no backend)
+│
+│   └── worker/                  # Cloudflare Worker — Pro license issuance
+│       ├── src/index.js         # /api/redeem, /api/unbind, /admin/*
+│       ├── src/jwt.mjs          # RS256 sign (device-bound)
+│       ├── scripts/genkeys.mjs  # generate prod key pair
+│       ├── wrangler.toml        # deploy config (separate project)
+│       └── README.md
 ```
 
 ### Key Design Decisions
@@ -298,6 +309,30 @@ Foreground changes: targetApp → otherApp (not Appause, not targetApp)
 If the user never leaves the target app (e.g., force-closes Appause), the bypass remains forever. To prevent this, each bypass has a timeout (e.g., 5 minutes). After timeout, the bypass is automatically removed.
 
 For v1, we can use a simple coroutine delay in InterceptionManager. If the process is killed, the bypass is lost anyway (which is fine — user just sees the cooldown again).
+
+### 6.4 Session model (shipped behavior)
+
+The original spec cleared the bypass the moment the foreground package left the
+target app. In practice that caused **false re-pops**: opening an image, the
+comments panel, a share sheet, or an external player inside a blocked app fires
+`TYPE_WINDOW_STATE_CHANGED` for a different package, which looked like "leaving"
+and re-triggered the cooldown.
+
+The shipped model separates two independent timers:
+
+1. **Session / re-remind timer** — starts on entry and counts **wall-clock
+   time**, regardless of in-app package switches. If *Re-remind* is enabled, it
+   re-shows the pause screen at the set interval **only while the user is still
+   inside the target app**. Switching apps pauses (not resets) it.
+2. **Leave-cooldown timer** (always on, 3 min) — when the user genuinely leaves
+   (foreground becomes the launcher or another non-target app), a 3-minute
+   countdown starts. If they return within 3 minutes, the session resumes
+   without a fresh cooldown; if they stay away 3+ minutes, the cooldown fully
+   re-arms on next launch.
+
+This is why `AppauseAccessibilityService` no longer clears the bypass on *every*
+non-target switch — only a confirmed leave (home screen or a sustained 3-minute
+away window) re-arms the limit. See `OverlayManager` and `scheduleReRemind`.
 
 ---
 

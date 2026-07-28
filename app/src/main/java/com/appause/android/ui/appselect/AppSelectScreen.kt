@@ -36,7 +36,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -78,6 +80,13 @@ fun AppSelectScreen(
 ) {
     val filteredApps by viewModel.filteredApps.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    // Local mirror so the cursor stays put while typing. updateSearchQuery
+    // persists asynchronously; a direct `value = searchQuery` binding would
+    // briefly revert the text each keystroke and jump the cursor to the start.
+    var searchQueryLocal by remember { mutableStateOf(searchQuery) }
+    LaunchedEffect(searchQuery) {
+        if (searchQuery != searchQueryLocal) searchQueryLocal = searchQuery
+    }
     val selectedPackages by viewModel.selectedPackages.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val takenPackages by viewModel.takenPackages.collectAsStateWithLifecycle()
@@ -155,8 +164,11 @@ fun AppSelectScreen(
         ) {
             // ── Search Bar ──
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = viewModel::updateSearchQuery,
+                value = searchQueryLocal,
+                onValueChange = {
+                    searchQueryLocal = it
+                    viewModel.updateSearchQuery(it)
+                },
                 placeholder = { Text(stringResource(R.string.search_apps_hint)) },
                 singleLine = true,
                 modifier = Modifier
