@@ -177,6 +177,16 @@ bugs — the auto-attached device info helps a lot.
 
 ---
 
+## 📊 Project metrics
+
+Curious how the project is doing? Star/fork counts, cumulative Release download
+totals, and 14-day traffic are collected automatically (GitHub Actions, weekly)
+and logged in [METRICS.md](METRICS.md). **No user or device data is tracked** —
+only public, aggregate repository stats, consistent with Appause's
+privacy-first design.
+
+---
+
 ## Contact
 
 - GitHub: [Shmily0826](https://github.com/Shmily0826)
