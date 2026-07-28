@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Appause — 打开分心 App 前的减速带</title>
+<meta name="description" content="Appause 是一个纯本地的安卓专注工具：打开抖音、微博、游戏前先冷静几秒。不上传、不联网、无账号。" />
+<style>
+  :root {
+    --bg: #0f1115;
+    --surface: #1a1d24;
+    --surface-2: #232733;
+    --text: #e7e9ee;
+    --muted: #9aa3b2;
+    --accent: #5b8cff;
+    --accent-2: #7c5bff;
+    --border: #2c313c;
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --surface-2: #eef1f7;
+      --text: #1a1d24;
+      --muted: #5b6472;
+      --border: #e2e6ee;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
+  header.hero {
+    text-align: center;
+    padding: 72px 20px 48px;
+    background: radial-gradient(1200px 400px at 50% -10%, rgba(91,140,255,.18), transparent 60%);
+  }
+  .logo {
+    width: 84px; height: 84px; border-radius: 22px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 40px; font-weight: 800; color: #fff; margin-bottom: 18px;
+    box-shadow: 0 12px 40px rgba(91,140,255,.35);
+  }
+  h1 { font-size: 2.1rem; margin: 0 0 8px; letter-spacing: -.5px; }
+  .tagline { font-size: 1.15rem; color: var(--muted); margin: 0 auto 28px; max-width: 560px; }
+  .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 22px; border-radius: 12px; font-weight: 600;
+    text-decoration: none; transition: transform .12s ease, opacity .12s ease;
+  }
+  .btn:hover { transform: translateY(-2px); opacity: .95; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
+  .btn-secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  section { padding: 40px 0; border-top: 1px solid var(--border); }
+  h2 { font-size: 1.5rem; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .card .ico { font-size: 26px; }
+  .card h3 { margin: 10px 0 6px; font-size: 1.05rem; }
+  .card p { margin: 0; color: var(--muted); font-size: .95rem; }
+  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+  .shot {
+    aspect-ratio: 9/16; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--surface-2);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: .9rem; text-align: center; padding: 12px;
+  }
+  .privacy {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px; display: flex; gap: 16px; align-items: flex-start;
+  }
+  .privacy .badge { font-size: 30px; line-height: 1; }
+  .links { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; }
+  .links a { color: var(--accent); text-decoration: none; }
+  .links a:hover { text-decoration: underline; }
+  footer { text-align: center; color: var(--muted); padding: 40px 20px 60px; font-size: .9rem; }
+  .note { font-size: .8rem; color: var(--muted); margin-top: 10px; }
+  code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; font-size: .85em; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="logo">A</div>
+  <h1>Appause</h1>
+  <p class="tagline">打开分心 App 前的「减速带」——先冷静几秒，再决定要不要继续。</p>
+  <div class="cta">
+    <a class="btn btn-primary" href="https://github.com/USER/Appause/releases/latest">⬇️ 从 GitHub 下载</a>
+    <a class="btn btn-secondary" href="#">☁️ 蓝奏云镜像</a>
+  </div>
+  <p class="note">安卓 8.0+ · 纯本地 · 无需注册</p>
+</header>
+
+<div class="wrap">
+
+  <section>
+    <h2>它是怎么帮你的</h2>
+    <p class="sub">不是硬拦，而是给你一个「停顿」的空间。</p>
+    <div class="features">
+      <div class="card"><div class="ico">📦</div><h3>应用分组</h3><p>把抖音、微博、游戏等分心 App 归组，统一设置冷静时长。</p></div>
+      <div class="card"><div class="ico">⏸️</div><h3>暂停屏</h3><p>打开目标 App 即弹出冷静倒计时，几秒后自己选继续或返回。</p></div>
+      <div class="card"><div class="ico">🔔</div><h3>再次提醒</h3><p>冷却结束后再轻推你一下，防止一刷就停不下来。</p></div>
+      <div class="card"><div class="ico">📊</div><h3>使用统计</h3><p>看清时间都花在了哪些 App 上，让改变有依据。</p></div>
+      <div class="card"><div class="ico">🌙</div><h3>深色模式</h3><p>跟随系统或手动切换，夜间也好看。</p></div>
+      <div class="card"><div class="ico">🚀</div><h3>推荐清单</h3><p>一键把常见分心 App 加入分组，开箱即用。</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>截图</h2>
+    <p class="sub">（把你的真机截图替换下面占位块，建议 16:9 或 9:16）</p>
+    <div class="shots">
+      <div class="shot">暂停屏截图<br>占位</div>
+      <div class="shot">分组列表截图<br>占位</div>
+      <div class="shot">使用统计截图<br>占位</div>
+      <div class="shot">设置页截图<br>占位</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>隐私，是底线</h2>
+    <div class="privacy">
+      <div class="badge">🔒</div>
+      <div>
+        <p style="margin:0">Appause <strong>完全在本地运行</strong>：没有网络请求、没有账号、没有上传、没有统计 SDK。它只通过无障碍服务读取前台应用的<strong>包名</strong>（不读屏幕内容、不监听输入）。详见 <a href="https://github.com/USER/Appause/blob/main/PRIVACY.md">隐私政策</a>。</p>
+        <div class="links">
+          <a href="https://github.com/USER/Appause/blob/main/INSTALL.md">📲 如何安装（含 OEM 弹窗放行）</a>
+          <a href="https://github.com/USER/Appause/blob/main/PRIVACY.md">📄 隐私政策</a>
+          <a href="https://github.com/USER/Appause">⭐ GitHub 仓库</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>开始使用</h2>
+    <p class="sub">无需注册，下载即用。安装时若遇「未知来源 / 可能有害」提示，属正常现象——按 <a href="https://github.com/USER/Appause/blob/main/INSTALL.md">安装指引</a> 放行即可。</p>
+    <div class="cta" style="justify-content:flex-start">
+      <a class="btn btn-primary" href="https://github.com/USER/Appause/releases/latest">⬇️ 下载最新版</a>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  Appause · 一个本地优先的专注小工具 · MIT License<br>
+  遇到问题？在 <a href="https://github.com/USER/Appause/issues" style="color:var(--accent)">GitHub Issues</a> 反馈。
+</footer>
+
+</body>
+</html>

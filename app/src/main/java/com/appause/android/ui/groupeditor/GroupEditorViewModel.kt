@@ -5,10 +5,14 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
 import com.appause.android.data.local.AppGroup
+import com.appause.android.data.pro.ProState
 import com.appause.android.ui.appselect.AppSelectScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
 
 /**
@@ -27,6 +31,20 @@ import kotlinx.coroutines.launch
 class GroupEditorViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = (application as AppauseApp).repository
+    private val proState = (application as AppauseApp).proState
+
+    /** Whether Appause Pro is unlocked (drives paid-feature gating in the UI). */
+    val isPro: StateFlow<Boolean> = proState.isPro
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    /**
+     * Maximum cooldown the current user may set.
+     * Free tier is capped at [ProState.FREE_COOLDOWN_MAX_SECONDS];
+     * Pro raises it to [ProState.PRO_COOLDOWN_MAX_SECONDS].
+     */
+    val maxCooldown: StateFlow<Int> = isPro.map { isProUnlocked ->
+        if (isProUnlocked) ProState.PRO_COOLDOWN_MAX_SECONDS else ProState.FREE_COOLDOWN_MAX_SECONDS
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProState.FREE_COOLDOWN_MAX_SECONDS)
 
     // ── State ──
 
@@ -107,8 +125,8 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun updateCooldown(seconds: Int) {
-        // Clamp to valid range: 1–300 seconds
-        _cooldownSeconds.value = seconds.coerceIn(1, 300)
+        // Clamp to valid range for the current tier (free 1–30, pro 1–60).
+        _cooldownSeconds.value = seconds.coerceIn(1, maxCooldown.value)
     }
 
     fun updateReRemindEnabled(enabled: Boolean) {

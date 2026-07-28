@@ -223,13 +223,20 @@
     <string name="pro_free_cooldown">30s</string>
     <string name="pro_pro_cooldown">60s</string>
     <string name="pro_pro_reremind">Included</string>
+
+    <!-- Free-tier locked feature hints -->
+    <string name="pro_locked_hint">Upgrade to Pro to unlock</string>
+    <string name="pro_badge">PRO</string>
+    <string name="stats_free_limit_title">Free version: 7-day history</string>
+    <string name="stats_free_limit_desc">Upgrade to Appause Pro to view your full usage history.</string>
     <string name="pro_free_history">7 days</string>
     <string name="pro_pro_history">All time</string>
     <string name="pro_pro_prompt">Included</string>
     <string name="pro_activate_title">Activate Appause Pro</string>
-    <string name="pro_enter_code">Activation code</string>
-    <string name="pro_code_hint">Paste the code you received</string>
+    <string name="pro_enter_code">License token</string>
+    <string name="pro_code_hint">Paste the license token you received</string>
     <string name="pro_activate">Activate</string>
+    <string name="pro_token_note">Paste the full license token. It is verified on your device and stays valid offline.</string>
     <string name="pro_debug_unlock">Unlock (debug)</string>
     <string name="pro_license_title">License</string>
     <string name="pro_license_desc">Export your license before a factory reset or device switch, then import it to restore Pro offline.</string>
@@ -240,6 +247,6 @@
     <string name="pro_copied">Copied</string>
     <string name="pro_debug_unlocked">Pro unlocked (debug)</string>
     <string name="pro_imported">License imported</string>
-    <string name="pro_import_failed">Invalid code</string>
+    <string name="pro_import_failed">License invalid</string>
     <string name="pro_settings_desc">Unlock extra groups and features</string>
 </resources>

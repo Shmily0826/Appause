@@ -1,24 +1,34 @@
 package com.appause.android.data.pro
 
+import android.content.Context
 import com.appause.android.data.settings.SettingsDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 /**
  * ProState — the single source of truth for Appause Pro status.
  *
- * This is plan-A scaffolding (no backend yet):
- * - [isPro] tells the UI whether paid features are available.
- * - [unlockPro] / [importLicense] flip Pro on.
- * - [exportLicense] / [importLicense] move the license token in and out of the
- *   app, so the user can restore Pro after a factory reset or device switch
- *   without contacting a server.
+ * Plan B (this file): Pro is unlocked only when a LICENSE TOKEN is present AND
+ * verifies locally:
+ *   - the token's RS256 signature matches the embedded server public key
+ *     ([ServerKeys]),
+ *   - it has not expired,
+ *   - if it is device-bound, the "device" claim matches this device's
+ *     fingerprint ([DeviceKeyStore]).
  *
- * The license token is just a string for now. Plan B will replace the
- * placeholder check in [importLicense] with real signature verification
- * against a server-issued token.
+ * The token is stored in DataStore so Pro survives process death and can be
+ * re-imported after a factory reset / device switch (offline, no server call).
+ *
+ * A separate debug flag (debug builds only) can force Pro on for development.
+ * The signing private key stays server-side, so a fork of this open-source repo
+ * cannot mint valid tokens — it can only verify them.
  */
-class ProState(private val settings: SettingsDataStore) {
+class ProState(
+    private val settings: SettingsDataStore,
+    private val context: Context
+) {
 
     /** Free-tier limits. Paid users are not constrained by these. */
     companion object {
@@ -27,47 +37,66 @@ class ProState(private val settings: SettingsDataStore) {
 
         /** Free users' cooldown is capped at this many seconds. */
         const val FREE_COOLDOWN_MAX_SECONDS = 30
+
+        /** Pro users can set cooldowns up to this many seconds. */
+        const val PRO_COOLDOWN_MAX_SECONDS = 60
+
+        /** Free users see at most this many days of history in Stats. */
+        const val FREE_STATS_DAYS = 7
+
+        /** Pro users see up to this many days of history (effectively all). */
+        const val PRO_STATS_DAYS = 365
     }
 
-    /** Whether Appause Pro is currently unlocked. */
-    val isPro: Flow<Boolean> = settings.isPro
+    /**
+     * Whether Appause Pro is currently unlocked.
+     * True if the debug flag is on (debug builds) OR a stored license token
+     * verifies locally (signature + expiry + device binding).
+     */
+    val isPro: Flow<Boolean> = combine(settings.licenseToken, settings.isProDebug) { token, debug ->
+        if (debug) return@combine true
+        if (token.isBlank()) return@combine false
+        runCatching {
+            val fingerprint = DeviceKeyStore.getDeviceFingerprint(context)
+            val publicKey = LicenseVerifier.parsePublicKey(ServerKeys.SERVER_PUBLIC_KEY_PEM)
+            LicenseVerifier.verify(token, publicKey, fingerprint) != null
+        }.getOrDefault(false)
+    }
+
+    /** Debug-only unlock — only ever called from debug builds. */
+    suspend fun unlockProDebug() {
+        settings.setProUnlocked(true)
+    }
 
     /**
-     * Unlock Pro.
-     * @param licenseToken optional token to store (e.g. from a real purchase).
-     *   When null, no token is written — used by the debug unlock in debug builds.
+     * Import and verify a license token.
+     * @return true if the token is valid (and device-bound to this device, if
+     *   claimed). The token is stored only when valid, so a mistyped or forged
+     *   token never flips Pro on.
      */
-    suspend fun unlockPro(licenseToken: String? = null) {
-        settings.setProUnlocked(true)
-        if (!licenseToken.isNullOrBlank()) {
-            settings.setLicenseToken(licenseToken)
+    suspend fun importLicense(token: String): Boolean {
+        val trimmed = token.trim()
+        if (trimmed.isBlank()) return false
+        val valid = runCatching {
+            val fingerprint = DeviceKeyStore.getDeviceFingerprint(context)
+            val publicKey = LicenseVerifier.parsePublicKey(ServerKeys.SERVER_PUBLIC_KEY_PEM)
+            LicenseVerifier.verify(trimmed, publicKey, fingerprint) != null
+        }.getOrDefault(false)
+        if (valid) {
+            settings.setLicenseToken(trimmed)
         }
+        return valid
     }
 
     /**
      * Export the license token as a string the user can back up.
-     * If no token is stored yet (e.g. unlocked via debug), a debug token is
-     * generated so the export/import round-trip can still be tested.
+     * If no real token is stored yet (e.g. unlocked via debug), a debug
+     * placeholder is returned so the screen still has something to show. It is
+     * NOT stored, because it would not pass verification elsewhere.
      */
     suspend fun exportLicense(): String {
         val current = settings.licenseToken.first()
         if (current.isNotBlank()) return current
-        val debug = "APPAUSE-DEBUG-${System.currentTimeMillis()}"
-        settings.setLicenseToken(debug)
-        return debug
-    }
-
-    /**
-     * Import a license token.
-     * @return true if the token was accepted and Pro unlocked.
-     *
-     * Plan A: accepts any non-blank token (placeholder).
-     * Plan B: verify the token's signature locally before accepting it.
-     */
-    suspend fun importLicense(token: String): Boolean {
-        if (token.isBlank()) return false
-        settings.setLicenseToken(token)
-        settings.setProUnlocked(true)
-        return true
+        return "APPAUSE-DEBUG-${System.currentTimeMillis()}"
     }
 }

@@ -32,6 +32,63 @@
 
 ## Log
 
+### 2026-07-28 (Pro client gating — wire all paid features to isPro)
+- Extended plan-A Pro scaffolding: all four paid gates now read `isPro` (client-only, no backend).
+- `data/pro/ProState.kt`: added PRO_COOLDOWN_MAX_SECONDS=60, FREE_STATS_DAYS=7, PRO_STATS_DAYS=365.
+- `GroupEditorViewModel`: exposes `isPro` + `maxCooldown` (30 free / 60 pro); `updateCooldown` now clamps to the tier cap.
+- `GroupEditorScreen`: cooldown slider max + end-label follow `maxCooldown`; re-remind replaced by a locked "tap to upgrade" row for free users (deep-links to Pro). NavGraph passes `onNavigateToPro`.
+- `StatsViewModel`: dailyStats/topApps/totalRatio now `flatMapLatest` over `isPro` (7-day window free, ~1-year pro). `StatsScreen` shows a free-tier history-limit notice card.
+- `SettingsViewModel`: exposes `isPro`; `SettingsScreen` default-prompt editor disabled + "upgrade" card for free users.
+- Strings (EN+ZH): pro_locked_hint, pro_badge, stats_free_limit_title, stats_free_limit_desc.
+- Verified `./gradlew assembleDebug` → BUILD SUCCESSFUL (after a transient dexBuilder lock; retried).
+- NOTE: still plan A — activation is debug-only / placeholder import; real paid unlock (plan B: CF Worker + signed JWT + N-device re-activation) deferred.
+
+### 2026-07-28 (Release signing + sideload install guide)
+- Set up signed release builds for direct (sideload) distribution — decided to use
+  GitHub Releases + 蓝奏云 mirror instead of a traditional app store.
+- Generated `app/release.keystore` (RSA 2048, validity 10000 days, alias `appause`).
+  **Git-ignored** (`*.keystore`); NEVER commit. Back up the file + password separately.
+- `app/build.gradle.kts`: load signing creds from `local.properties` (git-ignored),
+  added `signingConfigs.create("release")`, and `release` buildType now uses it.
+- `local.properties`: added APPause_KEYSTORE_PATH / _ALIAS / _PASSWORD / _KEY_PASSWORD
+  (all git-ignored; the password is `AppauseRelease2026` — change it and back it up).
+- Verified: `./gradlew assembleRelease` → BUILD SUCCESSFUL; `apksigner verify` →
+  signed with v2 scheme (1 signer). APK at
+  `app/build/outputs/apk/release/app-release.apk` (~12 MB).
+- New `INSTALL.md`: sideload guide — enable "install unknown apps", bypass Play Protect
+  / OEM "harmful app" warnings (Xiaomi/Huawei/OPPO/vivo), enable AccessibilityService,
+  battery/exclude-from-kill. For the landing page / direct-download distribution.
+
+### 2026-07-28 (Plan B step 2 — client-side JWT license verification)
+- Implemented local, offline license verification so "open source but paid" holds:
+  a fork gets the verify key, not the signing key.
+- New `data/pro/DeviceKeyStore.kt`: Android Keystore RSA-2048 keypair (non-extractable
+  private key), exposes a stable SHA-256 device fingerprint used for token device-binding.
+- New `data/pro/LicenseVerifier.kt`: manual JWT (RS256) verification — base64url parse,
+  SHA256withRSA signature check against the server public key, plus tier/exp/device
+  claim validation. No new dependency (uses android.util.Base64 + org.json).
+- New `data/pro/ServerKeys.kt`: embeds the server RSA PUBLIC key (verify-only). Currently
+  a DEV key so the client is testable before the Worker exists; swap for the production
+  public key (private half lives only in Cloudflare) before any public release.
+- `ProState`: `isPro` now derived from a locally-verified token OR a debug flag
+  (debug builds only). `importLicense()` verifies before storing (bad paste never flips
+  Pro). `unlockPro()` renamed to `unlockProDebug()`.
+- `SettingsDataStore`: `isPro` flow renamed to `isProDebug` (debug-only flag); real Pro
+  is gated by the verified token in ProState.
+- `AppauseApp`: ProState now receives the Application context (needed for Keystore).
+- `ProScreen`/`ProViewModel`: input relabeled "License token"; added offline-verify hint.
+  Strings (EN+ZH): pro_enter_code, pro_code_hint, pro_import_failed, pro_token_note updated.
+- Dev keypair + a sample unbound dev token generated to `C:\Users\Shmily\Appause_Keys\`
+  (private key kept OUT of the repo). The dev token verifies on any device for local testing.
+- Verified `./gradlew assembleDebug` → BUILD SUCCESSFUL (after a stuck Gradle/Java process
+  held the KSP cache; fixed by `--stop` + kill java + `rm -rf app/build`).
+- SECURITY NOTE: do NOT ship a release APK with the DEV public key in ServerKeys — anyone
+  could use the dev token. Replace with the production key before any public release.
+- Next (Plan B step 3): deploy the Cloudflare Worker (code redeem -> sign JWT with
+  device-bound "device" claim + exp + jti). Step 4: payment/code distribution.
+- NOTE: `JAVA_HOME` in the shell still points at a Java 7 dir; build requires
+  `JAVA_HOME=/d/Dev-Setup/jdk` (Temurin 17). Fix the env var to avoid friction.
+
 ### 2026-07-27 (ProState — monetization scaffolding, plan A)
 - Added offline buy-once monetization scaffolding (plan A), no backend.
 - New `data/pro/ProState.kt`: wraps SettingsDataStore; exposes `isPro` Flow,

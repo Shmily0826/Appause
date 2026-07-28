@@ -1,8 +1,18 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+}
+
+// Load signing credentials from local.properties (never committed).
+val localProps = Properties().apply {
+    val localFile = rootProject.file("local.properties")
+    if (localFile.exists()) {
+        localFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -13,8 +23,18 @@ android {
         applicationId = "com.appause.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 25
-        versionName = "0.3.6"
+        versionCode = 26
+        versionName = "0.3.7"
+    }
+
+    signingConfigs {
+        create("release") {
+            // Values come from local.properties, which is git-ignored.
+            storeFile = file(localProps.getProperty("APPause_KEYSTORE_PATH", "release.keystore"))
+            storePassword = localProps.getProperty("APPause_KEYSTORE_PASSWORD")
+            keyAlias = localProps.getProperty("APPause_KEY_ALIAS")
+            keyPassword = localProps.getProperty("APPause_KEY_PASSWORD")
+        }
     }
 
     buildTypes {
@@ -24,6 +44,8 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Sign with the locally-stored release key (see signingConfigs above).
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

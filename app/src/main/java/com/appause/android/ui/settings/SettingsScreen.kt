@@ -57,6 +57,7 @@ fun SettingsScreen(
 ) {
     val isEnabled by viewModel.isEnabled.collectAsStateWithLifecycle()
     val defaultPrompt by viewModel.defaultPrompt.collectAsStateWithLifecycle()
+    val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
@@ -246,18 +247,48 @@ fun SettingsScreen(
             }
 
             // ── Default Prompt ──
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.default_prompt_title), style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = defaultPrompt,
-                        onValueChange = viewModel::updateDefaultPrompt,
-                        label = { Text(stringResource(R.string.prompt_label)) },
-                        placeholder = { Text(stringResource(R.string.default_prompt)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+            // Custom prompt is a Pro feature. Free users see the field disabled
+            // with a hint; tapping the card opens the Pro screen.
+            if (isPro) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(stringResource(R.string.default_prompt_title), style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = defaultPrompt,
+                            onValueChange = viewModel::updateDefaultPrompt,
+                            label = { Text(stringResource(R.string.prompt_label)) },
+                            placeholder = { Text(stringResource(R.string.default_prompt)) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            } else {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onNavigateToPro
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.default_prompt_title), style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                text = stringResource(R.string.pro_locked_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.pro_badge),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             }
 

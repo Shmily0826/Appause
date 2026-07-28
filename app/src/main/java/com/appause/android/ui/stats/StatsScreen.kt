@@ -52,6 +52,7 @@ fun StatsScreen(
     val dailyStats by viewModel.dailyStats.collectAsStateWithLifecycle()
     val topApps by viewModel.topApps.collectAsStateWithLifecycle()
     val totalRatio by viewModel.totalRatio.collectAsStateWithLifecycle()
+    val isPro by viewModel.isPro.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -80,6 +81,29 @@ fun StatsScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // ── Free-tier history limit notice ──
+            if (!isPro) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = stringResource(R.string.stats_free_limit_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.stats_free_limit_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
             // ── Section 1: Weekly Bar Chart ──
             Card(
                 modifier = Modifier.fillMaxWidth(),

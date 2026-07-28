@@ -180,6 +180,12 @@ fun ProScreen(
                         ) {
                             Text(stringResource(R.string.pro_activate))
                         }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            stringResource(R.string.pro_token_note),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
 
                         // Debug-only unlock — not shown in release builds.
                         if (BuildConfig.DEBUG) {

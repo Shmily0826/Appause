@@ -24,6 +24,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val defaultPrompt: StateFlow<String> = repository.defaultPrompt
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
+    /** Whether Appause Pro is unlocked (gates the custom prompt editor). */
+    val isPro: StateFlow<Boolean> = (application as AppauseApp).proState.isPro
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     val language: StateFlow<String> = repository.language
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000),
             (application as AppauseApp).settingsDataStore.getLanguageSync())

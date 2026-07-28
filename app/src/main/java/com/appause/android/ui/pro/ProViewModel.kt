@@ -36,7 +36,7 @@ class ProViewModel(application: Application) : AndroidViewModel(application) {
     /** Debug-only unlock — the UI only calls this in debug builds. */
     fun unlockProDebug() {
         viewModelScope.launch {
-            proState.unlockPro()
+            proState.unlockProDebug()
             _message.value = "pro_debug_unlocked"
         }
     }

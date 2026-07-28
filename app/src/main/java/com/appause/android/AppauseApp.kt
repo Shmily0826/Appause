@@ -42,7 +42,7 @@ class AppauseApp : Application() {
      * Wraps settingsDataStore; holds the free/paid gating logic.
      */
     val proState: ProState by lazy {
-        ProState(settingsDataStore)
+        ProState(settingsDataStore, this)
     }
 
     /**

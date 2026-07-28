@@ -51,11 +51,12 @@ class SettingsDataStore(private val context: Context) {
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         val RECOMMENDED_APPS_KEY = stringSetPreferencesKey("recommended_apps")
 
-        // ── Pro / license (monetization, plan A scaffolding) ──
-        // pro_unlocked: whether the user has unlocked Appause Pro.
-        // license_token: the (signed) license string used to re-activate the
-        //   app after a factory reset or device switch. Plan B adds real
-        //   server-side signature verification; for now it is just stored.
+        // ── Pro / license (monetization, plan B) ──
+        // pro_unlocked: DEBUG-ONLY flag flipped by debug builds to force Pro on.
+        //   Real Pro is gated by a verified license token (see ProState), not by
+        //   this flag. Never set this in release builds.
+        // license_token: the (signed, server-issued) JWT used to unlock Pro and
+        //   to re-activate the app after a factory reset or device switch.
         val PRO_UNLOCKED_KEY = booleanPreferencesKey("pro_unlocked")
         val LICENSE_TOKEN_KEY = stringPreferencesKey("license_token")
 
@@ -111,10 +112,11 @@ class SettingsDataStore(private val context: Context) {
     }
 
     /**
-     * Whether Appause Pro is unlocked.
-     * Default: false — everyone starts on the free tier.
+     * Debug-only Pro flag (flipped by debug builds). Real Pro is derived from a
+     * verified license token in [com.appause.android.data.pro.ProState], not
+     * from this flag. Defaults to false.
      */
-    val isPro: Flow<Boolean> = context.dataStore.data.map { preferences ->
+    val isProDebug: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[PRO_UNLOCKED_KEY] ?: false
     }
 

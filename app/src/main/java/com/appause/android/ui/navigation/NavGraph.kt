@@ -109,7 +109,8 @@ fun AppNavGraph() {
             GroupEditorScreen(
                 groupId = -1L,
                 onNavigateBack = safePopBackStack,
-                onNavigateToAppSelect = { navController.navigate(Routes.APP_SELECT) }
+                onNavigateToAppSelect = { navController.navigate(Routes.APP_SELECT) },
+                onNavigateToPro = { navController.navigate(Routes.PRO) }
             )
         }
         composable(
@@ -125,7 +126,8 @@ fun AppNavGraph() {
             GroupEditorScreen(
                 groupId = groupId,
                 onNavigateBack = safePopBackStack,
-                onNavigateToAppSelect = { navController.navigate(Routes.APP_SELECT) }
+                onNavigateToAppSelect = { navController.navigate(Routes.APP_SELECT) },
+                onNavigateToPro = { navController.navigate(Routes.PRO) }
             )
         }
 

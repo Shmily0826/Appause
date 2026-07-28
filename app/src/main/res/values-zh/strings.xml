@@ -218,13 +218,20 @@
     <string name="pro_free_cooldown">30 秒</string>
     <string name="pro_pro_cooldown">60 秒</string>
     <string name="pro_pro_reremind">已包含</string>
+
+    <!-- 免费版锁定功能提示 -->
+    <string name="pro_locked_hint">升级 Pro 解锁</string>
+    <string name="pro_badge">PRO</string>
+    <string name="stats_free_limit_title">免费版：仅显示近 7 天</string>
+    <string name="stats_free_limit_desc">升级 Appause Pro 可查看完整使用历史。</string>
     <string name="pro_free_history">7 天</string>
     <string name="pro_pro_history">全部</string>
     <string name="pro_pro_prompt">已包含</string>
     <string name="pro_activate_title">激活 Appause Pro</string>
-    <string name="pro_enter_code">激活码</string>
-    <string name="pro_code_hint">粘贴你收到的激活码</string>
+    <string name="pro_enter_code">许可证令牌</string>
+    <string name="pro_code_hint">粘贴你收到的许可证令牌</string>
     <string name="pro_activate">激活</string>
+    <string name="pro_token_note">粘贴完整的许可证令牌。它在你的设备上本地校验，离线也长期有效。</string>
     <string name="pro_debug_unlock">解锁（调试）</string>
     <string name="pro_license_title">许可证</string>
     <string name="pro_license_desc">恢复出厂或更换设备前导出许可证，之后导入即可离线恢复 Pro。</string>
@@ -235,6 +242,6 @@
     <string name="pro_copied">已复制</string>
     <string name="pro_debug_unlocked">已解锁 Pro（调试）</string>
     <string name="pro_imported">许可证已导入</string>
-    <string name="pro_import_failed">激活码无效</string>
+    <string name="pro_import_failed">许可证无效</string>
     <string name="pro_settings_desc">解锁更多分组与功能</string>
 </resources>

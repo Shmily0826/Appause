@@ -104,6 +104,7 @@ fun GroupEditorScreen(
     groupId: Long,
     onNavigateBack: () -> Unit,
     onNavigateToAppSelect: () -> Unit,
+    onNavigateToPro: () -> Unit,
     viewModel: GroupEditorViewModel = viewModel()
 ) {
     val name by viewModel.name.collectAsStateWithLifecycle()
@@ -113,6 +114,8 @@ fun GroupEditorScreen(
     val selectedPackages by viewModel.selectedPackages.collectAsStateWithLifecycle()
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
     val saveCompleted by viewModel.saveCompleted.collectAsStateWithLifecycle()
+    val isPro by viewModel.isPro.collectAsStateWithLifecycle()
+    val maxCooldown by viewModel.maxCooldown.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -228,61 +231,101 @@ fun GroupEditorScreen(
             // ── Cooldown + Re-remind ──
             Spacer(modifier = Modifier.height(8.dp))
 
-                // Cooldown time — unified slider + input component
+                // Cooldown time — unified slider + input component.
+                // The maximum is gated by Pro: free users top out at 30s,
+                // Pro users can go up to 60s.
+                val cooldownUnit = stringResource(R.string.cooldown_seconds_suffix)
                 TimeSliderInput(
                     title = stringResource(R.string.cooldown_label),
-                    value = cooldownSeconds,
-                    unit = stringResource(R.string.cooldown_seconds_suffix),
+                    value = cooldownSeconds.coerceAtMost(maxCooldown),
+                    unit = cooldownUnit,
                     minValue = 1,
-                    maxValue = 60,
+                    maxValue = maxCooldown,
                     onValueChange = viewModel::updateCooldown,
-                    rangeStartLabel = stringResource(R.string.cooldown_range_start),
-                    rangeEndLabel = stringResource(R.string.cooldown_range_end)
+                    rangeStartLabel = "1$cooldownUnit",
+                    rangeEndLabel = "$maxCooldown$cooldownUnit"
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Re-remind: Switch header + description
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                // Re-remind is a Pro feature. Free users see a locked row that
+                // deep-links to the Pro screen; Pro users get the full control.
+                if (isPro) {
+                    // Re-remind: Switch header + description
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.re_remind_label),
+                                style = MaterialTheme.typography.titleMedium,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Switch(
+                                checked = reRemindEnabled,
+                                onCheckedChange = viewModel::updateReRemindEnabled
+                            )
+                        }
                         Text(
-                            text = stringResource(R.string.re_remind_label),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Switch(
-                            checked = reRemindEnabled,
-                            onCheckedChange = viewModel::updateReRemindEnabled
+                            text = stringResource(R.string.re_remind_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    Text(
-                        text = stringResource(R.string.re_remind_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
 
-                // Interval input (visible only when switch is on) — no slider,
-                // just a compact number input for precise manual entry.
-                if (reRemindEnabled) {
-                    TimeInputRow(
-                        title = stringResource(R.string.re_remind_interval_label),
-                        value = reRemindMinutes,
-                        unit = stringResource(R.string.re_remind_unit),
-                        minValue = 1,
-                        maxValue = 60,
-                        onValueChange = viewModel::updateReRemind
-                    )
+                    // Interval input (visible only when switch is on) — no slider,
+                    // just a compact number input for precise manual entry.
+                    if (reRemindEnabled) {
+                        TimeInputRow(
+                            title = stringResource(R.string.re_remind_interval_label),
+                            value = reRemindMinutes,
+                            unit = stringResource(R.string.re_remind_unit),
+                            minValue = 1,
+                            maxValue = 60,
+                            onValueChange = viewModel::updateReRemind
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.re_remind_disabled_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
                 } else {
-                    Text(
-                        text = stringResource(R.string.re_remind_disabled_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
+                    // Locked placeholder row — tap to learn about Pro.
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = onNavigateToPro,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.re_remind_label),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    text = stringResource(R.string.pro_locked_hint),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Text(
+                                text = stringResource(R.string.pro_badge),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
 
             Spacer(modifier = Modifier.height(8.dp))

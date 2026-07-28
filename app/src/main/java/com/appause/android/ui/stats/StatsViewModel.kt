@@ -7,8 +7,10 @@ import com.appause.android.AppauseApp
 import com.appause.android.data.local.AppInterceptionCount
 import com.appause.android.data.local.DailyStats
 import com.appause.android.data.local.TotalRatio
+import com.appause.android.data.pro.ProState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import java.util.Calendar
 
@@ -20,7 +22,9 @@ import java.util.Calendar
  * - topApps: top 5 most-intercepted apps (for the list)
  * - totalRatio: overall proceeded/cancelled split (for the donut chart)
  *
- * All queries look back 7 days from today (start of day).
+ * The look-back window depends on Pro:
+ * - Free users see the last [ProState.FREE_STATS_DAYS] days.
+ * - Pro users see up to [ProState.PRO_STATS_DAYS] days (effectively all history).
  *
  * Why AndroidViewModel?
  * - We need application context to access the repository singleton.
@@ -29,39 +33,46 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = (application as AppauseApp).repository
 
+    /** Whether Appause Pro is unlocked (drives the stats window). */
+    val isPro: StateFlow<Boolean> = (application as AppauseApp).proState.isPro
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
     /**
-     * Calculate the start of 7 days ago (midnight).
-     * This gives us a rolling window for the charts.
+     * Start-of-day timestamp [days] ago (inclusive of today).
+     * days=7 → -6; days=365 → -364.
      */
-    private val sevenDaysAgo: Long = Calendar.getInstance().apply {
+    private fun windowStart(days: Int): Long = Calendar.getInstance().apply {
         set(Calendar.HOUR_OF_DAY, 0)
         set(Calendar.MINUTE, 0)
         set(Calendar.SECOND, 0)
         set(Calendar.MILLISECOND, 0)
-        add(Calendar.DAY_OF_YEAR, -6) // -6 so today is included = 7 days total
+        add(Calendar.DAY_OF_YEAR, -(days - 1))
     }.timeInMillis
 
-    /** Daily stats for the past 7 days (for bar chart). */
-    val dailyStats: StateFlow<List<DailyStats>> = repository.observeDailyStats(sevenDaysAgo)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    /** Daily stats for the current window (for bar chart). */
+    val dailyStats: StateFlow<List<DailyStats>> = isPro.flatMapLatest { pro ->
+        repository.observeDailyStats(windowStart(if (pro) ProState.PRO_STATS_DAYS else ProState.FREE_STATS_DAYS))
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
-    /** Top 5 intercepted apps in the past 7 days. */
-    val topApps: StateFlow<List<AppInterceptionCount>> = repository.observeTopApps(sevenDaysAgo)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    /** Top intercepted apps in the current window. */
+    val topApps: StateFlow<List<AppInterceptionCount>> = isPro.flatMapLatest { pro ->
+        repository.observeTopApps(windowStart(if (pro) ProState.PRO_STATS_DAYS else ProState.FREE_STATS_DAYS))
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
 
-    /** Overall proceeded vs cancelled ratio for the past 7 days. */
-    val totalRatio: StateFlow<TotalRatio> = repository.observeTotalRatio(sevenDaysAgo)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = TotalRatio(0, 0)
-        )
+    /** Overall proceeded vs cancelled ratio in the current window. */
+    val totalRatio: StateFlow<TotalRatio> = isPro.flatMapLatest { pro ->
+        repository.observeTotalRatio(windowStart(if (pro) ProState.PRO_STATS_DAYS else ProState.FREE_STATS_DAYS))
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = TotalRatio(0, 0)
+    )
 }
