@@ -9,6 +9,9 @@ build/
 */build/
 .kotlin/
 
+# Local release output (APKs you keep for sideloading; never commit to git)
+output/
+
 # Local configuration
 local.properties
 
