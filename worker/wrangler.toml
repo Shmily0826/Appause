@@ -1,0 +1,16 @@
+name = "appause-pro-worker"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+# NOTE: btoa/atob/TextEncoder/crypto.subtle are all available in the Workers
+# runtime by default; no compatibility_flags needed.
+
+# KV namespace that stores activation codes and their device bindings.
+# 1) Create it:        wrangler kv namespace create APPAUSE_CODES
+# 2) Paste the returned "id" below.
+[[kv_namespaces]]
+binding = "APPAUSE_CODES"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+
+# Secrets (DO NOT put these in this file or commit them):
+#   wrangler secret put APPAUSE_PRIVATE_KEY   # PKCS#8 PEM from `npm run genkeys`
+#   wrangler secret put ADMIN_KEY             # any strong random string

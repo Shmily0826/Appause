@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
 import com.appause.android.data.pro.ProState
+import com.appause.android.data.pro.RedeemResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,6 +47,22 @@ class ProViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val ok = proState.importLicense(token.trim())
             _message.value = if (ok) "pro_imported" else "pro_import_failed"
+        }
+    }
+
+    /** Redeem an activation code against the server (Plan B). */
+    fun redeemCode(code: String) {
+        viewModelScope.launch {
+            when (val result = proState.redeemCode(code.trim())) {
+                is RedeemResult.Success -> _message.value = "pro_imported"
+                is RedeemResult.Error -> _message.value = when (result.reason) {
+                    "device_limit_reached" -> "pro_redeem_limit"
+                    "invalid_code" -> "pro_redeem_invalid"
+                    "worker_not_configured" -> "pro_redeem_not_configured"
+                    "token_verify_failed" -> "pro_redeem_verify_failed"
+                    else -> "pro_redeem_failed"
+                }
+            }
         }
     }
 

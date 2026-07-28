@@ -1,0 +1,16 @@
+{
+  "name": "appause-pro-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Appause Pro activation worker — issues device-bound RS256 license JWTs.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "genkeys": "node scripts/genkeys.mjs",
+    "test": "node test/sign-verify.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^3.78.0"
+  }
+}

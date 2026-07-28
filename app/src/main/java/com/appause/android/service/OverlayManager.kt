@@ -82,14 +82,17 @@ class OverlayManager {
      * @param targetPackage Package name of the app the user tried to open.
      * @param groupId ID of the group this app belongs to (for logging).
      * @param cooldownSeconds How long the countdown should last.
-     * @param reRemindMinutes If > 0, schedule a re-remind after the user proceeds.
+     * @param reRemindMinutes If > 0, the initial entry starts a re-remind loop.
+     * @param isReRemind True when this overlay is a re-remind pop (re-bypass only,
+     *                   no new session/loop).
      */
     fun show(
         service: AppauseAccessibilityService,
         targetPackage: String,
         groupId: Long,
         cooldownSeconds: Int,
-        reRemindMinutes: Int = 0
+        reRemindMinutes: Int = 0,
+        isReRemind: Boolean = false
     ) {
         // Prevent duplicate overlays
         if (overlayView != null) {
@@ -191,8 +194,15 @@ class OverlayManager {
 
                     // Countdown state — shared helper provides smooth progress (~60fps)
                     val countdown = rememberCountdownState(cooldownSeconds) {
-                        // Timer finished → start bypass so user can enter the app
-                        InterceptionManager.startBypass(targetPackage)
+                        // Timer finished → enter the app.
+                        // Initial entry records the session + starts the re-remind
+                        // loop; a re-remind pop just re-bypasses (the loop is already
+                        // running and will re-fire on its own).
+                        if (isReRemind) {
+                            InterceptionManager.startBypass(targetPackage)
+                        } else {
+                            service.onSessionStart(targetPackage, groupId, cooldownSeconds, reRemindMinutes)
+                        }
                     }
 
                     PauseScreenContent(
@@ -233,14 +243,9 @@ class OverlayManager {
                                 repository.logLaunch(targetPackage, groupId, "proceeded", reason)
                             }
                             dismiss()
-                            // Schedule a re-remind if the group has one configured.
-                            // The timer will fire after N minutes and show the overlay
-                            // again — but only if the user is still in the target app.
-                            if (reRemindMinutes > 0) {
-                                service.scheduleReRemind(
-                                    targetPackage, groupId, cooldownSeconds, reRemindMinutes
-                                )
-                            }
+                            // Re-remind is handled by the self-rescheduling loop started
+                            // in onSessionStart (initial entry). For a re-remind pop the
+                            // loop is already running, so nothing extra to schedule here.
                         },
                         recommendedApps = recommendedApps,
                         onOpenRecommendedApp = { pkg ->

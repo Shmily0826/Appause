@@ -79,6 +79,11 @@ fun ProScreen(
                 "pro_debug_unlocked" -> R.string.pro_debug_unlocked
                 "pro_imported" -> R.string.pro_imported
                 "pro_import_failed" -> R.string.pro_import_failed
+                "pro_redeem_limit" -> R.string.pro_redeem_limit
+                "pro_redeem_invalid" -> R.string.pro_redeem_invalid
+                "pro_redeem_not_configured" -> R.string.pro_redeem_not_configured
+                "pro_redeem_verify_failed" -> R.string.pro_redeem_verify_failed
+                "pro_redeem_failed" -> R.string.pro_redeem_failed
                 else -> null
             }
             resId?.let { Toast.makeText(context, context.getString(it), Toast.LENGTH_SHORT).show() }
@@ -173,12 +178,29 @@ fun ProScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = {
+                                viewModel.redeemCode(codeInput)
+                                codeInput = ""
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.pro_redeem_online))
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            stringResource(R.string.pro_redeem_needs_network),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        // Secondary path: paste a raw license token (dev / manual).
+                        OutlinedButton(
+                            onClick = {
                                 viewModel.importLicense(codeInput)
                                 codeInput = ""
                             },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text(stringResource(R.string.pro_activate))
+                            Text(stringResource(R.string.pro_import_token))
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(

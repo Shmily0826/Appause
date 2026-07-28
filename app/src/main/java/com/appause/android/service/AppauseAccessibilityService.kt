@@ -102,15 +102,32 @@ class AppauseAccessibilityService : AccessibilityService() {
     private var homePackages: Set<String> = emptySet()
 
     /**
-     * Scheduled re-remind timers, keyed by target package name.
+     * Scheduled re-remind timers (in-app periodic nudge), keyed by package.
      *
-     * When the user completes a cooldown and enters the app, we schedule a
-     * delayed job. If the user is still in the app when the timer fires,
-     * we clear the bypass and show the cooldown overlay again.
-     *
-     * Cancelled when the user leaves the app (bypass cleanup).
+     * A self-rescheduling loop started when the user enters the app; it pops
+     * the cooldown again every N minutes of wall-clock time while the user is
+     * still in the app, and stops only when the session is re-armed.
      */
     private val reRemindJobs = mutableMapOf<String, Job>()
+
+    /**
+     * Away cooldown timers (3-min "leave window"), keyed by package.
+     *
+     * When the user leaves a bypassed app, we start this timer instead of
+     * clearing the bypass immediately. If they return within LEAVE_COOLDOWN_MS,
+     * the timer is cancelled and the session resumes seamlessly. If it fires,
+     * the session is re-armed (bypass cleared, next open re-cools).
+     *
+     * This replaces the old "clear bypass on any switch" logic that caused the
+     * cooldown to re-pop on every in-app detour (gallery/chooser/player).
+     */
+    private val leaveTimers = mutableMapOf<String, Job>()
+
+    /** Wall-clock time each session started; used for logging/debug. */
+    private val sessionStart = mutableMapOf<String, Long>()
+
+    /** How long a user can be away before the session is re-armed. */
+    private val LEAVE_COOLDOWN_MS = 3 * 60 * 1000L
 
     override fun onServiceConnected() {
         super.onServiceConnected()
@@ -209,16 +226,11 @@ class AppauseAccessibilityService : AccessibilityService() {
         if (isSystemPackage(packageName)) {
             AppLogger.d(TAG, "SKIP: system package ($packageName)")
             // The user left the previous app (via Home, Recents, etc.).
-            // If it was bypassed, clear the bypass so re-entering triggers
-            // the cooldown again. Without this, switching away and back
-            // via Recents would skip interception entirely.
-            lastForegroundPackage?.let { last ->
-                if (InterceptionManager.isBypassed(last)) {
-                    AppLogger.d(TAG, "Cleanup: clearing bypass for $last (user went to system UI)")
-                    InterceptionManager.clearBypass(last)
-                    cancelReRemind(last)
-                }
-            }
+            // Start its 3-min away cooldown instead of clearing the bypass
+            // immediately. This is the core fix for the in-app transient-switch
+            // bug: opening a gallery/chooser/player used to clear the bypass and
+            // re-pop the cooldown. Now the session survives short detours.
+            maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
             lastForegroundPackage = packageName
             return
         }
@@ -229,9 +241,12 @@ class AppauseAccessibilityService : AccessibilityService() {
             justCancelledPackage = null
         }
 
-        // 4. Check bypass — if the app is bypassed, check if we should clean up
+        // 4. RESUME: if this app still has an active session, the user returned
+        //    to it (possibly after a short detour). Cancel its away cooldown and
+        //    let them continue without re-interception.
         if (InterceptionManager.isBypassed(packageName)) {
-            AppLogger.d(TAG, "SKIP: bypassed ($packageName)")
+            cancelLeaveTimer(packageName)
+            AppLogger.d(TAG, "RESUME: $packageName (returned within leave window)")
             lastForegroundPackage = packageName
             return
         }
@@ -239,26 +254,17 @@ class AppauseAccessibilityService : AccessibilityService() {
         // 4.5. Skip if cooldown overlay is currently showing
         if (pauseShown) {
             AppLogger.d(TAG, "SKIP: cooldown overlay is showing ($packageName)")
-            // Still clean up bypass if the user left a bypassed app
-            lastForegroundPackage?.let { last ->
-                if (InterceptionManager.isBypassed(last) && last != packageName) {
-                    AppLogger.d(TAG, "Cleanup: clearing bypass for $last (user left the app)")
-                    InterceptionManager.clearBypass(last)
-                    cancelReRemind(last)
-                }
-            }
+            // A previously bypassed app is now in the background — start its
+            // away cooldown (e.g. user opened app B while the cooldown for app
+            // A is on screen). If the user returns within 3 min it resumes.
+            maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
             return
         }
 
         // The foreground changed to a non-bypassed, non-system app.
-        // If the previous app WAS bypassed, the user left it → clean up.
-        lastForegroundPackage?.let { last ->
-            if (InterceptionManager.isBypassed(last)) {
-                AppLogger.d(TAG, "Cleanup: clearing bypass for $last (user left the app)")
-                InterceptionManager.clearBypass(last)
-                cancelReRemind(last)
-            }
-        }
+        // If the previous app WAS bypassed, the user left it → start its
+        // 3-min away cooldown (re-arm only if they stay away past the window).
+        maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
 
         // 5. Skip duplicate events (same app, different Activity)
         if (packageName == lastForegroundPackage) {
@@ -336,9 +342,10 @@ class AppauseAccessibilityService : AccessibilityService() {
         packageName: String,
         groupId: Long,
         cooldownSeconds: Int,
-        reRemindMinutes: Int = 0
+        reRemindMinutes: Int = 0,
+        isReRemind: Boolean = false
     ) {
-        overlayManager.show(this, packageName, groupId, cooldownSeconds, reRemindMinutes)
+        overlayManager.show(this, packageName, groupId, cooldownSeconds, reRemindMinutes, isReRemind)
     }
 
     /**
@@ -351,27 +358,43 @@ class AppauseAccessibilityService : AccessibilityService() {
      *
      * Only one timer per package is active at a time (previous is cancelled).
      */
-    fun scheduleReRemind(targetPackage: String, groupId: Long, cooldownSeconds: Int, minutes: Int) {
+    /**
+     * Start the self-rescheduling re-remind loop for a package.
+     *
+     * Called once when the user enters the app (onSessionStart). The loop pops
+     * the cooldown every [minutes] of wall-clock time while the user is still
+     * in the app. It does not stop on its own while the session is active — it
+     * only ends when the session is re-armed (bypass cleared) or the service is
+     * destroyed. Re-arming also cancels this job.
+     */
+    internal fun scheduleReRemind(targetPackage: String, groupId: Long, cooldownSeconds: Int, minutes: Int) {
         if (minutes <= 0) return
 
-        // Cancel any existing timer for this package (e.g., from a previous Continue)
+        // Cancel any existing loop for this package (e.g., from a previous session)
         cancelReRemind(targetPackage)
 
-        AppLogger.d(TAG, "Scheduling re-remind for $targetPackage in $minutes min")
+        AppLogger.d(TAG, "Scheduling re-remind loop for $targetPackage every $minutes min")
 
         val job = serviceScope.launch {
-            delay(minutes * 60 * 1000L)
+            while (true) {
+                delay(minutes * 60 * 1000L)
 
-            // Timer fired — check if the user is still in the target app
-            if (lastForegroundPackage == targetPackage && !pauseShown) {
-                AppLogger.d(TAG, "Re-remind fired: user still in $targetPackage, showing overlay")
-                InterceptionManager.clearBypass(targetPackage)
-                showCooldownOverlay(targetPackage, groupId, cooldownSeconds, minutes)
-            } else {
-                AppLogger.d(TAG, "Re-remind fired but user left $targetPackage, skipping")
+                // Session was re-armed (left > cooldown window, or cancelled) → stop looping.
+                if (!InterceptionManager.isBypassed(targetPackage)) {
+                    AppLogger.d(TAG, "Re-remind loop ends: $targetPackage no longer bypassed")
+                    break
+                }
+
+                if (lastForegroundPackage == targetPackage && !pauseShown) {
+                    AppLogger.d(TAG, "Re-remind fired: user still in $targetPackage, showing overlay")
+                    // Clear bypass so the overlay shows; the loop keeps running and the
+                    // user re-bypasses on Continue (countdown finish → startBypass).
+                    InterceptionManager.clearBypass(targetPackage)
+                    showCooldownOverlay(targetPackage, groupId, cooldownSeconds, minutes, isReRemind = true)
+                } else {
+                    AppLogger.d(TAG, "Re-remind tick but user away from $targetPackage, will re-check")
+                }
             }
-
-            // Remove from map (job completed)
             reRemindJobs.remove(targetPackage)
         }
 
@@ -386,6 +409,72 @@ class AppauseAccessibilityService : AccessibilityService() {
         reRemindJobs.remove(packageName)?.cancel()
     }
 
+    /**
+     * Called when the user enters a restricted app (cooldown finished, they
+     * tapped Continue). Sets up the session: cancel any pending away cooldown,
+     * record start time, mark bypassed, and start the re-remind loop if enabled.
+     */
+    internal fun onSessionStart(
+        targetPackage: String,
+        groupId: Long,
+        cooldownSeconds: Int,
+        reRemindMinutes: Int
+    ) {
+        cancelLeaveTimer(targetPackage)
+        sessionStart[targetPackage] = System.currentTimeMillis()
+        InterceptionManager.startBypass(targetPackage)
+        AppLogger.d(TAG, "Session start: $targetPackage")
+        if (reRemindMinutes > 0) {
+            scheduleReRemind(targetPackage, groupId, cooldownSeconds, reRemindMinutes)
+        }
+    }
+
+    /**
+     * Start the 3-min away cooldown for a package the user just left.
+     * Fires reArm() if the user hasn't returned within LEAVE_COOLDOWN_MS.
+     */
+    private fun startLeaveTimer(targetPackage: String) {
+        cancelLeaveTimer(targetPackage)
+        AppLogger.d(TAG, "Leave cooldown started for $targetPackage (${LEAVE_COOLDOWN_MS / 1000}s)")
+        val job = serviceScope.launch {
+            delay(LEAVE_COOLDOWN_MS)
+            // Still bypassed means the user never came back → re-arm.
+            if (InterceptionManager.isBypassed(targetPackage)) {
+                AppLogger.d(TAG, "Leave cooldown fired for $targetPackage → re-arm")
+                reArm(targetPackage)
+            }
+            leaveTimers.remove(targetPackage)
+        }
+        leaveTimers[targetPackage] = job
+    }
+
+    private fun cancelLeaveTimer(targetPackage: String) {
+        leaveTimers.remove(targetPackage)?.cancel()
+    }
+
+    /**
+     * Re-arm a session: the limit is active again. Next time the user opens the
+     * app, the full initial cooldown triggers. Clears bypass + timers + state.
+     */
+    private fun reArm(targetPackage: String) {
+        InterceptionManager.clearBypass(targetPackage)
+        cancelReRemind(targetPackage)
+        cancelLeaveTimer(targetPackage)
+        sessionStart.remove(targetPackage)
+        AppLogger.d(TAG, "Re-armed: $targetPackage")
+    }
+
+    /**
+     * If [prev] is a different, currently-bypassed app than [current], start its
+     * away cooldown. Centralises the "user left app X" handling so transient
+     * in-app detours (gallery/chooser/player) and real exits behave the same.
+     */
+    private fun maybeStartLeaveTimerFor(prev: String?, current: String) {
+        if (prev != null && prev != current && InterceptionManager.isBypassed(prev)) {
+            startLeaveTimer(prev)
+        }
+    }
+
     override fun onInterrupt() {
         AppLogger.d(TAG, "AccessibilityService interrupted")
     }
@@ -396,6 +485,10 @@ class AppauseAccessibilityService : AccessibilityService() {
         // Cancel all pending re-remind timers
         reRemindJobs.values.forEach { it.cancel() }
         reRemindJobs.clear()
+
+        // Cancel all pending away cooldown timers
+        leaveTimers.values.forEach { it.cancel() }
+        leaveTimers.clear()
 
         // Cancel the service coroutine scope so any in-flight work is stopped
         // (handleForegroundChange coroutines, etc.) instead of leaking.

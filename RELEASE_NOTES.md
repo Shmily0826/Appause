@@ -1,4 +1,4 @@
-# Appause v0.3.6 — 首版发布说明 (Release Notes)
+# Appause v0.3.8 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
 > 发布前请把下方下载链接里的 `USER` 替换为你的 GitHub 用户名。
@@ -12,6 +12,10 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 
 - **纯本地**：数据只存本机，不上传、不联网、无账号
 - 仅通过无障碍服务读取前台**应用包名**（不读屏幕内容、不监听输入）
+
+### 本次更新 (v0.3.8)
+- **修复拦截误触发**：重做了前台切换逻辑。现在进入被限制 App 后，App 内打开图片、评论、分享面板、外部播放器等瞬时切屏**不再反复弹冷却**；只有真正离开（切到桌面或停留 3 分钟以上）才会重新冷却。
+- **会话计时模型**：可选「再次提醒」按墙钟计时，离开 App 期间暂停但不清零，回来继续；离开满 3 分钟整体重置。
 
 ### 这个版本包含
 - **应用分组**：把易分心的 App 归组，统一设置冷静时长
@@ -45,6 +49,10 @@ Appause is a **local-first focus tool** built on Android's AccessibilityService.
 
 - **Fully local**: all data stays on your device. No network, no account, no upload.
 - Only reads the foreground **package name** via AccessibilityService (no screen content, no keylogging).
+
+### What's new in v0.3.8
+- **Fixed false re-triggers**: reworked the foreground-switch logic. Opening images, comments, share sheets, or external players inside a blocked app no longer re-pops the cooldown. A re-cooldown only happens on a real leave (Home screen, or staying away 3+ minutes).
+- **Session timer model**: optional re-remind counts wall-clock time; leaving the app pauses but doesn't reset it, and returning continues; a 3-minute away window fully re-arms.
 
 ### What's in this release
 - **App groups**: organize distracting apps and apply a single cooldown.

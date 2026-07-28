@@ -89,6 +89,40 @@
 - NOTE: `JAVA_HOME` in the shell still points at a Java 7 dir; build requires
   `JAVA_HOME=/d/Dev-Setup/jdk` (Temurin 17). Fix the env var to avoid friction.
 
+### 2026-07-28 (Plan B step 3 — Cloudflare Worker + client redeem bridge)
+- Built the server half of "open source but paid": a Cloudflare Worker that issues
+  device-bound RS256 Pro license JWTs. Forking the repo still can't mint tokens
+  because the signing private key lives only in a Cloudflare secret.
+- New `worker/` project (separate from app): `src/jwt.mjs` (shared RS256 sign +
+  pkcs8 import), `src/index.js` (Worker endpoints), `scripts/genkeys.mjs`
+  (Node-generated PKCS#8 private + SPKI public), `test/sign-verify.mjs`
+  (proves tokens verify against the Android client's SHA256withRSA verifier),
+  `wrangler.toml`, `package.json`, `README.md` (deploy + key-setup + red lines).
+- Worker endpoints: `POST /api/redeem {code,device}` -> `{token}` (enforces
+  maxDevices, default 3; re-issues idempotently for an already-bound device),
+  `POST /api/unbind` (self-service), `POST /admin/gencode` (x-admin-key),
+  `POST /admin/unbind` (lost-device admin). Codes + device bindings in KV
+  namespace `APPAUSE_CODES`; secrets `APPAUSE_PRIVATE_KEY` + `ADMIN_KEY`.
+- Token claims match the client contract exactly: `tier:"pro"`, `device` (SHA-256
+  keystore fingerprint), optional `exp` (null = buyout), `iat`, `jti`.
+- `test/sign-verify.mjs` executed with managed Node 22 -> OK (RS256 token signed
+  by the real jwt.mjs and verified with Node RSA-SHA256 == Android SHA256withRSA).
+- Client bridge (so the Worker is actually usable): new `data/pro/ProConfig.kt`
+  (WORKER_BASE_URL, empty by default), `ProState.redeemCode(code)` posts
+  {code, device fingerprint} to /api/redeem, verifies the returned token locally
+  via importLicense before storing; `ProViewModel.redeemCode`; `ProScreen` adds a
+  "Redeem online" primary button + "Or paste a license token" secondary; added
+  `<uses-permission android.permission.INTERNET/>` (one-time activation only,
+  daily use stays offline). Strings (EN+ZH) for redeem/errors.
+- `.gitignore`: worker/node_modules, .wrangler, .dev.vars added.
+- Verified `./gradlew assembleDebug` -> BUILD SUCCESSFUL (transient dexBuilder
+  file-lock again; fixed by PowerShell force-delete of app/build + rebuild).
+- SECURITY RED LINES (same as before, now actionable): generate a FRESH
+  production key pair; set ServerKeys.SERVER_PUBLIC_KEY_PEM to it +
+  IS_PRODUCTION_KEY=true; set the private key as the Cloudflare secret; NEVER
+  commit the private key/ADMIN_KEY/.dev.vars; never ship DEV key in a release.
+- Next (Plan B step 4): payment/storefront that calls /admin/gencode on purchase.
+
 ### 2026-07-27 (ProState — monetization scaffolding, plan A)
 - Added offline buy-once monetization scaffolding (plan A), no backend.
 - New `data/pro/ProState.kt`: wraps SettingsDataStore; exposes `isPro` Flow,

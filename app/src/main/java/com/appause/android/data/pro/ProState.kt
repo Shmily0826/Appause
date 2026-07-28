@@ -2,10 +2,24 @@ package com.appause.android.data.pro
 
 import android.content.Context
 import com.appause.android.data.settings.SettingsDataStore
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+
+/**
+ * Result of a server-side activation attempt ([ProState.redeemCode]).
+ * The UI maps [Error.reason] to a user-facing string.
+ */
+sealed interface RedeemResult {
+    data object Success : RedeemResult
+    data class Error(val reason: String) : RedeemResult
+}
 
 /**
  * ProState — the single source of truth for Appause Pro status.
@@ -98,5 +112,68 @@ class ProState(
         val current = settings.licenseToken.first()
         if (current.isNotBlank()) return current
         return "APPAUSE-DEBUG-${System.currentTimeMillis()}"
+    }
+
+    /**
+     * Redeem an activation code against the Plan B server (Cloudflare Worker).
+     *
+     * Flow:
+     *  1. Compute this device's fingerprint (Android Keystore public key).
+     *  2. POST { code, device } to {WORKER_BASE_URL}/api/redeem.
+     *  3. On success the server returns a signed, device-bound JWT which we
+     *     verify locally ([importLicense]) before storing — so a tampered or
+     *     forged response never flips Pro on.
+     *
+     * This is the only network call in the app, and it is one-time (activation).
+     * Returns [RedeemResult.Success] only when the returned token verifies.
+     */
+    suspend fun redeemCode(code: String): RedeemResult {
+        val base = ProConfig.WORKER_BASE_URL
+        if (base.isBlank()) return RedeemResult.Error("worker_not_configured")
+
+        return withContext(Dispatchers.IO) {
+            try {
+                val fingerprint = DeviceKeyStore.getDeviceFingerprint(context)
+                val body = JSONObject()
+                    .put("code", code.trim().uppercase())
+                    .put("device", fingerprint)
+                    .toString()
+
+                val url = URL("$base/api/redeem")
+                val conn = url.openConnection() as HttpURLConnection
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json")
+                conn.setRequestProperty("Accept", "application/json")
+                conn.doOutput = true
+                conn.connectTimeout = 15000
+                conn.readTimeout = 15000
+
+                conn.outputStream.use { os ->
+                    os.write(body.toByteArray(Charsets.UTF_8))
+                }
+
+                val responseCode = conn.responseCode
+                val respText = if (responseCode in 200..299) {
+                    conn.inputStream.bufferedReader().use { it.readText() }
+                } else {
+                    conn.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+                }
+                conn.disconnect()
+
+                if (responseCode !in 200..299) {
+                    val reason = runCatching {
+                        JSONObject(respText).optString("error", "http_$responseCode")
+                    }.getOrDefault("http_$responseCode")
+                    return@withContext RedeemResult.Error(reason)
+                }
+
+                val token = JSONObject(respText).getString("token")
+                val verified = importLicense(token)
+                if (verified) RedeemResult.Success
+                else RedeemResult.Error("token_verify_failed")
+            } catch (e: Exception) {
+                RedeemResult.Error("network_error")
+            }
+        }
     }
 }
