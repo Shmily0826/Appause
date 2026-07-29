@@ -425,7 +425,16 @@ class AppauseAccessibilityService : AccessibilityService() {
         InterceptionManager.startBypass(targetPackage)
         AppLogger.d(TAG, "Session start: $targetPackage")
         if (reRemindMinutes > 0) {
-            scheduleReRemind(targetPackage, groupId, cooldownSeconds, reRemindMinutes)
+            // Re-remind is a Pro feature. Even if a (legacy) free user has a
+            // stored reRemindMinutes > 0, only fire it when Pro is unlocked.
+            serviceScope.launch {
+                val isProUser = runCatching {
+                    (applicationContext as AppauseApp).proState.isPro.first()
+                }.getOrDefault(false)
+                if (isProUser) {
+                    scheduleReRemind(targetPackage, groupId, cooldownSeconds, reRemindMinutes)
+                }
+            }
         }
     }
 

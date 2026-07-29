@@ -139,19 +139,9 @@ fun ProScreen(
                         pro = stringResource(R.string.pro_pro_groups)
                     )
                     CompareRow(
-                        label = stringResource(R.string.pro_feature_cooldown),
-                        free = stringResource(R.string.pro_free_cooldown),
-                        pro = stringResource(R.string.pro_pro_cooldown)
-                    )
-                    CompareRow(
                         label = stringResource(R.string.pro_feature_reremind),
                         free = null,
                         pro = stringResource(R.string.pro_pro_reremind)
-                    )
-                    CompareRow(
-                        label = stringResource(R.string.pro_feature_history),
-                        free = stringResource(R.string.pro_free_history),
-                        pro = stringResource(R.string.pro_pro_history)
                     )
                     CompareRow(
                         label = stringResource(R.string.pro_feature_prompt),

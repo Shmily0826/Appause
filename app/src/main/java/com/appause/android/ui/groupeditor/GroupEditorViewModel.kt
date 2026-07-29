@@ -166,13 +166,16 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
         if (groupName.isEmpty()) return // Don't save empty names
 
         viewModelScope.launch {
+            // Re-remind is a Pro feature. Free users can never persist it, even
+            // if a legacy value was loaded from the DB — force it off here.
+            val reRemindOn = if (isPro.value) _reRemindEnabled.value else false
             val group = AppGroup(
                 id = existingGroupId,
                 name = groupName,
                 cooldownSeconds = _cooldownSeconds.value,
                 type = _type.value,
                 // DB: 0 = disabled, 1–60 = enabled with that interval
-                reRemindMinutes = if (_reRemindEnabled.value) _reRemindMinutes.value else 0
+                reRemindMinutes = if (reRemindOn) _reRemindMinutes.value else 0
             )
             repository.saveGroupWithApps(group, _selectedPackages.value)
             _saveCompleted.value = true

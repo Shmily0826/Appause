@@ -49,14 +49,20 @@ class ProState(
         /** Free users can create at most this many groups. */
         const val FREE_GROUP_LIMIT = 2
 
-        /** Free users' cooldown is capped at this many seconds. */
-        const val FREE_COOLDOWN_MAX_SECONDS = 30
+        /**
+         * Cooldown cap for everyone. Longer cooldown was a Pro perk but is now
+         * free for all users, so the free and pro caps are identical.
+         */
+        const val FREE_COOLDOWN_MAX_SECONDS = 60
 
         /** Pro users can set cooldowns up to this many seconds. */
         const val PRO_COOLDOWN_MAX_SECONDS = 60
 
-        /** Free users see at most this many days of history in Stats. */
-        const val FREE_STATS_DAYS = 7
+        /**
+         * Stats history window for everyone. Longer history was a Pro perk but
+         * is now free for all users, so the free and pro windows are identical.
+         */
+        const val FREE_STATS_DAYS = 365
 
         /** Pro users see up to this many days of history (effectively all). */
         const val PRO_STATS_DAYS = 365
