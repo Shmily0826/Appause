@@ -10,7 +10,7 @@ Appause = **App** + **Pause**. A personal Android app that helps users build min
 
 Users create **app groups** in Appause. Each group has a list of target apps and a cooldown duration (in seconds). When the user tries to open any target app, Appause intercepts the launch and shows a full-screen "pause" screen with a countdown timer. The user can either wait and proceed, or cancel and return to the home screen.
 
-This is NOT an app blocker. It is a **speed bump** — a moment of reflection between impulse and action.
+This is **not** a hard block — it gives you a moment of pause between impulse and action.
 
 ---
 
