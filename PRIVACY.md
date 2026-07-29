@@ -34,7 +34,12 @@ and never leave your device.
   which returns a signed license token that is **verified on your device** and
   works offline afterwards. No browsing history, messages, or app usage is sent.
 - Feedback is sent **only when you choose to** (Settings → Feedback). The app
-  never sends anything automatically.
+  never sends anything automatically. The "Send via Appause" option transmits
+  your message plus the auto-attached device/app metadata (version, Android
+  version, model, language) to our server (a Cloudflare Worker) for the
+  developer to read — no email or account is required, and you can leave the
+  optional contact field blank to stay fully anonymous. The email and GitHub
+  options remain available.
 - All configuration (your app groups, cooldowns, and usage stats) is stored
   **locally** in an on-device database (Room) and preferences store (DataStore).
 
@@ -60,7 +65,7 @@ security tool.
 | AccessibilityService | To detect the foreground app by package name (as described above). |
 | Foreground Service | To keep foreground-app detection running while the device is in use. |
 | POST_NOTIFICATIONS (Android 13+) | To show the persistent "detection active" notification. |
-| INTERNET | Only for the **one-time** Appause Pro license redeem. Not used during normal use, and the app works fully offline otherwise. |
+| INTERNET | Only for the **one-time** Appause Pro license redeem and for feedback you choose to send via "Send via Appause". Not used during normal use, and the app works fully offline otherwise. |
 
 ### Your control over data
 
@@ -99,7 +104,7 @@ or email [rng2018520@gmail.com](mailto:rng2018520@gmail.com).
   不带个人身份的「设备指纹」（本机密钥的 SHA-256 哈希）到激活服务器，服务器
   返回一张经过签名的许可证令牌，令牌在你的设备上**本地校验**，之后完全离线
   可用。不会上传任何浏览记录、消息或使用行为。
-- 反馈**只有你主动选择时才会发送**（设置 → 反馈），应用不会自动上传任何内容。
+- 反馈**只有你主动选择时才会发送**（设置 → 反馈），应用不会自动上传任何内容。「通过 Appause 发送」会把你的留言以及自动附带的设备/版本信息（版本号、Android 版本、机型、语言）发到我们的服务器（Cloudflare Worker）供开发者查看——无需邮箱或账号，联系方式留空即可完全匿名。邮件与 GitHub 方式依然可用。
 - 你的所有配置（应用分组、冷却时间、使用统计）都**仅保存在本机**的数据库
   （Room）和偏好存储（DataStore）中。
 
@@ -122,7 +127,7 @@ Appause 使用系统的 AccessibilityService，**仅用于**检测当前前台�
 | AccessibilityService | 如上所述，通过包名检测前台应用。 |
 | 前台服务 (Foreground Service) | 在设备使用期间保持前台应用检测持续运行。 |
 | POST_NOTIFICATIONS（Android 13+） | 显示常驻的"检测中"通知。 |
-| INTERNET（联网） | 仅用于激活 **Appause Pro 时的一次性许可证兑换**。日常使用不会联网，其余功能完全离线。 |
+| INTERNET（联网） | 仅用于激活 **Appause Pro 时的一次性许可证兑换**，以及你主动选择的「通过 Appause 发送」反馈。日常使用不会联网，其余功能完全离线。 |
 
 ### 你对数据的控制权
 

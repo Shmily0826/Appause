@@ -1,11 +1,14 @@
-# Appause v0.3.11 — 发布说明 (Release Notes)
+# Appause v0.3.12 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.3.11/Appause-v0.3.11.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.3.12/Appause-v0.3.12.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.3.12)
+- **反馈可匿名提交**：设置 → 反馈新增「通过 Appause 发送」，直接把留言发到服务器，无需邮箱或 GitHub 账号；联系方式可留空保持匿名。邮件与 GitHub 方式仍保留。
 
 ### 本次更新 (v0.3.11)
 - **激活结果弹框**：Pro 激活改为弹框明确提示「激活成功」或失败原因（激活码无效 / 已达设备上限 / 网络错误等）；网络错误会提示可能是当前网络无法访问激活服务器域名。
@@ -60,6 +63,9 @@ Appause is a **local-first focus tool** built on Android's AccessibilityService.
 
 - **Fully local**: all data stays on your device. No network, no account, no upload.
 - Only reads the foreground **package name** via AccessibilityService (no screen content, no keylogging).
+
+### What's new in v0.3.12
+- **Anonymous feedback**: Settings → Feedback adds "Send via Appause" which posts your message to the server directly — no email or GitHub account needed; leave the optional contact blank to stay anonymous. Email and GitHub options remain.
 
 ### What's new in v0.3.11
 - **Activation result dialog**: Pro activation now shows a dialog reporting success or the failure reason (invalid code / device limit reached / network error, etc.). The network-error case notes the activation server domain may be unreachable.

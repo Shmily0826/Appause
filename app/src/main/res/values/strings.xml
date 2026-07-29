@@ -278,4 +278,12 @@
     <string name="feedback_auto_info">The following info is attached automatically:</string>
     <string name="feedback_send_email">Send via Email</string>
     <string name="feedback_open_issue">Open GitHub Issue</string>
+    <string name="feedback_send_appause">Send via Appause</string>
+    <string name="feedback_send_appause_desc">No email or account needed — sent anonymously to the developer.</string>
+    <string name="feedback_sent_title">Feedback sent</string>
+    <string name="feedback_sent_desc">Thanks! Your message reached the developer. We\'ll take a look.</string>
+    <string name="feedback_failed_title">Couldn\'t send</string>
+    <string name="feedback_failed_network">Network error. Check your connection and try again.</string>
+    <string name="feedback_failed_generic">Something went wrong. You can also email or open a GitHub issue.</string>
+    <string name="feedback_dialog_ok">OK</string>
 </resources>

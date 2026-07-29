@@ -273,4 +273,12 @@
     <string name="feedback_auto_info">以下内容会自动附带：</string>
     <string name="feedback_send_email">通过邮件发送</string>
     <string name="feedback_open_issue">在 GitHub 提交</string>
+    <string name="feedback_send_appause">通过 Appause 发送</string>
+    <string name="feedback_send_appause_desc">无需邮箱或账号——匿名发送给开发者。</string>
+    <string name="feedback_sent_title">反馈已发送</string>
+    <string name="feedback_sent_desc">谢谢！你的留言已送达开发者，我们会查看。</string>
+    <string name="feedback_failed_title">发送失败</string>
+    <string name="feedback_failed_network">网络错误，请检查网络后重试。</string>
+    <string name="feedback_failed_generic">出了点问题。你也可以改用邮件或在 GitHub 提交。</string>
+    <string name="feedback_dialog_ok">好</string>
 </resources>

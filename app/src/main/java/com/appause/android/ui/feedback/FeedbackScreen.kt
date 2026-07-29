@@ -43,6 +43,17 @@ import com.appause.android.R
 import java.net.URLEncoder
 import java.util.Locale
 
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
+import com.appause.android.data.pro.ProConfig
+
 /**
  * Feedback Screen — lets the user report a bug or submit a suggestion.
  *
@@ -55,6 +66,11 @@ import java.util.Locale
  * - No analytics, no crash reporter, no third-party SDK. Just two system
  *   Intents (ACTION_SENDTO for email, ACTION_VIEW for the GitHub issue form).
  */
+private sealed class FeedbackResult {
+    object Success : FeedbackResult()
+    data class Error(val reason: String) : FeedbackResult()
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedbackScreen(
@@ -64,6 +80,8 @@ fun FeedbackScreen(
     var message by remember { mutableStateOf("") }
     var contact by remember { mutableStateOf("") }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var feedbackResult by remember { mutableStateOf<FeedbackResult?>(null) }
 
     // Static per-install info. Computed once with remember.
     val deviceInfo = remember {
@@ -176,6 +194,17 @@ fun FeedbackScreen(
 
             // ── Send actions ──
             Button(
+                onClick = {
+                    scope.launch {
+                        feedbackResult = submitFeedbackViaServer(type, message, contact)
+                    }
+                },
+                enabled = canSend,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.feedback_send_appause))
+            }
+            OutlinedButton(
                 onClick = { sendEmail(context, type, reportBody) },
                 enabled = canSend,
                 modifier = Modifier.fillMaxWidth()
@@ -190,6 +219,25 @@ fun FeedbackScreen(
                 Text(stringResource(R.string.feedback_open_issue))
             }
         }
+    }
+
+    val fr = feedbackResult
+    if (fr != null) {
+        val titleRes = if (fr is FeedbackResult.Success) R.string.feedback_sent_title else R.string.feedback_failed_title
+        val textRes = when (fr) {
+            is FeedbackResult.Success -> R.string.feedback_sent_desc
+            is FeedbackResult.Error -> if (fr.reason == "network_error") R.string.feedback_failed_network else R.string.feedback_failed_generic
+        }
+        AlertDialog(
+            onDismissRequest = { feedbackResult = null },
+            title = { Text(stringResource(titleRes)) },
+            text = { Text(stringResource(textRes)) },
+            confirmButton = {
+                TextButton(onClick = { feedbackResult = null }) {
+                    Text(stringResource(R.string.feedback_dialog_ok))
+                }
+            }
+        )
     }
 }
 
@@ -222,3 +270,53 @@ private fun openGitHubIssue(context: Context, type: String, body: String) {
 /** UTF-8 URL-encode; replace + with %20 so GitHub/mailto parse spaces correctly. */
 private fun encode(value: String): String =
     URLEncoder.encode(value, "UTF-8").replace("+", "%20")
+
+/**
+ * Submit feedback anonymously to the Appause Worker (/api/feedback).
+ * Mirrors the Pro redeem network call: HttpURLConnection + JSONObject, on IO.
+ * No email or account is required. Returns a [FeedbackResult].
+ */
+private suspend fun submitFeedbackViaServer(
+    type: String,
+    message: String,
+    contact: String
+): FeedbackResult = withContext(Dispatchers.IO) {
+    val base = ProConfig.WORKER_BASE_URL
+    if (base.isBlank()) return@withContext FeedbackResult.Error("worker_not_configured")
+    try {
+        val bodyJson = JSONObject().apply {
+            put("type", type)
+            put("message", message)
+            put("contact", contact)
+            put("appVersion", "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+            put("androidVersion", "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+            put("deviceModel", "${Build.MANUFACTURER} ${Build.MODEL}")
+            put("language", Locale.getDefault().toLanguageTag())
+        }.toString()
+        val url = URL("$base/api/feedback")
+        val conn = url.openConnection() as HttpURLConnection
+        conn.requestMethod = "POST"
+        conn.setRequestProperty("Content-Type", "application/json")
+        conn.setRequestProperty("Accept", "application/json")
+        conn.doOutput = true
+        conn.connectTimeout = 15000
+        conn.readTimeout = 15000
+        conn.outputStream.use { it.write(bodyJson.toByteArray(Charsets.UTF_8)) }
+        val code = conn.responseCode
+        val resp = if (code in 200..299) {
+            conn.inputStream.bufferedReader().use { it.readText() }
+        } else {
+            conn.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+        }
+        conn.disconnect()
+        if (code !in 200..299) {
+            val reason = runCatching {
+                JSONObject(resp).optString("error", "http_$code")
+            }.getOrDefault("http_$code")
+            return@withContext FeedbackResult.Error(reason)
+        }
+        FeedbackResult.Success
+    } catch (e: Exception) {
+        FeedbackResult.Error("network_error")
+    }
+}
