@@ -13,22 +13,24 @@ package com.appause.android.data.pro
  *   tokens but not create valid Pro tokens.
  *
  * Deployment:
- * - [SERVER_PUBLIC_KEY_PEM] currently holds a DEV key so the client can be
- *   tested before the Worker exists. Generate a fresh production RSA key pair,
- *   paste ONLY the public half here, and keep the private half in the Worker.
- * - The DEV token is intentionally NOT device-bound, so it verifies on any
- *   device for local testing. Production tokens MUST include a "device" claim
- *   equal to the device fingerprint (see [DeviceKeyStore]).
+ * - [SERVER_PUBLIC_KEY_PEM] now holds the **PRODUCTION** public key. The
+ *   matching RSA private key lives ONLY in the Cloudflare Worker secret
+ *   `APPAUSE_PRIVATE_KEY` and is never shipped in the app or committed to the
+ *   repo. Do not paste the private key anywhere in this project.
+ * - The DEV token (used during early testing) is intentionally NOT device-bound
+ *   and is now rejected by any build compiled with `IS_PRODUCTION_KEY = true`,
+ *   because production tokens MUST include a "device" claim equal to the device
+ *   fingerprint (see [DeviceKeyStore]).
  */
 object ServerKeys {
     const val SERVER_PUBLIC_KEY_PEM = """-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyWFacYAtSxr47o0YJ32V
-oxcxEBpVLZO5pHyrghY3zLz0uV0tOLgpGflKfoJIcs/q/SQShfOTph/ZqdAl7l+3
-6SAoIep60PJl56SsO/lDHDizXXLppjy/fzf6gsCoSuw6WRRScuf8XCIrItfndG35
-ANkkgLX84d+aJtn92z1N75w86fbMMSS0Zimu7Mjf0h9xOypzA6uvgXYDjFabPe3n
-CqAqXc6/VWY2wb4IMNAA7/r4lxjEhiXWD+/3pp7mpQ5UJ86YzpUt0lemh65qtPwY
-EKkhCeie85UIRaSkMINqUmDAG0Tz+58G69MiwGHxSnntU7xukbgu84W2QDYq9dtU
-WQIDAQAB
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqwwP+me3Ld+uuqT3gwcU
+BosqCjoSCO2dS2/yH0xjb+YXXVPtZx/RToTZQaZa8IP2zCqt3konhutOMj+orAoO
+IO3v5oe+lBq2ezcRerqeIS1pdaSA3Pzthpty5EwUQd3hZ9Pjf3IGuKgQsghZmqDy
+MyCdnbe72OP/NLMXK0nuI9nj6175ARbf+kjnBWgqWXSzV0UZd8ecL++N12Gm68rn
+moeVUp80ygV2KsNrlNvICR53qOvltkvG8M+tIPksJzOiqPtEjHFJQr3H2qDNkyXR
+fPrtbPQDaDJgfJPHadEta+McZ+HjhWJ1ZCN/zDEp8sV9iW82qsy1SbM3yg5jjxQu
+NwIDAQAB
 -----END PUBLIC KEY-----"""
 
     /**
@@ -36,5 +38,5 @@ WQIDAQAB
      * production key. Used only for clarity/logging; the verifier always uses
      * the embedded PEM above.
      */
-    const val IS_PRODUCTION_KEY = false
+    const val IS_PRODUCTION_KEY = true
 }
