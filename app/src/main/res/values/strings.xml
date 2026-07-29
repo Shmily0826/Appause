@@ -244,6 +244,12 @@
     <string name="pro_redeem_not_configured">Activation server not configured</string>
     <string name="pro_redeem_verify_failed">Activation failed verification</string>
     <string name="pro_redeem_failed">Activation failed, please try again</string>
+    <string name="pro_activated_success">Activation successful</string>
+    <string name="pro_activated_success_desc">Appause Pro is now unlocked. Unlimited groups, re-remind, and custom pause text are available.</string>
+    <string name="pro_redeem_failed_title">Activation failed</string>
+    <string name="pro_redeem_network">Network error. Check your connection and try again.</string>
+    <string name="pro_redeem_network_hint">If it keeps failing, your network may be unable to reach the activation server domain (*.workers.dev can be blocked on some networks). Switch networks or try later.</string>
+    <string name="pro_dialog_ok">OK</string>
     <string name="pro_token_note">Paste the full license token. It is verified on your device and stays valid offline.</string>
     <string name="pro_debug_unlock">Unlock (debug)</string>
     <string name="pro_license_title">License</string>

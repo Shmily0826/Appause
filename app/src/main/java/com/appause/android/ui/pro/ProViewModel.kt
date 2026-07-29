@@ -34,6 +34,10 @@ class ProViewModel(application: Application) : AndroidViewModel(application) {
     private val _exportedToken = MutableStateFlow<String?>(null)
     val exportedToken: StateFlow<String?> = _exportedToken.asStateFlow()
 
+    /** Structured result of the last redemption attempt, shown as a dialog. */
+    private val _redeemResult = MutableStateFlow<RedeemResult?>(null)
+    val redeemResult: StateFlow<RedeemResult?> = _redeemResult.asStateFlow()
+
     /** Debug-only unlock — the UI only calls this in debug builds. */
     fun unlockProDebug() {
         viewModelScope.launch {
@@ -53,16 +57,7 @@ class ProViewModel(application: Application) : AndroidViewModel(application) {
     /** Redeem an activation code against the server (Plan B). */
     fun redeemCode(code: String) {
         viewModelScope.launch {
-            when (val result = proState.redeemCode(code.trim())) {
-                is RedeemResult.Success -> _message.value = "pro_imported"
-                is RedeemResult.Error -> _message.value = when (result.reason) {
-                    "device_limit_reached" -> "pro_redeem_limit"
-                    "invalid_code" -> "pro_redeem_invalid"
-                    "worker_not_configured" -> "pro_redeem_not_configured"
-                    "token_verify_failed" -> "pro_redeem_verify_failed"
-                    else -> "pro_redeem_failed"
-                }
-            }
+            _redeemResult.value = proState.redeemCode(code.trim())
         }
     }
 
@@ -79,5 +74,9 @@ class ProViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearExportedToken() {
         _exportedToken.value = null
+    }
+
+    fun clearRedeemResult() {
+        _redeemResult.value = null
     }
 }

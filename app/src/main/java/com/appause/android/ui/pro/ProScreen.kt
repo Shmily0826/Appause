@@ -50,6 +50,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.BuildConfig
 import com.appause.android.R
 import com.appause.android.data.pro.ProState
+import com.appause.android.data.pro.RedeemResult
 
 /**
  * Appause Pro screen — shows the free/Pro comparison, lets the user unlock Pro
@@ -68,6 +69,7 @@ fun ProScreen(
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val exportedToken by viewModel.exportedToken.collectAsStateWithLifecycle()
+    val redeemResult by viewModel.redeemResult.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var codeInput by remember { mutableStateOf("") }
@@ -269,6 +271,56 @@ fun ProScreen(
                 }
             }
         )
+    }
+
+    // Dialog: explicit success / failure feedback for Pro activation.
+    if (redeemResult != null) {
+        when (val r = redeemResult) {
+            is RedeemResult.Success -> {
+                AlertDialog(
+                    onDismissRequest = viewModel::clearRedeemResult,
+                    title = { Text(stringResource(R.string.pro_activated_success)) },
+                    text = { Text(stringResource(R.string.pro_activated_success_desc)) },
+                    confirmButton = {
+                        TextButton(onClick = viewModel::clearRedeemResult) {
+                            Text(stringResource(R.string.pro_dialog_ok))
+                        }
+                    }
+                )
+            }
+            is RedeemResult.Error -> {
+                val (msgRes, hintRes) = when (r.reason) {
+                    "invalid_code" -> R.string.pro_redeem_invalid to null
+                    "device_limit_reached" -> R.string.pro_redeem_limit to null
+                    "worker_not_configured" -> R.string.pro_redeem_not_configured to null
+                    "token_verify_failed" -> R.string.pro_redeem_verify_failed to null
+                    "network_error" -> R.string.pro_redeem_network to R.string.pro_redeem_network_hint
+                    else -> R.string.pro_redeem_failed to null
+                }
+                AlertDialog(
+                    onDismissRequest = viewModel::clearRedeemResult,
+                    title = { Text(stringResource(R.string.pro_redeem_failed_title)) },
+                    text = {
+                        Column {
+                            Text(stringResource(msgRes))
+                            if (hintRes != null) {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    stringResource(hintRes),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = viewModel::clearRedeemResult) {
+                            Text(stringResource(R.string.pro_dialog_ok))
+                        }
+                    }
+                )
+            }
+        }
     }
 }
 
