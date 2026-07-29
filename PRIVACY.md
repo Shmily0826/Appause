@@ -4,10 +4,10 @@
 **App:** Appause (Android)
 
 > 🔗 A linkable, hostable version of this policy is available at
-> [`privacy-policy.html`](privacy-policy.html) — use it as the privacy-policy
-> URL when submitting to app stores (Coolapk / Google Play / F-Droid). Enable
-> GitHub Pages (Settings → Pages → deploy from branch `main`, `/root`) to get a
-> stable `https://shmily0826.github.io/Appause/privacy-policy.html` link.
+> [`privacy-policy.html`](privacy-policy.html) and is published via GitHub Pages at
+> `https://shmily0826.github.io/Appause/privacy-policy.html` — use this URL as the
+> privacy-policy link when submitting to app stores (Coolapk / Google Play / F-Droid).
+> (Enabled 2026-07-29: Settings → Pages → deploy from branch `main`, `/root`.)
 
 Appause is built around a single promise: **your data never leaves your device.**
 
