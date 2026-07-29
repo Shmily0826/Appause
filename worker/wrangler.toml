@@ -9,7 +9,7 @@ compatibility_date = "2024-11-01"
 # 2) Paste the returned "id" below.
 [[kv_namespaces]]
 binding = "APPAUSE_CODES"
-id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"
+id = "3c9ffa99ebe9415b8e71be97b7927fa0"
 
 # Secrets (DO NOT put these in this file or commit them):
 #   wrangler secret put APPAUSE_PRIVATE_KEY   # PKCS#8 PEM from `npm run genkeys`
