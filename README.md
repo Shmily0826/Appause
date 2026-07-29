@@ -4,8 +4,7 @@
 
 Appause is a personal Android app that helps you build mindful habits. Create
 groups of distracting apps, set a cooldown for each group, and Appause shows a
-brief pause screen before those apps open. It's not a hard block — it gives
-you a moment of pause.
+brief pause screen before those apps open, so you take a moment before continuing.
 
 > 🔒 **Privacy-first:** Appause is **local-first**. No account, no analytics,
 > no ads, and your groups/stats never leave your device. The only network use
