@@ -28,6 +28,10 @@ import { signJwt, importPrivateKeyPem } from "./jwt.mjs";
 
 let privateKeyPromise = null;
 function getPrivateKey(env) {
+  if (env.APPAUSE_PRIVATE_KEY == null) {
+    // Surfaced as a clear error instead of an opaque Cloudflare 1101.
+    return Promise.reject(new Error("APPAUSE_PRIVATE_KEY secret is not set"));
+  }
   if (!privateKeyPromise) {
     privateKeyPromise = importPrivateKeyPem(env.APPAUSE_PRIVATE_KEY);
   }
@@ -97,8 +101,15 @@ async function handleRedeem(req, env) {
     payload.exp = nowSec + record.expiresInDays * 86400;
   }
 
-  const privateKey = await getPrivateKey(env);
-  const token = await signJwt(payload, privateKey);
+  let token;
+  try {
+    const privateKey = await getPrivateKey(env);
+    token = await signJwt(payload, privateKey);
+  } catch (e) {
+    // Never leak the raw secret, but return enough to diagnose (missing /
+    // malformed key) instead of Cloudflare's opaque error code 1101.
+    return json({ error: "signing_failed", detail: String((e && e.message) || e) }, 500);
+  }
 
   record.devices = devices;
   record.status = "active";
