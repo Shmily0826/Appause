@@ -9,5 +9,5 @@ package com.appause.android.data.pro
  * Activation is a one-time network call; daily use never touches the network.
  */
 object ProConfig {
-    const val WORKER_BASE_URL = "" // e.g. "https://appause-pro.<subdomain>.workers.dev"
+    const val WORKER_BASE_URL = "https://appause-pro-worker.rng2018520.workers.dev"
 }
