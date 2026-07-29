@@ -274,8 +274,9 @@ fun ProScreen(
     }
 
     // Dialog: explicit success / failure feedback for Pro activation.
-    if (redeemResult != null) {
-        when (val r = redeemResult) {
+    val r = redeemResult
+    if (r != null) {
+        when (r) {
             is RedeemResult.Success -> {
                 AlertDialog(
                     onDismissRequest = viewModel::clearRedeemResult,
