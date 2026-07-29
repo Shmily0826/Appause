@@ -13,7 +13,7 @@
 - 服务层已按 Pro 状态真正管控「再次提醒」，免费用户即便之前开过也不会再弹出；分组编辑器也会强制免费用户关闭该选项。
 
 ### Appause 是什么
-Appause 是一个基于无障碍服务的**本地专注工具**。当你打开抖音、微博、游戏等分心应用时，它会盖上一层「暂停屏」，让你先冷静几秒，再决定要不要继续——它是**减速带，不是拦截墙**。
+Appause 是一个基于无障碍服务的**本地专注工具**。当你打开抖音、微博、游戏等分心应用时，它会盖上一层「暂停屏」，让你先冷静几秒，再决定要不要继续。
 
 - **纯本地**：数据只存本机，不上传、不联网、无账号
 - 仅通过无障碍服务读取前台**应用包名**（不读屏幕内容、不监听输入）
@@ -53,7 +53,7 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 ## 🇺🇸 English
 
 ### What is Appause
-Appause is a **local-first focus tool** built on Android's AccessibilityService. When you open a distracting app (Douyin, Weibo, games…), it overlays a **Pause Screen** so you take a few seconds to breathe before deciding whether to continue — a **speed bump, not a blocker**.
+Appause is a **local-first focus tool** built on Android's AccessibilityService. When you open a distracting app (Douyin, Weibo, games…), it overlays a **Pause Screen** so you take a few seconds to breathe before deciding whether to continue.
 
 - **Fully local**: all data stays on your device. No network, no account, no upload.
 - Only reads the foreground **package name** via AccessibilityService (no screen content, no keylogging).
