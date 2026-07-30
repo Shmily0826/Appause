@@ -64,6 +64,7 @@ fun SettingsScreen(
     val defaultPrompt by viewModel.defaultPrompt.collectAsStateWithLifecycle()
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
+    val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -204,6 +205,47 @@ fun SettingsScreen(
                         }
                     ) {
                         Text(stringResource(R.string.open_accessibility_settings))
+                    }
+                }
+            }
+
+            // ── Usage Access ──
+            // Confirms which app is genuinely on screen, so a media app's
+            // notification in the shade (e.g. Bilibili "now playing") doesn't
+            // trigger the pause by mistake. Granted once in system settings.
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(stringResource(R.string.usage_access), style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(
+                            if (isUsageAccessGranted) R.string.usage_access_granted
+                            else R.string.usage_access_not_granted
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isUsageAccessGranted)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.error
+                    )
+                    if (!isUsageAccessGranted) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.usage_access_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                        }
+                    ) {
+                        Text(stringResource(R.string.open_usage_access_settings))
                     }
                 }
             }
@@ -389,6 +431,10 @@ fun SettingsScreen(
                     )
                     Text(
                         stringResource(R.string.debug_service, isServiceRunning.toString()),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        stringResource(R.string.debug_usage_access, isUsageAccessGranted.toString()),
                         style = MaterialTheme.typography.bodySmall
                     )
                 }

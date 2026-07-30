@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
         FOREGROUND_SERVICE: needed to show the persistent monitoring notification.
@@ -15,6 +16,20 @@
         no account, no background network calls.
     -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+        PACKAGE_USAGE_STATS: used ONLY to confirm which app is genuinely in
+        the foreground before showing the pause screen. This is what stops
+        "notification false positives" — when an app (e.g. Bilibili) has a
+        "now playing" notification in the shade, the accessibility event
+        reports its package even though it isn't actually open. We cross-check
+        with UsageStatsManager and skip the pause when the app isn't really
+        on top. Granted once by the user in Settings -> Apps -> Special app
+        access -> Usage access. No data leaves the device.
+    -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
 
     <!--
         Package visibility (Android 11+, API 30+):

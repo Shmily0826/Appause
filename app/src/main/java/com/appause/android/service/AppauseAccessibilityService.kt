@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import com.appause.android.AppauseApp
 import com.appause.android.R
 import com.appause.android.interception.InterceptionManager
+import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -19,6 +20,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancel
 
 /**
@@ -278,6 +280,21 @@ class AppauseAccessibilityService : AccessibilityService() {
         val group = repository.findGroupForPackage(packageName)
         if (group == null) {
             AppLogger.d(TAG, "SKIP: not in any group ($packageName)")
+            return
+        }
+
+        // 6.5. Confirm the app is ACTUALLY in the foreground.
+        //      The accessibility event's packageName can be a media app whose
+        //      notification is showing in the shade (e.g. Bilibili "now playing"),
+        //      not the app the user is really looking at. UsageStatsManager tells
+        //      us the genuine top app; if they differ, it's a false positive
+        //      (notification) — skip it. If we can't determine (usage access not
+        //      granted yet) we fall back to the old behavior and still intercept.
+        val actualForeground = withContext(Dispatchers.IO) {
+            ForegroundChecker.getForegroundPackage(applicationContext)
+        }
+        if (actualForeground != null && actualForeground != packageName) {
+            AppLogger.d(TAG, "SKIP: $packageName not actually foreground (real=$actualForeground) — likely notification")
             return
         }
 

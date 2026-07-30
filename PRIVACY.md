@@ -66,6 +66,7 @@ security tool.
 | Foreground Service | To keep foreground-app detection running while the device is in use. |
 | POST_NOTIFICATIONS (Android 13+) | To show the persistent "detection active" notification. |
 | INTERNET | Only for the **one-time** Appause Pro license redeem and for feedback you choose to send via "Send via Appause". Not used during normal use, and the app works fully offline otherwise. |
+| Usage Access (`PACKAGE_USAGE_STATS`) | To confirm which app is genuinely on screen before showing the pause screen — this is what stops a media app's notification (e.g. a video playing in the shade) from triggering the pause by mistake. The query is local; no usage data ever leaves your device. |
 
 ### Your control over data
 
@@ -128,6 +129,7 @@ Appause 使用系统的 AccessibilityService，**仅用于**检测当前前台�
 | 前台服务 (Foreground Service) | 在设备使用期间保持前台应用检测持续运行。 |
 | POST_NOTIFICATIONS（Android 13+） | 显示常驻的"检测中"通知。 |
 | INTERNET（联网） | 仅用于激活 **Appause Pro 时的一次性许可证兑换**，以及你主动选择的「通过 Appause 发送」反馈。日常使用不会联网，其余功能完全离线。 |
+| 使用情况访问（`PACKAGE_USAGE_STATS`） | 用于在弹暂停前确认真正在前台的 App，避免媒体通知（例如通知栏里正在播放的视频）误触发暂停。该查询完全在本地进行，使用记录不会上传。 |
 
 ### 你对数据的控制权
 

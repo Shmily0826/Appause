@@ -1,11 +1,15 @@
-# Appause v0.3.12 — 发布说明 (Release Notes)
+# Appause v0.3.13 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.3.12/Appause-v0.3.12.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.3.13/Appause-v0.3.13.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.3.13)
+- **修复误报**：弹暂停前会用系统「使用情况访问」确认真正在前台的 App。以前下拉通知栏、而 b 站等媒体 App 有"正在播放"通知时，会误判为打开而弹暂停；现在不再误报。需要在设置 → 使用情况访问里给 Appause 授权（与开无障碍类似，一次性）。
+- **暂停屏适配横屏**：横屏时原先整列内容过高会被裁掉、按钮点不到；现在改为可滚动并限制最大宽度，竖屏横屏都能完整显示。
 
 ### 本次更新 (v0.3.12)
 - **反馈可匿名提交**：设置 → 反馈新增「通过 Appause 发送」，直接把留言发到服务器，无需邮箱或 GitHub 账号；联系方式可留空保持匿名。邮件与 GitHub 方式仍保留。
@@ -57,6 +61,10 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 ---
 
 ## 🇺🇸 English
+
+### What's new in v0.3.13
+- **False-positive fix**: before showing the pause screen, Appause now confirms the genuinely foreground app via the system "Usage access" API. Previously, pulling down the notification shade while an app like Bilibili had a "now playing" notification would wrongly trigger the pause. Grant Appause "Usage access" in Settings (one-time, like enabling Accessibility).
+- **Pause screen fits landscape**: the screen is now scrollable with a capped width, so in landscape it no longer overflows and clips the buttons.
 
 ### What is Appause
 Appause is a **local-first focus tool** built on Android's AccessibilityService. When you open a distracting app (Douyin, Weibo, games…), it overlays a **Pause Screen** so you take a few seconds to breathe before deciding whether to continue.

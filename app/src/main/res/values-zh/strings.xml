@@ -132,12 +132,18 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="title_settings">设置</string>
     <string name="open_accessibility_settings">打开无障碍设置</string>
+    <string name="usage_access">使用情况访问</string>
+    <string name="usage_access_granted">已授权</string>
+    <string name="usage_access_not_granted">未授权 — 误报过滤未生效</string>
+    <string name="usage_access_desc">允许 Appause 确认真正在前台的 App，避免通知栏里的媒体通知（例如正在播放的视频）误触发暂停。</string>
+    <string name="open_usage_access_settings">打开使用情况访问设置</string>
     <string name="default_prompt_title">默认提示语</string>
     <string name="prompt_label">暂停画面信息</string>
     <string name="debug_info">调试信息</string>
     <string name="debug_android" formatted="false">Android: API %d (%s)</string>
     <string name="debug_enabled" formatted="false">Appause 已启用：%s</string>
     <string name="debug_service" formatted="false">服务运行中：%s</string>
+    <string name="debug_usage_access" formatted="false">使用情况访问：%s</string>
 
     <!-- Language -->
     <string name="language">语言</string>

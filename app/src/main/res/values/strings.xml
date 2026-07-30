@@ -137,12 +137,18 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="title_settings">Settings</string>
     <string name="open_accessibility_settings">Open Accessibility Settings</string>
+    <string name="usage_access">Usage access</string>
+    <string name="usage_access_granted">Granted</string>
+    <string name="usage_access_not_granted">Not granted — false-positive filter disabled</string>
+    <string name="usage_access_desc">Lets Appause confirm which app is really on screen, so a media notification in the shade (e.g. a video playing) doesn\'t trigger the pause by mistake.</string>
+    <string name="open_usage_access_settings">Open usage access settings</string>
     <string name="default_prompt_title">Default Prompt</string>
     <string name="prompt_label">Pause screen message</string>
     <string name="debug_info">Debug Info</string>
     <string name="debug_android" formatted="false">Android: API %d (%s)</string>
     <string name="debug_enabled" formatted="false">Appause enabled: %s</string>
     <string name="debug_service" formatted="false">Service running: %s</string>
+    <string name="debug_usage_access" formatted="false">Usage access: %s</string>
 
     <!-- Language -->
     <string name="language">Language</string>

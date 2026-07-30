@@ -15,6 +15,9 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -335,11 +338,22 @@ internal fun PauseScreenContent(
     // the cooldown runs, without being able to skip the cooldown.
     var selectedReason by remember { mutableStateOf<String?>(null) }
 
+    // The pause screen must work in any orientation. A full-screen overlay
+    // follows the device rotation, and in landscape the screen is short — a
+    // fixed vertical stack would overflow and clip the Continue/Cancel
+    // buttons. So we make the whole thing scrollable and cap its width so it
+    // never stretches awkwardly on wide screens. TopCenter keeps the top
+    // reachable when content is taller than the screen.
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        contentAlignment = Alignment.TopCenter
     ) {
         Column(
+            modifier = Modifier
+                .widthIn(max = 560.dp)
+                .padding(horizontal = 16.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

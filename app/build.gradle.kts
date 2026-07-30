@@ -23,8 +23,8 @@ android {
         applicationId = "com.appause.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 31
-        versionName = "0.3.12"
+        versionCode = 32
+        versionName = "0.3.13"
     }
 
     signingConfigs {
