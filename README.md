@@ -117,7 +117,8 @@ Open this folder in Android Studio, then **Run** or **Build → Build Bundle(s)
 
 - **GitHub Releases** — download the latest signed APK.
 - **蓝奏云镜像** — the mirror link is routed through a self-hosted aggregate
-  counter (`/api/download?to=<镜像APK>&t=<token>`), so mirror installs are
+  counter (`/api/download?to=https://shmily0826.lanzoup.com/b01eunt29a&t=<DOWNLOAD_TOKEN>`),
+  so mirror installs are
   captured in one cross-channel total. This total is an *approximate floor*
   (no personal data stored) and is not independently auditable — a supplement,
   not the headline number.
