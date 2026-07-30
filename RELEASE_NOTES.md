@@ -1,11 +1,15 @@
-# Appause v0.3.13 — 发布说明 (Release Notes)
+# Appause v0.3.14 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.3.13/Appause-v0.3.13.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.3.14/Appause-v0.3.14.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.3.14)
+- **修复"打开不限制、切屏才限制"**：新增前台轮询（每 1.5s 用系统"使用情况访问"确认真正在前台的 App），兜住从桌面图标打开 App 时漏掉拦截的情况。配合上一版的误报修复，现在无论是打开还是切屏都会正常弹暂停，且仍不会因通知误报。
+- **修复"点取消后随意切换"**：取消后原先会把该 App 永久豁免、再也拦不住。现在取消只豁免取消那一刻的残留事件（约 1.5s），之后再次打开该 App 会正常重新拦截；取消仍是"这次先不进，送你回桌面"。
 
 ### 本次更新 (v0.3.13)
 - **修复误报**：弹暂停前会用系统「使用情况访问」确认真正在前台的 App。以前下拉通知栏、而 b 站等媒体 App 有"正在播放"通知时，会误判为打开而弹暂停；现在不再误报。需要在设置 → 使用情况访问里给 Appause 授权（与开无障碍类似，一次性）。
@@ -61,6 +65,10 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 ---
 
 ## 🇺🇸 English
+
+### What's new in v0.3.14
+- **Fix "opens aren't blocked, only switches are"**: added a foreground poller (every 1.5s, using the system "Usage access" API) that reliably catches apps opened from their icon — a case the window-event stream used to miss. Combined with the v0.3.13 false-positive fix, both opening and switching now trigger the pause, and notifications still don't.
+- **Fix "cancel lets you switch freely"**: cancel used to permanently exempt the app from interception. Now it only suppresses the stale event in the ~1.5s right after cancel; the next genuine open is intercepted normally. Cancel still means "not this time — back to home".
 
 ### What's new in v0.3.13
 - **False-positive fix**: before showing the pause screen, Appause now confirms the genuinely foreground app via the system "Usage access" API. Previously, pulling down the notification shade while an app like Bilibili had a "now playing" notification would wrongly trigger the pause. Grant Appause "Usage access" in Settings (one-time, like enabling Accessibility).

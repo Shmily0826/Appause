@@ -256,7 +256,9 @@ class PauseActivity : ComponentActivity() {
         // Suppress the stale window event that fires for the target app right
         // before the launcher takes over — otherwise the cooldown re-triggers
         // on the home screen. (Same guard as the overlay path in OverlayManager.)
-        AppauseAccessibilityService.justCancelledPackage = targetPackage
+        // noteCancelled() also auto-clears after a short grace window so the app
+        // is intercepted again on the next genuine open.
+        AppauseAccessibilityService.noteCancelled(targetPackage)
 
         // Go to home screen — NOT just finish(), because that would reveal the target app
         val homeIntent = Intent(Intent.ACTION_MAIN).apply {

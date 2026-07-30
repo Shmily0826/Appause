@@ -6,6 +6,8 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import com.appause.android.util.AppLogger
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.app.NotificationCompat
@@ -80,6 +82,30 @@ class AppauseAccessibilityService : AccessibilityService() {
          */
         @Volatile
         var justCancelledPackage: String? = null
+
+        /**
+         * Mark an app as "just cancelled" and schedule the suppression to clear
+         * after a short grace window.
+         *
+         * Why a timeout (instead of only clearing on the next non-system app)?
+         * After Cancel we send the user to the home screen (a system/launcher
+         * package). The original code only cleared this flag when a *non-system*
+         * app became foreground, so while the user sat on the launcher the flag
+         * was never cleared — and from then on every foreground event for the
+         * cancelled app matched the suppression, permanently exempting it from
+         * interception ("tap Cancel once → can switch freely forever").
+         *
+         * The timeout keeps the original purpose (suppress the stale window
+         * event that fires for the target app in the brief moment before the
+         * launcher takes over — which can arrive within ~1.5s of Cancel), then
+         * re-enables interception so the next genuine open is caught normally.
+         */
+        private val cancelClearHandler = Handler(Looper.getMainLooper())
+        fun noteCancelled(packageName: String) {
+            justCancelledPackage = packageName
+            cancelClearHandler.removeCallbacksAndMessages(null)
+            cancelClearHandler.postDelayed({ justCancelledPackage = null }, 1500L)
+        }
     }
 
     /** Coroutine scope for async work (survives individual event cancellations). */
@@ -131,6 +157,27 @@ class AppauseAccessibilityService : AccessibilityService() {
     /** How long a user can be away before the session is re-armed. */
     private val LEAVE_COOLDOWN_MS = 3 * 60 * 1000L
 
+    /**
+     * Foreground poller state.
+     *
+     * The accessibility event stream (TYPE_WINDOW_STATE_CHANGED) is sufficient
+     * for most transitions, but it has two gaps:
+     *  1. When the user OPENS an app from its icon, the event can fire BEFORE
+     *     UsageStatsManager records the app as foreground, so the "confirm real
+     *     foreground" guard (step 6.5) sees the launcher and wrongly skips the
+     *     interception ("open doesn't restrict, only switch does").
+     *  2. Some OEM ROMs drop or delay window events entirely.
+     *
+     * The poller asks the system "what app is really on top right now?" every
+     * ~1.5s via ForegroundChecker. Because it reads the genuine foreground, it
+     * never false-positives on media notifications, and it reliably catches the
+     * "open" case once usage stats settle. It only runs when usage access is
+     * granted (ForegroundChecker returns null otherwise → no-op).
+     */
+    private var pollJob: Job? = null
+    private val POLL_INTERVAL_MS = 1500L
+    private var lastPolledPackage: String? = null
+
     override fun onServiceConnected() {
         super.onServiceConnected()
         AppLogger.d(TAG, "AccessibilityService connected and running")
@@ -138,6 +185,10 @@ class AppauseAccessibilityService : AccessibilityService() {
         // Resolve the device's launcher package(s) so isSystemPackage() can
         // skip the home screen correctly on every OEM ROM.
         refreshHomePackages()
+
+        // Start the foreground poller (catches opens the window-event stream
+        // misses; see pollJob docs). Harmless if usage access isn't granted.
+        startForegroundPoller()
 
         // Show a persistent notification to indicate the service is actively monitoring.
         // This also acts as a foreground service notification, which helps prevent
@@ -167,6 +218,34 @@ class AppauseAccessibilityService : AccessibilityService() {
         }
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
+    }
+
+    /**
+     * Periodically check the genuine foreground app and re-evaluate
+     * interception. Complements the window-event stream (see pollJob docs).
+     */
+    private fun startForegroundPoller() {
+        pollJob?.cancel()
+        pollJob = serviceScope.launch {
+            while (true) {
+                delay(POLL_INTERVAL_MS)
+                // getForegroundPackage() returns null when usage access isn't
+                // granted — in that case the poller is a no-op and the event
+                // stream (with its own fallback) remains the sole detector.
+                val fg = withContext(Dispatchers.IO) {
+                    ForegroundChecker.getForegroundPackage(applicationContext)
+                } ?: continue
+                // Skip redundant evaluation when the foreground hasn't changed
+                // and no pause is on screen.
+                if (fg == lastPolledPackage && !pauseShown) continue
+                lastPolledPackage = fg
+                try {
+                    handleForegroundChange(fg)
+                } catch (e: Exception) {
+                    AppLogger.e(TAG, "Error in poller handleForegroundChange for $fg", e)
+                }
+            }
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -221,6 +300,13 @@ class AppauseAccessibilityService : AccessibilityService() {
         //      the overlay re-appears on the home screen right after Cancel.
         if (justCancelledPackage != null && packageName == justCancelledPackage) {
             AppLogger.d(TAG, "SKIP: stale event for just-cancelled app ($packageName)")
+            return
+        }
+
+        // 2.6. Cheap dedup for the foreground poller (and duplicate events):
+        //      if the foreground package hasn't changed and no pause is on
+        //      screen, there's nothing new to evaluate.
+        if (packageName == lastForegroundPackage && !pauseShown) {
             return
         }
 
@@ -460,6 +546,11 @@ class AppauseAccessibilityService : AccessibilityService() {
      * Fires reArm() if the user hasn't returned within LEAVE_COOLDOWN_MS.
      */
     private fun startLeaveTimer(targetPackage: String) {
+        // Idempotent: if a leave timer is already counting down for this
+        // package, don't restart it. Without this, the foreground poller (and
+        // repeated window events) would keep resetting the 3-min window while
+        // the user sits in another app, so re-arm would never fire.
+        if (leaveTimers.containsKey(targetPackage)) return
         cancelLeaveTimer(targetPackage)
         AppLogger.d(TAG, "Leave cooldown started for $targetPackage (${LEAVE_COOLDOWN_MS / 1000}s)")
         val job = serviceScope.launch {
@@ -507,6 +598,10 @@ class AppauseAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         super.onDestroy()
+
+        // Stop the foreground poller
+        pollJob?.cancel()
+        pollJob = null
 
         // Cancel all pending re-remind timers
         reRemindJobs.values.forEach { it.cancel() }

@@ -223,7 +223,9 @@ class OverlayManager {
                             // app right before the launcher takes over — otherwise the
                             // overlay re-appears on the home screen after Cancel.
                             // Must be set BEFORE dismiss() (which resets pauseShown).
-                            AppauseAccessibilityService.justCancelledPackage = targetPackage
+                            // noteCancelled() also auto-clears after a short grace
+                            // window so the app is intercepted again on the next open.
+                            AppauseAccessibilityService.noteCancelled(targetPackage)
                             dismiss()
                             // Send user to home screen so they don't land on the target app.
                             // Same behavior as PauseActivity.handleCancel().
