@@ -116,9 +116,13 @@ Open this folder in Android Studio, then **Run** or **Build → Build Bundle(s)
 ## Install
 
 - **GitHub Releases** — download the latest signed APK.
-- **CoolApk (酷安)** — available on the app's CoolApk page.
-- The official "Download" link routes through a self-hosted aggregate counter
-  (no personal data is stored) as an approximate cross-channel install floor.
+- **蓝奏云镜像** — the mirror link is routed through a self-hosted aggregate
+  counter (`/api/download?to=<镜像APK>&t=<token>`), so mirror installs are
+  captured in one cross-channel total. This total is an *approximate floor*
+  (no personal data stored) and is not independently auditable — a supplement,
+  not the headline number.
+- GitHub's Release download count is the verified headline number; the
+  counter only supplements the mirror channel.
 
 > Appause is distributed directly as an APK. It is **not** on Google Play,
 > because Google Play restricts AccessibilityService to accessibility-use cases
