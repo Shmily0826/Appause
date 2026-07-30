@@ -40,6 +40,14 @@ and never leave your device.
   developer to read — no email or account is required, and you can leave the
   optional contact field blank to stay fully anonymous. The email and GitHub
   options remain available.
+- We keep a single **aggregate download counter** on our server (the same
+  Cloudflare Worker) to track how many times Appause has been installed across
+  all download channels (GitHub Releases and mirrors). It records **only a
+  number** — no IP address, device identifier, or personal data is ever stored.
+  This is aggregate analytics, not user tracking. Because the counter runs on
+  our own infrastructure, it is self-reported and approximate; treat it as a
+  rough floor rather than an audited figure. The authoritative install numbers
+  come from the platforms themselves (e.g. GitHub Release downloads, Coolapk).
 - All configuration (your app groups, cooldowns, and usage stats) is stored
   **locally** in an on-device database (Room) and preferences store (DataStore).
 
@@ -106,6 +114,7 @@ or email [rng2018520@gmail.com](mailto:rng2018520@gmail.com).
   返回一张经过签名的许可证令牌，令牌在你的设备上**本地校验**，之后完全离线
   可用。不会上传任何浏览记录、消息或使用行为。
 - 反馈**只有你主动选择时才会发送**（设置 → 反馈），应用不会自动上传任何内容。「通过 Appause 发送」会把你的留言以及自动附带的设备/版本信息（版本号、Android 版本、机型、语言）发到我们的服务器（Cloudflare Worker）供开发者查看——无需邮箱或账号，联系方式留空即可完全匿名。邮件与 GitHub 方式依然可用。
+- 我们在服务器（同一个 Cloudflare Worker）上维护一个**纯聚合的下载计数器**，用来统计 Appause 通过各个渠道（GitHub Release 及镜像）被安装的总次数。它**只记录一个数字**——不会保存任何 IP 地址、设备标识或个人数据。这是聚合统计，不是用户追踪。由于计数器运行在我们自己的服务器上，它是一个自报、近似的数字，请将其视为粗略下限而非经审计的精确值；权威的安装数据来自各分发平台本身（如 GitHub Release 下载量、酷安下载量）。
 - 你的所有配置（应用分组、冷却时间、使用统计）都**仅保存在本机**的数据库
   （Room）和偏好存储（DataStore）中。
 

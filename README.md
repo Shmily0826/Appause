@@ -31,7 +31,8 @@ brief pause screen before those apps open, so you take a moment before continuin
   devices (battery optimization, auto-start) and how to fix it.
 - **In-app feedback** — report a bug or suggest a feature straight from
   Settings. Device info is attached automatically and shown to you before
-  sending (email or GitHub issue).
+  sending. You can send anonymously through Appause (no email or account
+  needed), or open an email / GitHub issue if you prefer.
 - **Appause Pro (optional)** — unlock unlimited groups, longer cooldowns,
   custom pause text and full history. Activation is a one-time, offline-verified
   license — see [worker/README.md](worker/README.md).
@@ -66,7 +67,8 @@ redeem when you activate Appause Pro; after that, Pro works fully offline.
 | AccessibilityService | Detect the foreground app by package name (see above). |
 | Foreground Service | Keep detection alive while the device is in use. |
 | POST_NOTIFICATIONS (Android 13+) | Show the "detection active" notification. |
-| INTERNET | Only for the one-time Appause Pro license redeem. Not used during normal use. |
+| INTERNET | Only for the one-time Appause Pro license redeem and for feedback you choose to send via Appause. Not used during normal use. |
+| Usage Access (`PACKAGE_USAGE_STATS`) | Optional but recommended. Confirms which app is genuinely on screen before showing the pause screen, so a media notification (e.g. a video playing in the shade) won't trigger a false pause. The query is local — no usage data leaves your device. |
 
 Appause does **not** request the `SYSTEM_ALERT_WINDOW` (overlay) permission;
 the pause screen uses an accessibility overlay instead.
@@ -115,6 +117,8 @@ Open this folder in Android Studio, then **Run** or **Build → Build Bundle(s)
 
 - **GitHub Releases** — download the latest signed APK.
 - **CoolApk (酷安)** — available on the app's CoolApk page.
+- The official "Download" link routes through a self-hosted aggregate counter
+  (no personal data is stored) as an approximate cross-channel install floor.
 
 > Appause is distributed directly as an APK. It is **not** on Google Play,
 > because Google Play restricts AccessibilityService to accessibility-use cases
@@ -126,15 +130,17 @@ Open this folder in Android Studio, then **Run** or **Build → Build Bundle(s)
 
 Read the full [Privacy Policy](PRIVACY.md). In short: no account, no analytics,
 no ads — your groups and stats stay on your device. The only network use is a
-one-time Pro license check, and feedback is sent only when *you* choose to.
+one-time Pro license check and the feedback you choose to send; Appause does not
+collect telemetry. Optional Usage Access lets Appause confirm the foreground app
+locally (no usage data leaves your device) for more accurate detection.
 
 ---
 
 ## Status
 
-Current version: **0.3.9**. All MVP phases are complete (project setup, data
+Current version: **0.3.14**. All MVP phases are complete (project setup, data
 layer, interception, groups, pause UI, stats, re-remind, dark mode, OEM
-guidance, in-app feedback). Appause Pro (server-activated license) is in
+guidance, usage access, in-app feedback). Appause Pro (server-activated license) is in
 preview.
 
 Known work:
@@ -163,9 +169,10 @@ AI agent) must follow. Keep changes focused on one task at a time, and run
 Found a bug or have an idea? You can report it without leaving the app:
 
 - **In-app:** Settings → **Feedback** — pick "Bug report" or "Suggestion",
-  write your message, and send via email or open a GitHub issue. Your app
-  version, Android version, device model and locale are attached automatically
-  (and shown to you before sending).
+  write your message, and send. "Send via Appause" delivers it anonymously to
+  the developer (no email or account needed); you can also open an email or a
+  GitHub issue instead. Your app version, Android version, device model and
+  locale are attached automatically (and shown to you before sending).
 
 - **Direct:** open an issue on
   [GitHub](https://github.com/Shmily0826/Appause/issues) or email
@@ -178,11 +185,15 @@ bugs — the auto-attached device info helps a lot.
 
 ## 📊 Project metrics
 
-Curious how the project is doing? Star/fork counts, cumulative Release download
-totals, and 14-day traffic are collected automatically (GitHub Actions, weekly)
-and logged in [METRICS.md](METRICS.md). **No user or device data is tracked** —
-only public, aggregate repository stats, consistent with Appause's
-privacy-first design.
+Curious how the project is doing? The headline numbers are **third-party
+verified by GitHub** — star/fork counts, cumulative Release downloads, and
+14-day traffic — collected automatically (GitHub Actions, weekly) and logged in
+[METRICS.md](METRICS.md). A self-hosted aggregate counter also tracks
+cross-channel installs (GitHub Releases + mirrors) as an **approximate floor**;
+because it runs on our own infrastructure it is self-reported and not
+independently auditable, so it is used only as a supplement — not as the
+headline figure. **No user or device data is tracked** — only public, aggregate
+stats, consistent with Appause's privacy-first design.
 
 ---
 

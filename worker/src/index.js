@@ -9,6 +9,8 @@
  *    (/admin/unbind) for lost devices.
  *  - Mint new activation codes (/admin/gencode).
  *  - Collect anonymous user feedback (/api/feedback, read via /admin/feedback).
+ *  - Maintain an aggregate, PII-free download counter (/api/download,
+ *    /api/download-count) that totals installs across all channels.
  *
  * Security model:
  *  - The RSA signing PRIVATE KEY lives only in the Cloudflare secret
@@ -26,6 +28,7 @@ import { signJwt, importPrivateKeyPem } from "./jwt.mjs";
 //   env.APPAUSE_CODES    — KV namespace
 //   env.APPAUSE_PRIVATE_KEY — PKCS#8 PEM RSA private key (secret)
 //   env.ADMIN_KEY        — shared secret for the /admin/* endpoints (secret)
+//   env.DOWNLOAD_TOKEN   — shared token gating /api/download increments (secret)
 
 let privateKeyPromise = null;
 function getPrivateKey(env) {
@@ -234,6 +237,52 @@ async function handleAdminFeedback(req, env) {
   return json({ count: items.length, items });
 }
 
+/**
+ * Aggregate, anonymous download counter (no PII — only a single number).
+ *
+ * The canonical "Download" CTA points here:
+ *   https://<worker>/api/download?to=<apk-url>&t=<token>
+ * We increment one KV counter and 302-redirect to the real APK, so downloads
+ * from any channel (GitHub Releases, 蓝奏云, Coolapk) that flow through the
+ * official link are counted in a single real total. The increment is gated
+ * behind a shared DOWNLOAD_TOKEN so the count stays trustworthy.
+ */
+async function bumpDownload(env) {
+  const raw = await env.APPAUSE_CODES.get("downloads:total");
+  const n = Math.max(0, parseInt(raw || "0", 10) || 0) + 1;
+  await env.APPAUSE_CODES.put("downloads:total", String(n));
+  return n;
+}
+
+async function handleDownload(req, env) {
+  const url = new URL(req.url);
+  const token =
+    url.searchParams.get("t") || req.headers.get("x-download-token");
+  if (token !== env.DOWNLOAD_TOKEN) {
+    return json({ error: "forbidden" }, 403);
+  }
+  const n = await bumpDownload(env);
+  const to = url.searchParams.get("to");
+  if (to) {
+    try {
+      const u = new URL(to);
+      if (u.protocol === "https:" || u.protocol === "http:") {
+        return Response.redirect(to, 302);
+      }
+    } catch {
+      /* fall through to JSON */
+    }
+  }
+  return json({ downloads: n });
+}
+
+/** Public read of the aggregate download total (no auth, no PII). */
+async function handleDownloadCount(req, env) {
+  const raw = await env.APPAUSE_CODES.get("downloads:total");
+  const n = Math.max(0, parseInt(raw || "0", 10) || 0);
+  return json({ downloads: n });
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -275,6 +324,12 @@ export default {
       case "/admin/feedback":
         if (!isGet) return json({ error: "method_not_allowed" }, 405);
         return handleAdminFeedback(request, env);
+      case "/api/download":
+        if (!isGet) return json({ error: "method_not_allowed" }, 405);
+        return handleDownload(request, env);
+      case "/api/download-count":
+        if (!isGet) return json({ error: "method_not_allowed" }, 405);
+        return handleDownloadCount(request, env);
       default:
         return json({ error: "not_found" }, 404);
     }

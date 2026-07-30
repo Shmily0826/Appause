@@ -14,3 +14,4 @@ id = "3c9ffa99ebe9415b8e71be97b7927fa0"
 # Secrets (DO NOT put these in this file or commit them):
 #   wrangler secret put APPAUSE_PRIVATE_KEY   # PKCS#8 PEM from `npm run genkeys`
 #   wrangler secret put ADMIN_KEY             # any strong random string
+#   wrangler secret put DOWNLOAD_TOKEN        # token gating /api/download

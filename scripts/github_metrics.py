@@ -44,6 +44,7 @@ HEADERS = [
     "watchers",
     "open_issues",
     "release_downloads",
+    "downloads_total",
     "views_14d",
     "clones_14d",
 ]
@@ -86,6 +87,17 @@ def main():
             for a in r.get("assets", []):
                 dl += a.get("download_count", 0)
 
+    downloads_total = None
+    stats_url = os.environ.get("WORKER_STATS_URL", "").rstrip("/")
+    if stats_url:
+        try:
+            with urllib.request.urlopen(
+                stats_url + "/api/download-count", timeout=15
+            ) as r:
+                downloads_total = json.loads(r.read().decode()).get("downloads")
+        except Exception as e:  # noqa: BLE001
+            print("WARN: download-count -> %s" % (e,), file=sys.stderr)
+
     views = clones = None
     if TOKEN:
         v = safe_get("/repos/%s/traffic/views" % REPO)
@@ -104,7 +116,8 @@ def main():
     row = {
         h: v
         for h, v in zip(
-            HEADERS, [TODAY, stars, forks, watchers, issues, dl, views, clones]
+            HEADERS,
+            [TODAY, stars, forks, watchers, issues, dl, downloads_total, views, clones],
         )
     }
 
@@ -139,19 +152,36 @@ def main():
         for r in rows:
             f.write(
                 "| "
-                + " | ".join("" if r[h] is None else str(r[h]) for h in HEADERS)
+                + " | ".join("" if r.get(h) is None else str(r.get(h)) for h in HEADERS)
                 + " |\n"
             )
         f.write("\n## 字段说明\n")
+        f.write(
+            "**第三方见证（GitHub 记录，可信、用户无法自行修改）：**\n"
+        )
+        f.write(
+            "- `stars` / `forks` / `watchers` / `open_issues`：仓库公开指标。\n"
+        )
+        f.write(
+            "- `release_downloads`：GitHub Release 资产（APK）的累计下载次数"
+            "（GitHub 见证，可信）。\n"
+        )
         f.write(
             "- `views_14d` / `clones_14d`：GitHub Traffic 最近 14 天聚合"
             "（需带 `GITHUB_TOKEN` 才能获取，否则留空）。\n"
         )
         f.write(
-            "- `release_downloads`：所有 Release 资产（APK）的累计下载次数。\n"
+            "**自托管、仅供估算（非第三方见证，请勿当作精确头牌数）：**\n"
         )
         f.write(
-            "- 数据可用于了解项目热度，也是作品集 / 面试的量化素材。\n"
+            "- `downloads_total`：跨渠道累计安装总数，来自**自建** Worker 聚合计数器"
+            "（仅一个数字、不含任何用户/设备信息）。因运行在自己账号下，"
+            "有权限者可在后台改动或用脚本刷量，故只当作**近似下限（≥）**的内部参考，"
+            "不具独立审计性。需设置 `WORKER_STATS_URL` 才能获取，否则留空。\n"
+        )
+        f.write(
+            "- 简历 / 作品集建议以**第三方见证数**（GitHub Release 下载 + 酷安 / "
+            "F-Droid 等平台下载量）相加为准；`downloads_total` 仅作补充与下限参考。\n"
         )
 
     print("OK: wrote %s (%d snapshots)" % (OUT_MD, len(rows)))
