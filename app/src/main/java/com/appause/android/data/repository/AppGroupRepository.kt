@@ -10,6 +10,7 @@ import com.appause.android.data.local.GroupApp
 import com.appause.android.data.local.TotalRatio
 import com.appause.android.data.settings.SettingsDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 
 /**
  * Repository — the single source of truth for app group data.
@@ -174,6 +175,27 @@ class AppGroupRepository(
     /** Observe the default prompt message. */
     val defaultPrompt: Flow<String> = settings.defaultPrompt
 
+    /** Observe the custom "work" open-reason label (blank = use default). */
+    val reasonWork: Flow<String> = settings.reasonWork
+
+    /** Observe the custom "bored" open-reason label (blank = use default). */
+    val reasonBored: Flow<String> = settings.reasonBored
+
+    /** Observe the custom "messages" open-reason label (blank = use default). */
+    val reasonMessages: Flow<String> = settings.reasonMessages
+
+    /** Observe the custom "other" open-reason label (blank = use default). */
+    val reasonOther: Flow<String> = settings.reasonOther
+
+    /**
+     * The 4 open-reason labels in fixed order [work, bored, messages, other].
+     * Each entry is the user's custom text, or "" if they haven't customized it
+     * (the UI then falls back to the localized string resource).
+     */
+    val reasons: Flow<List<String>> = combine(
+        reasonWork, reasonBored, reasonMessages, reasonOther
+    ) { work, bored, messages, other -> listOf(work, bored, messages, other) }
+
     /** Observe the language preference. */
     val language: Flow<String> = settings.language
 
@@ -185,6 +207,15 @@ class AppGroupRepository(
 
     /** Update the default prompt message. */
     suspend fun setDefaultPrompt(prompt: String) = settings.setDefaultPrompt(prompt)
+
+    /** Update the custom label for one open-reason option (0=work,1=bored,2=messages,3=other). */
+    suspend fun setReason(index: Int, value: String) = when (index) {
+        0 -> settings.setReasonWork(value)
+        1 -> settings.setReasonBored(value)
+        2 -> settings.setReasonMessages(value)
+        3 -> settings.setReasonOther(value)
+        else -> Unit
+    }
 
     /** Update the language preference. */
     suspend fun setLanguage(languageCode: String) = settings.setLanguage(languageCode)

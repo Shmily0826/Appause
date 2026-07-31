@@ -236,56 +236,6 @@ fun SettingsScreen(
                 }
             }
 
-            // ── Usage Access (optional) ──
-            // Confirms which app is genuinely on screen, so a media app's
-            // notification in the shade (e.g. Bilibili "now playing") doesn't
-            // trigger the pause by mistake. This is a *recommended* enhancement,
-            // NOT required — Appause still intercepts normally without it.
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.usage_access), style = MaterialTheme.typography.titleMedium)
-                        Spacer(modifier = Modifier.weight(1f))
-                        Text(
-                            text = stringResource(R.string.optional_badge),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(
-                            if (isUsageAccessGranted) R.string.usage_access_granted
-                            else R.string.usage_access_not_granted
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isUsageAccessGranted)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    if (!isUsageAccessGranted) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = stringResource(R.string.usage_access_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = {
-                            val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
-                        }
-                    ) {
-                        Text(stringResource(R.string.open_usage_access_settings))
-                    }
-                }
-            }
-
             // ── Battery Optimization (required) ──
             // MIUI and other OEM ROMs aggressively kill background processes,
             // which disconnects the accessibility service. Requesting battery
@@ -332,6 +282,56 @@ fun SettingsScreen(
                         ) {
                             Text(stringResource(R.string.request_battery_exempt))
                         }
+                    }
+                }
+            }
+
+            // ── Usage Access (optional) ──
+            // Confirms which app is genuinely on screen, so a media app's
+            // notification in the shade (e.g. Bilibili "now playing") doesn't
+            // trigger the pause by mistake. This is a *recommended* enhancement,
+            // NOT required — Appause still intercepts normally without it.
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.usage_access), style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = stringResource(R.string.optional_badge),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(
+                            if (isUsageAccessGranted) R.string.usage_access_granted
+                            else R.string.usage_access_not_granted
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isUsageAccessGranted)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (!isUsageAccessGranted) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.usage_access_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                        }
+                    ) {
+                        Text(stringResource(R.string.open_usage_access_settings))
                     }
                 }
             }
@@ -405,6 +405,63 @@ fun SettingsScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(stringResource(R.string.default_prompt_title), style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                text = stringResource(R.string.pro_locked_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            text = stringResource(R.string.pro_badge),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+            }
+
+            // ── Custom open reasons (Pro) ──
+            // Pro users can relabel the 4 "why are you opening this?" options on
+            // the Pause Screen. Free users see a locked card that opens Pro.
+            val reasonCustom by viewModel.reasons.collectAsStateWithLifecycle()
+            val reasonDefs = listOf(
+                R.string.intent_work, R.string.intent_bored,
+                R.string.intent_messages, R.string.intent_other
+            )
+            if (isPro) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(stringResource(R.string.custom_reasons_title), style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.custom_reasons_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        reasonDefs.forEachIndexed { index, defRes ->
+                            CustomReasonField(
+                                value = reasonCustom.getOrNull(index) ?: "",
+                                defaultRes = defRes,
+                                onValueChange = { viewModel.updateReason(index, it) }
+                            )
+                            if (index < reasonDefs.lastIndex) Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+                }
+            } else {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = onNavigateToPro
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.custom_reasons_title), style = MaterialTheme.typography.titleMedium)
                             Text(
                                 text = stringResource(R.string.pro_locked_hint),
                                 style = MaterialTheme.typography.bodySmall,
@@ -511,4 +568,33 @@ fun SettingsScreen(
             }
         }
     }
+}
+
+/**
+ * One editable field for a custom open-reason label.
+ * Binds to LOCAL state (not directly to the async StateFlow) so keystrokes
+ * don't briefly revert `value` and clamp the cursor to position 0. External
+ * changes (e.g. Pro restore) are synced via LaunchedEffect.
+ */
+@Composable
+private fun CustomReasonField(
+    value: String,
+    defaultRes: Int,
+    onValueChange: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(value) }
+    LaunchedEffect(value) {
+        if (value != text) text = value
+    }
+    OutlinedTextField(
+        value = text,
+        onValueChange = {
+            text = it
+            onValueChange(it)
+        },
+        label = { Text(stringResource(defaultRes)) },
+        placeholder = { Text(stringResource(defaultRes)) },
+        singleLine = true,
+        modifier = Modifier.fillMaxWidth()
+    )
 }

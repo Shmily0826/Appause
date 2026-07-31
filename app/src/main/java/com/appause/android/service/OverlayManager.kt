@@ -181,6 +181,26 @@ class OverlayManager {
                         }
                     }
 
+                    // Custom open-reason labels (Pro). Blank entries fall back to
+                    // their localized default string resource.
+                    val reasonKeys = listOf("work", "bored", "messages", "other")
+                    val reasonDefs = listOf(
+                        R.string.intent_work, R.string.intent_bored,
+                        R.string.intent_messages, R.string.intent_other
+                    )
+                    var reasons by remember {
+                        mutableStateOf(
+                            reasonKeys.mapIndexed { i, k -> k to context.resources.getString(reasonDefs[i]) }
+                        )
+                    }
+                    LaunchedEffect(Unit) {
+                        repository.reasons.collect { custom ->
+                            reasons = reasonKeys.mapIndexed { i, k ->
+                                k to (if (custom[i].isBlank()) context.resources.getString(reasonDefs[i]) else custom[i])
+                            }
+                        }
+                    }
+
                     // Recommended apps — the global list the user configured,
                     // shown as "try one of these instead" suggestions.
                     // Excludes the target app itself.
@@ -218,6 +238,7 @@ class OverlayManager {
                         smoothProgress = countdown.smoothProgress,
                         totalSeconds = cooldownSeconds,
                         isFinished = countdown.isFinished,
+                        reasons = reasons,
                         onCancel = {
                             // Log the cancellation
                             CoroutineScope(Dispatchers.IO).launch {

@@ -177,6 +177,25 @@ class PauseActivity : ComponentActivity() {
                         }
                     }
 
+                    // Custom open-reason labels (Pro). Each blank entry falls back
+                    // to its localized default string resource.
+                    val reasonKeys = listOf("work", "bored", "messages", "other")
+                    val reasonDefs = listOf(
+                        R.string.intent_work, R.string.intent_bored,
+                        R.string.intent_messages, R.string.intent_other
+                    )
+                    val defaultLabels = reasonDefs.map { stringResource(it) }
+                    var reasons by remember {
+                        mutableStateOf(reasonKeys.zip(defaultLabels).map { (k, l) -> k to l })
+                    }
+                    LaunchedEffect(Unit) {
+                        repository.reasons.collect { custom ->
+                            reasons = reasonKeys.mapIndexed { i, k ->
+                                k to (if (custom[i].isBlank()) defaultLabels[i] else custom[i])
+                            }
+                        }
+                    }
+
                     // Recommended learning apps — apps the user has added to their
                     // "learning" groups. Shown during the cooldown as "try one of
                     // these instead" suggestions. Excludes the target app itself.
@@ -210,6 +229,7 @@ class PauseActivity : ComponentActivity() {
                         isFinished = countdown.isFinished,
                         onCancel = { handleCancel() },
                         onContinueWithReason = { reason -> handleContinueWithReason(reason) },
+                        reasons = reasons,
                         recommendedApps = recommendedApps,
                         onOpenRecommendedApp = { pkg -> openRecommendedApp(pkg) }
                     )
@@ -331,6 +351,7 @@ internal fun PauseScreenContent(
     isFinished: Boolean,
     onCancel: () -> Unit,
     onContinueWithReason: (String) -> Unit,
+    reasons: List<Pair<String, String>> = emptyList(),
     recommendedApps: List<AppInfo> = emptyList(),
     onOpenRecommendedApp: ((String) -> Unit)? = null
 ) {
@@ -453,47 +474,30 @@ internal fun PauseScreenContent(
             // The user can pick a reason at any time during the countdown.
             // Selecting one only records the choice — it does NOT let them
             // enter the app early. They must still wait for the timer.
-            // Buttons share each row's width equally so long labels (e.g.
-            // "Check messages") are never truncated.
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Labels come from `reasons` (Pro-customizable, else localized
+            // defaults); laid out 2 per row so long labels are never truncated.
+            if (reasons.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    ReasonButton(
-                        text = stringResource(R.string.intent_work),
-                        selected = selectedReason == "work",
-                        onClick = { selectedReason = "work" },
-                        modifier = Modifier.weight(1f)
-                    )
-                    ReasonButton(
-                        text = stringResource(R.string.intent_bored),
-                        selected = selectedReason == "bored",
-                        onClick = { selectedReason = "bored" },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    ReasonButton(
-                        text = stringResource(R.string.intent_messages),
-                        selected = selectedReason == "messages",
-                        onClick = { selectedReason = "messages" },
-                        modifier = Modifier.weight(1f)
-                    )
-                    ReasonButton(
-                        text = stringResource(R.string.intent_other),
-                        selected = selectedReason == "other",
-                        onClick = { selectedReason = "other" },
-                        modifier = Modifier.weight(1f)
-                    )
+                    reasons.chunked(2).forEach { rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowItems.forEach { (key, label) ->
+                                ReasonButton(
+                                    text = label,
+                                    selected = selectedReason == key,
+                                    onClick = { selectedReason = key },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
                 }
             }
 

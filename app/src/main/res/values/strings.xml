@@ -95,9 +95,9 @@
     <string name="re_remind_cooldown_label">Re-remind cooldown</string>
     <string name="re_remind_cooldown_reuse">Same as first</string>
     <string name="re_remind_repeat_label">Repeat reminders</string>
-    <string name="re_remind_repeat_desc">On: keep popping every interval. Off: only remind once after the first interval.</string>
+    <string name="re_remind_repeat_desc">Repeated: pops again every interval. Once: only the first nudge, then stops.</string>
     <string name="re_remind_escalate_label">Escalate cooldown</string>
-    <string name="re_remind_escalate_desc">On: each reminder lasts longer (1st ×1, 2nd ×2, 3rd ×3, …) based on the re-remind cooldown.</string>
+    <string name="re_remind_escalate_desc">Each nudge lasts longer than the last (1×, 2×, 3× …), based on the re-remind cooldown length.</string>
     <string name="show_notification_title">Show monitoring notification</string>
     <string name="show_notification_desc">The persistent "Appause is monitoring" notification. Turn off to hide it; the service still runs (some ROMs may kill it more easily).</string>
 
@@ -153,6 +153,8 @@
     <string name="usage_access_desc">Lets Appause confirm which app is really on screen, so a media notification in the shade (e.g. a video playing) doesn\'t trigger the pause by mistake.</string>
     <string name="open_usage_access_settings">Open usage access settings</string>
     <string name="default_prompt_title">Default Prompt</string>
+    <string name="custom_reasons_title">Custom open reasons</string>
+    <string name="custom_reasons_desc">Pro only: rename the four \"why are you opening this?\" options on the pause screen.</string>
     <string name="prompt_label">Pause screen message</string>
     <string name="debug_info">Debug Info</string>
     <string name="debug_android" formatted="false">Android: API %d (%s)</string>
@@ -234,6 +236,7 @@
     <string name="pro_feature_reremind">Re-remind</string>
     <string name="pro_feature_history">History</string>
     <string name="pro_feature_prompt">Custom prompt</string>
+    <string name="pro_feature_reasons">Custom reasons</string>
     <string name="pro_free_groups">Up to 2</string>
     <string name="pro_pro_groups">Unlimited</string>
     <string name="pro_free_cooldown">30s</string>
@@ -248,6 +251,7 @@
     <string name="pro_free_history">7 days</string>
     <string name="pro_pro_history">All time</string>
     <string name="pro_pro_prompt">Included</string>
+    <string name="pro_pro_reasons">Included</string>
     <string name="pro_activate_title">Activate Appause Pro</string>
     <string name="pro_enter_code">Activation code</string>
     <string name="pro_code_hint">Enter the code you received, or paste a license token</string>

@@ -1,16 +1,20 @@
-# Appause v0.3.17 — 发布说明 (Release Notes)
+# Appause v0.3.18 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.3.17/Appause-v0.3.17.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.3.18/Appause-v0.3.18.apk`
 
 ---
 
 ## 🇨🇳 中文
 
+### 本次更新 (v0.3.18)
+- **自定义打开原因（Pro）**：Pro 用户可在设置里修改暂停屏上 4 个"打开原因"的文字（工作 / 无聊 / 查消息 / 其他），改成自己习惯的说法。
+
 ### 本次更新 (v0.3.17)
 - **新增"显示监测通知"开关**：不需要常驻通知栏时可在设置里关闭。
-- **再次提醒新增"重复提醒"开关**：可设为只提醒一次，或持续重复提醒。
-- **再次提醒新增"延长冷却"开关**：每多提醒一次，冷静时长按 1×/2×/3× 递增（例如 10s、20s、30s）。
+- **再次提醒更灵活**：
+  - **重复提醒**：可选择"只提醒一次"，或"持续重复提醒"。
+  - **逐次延长冷却**：开启后，每次提醒的冷静时长依次变长（1×、2×、3×……，例如 10s、20s、30s）。
 
 ### 本次更新 (v0.3.16)
 - **修复首次打开不拦截**：从桌面图标第一次打开目标 App 现在会立即拦截（之前要切屏才拦）。
@@ -80,10 +84,14 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 
 ## 🇺🇸 English
 
+### What's new in v0.3.18
+- **Custom open reasons (Pro)**: Pro users can rename the four "why are you opening this?" options on the pause screen (Work / Bored / Check messages / Other) to whatever wording they prefer.
+
 ### What's new in v0.3.17
 - **New "show monitoring notification" toggle**: turn off the persistent status-bar notification in Settings when you don't need it.
-- **Re-remind "repeat" toggle**: choose a single nudge or repeated nudges.
-- **Re-remind "escalate cooldown" toggle**: each extra nudge multiplies the calm duration by 1×/2×/3× (e.g. 10s, 20s, 30s).
+- **More flexible re-remind**:
+  - **Repeat reminders**: choose a single nudge, or repeated nudges.
+  - **Escalate cooldown**: each nudge lasts longer than the last (1×, 2×, 3× …, e.g. 10s, 20s, 30s).
 
 ### What's new in v0.3.16
 - **Fix first-open not blocked**: opening a target app from its icon now intercepts immediately (previously only switching did).

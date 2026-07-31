@@ -94,9 +94,9 @@
     <string name="re_remind_cooldown_label">再次提醒冷静时长</string>
     <string name="re_remind_cooldown_reuse">与首次相同</string>
     <string name="re_remind_repeat_label">重复提醒</string>
-    <string name="re_remind_repeat_desc">开启：每隔间隔一直提醒。关闭：只在第一次间隔后提醒一次。</string>
+    <string name="re_remind_repeat_desc">重复：每隔间隔再次提醒。只一次：仅在第一次间隔后提醒一次，之后不再弹。</string>
     <string name="re_remind_escalate_label">逐次延长冷却</string>
-    <string name="re_remind_escalate_desc">开启：每次提醒的冷静时长依次变长（第1次×1、第2次×2、第3次×3……），以再次提醒冷静时长为基准。</string>
+    <string name="re_remind_escalate_desc">每次提醒的冷静时长比上一次更长（1×、2×、3×……），以再次提醒冷静时长为基准。</string>
     <string name="show_notification_title">显示监测通知</string>
     <string name="show_notification_desc">常驻的“Appause 正在监测”通知。关闭后不再显示，服务仍正常运行（部分手机系统可能更易在后台杀掉它）。</string>
 
@@ -148,6 +148,8 @@
     <string name="usage_access_desc">允许 Appause 确认真正在前台的 App，避免通知栏里的媒体通知（例如正在播放的视频）误触发暂停。</string>
     <string name="open_usage_access_settings">打开使用情况访问设置</string>
     <string name="default_prompt_title">默认提示语</string>
+    <string name="custom_reasons_title">自定义打开原因</string>
+    <string name="custom_reasons_desc">Pro 专属：自定义暂停屏上 4 个“打开原因”的文字。</string>
     <string name="prompt_label">暂停画面信息</string>
     <string name="debug_info">调试信息</string>
     <string name="debug_android" formatted="false">Android: API %d (%s)</string>
@@ -229,6 +231,7 @@
     <string name="pro_feature_reremind">再次提醒</string>
     <string name="pro_feature_history">历史统计</string>
     <string name="pro_feature_prompt">自定义提示</string>
+    <string name="pro_feature_reasons">自定义原因</string>
     <string name="pro_free_groups">最多 2 个</string>
     <string name="pro_pro_groups">无限</string>
     <string name="pro_free_cooldown">30 秒</string>
@@ -243,6 +246,7 @@
     <string name="pro_free_history">7 天</string>
     <string name="pro_pro_history">全部</string>
     <string name="pro_pro_prompt">已包含</string>
+    <string name="pro_pro_reasons">已包含</string>
     <string name="pro_activate_title">激活 Appause Pro</string>
     <string name="pro_enter_code">激活码</string>
     <string name="pro_code_hint">输入你收到的激活码，或粘贴许可证令牌</string>

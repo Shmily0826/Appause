@@ -52,6 +52,15 @@ class SettingsDataStore(private val context: Context) {
         val RECOMMENDED_APPS_KEY = stringSetPreferencesKey("recommended_apps")
         val SHOW_NOTIFICATION_KEY = booleanPreferencesKey("show_notification")
 
+        // ── Custom open-reason labels (Pro) ──
+        // The 4 "why are you opening this app?" options on the Pause Screen.
+        // Each key stores the user's custom label; blank means "use the
+        // localized default string resource". Order: work, bored, messages, other.
+        val REASON_WORK_KEY = stringPreferencesKey("reason_work")
+        val REASON_BORED_KEY = stringPreferencesKey("reason_bored")
+        val REASON_MESSAGES_KEY = stringPreferencesKey("reason_messages")
+        val REASON_OTHER_KEY = stringPreferencesKey("reason_other")
+
         // ── Pro / license (monetization, plan B) ──
         // pro_unlocked: DEBUG-ONLY flag flipped by debug builds to force Pro on.
         //   Real Pro is gated by a verified license token (see ProState), not by
@@ -122,6 +131,26 @@ class SettingsDataStore(private val context: Context) {
         preferences[RECOMMENDED_APPS_KEY] ?: emptySet()
     }
 
+    /** Custom label for the "work" open-reason option (blank = use default). */
+    val reasonWork: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[REASON_WORK_KEY] ?: ""
+    }
+
+    /** Custom label for the "bored" open-reason option (blank = use default). */
+    val reasonBored: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[REASON_BORED_KEY] ?: ""
+    }
+
+    /** Custom label for the "messages" open-reason option (blank = use default). */
+    val reasonMessages: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[REASON_MESSAGES_KEY] ?: ""
+    }
+
+    /** Custom label for the "other" open-reason option (blank = use default). */
+    val reasonOther: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[REASON_OTHER_KEY] ?: ""
+    }
+
     /**
      * Debug-only Pro flag (flipped by debug builds). Real Pro is derived from a
      * verified license token in [com.appause.android.data.pro.ProState], not
@@ -185,6 +214,26 @@ class SettingsDataStore(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences[RECOMMENDED_APPS_KEY] = packages
         }
+    }
+
+    /** Update the custom label for the "work" open-reason option. */
+    suspend fun setReasonWork(value: String) {
+        context.dataStore.edit { preferences -> preferences[REASON_WORK_KEY] = value }
+    }
+
+    /** Update the custom label for the "bored" open-reason option. */
+    suspend fun setReasonBored(value: String) {
+        context.dataStore.edit { preferences -> preferences[REASON_BORED_KEY] = value }
+    }
+
+    /** Update the custom label for the "messages" open-reason option. */
+    suspend fun setReasonMessages(value: String) {
+        context.dataStore.edit { preferences -> preferences[REASON_MESSAGES_KEY] = value }
+    }
+
+    /** Update the custom label for the "other" open-reason option. */
+    suspend fun setReasonOther(value: String) {
+        context.dataStore.edit { preferences -> preferences[REASON_OTHER_KEY] = value }
     }
 
     /** Mark Appause Pro as unlocked (or locked). */

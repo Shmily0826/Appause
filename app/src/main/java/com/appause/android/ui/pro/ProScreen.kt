@@ -150,6 +150,11 @@ fun ProScreen(
                         free = null,
                         pro = stringResource(R.string.pro_pro_prompt)
                     )
+                    CompareRow(
+                        label = stringResource(R.string.pro_feature_reasons),
+                        free = null,
+                        pro = stringResource(R.string.pro_pro_reasons)
+                    )
                 }
             }
 

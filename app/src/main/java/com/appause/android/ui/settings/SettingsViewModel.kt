@@ -76,6 +76,20 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    /**
+     * The 4 custom open-reason labels (Pro feature).
+     * Each entry is the user's custom text, or "" to fall back to the default.
+     */
+    val reasons: StateFlow<List<String>> = repository.reasons
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), listOf("", "", "", ""))
+
+    /** Persist one custom open-reason label (0=work,1=bored,2=messages,3=other). */
+    fun updateReason(index: Int, value: String) {
+        viewModelScope.launch {
+            repository.setReason(index, value)
+        }
+    }
+
     fun setLanguage(languageCode: String, onComplete: () -> Unit = {}) {
         viewModelScope.launch {
             repository.setLanguage(languageCode)
