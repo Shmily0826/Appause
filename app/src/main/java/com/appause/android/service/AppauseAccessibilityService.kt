@@ -149,6 +149,12 @@ class AppauseAccessibilityService : AccessibilityService() {
     /** Launcher packages resolved dynamically (covers all OEM launchers). */
     private var homePackages: Set<String> = emptySet()
 
+    /** Packages awaiting a delayed foreground re-check (Gap #1 fix). */
+    private val pendingConfirm = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
+
+    /** Grace period for the Gap #1 re-check: long enough for UsageStats to settle. */
+    private val RETRY_FOREGROUND_MS = 600L
+
     /**
      * Scheduled re-remind timers (in-app periodic nudge), keyed by package.
      *
@@ -408,12 +414,37 @@ class AppauseAccessibilityService : AccessibilityService() {
         //      us the genuine top app; if they differ, it's a false positive
         //      (notification) — skip it. If we can't determine (usage access not
         //      granted yet) we fall back to the old behavior and still intercept.
+        //
+        //      GAP #1: when the user OPENS an app from its icon, the window event
+        //      can fire BEFORE UsageStats records the app as foreground, so the
+        //      genuine top app still reads as the launcher for a few hundred ms.
+        //      That used to wrongly skip the intercept ("open doesn't restrict,
+        //      only switch does") and let the slow 1.5s poller catch it late —
+        //      popping the cooldown on whatever the user was doing by then (e.g.
+        //      tapping a comment). Fix: instead of skipping immediately, re-check
+        //      once after a short grace period. If UsageStats now agrees, it was a
+        //      genuine open → intercept. If it still disagrees, it's a real
+        //      notification → skip.
         val actualForeground = withContext(Dispatchers.IO) {
             ForegroundChecker.getForegroundPackage(applicationContext)
         }
         if (actualForeground != null && actualForeground != packageName) {
-            AppLogger.d(TAG, "SKIP: $packageName not actually foreground (real=$actualForeground) — likely notification")
-            return
+            if (pendingConfirm.add(packageName)) {
+                withContext(Dispatchers.IO) { delay(RETRY_FOREGROUND_MS) }
+                pendingConfirm.remove(packageName)
+                val actualRetry = withContext(Dispatchers.IO) {
+                    ForegroundChecker.getForegroundPackage(applicationContext)
+                }
+                if (actualRetry != null && actualRetry != packageName) {
+                    AppLogger.d(TAG, "SKIP: $packageName not actually foreground (real=$actualRetry) — likely notification")
+                    return
+                }
+                // UsageStats settled to this package → genuine open, fall through.
+            } else {
+                // A confirmation retry is already pending for this package.
+                AppLogger.d(TAG, "SKIP: confirm pending for $packageName")
+                return
+            }
         }
 
         // 7. Intercept! Show the cooldown overlay.
