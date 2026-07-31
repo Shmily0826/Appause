@@ -50,6 +50,7 @@ class SettingsDataStore(private val context: Context) {
         val LANGUAGE_KEY = stringPreferencesKey("language")
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         val RECOMMENDED_APPS_KEY = stringSetPreferencesKey("recommended_apps")
+        val SHOW_NOTIFICATION_KEY = booleanPreferencesKey("show_notification")
 
         // ── Pro / license (monetization, plan B) ──
         // pro_unlocked: DEBUG-ONLY flag flipped by debug builds to force Pro on.
@@ -100,6 +101,16 @@ class SettingsDataStore(private val context: Context) {
      */
     val themeMode: Flow<String> = context.dataStore.data.map { preferences ->
         preferences[THEME_MODE_KEY] ?: "system"
+    }
+
+    /**
+     * Whether to show the persistent "monitoring" notification (and run the
+     * accessibility service as a foreground service). Default: true.
+     * Users who find the always-on notification annoying can turn it off; the
+     * service still runs as a normal (non-foreground) accessibility service.
+     */
+    val showNotification: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[SHOW_NOTIFICATION_KEY] ?: true
     }
 
     /**
@@ -187,6 +198,13 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setLicenseToken(token: String) {
         context.dataStore.edit { preferences ->
             preferences[LICENSE_TOKEN_KEY] = token
+        }
+    }
+
+    /** Update whether the persistent monitoring notification is shown. */
+    suspend fun setShowNotification(show: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[SHOW_NOTIFICATION_KEY] = show
         }
     }
 

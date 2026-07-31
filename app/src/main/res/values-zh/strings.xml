@@ -93,6 +93,12 @@
     <string name="re_remind_disabled_hint">已关闭</string>
     <string name="re_remind_cooldown_label">再次提醒冷静时长</string>
     <string name="re_remind_cooldown_reuse">与首次相同</string>
+    <string name="re_remind_repeat_label">重复提醒</string>
+    <string name="re_remind_repeat_desc">开启：每隔间隔一直提醒。关闭：只在第一次间隔后提醒一次。</string>
+    <string name="re_remind_escalate_label">逐次延长冷却</string>
+    <string name="re_remind_escalate_desc">开启：每次提醒的冷静时长依次变长（第1次×1、第2次×2、第3次×3……），以再次提醒冷静时长为基准。</string>
+    <string name="show_notification_title">显示监测通知</string>
+    <string name="show_notification_desc">常驻的“Appause 正在监测”通知。关闭后不再显示，服务仍正常运行（部分手机系统可能更易在后台杀掉它）。</string>
 
     <string name="label_seconds">秒</string>
     <string name="select_apps_button">选择应用（已选 %d 个）</string>

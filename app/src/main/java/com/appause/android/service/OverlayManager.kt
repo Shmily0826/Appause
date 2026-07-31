@@ -95,7 +95,9 @@ class OverlayManager {
         cooldownSeconds: Int,
         reRemindMinutes: Int = 0,
         reRemindCooldownSeconds: Int = 0,
-        isReRemind: Boolean = false
+        isReRemind: Boolean = false,
+        reRemindRepeat: Boolean = true,
+        reRemindEscalate: Boolean = false
     ) {
         // Prevent duplicate overlays
         if (overlayView != null) {
@@ -204,7 +206,7 @@ class OverlayManager {
                         if (isReRemind) {
                             InterceptionManager.startBypass(targetPackage)
                         } else {
-                            service.onSessionStart(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds)
+                            service.onSessionStart(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, reRemindRepeat, reRemindEscalate)
                         }
                     }
 

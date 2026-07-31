@@ -30,6 +30,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -70,6 +71,7 @@ fun SettingsScreen(
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
     val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
     val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
+    val showNotification by viewModel.showNotification.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -331,6 +333,33 @@ fun SettingsScreen(
                             Text(stringResource(R.string.request_battery_exempt))
                         }
                     }
+                }
+            }
+
+            // ── Monitoring notification ──
+            // The persistent "Appause is monitoring" notification. Turning it
+            // off stops the always-on notification; the accessibility service
+            // still runs (just not as a foreground service). Trade-off: some
+            // aggressive OEM ROMs may be more likely to kill it in the background.
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(R.string.show_notification_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = showNotification,
+                            onCheckedChange = viewModel::setShowNotification
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.show_notification_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
 

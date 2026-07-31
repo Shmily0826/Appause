@@ -94,6 +94,12 @@
     <string name="re_remind_disabled_hint">Disabled</string>
     <string name="re_remind_cooldown_label">Re-remind cooldown</string>
     <string name="re_remind_cooldown_reuse">Same as first</string>
+    <string name="re_remind_repeat_label">Repeat reminders</string>
+    <string name="re_remind_repeat_desc">On: keep popping every interval. Off: only remind once after the first interval.</string>
+    <string name="re_remind_escalate_label">Escalate cooldown</string>
+    <string name="re_remind_escalate_desc">On: each reminder lasts longer (1st ×1, 2nd ×2, 3rd ×3, …) based on the re-remind cooldown.</string>
+    <string name="show_notification_title">Show monitoring notification</string>
+    <string name="show_notification_desc">The persistent "Appause is monitoring" notification. Turn off to hide it; the service still runs (some ROMs may kill it more easily).</string>
 
     <string name="label_seconds">Seconds</string>
     <string name="select_apps_button">Select Apps (%d selected)</string>

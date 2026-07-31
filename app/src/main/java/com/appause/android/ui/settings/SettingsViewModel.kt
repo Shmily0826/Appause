@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
 import com.appause.android.service.AccessibilityServiceChecker
+import com.appause.android.service.AppauseAccessibilityService
 import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -47,6 +48,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val _isIgnoringBattery = MutableStateFlow(false)
     val isIgnoringBattery: StateFlow<Boolean> = _isIgnoringBattery
+
+    /** Whether the persistent monitoring notification is shown. Default true. */
+    val showNotification: StateFlow<Boolean> = (getApplication<Application>() as AppauseApp).settingsDataStore.showNotification
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     /**
      * Re-read every permission/status that the Settings screen shows.
@@ -89,6 +94,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setThemeMode(mode: String) {
         viewModelScope.launch {
             repository.setThemeMode(mode)
+        }
+    }
+
+    /**
+     * Toggle the persistent monitoring notification. Persists the choice and
+     * asks the running service to add/remove the notification immediately so the
+     * user sees the change without restarting Appause.
+     */
+    fun setShowNotification(show: Boolean) {
+        viewModelScope.launch {
+            (getApplication<Application>() as AppauseApp).settingsDataStore.setShowNotification(show)
+            AppauseAccessibilityService.instance?.applyNotificationSetting()
         }
     }
 }

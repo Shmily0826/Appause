@@ -78,7 +78,25 @@ data class AppGroup(
      * Only meaningful when [reRemindMinutes] > 0. Lets the user make the
      * repeat reminders shorter/longer than the initial cooldown.
      */
-    val reRemindCooldownSeconds: Int = 0
+    val reRemindCooldownSeconds: Int = 0,
+
+    /**
+     * Whether the re-remind loop keeps popping the cooldown every [reRemindMinutes]
+     * indefinitely (true) or only fires ONCE after the first interval (false).
+     *
+     * Default true keeps the original behaviour (re-peats forever while the user
+     * stays in the app). Users who find the repeat annoying can turn it off so
+     * they get a single nudge.
+     */
+    val reRemindRepeat: Boolean = true,
+
+    /**
+     * Whether each successive re-remind pop uses a LONGER cooldown. When true,
+     * the Nth re-remind duration = base × N (1st = base×1, 2nd = base×2, 3rd =
+     * base×3, …), where base is [reRemindCooldownSeconds] (or [cooldownSeconds]
+     * if that is 0). Lets users escalate the friction the longer they linger.
+     */
+    val reRemindEscalate: Boolean = false
 ) {
     companion object {
         /** Distracting apps that get intercepted with a cooldown. */

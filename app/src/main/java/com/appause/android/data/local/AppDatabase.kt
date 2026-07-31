@@ -32,7 +32,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GroupApp::class,
         AppLaunchRecord::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = false  // Simplified for v1; enable for production migration tracking
 )
 @TypeConverters(Converters::class)
@@ -107,6 +107,26 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             }
         }
+
+        /**
+         * Migration from version 5 to 6: add "reRemindRepeat" and
+         * "reRemindEscalate" columns to app_groups.
+         *
+         * - reRemindRepeat defaults to 1 (true): preserves the old behaviour of
+         *   re-peating the cooldown every interval indefinitely.
+         * - reRemindEscalate defaults to 0 (false): each re-remind uses the same
+         *   length until the user opts into escalation.
+         */
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE app_groups ADD COLUMN reRemindRepeat INTEGER NOT NULL DEFAULT 1"
+                )
+                db.execSQL(
+                    "ALTER TABLE app_groups ADD COLUMN reRemindEscalate INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
         /**
          * Singleton instance.
          *
@@ -130,7 +150,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "appause.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                     .also { INSTANCE = it }
             }

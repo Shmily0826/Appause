@@ -85,6 +85,20 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
     private val _reRemindCooldownSeconds = MutableStateFlow(0)
     val reRemindCooldownSeconds: StateFlow<Int> = _reRemindCooldownSeconds.asStateFlow()
 
+    /**
+     * Whether re-reminds keep popping every interval (true) or only fire once
+     * after the first interval (false). Default true keeps the old behaviour.
+     */
+    private val _reRemindRepeat = MutableStateFlow(true)
+    val reRemindRepeat: StateFlow<Boolean> = _reRemindRepeat.asStateFlow()
+
+    /**
+     * Whether each successive re-remind uses a longer cooldown (base × N).
+     * Default false: every re-remind uses the same length.
+     */
+    private val _reRemindEscalate = MutableStateFlow(false)
+    val reRemindEscalate: StateFlow<Boolean> = _reRemindEscalate.asStateFlow()
+
     private val _selectedPackages = MutableStateFlow<List<String>>(emptyList())
     val selectedPackages: StateFlow<List<String>> = _selectedPackages.asStateFlow()
 
@@ -120,6 +134,8 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
                 _reRemindMinutes.value = group.reRemindMinutes.coerceIn(1, 60)
                 // 0 = reuse first cooldown (legacy default).
                 _reRemindCooldownSeconds.value = group.reRemindCooldownSeconds.coerceAtLeast(0)
+                _reRemindRepeat.value = group.reRemindRepeat
+                _reRemindEscalate.value = group.reRemindEscalate
                 _selectedPackages.value = repository.getPackageNamesInGroup(groupId)
             }
         }
@@ -155,6 +171,14 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
      */
     fun updateReRemindCooldown(seconds: Int) {
         _reRemindCooldownSeconds.value = if (seconds <= 0) 0 else seconds.coerceIn(1, 300)
+    }
+
+    fun updateReRemindRepeat(repeat: Boolean) {
+        _reRemindRepeat.value = repeat
+    }
+
+    fun updateReRemindEscalate(escalate: Boolean) {
+        _reRemindEscalate.value = escalate
     }
 
     /**
@@ -196,7 +220,11 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
                 // DB: 0 = disabled, 1–60 = enabled with that interval
                 reRemindMinutes = if (reRemindOn) _reRemindMinutes.value else 0,
                 // 0 = reuse first cooldown when re-remind is off too.
-                reRemindCooldownSeconds = if (reRemindOn) _reRemindCooldownSeconds.value else 0
+                reRemindCooldownSeconds = if (reRemindOn) _reRemindCooldownSeconds.value else 0,
+                // Repeat/escalate only matter when re-remind is on; when off we
+                // store the safe defaults so re-enabling restores old behaviour.
+                reRemindRepeat = if (reRemindOn) _reRemindRepeat.value else true,
+                reRemindEscalate = if (reRemindOn) _reRemindEscalate.value else false
             )
             repository.saveGroupWithApps(group, _selectedPackages.value)
             _saveCompleted.value = true

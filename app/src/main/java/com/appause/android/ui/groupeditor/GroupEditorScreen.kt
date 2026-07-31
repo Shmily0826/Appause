@@ -112,6 +112,8 @@ fun GroupEditorScreen(
     val reRemindEnabled by viewModel.reRemindEnabled.collectAsStateWithLifecycle()
     val reRemindMinutes by viewModel.reRemindMinutes.collectAsStateWithLifecycle()
     val reRemindCooldownSeconds by viewModel.reRemindCooldownSeconds.collectAsStateWithLifecycle()
+    val reRemindRepeat by viewModel.reRemindRepeat.collectAsStateWithLifecycle()
+    val reRemindEscalate by viewModel.reRemindEscalate.collectAsStateWithLifecycle()
     val selectedPackages by viewModel.selectedPackages.collectAsStateWithLifecycle()
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
     val saveCompleted by viewModel.saveCompleted.collectAsStateWithLifecycle()
@@ -303,6 +305,56 @@ fun GroupEditorScreen(
                             rangeStartLabel = stringResource(R.string.re_remind_cooldown_reuse),
                             rangeEndLabel = "${maxCooldown.coerceAtLeast(60)}$reCooldownUnit"
                         )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // "Repeat" switch — fire every interval (on) or only once (off).
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.re_remind_repeat_label),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Switch(
+                                    checked = reRemindRepeat,
+                                    onCheckedChange = viewModel::updateReRemindRepeat
+                                )
+                            }
+                            Text(
+                                text = stringResource(R.string.re_remind_repeat_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // "Escalate" switch — each successive pop lasts longer (base × N).
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.re_remind_escalate_label),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                Switch(
+                                    checked = reRemindEscalate,
+                                    onCheckedChange = viewModel::updateReRemindEscalate
+                                )
+                            }
+                            Text(
+                                text = stringResource(R.string.re_remind_escalate_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     } else {
                         Text(
                             text = stringResource(R.string.re_remind_disabled_hint),

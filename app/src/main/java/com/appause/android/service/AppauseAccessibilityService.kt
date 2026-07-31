@@ -97,6 +97,14 @@ class AppauseAccessibilityService : AccessibilityService() {
         var lastForegroundPackage: String? = null
 
         /**
+         * Static handle to the running service instance. Lets the Settings
+         * screen toggle the monitoring notification (start/stop foreground)
+         * at runtime without restarting the service.
+         */
+        @Volatile
+        var instance: AppauseAccessibilityService? = null
+
+        /**
          * Mark an app as "just cancelled" and schedule the suppression to clear
          * after a short grace window.
          *
@@ -208,6 +216,10 @@ class AppauseAccessibilityService : AccessibilityService() {
         super.onServiceConnected()
         AppLogger.d(TAG, "AccessibilityService connected and running")
 
+        // Keep a static reference so the Settings screen can toggle the
+        // monitoring notification at runtime (start/stop foreground).
+        instance = this
+
         // Resolve the device's launcher package(s) so isSystemPackage() can
         // skip the home screen correctly on every OEM ROM.
         refreshHomePackages()
@@ -219,15 +231,46 @@ class AppauseAccessibilityService : AccessibilityService() {
         // Show a persistent notification to indicate the service is actively monitoring.
         // This also acts as a foreground service notification, which helps prevent
         // the system from killing the service in the background.
+        // Respect the user's "show notification" preference: if disabled, the
+        // service runs as a normal (non-foreground) accessibility service with no
+        // persistent notification.
         createNotificationChannel()
-        val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-            .setContentTitle(getString(R.string.app_name))
-            .setContentText(getString(R.string.notification_monitoring))
-            .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
-            .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
-        startForeground(NOTIFICATION_ID, notification)
+        serviceScope.launch {
+            val show = (applicationContext as AppauseApp).settingsDataStore.showNotification.first()
+            if (show) applyMonitoringNotification(true)
+        }
+    }
+
+    /**
+     * Start or stop the persistent monitoring notification (and the foreground
+     * service state that goes with it).
+     * @param show true → startForeground with the monitoring notification;
+     *             false → stopForeground and remove it.
+     */
+    private fun applyMonitoringNotification(show: Boolean) {
+        if (show) {
+            val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText(getString(R.string.notification_monitoring))
+                .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .build()
+            startForeground(NOTIFICATION_ID, notification)
+        } else {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        }
+    }
+
+    /**
+     * Called by the Settings screen when the user flips the notification toggle.
+     * Re-reads the preference and applies it immediately (no service restart).
+     */
+    fun applyNotificationSetting() {
+        serviceScope.launch {
+            val show = (applicationContext as AppauseApp).settingsDataStore.showNotification.first()
+            applyMonitoringNotification(show)
+        }
     }
 
     /**
@@ -454,7 +497,9 @@ class AppauseAccessibilityService : AccessibilityService() {
             group.id,
             group.cooldownSeconds,
             group.reRemindMinutes,
-            group.reRemindCooldownSeconds
+            group.reRemindCooldownSeconds,
+            reRemindRepeat = group.reRemindRepeat,
+            reRemindEscalate = group.reRemindEscalate
         )
     }
 
@@ -516,9 +561,11 @@ class AppauseAccessibilityService : AccessibilityService() {
         cooldownSeconds: Int,
         reRemindMinutes: Int = 0,
         reRemindCooldownSeconds: Int = 0,
-        isReRemind: Boolean = false
+        isReRemind: Boolean = false,
+        reRemindRepeat: Boolean = true,
+        reRemindEscalate: Boolean = false
     ) {
-        overlayManager.show(this, packageName, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, isReRemind)
+        overlayManager.show(this, packageName, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, isReRemind, reRemindRepeat, reRemindEscalate)
     }
 
     /**
@@ -540,15 +587,18 @@ class AppauseAccessibilityService : AccessibilityService() {
      * only ends when the session is re-armed (bypass cleared) or the service is
      * destroyed. Re-arming also cancels this job.
      */
-    internal fun scheduleReRemind(targetPackage: String, groupId: Long, cooldownSeconds: Int, minutes: Int, reRemindCooldownSeconds: Int) {
+    internal fun scheduleReRemind(targetPackage: String, groupId: Long, cooldownSeconds: Int, minutes: Int, reRemindCooldownSeconds: Int, repeat: Boolean = true, escalate: Boolean = false) {
         if (minutes <= 0) return
 
         // Cancel any existing loop for this package (e.g., from a previous session)
         cancelReRemind(targetPackage)
 
-        AppLogger.d(TAG, "Scheduling re-remind loop for $targetPackage every $minutes min")
+        AppLogger.d(TAG, "Scheduling re-remind loop for $targetPackage every $minutes min (repeat=$repeat, escalate=$escalate)")
 
         val job = serviceScope.launch {
+            // Counts how many re-reminds have actually popped, so escalation
+            // (base × N) and the "fire once" mode know where they are.
+            var remindCount = 0
             while (true) {
                 delay(minutes * 60 * 1000L)
 
@@ -565,8 +615,16 @@ class AppauseAccessibilityService : AccessibilityService() {
                     InterceptionManager.clearBypass(targetPackage)
                     // Use the dedicated re-remind cooldown if set, otherwise fall back
                     // to the initial cooldown (keeps legacy behaviour for old groups).
-                    val rePopSeconds = reRemindCooldownSeconds.takeIf { it > 0 } ?: cooldownSeconds
+                    val base = reRemindCooldownSeconds.takeIf { it > 0 } ?: cooldownSeconds
+                    // Escalation: the Nth pop lasts base × N (1st = base×1, 2nd = base×2, …).
+                    val rePopSeconds = if (escalate) base * (remindCount + 1) else base
                     showCooldownOverlay(targetPackage, groupId, rePopSeconds, minutes, reRemindCooldownSeconds, isReRemind = true)
+                    remindCount++
+                    // "Fire once" mode: after the first pop, stop the loop.
+                    if (!repeat && remindCount >= 1) {
+                        AppLogger.d(TAG, "Re-remind fired once (repeat off), stopping loop")
+                        break
+                    }
                 } else {
                     AppLogger.d(TAG, "Re-remind tick but user away from $targetPackage, will re-check")
                 }
@@ -595,7 +653,9 @@ class AppauseAccessibilityService : AccessibilityService() {
         groupId: Long,
         cooldownSeconds: Int,
         reRemindMinutes: Int,
-        reRemindCooldownSeconds: Int = 0
+        reRemindCooldownSeconds: Int = 0,
+        reRemindRepeat: Boolean = true,
+        reRemindEscalate: Boolean = false
     ) {
         cancelLeaveTimer(targetPackage)
         sessionStart[targetPackage] = System.currentTimeMillis()
@@ -609,7 +669,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                     (applicationContext as AppauseApp).proState.isPro.first()
                 }.getOrDefault(false)
                 if (isProUser) {
-                    scheduleReRemind(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds)
+                    scheduleReRemind(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, reRemindRepeat, reRemindEscalate)
                 }
             }
         }
@@ -672,6 +732,9 @@ class AppauseAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         super.onDestroy()
+
+        // Drop the static reference so a dead instance can't be toggled.
+        if (instance == this) instance = null
 
         // Stop the foreground poller
         pollJob?.cancel()
