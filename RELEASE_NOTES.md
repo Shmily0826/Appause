@@ -1,11 +1,25 @@
-# Appause v0.3.14 — 发布说明 (Release Notes)
+# Appause v0.3.17 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.3.14/Appause-v0.3.14.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.3.17/Appause-v0.3.17.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.3.17)
+- **新增"显示监测通知"开关**：不需要常驻通知栏时可在设置里关闭。
+- **再次提醒新增"重复提醒"开关**：可设为只提醒一次，或持续重复提醒。
+- **再次提醒新增"延长冷却"开关**：每多提醒一次，冷静时长按 1×/2×/3× 递增（例如 10s、20s、30s）。
+
+### 本次更新 (v0.3.16)
+- **修复首次打开不拦截**：从桌面图标第一次打开目标 App 现在会立即拦截（之前要切屏才拦）。
+- **修复评论区误拦**：在目标 App 内点评论区、输入框等不再误触发暂停屏。
+
+### 本次更新 (v0.3.15)
+- **权限提示更明确**：设置页把"电池优化"和"无障碍服务"标为必需，使用情况访问改为可选。
+- **修复取消后立刻重开**：点取消后马上再打开目标 App 现在也会正常拦截（之前要等几秒）。
+- **再次提醒冷静时长可单独设置**：不再跟随首次拦截的冷却时间。
 
 ### 本次更新 (v0.3.14)
 - **修复"打开不限制、切屏才限制"**：新增前台轮询（每 1.5s 用系统"使用情况访问"确认真正在前台的 App），兜住从桌面图标打开 App 时漏掉拦截的情况。配合上一版的误报修复，现在无论是打开还是切屏都会正常弹暂停，且仍不会因通知误报。
@@ -65,6 +79,20 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 ---
 
 ## 🇺🇸 English
+
+### What's new in v0.3.17
+- **New "show monitoring notification" toggle**: turn off the persistent status-bar notification in Settings when you don't need it.
+- **Re-remind "repeat" toggle**: choose a single nudge or repeated nudges.
+- **Re-remind "escalate cooldown" toggle**: each extra nudge multiplies the calm duration by 1×/2×/3× (e.g. 10s, 20s, 30s).
+
+### What's new in v0.3.16
+- **Fix first-open not blocked**: opening a target app from its icon now intercepts immediately (previously only switching did).
+- **Fix comment false-intercept**: tapping comments / text fields inside a target app no longer wrongly triggers the pause screen.
+
+### What's new in v0.3.15
+- **Clearer permission hints**: Settings now marks "Battery optimization" and "Accessibility" as required, and "Usage access" as optional.
+- **Fix reopen right after cancel**: reopening the target app immediately after cancelling is now blocked again (previously it took a few seconds).
+- **Independent re-remind duration**: the re-remind calm screen length is now set separately from the first-intercept cooldown.
 
 ### What's new in v0.3.14
 - **Fix "opens aren't blocked, only switches are"**: added a foreground poller (every 1.5s, using the system "Usage access" API) that reliably catches apps opened from their icon — a case the window-event stream used to miss. Combined with the v0.3.13 false-positive fix, both opening and switching now trigger the pause, and notifications still don't.
