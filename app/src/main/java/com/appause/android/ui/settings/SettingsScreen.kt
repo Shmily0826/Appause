@@ -39,6 +39,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -65,11 +69,23 @@ fun SettingsScreen(
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
     val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
+    val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
     val language by viewModel.language.collectAsStateWithLifecycle()
     val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
-    LaunchedEffect(Unit) { viewModel.refreshServiceStatus() }
+    // Re-query permission status every time the screen becomes visible (e.g.
+    // after the user grants a permission in a system page and navigates back).
+    // A plain LaunchedEffect(Unit) only fires on first composition, which is
+    // why the red/green dot used to lag until re-entering the screen.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshServiceStatus()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     Scaffold(
         topBar = {
@@ -179,9 +195,18 @@ fun SettingsScreen(
             }
 
             // ── Accessibility Service ──
+            // Required: without it Appause cannot detect foreground app changes.
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.accessibility_service), style = MaterialTheme.typography.titleMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.accessibility_service), style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = stringResource(R.string.required_badge),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -209,13 +234,22 @@ fun SettingsScreen(
                 }
             }
 
-            // ── Usage Access ──
+            // ── Usage Access (optional) ──
             // Confirms which app is genuinely on screen, so a media app's
             // notification in the shade (e.g. Bilibili "now playing") doesn't
-            // trigger the pause by mistake. Granted once in system settings.
+            // trigger the pause by mistake. This is a *recommended* enhancement,
+            // NOT required — Appause still intercepts normally without it.
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.usage_access), style = MaterialTheme.typography.titleMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.usage_access), style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = stringResource(R.string.optional_badge),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = stringResource(
@@ -226,7 +260,7 @@ fun SettingsScreen(
                         color = if (isUsageAccessGranted)
                             MaterialTheme.colorScheme.primary
                         else
-                            MaterialTheme.colorScheme.error
+                            MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (!isUsageAccessGranted) {
                         Spacer(modifier = Modifier.height(8.dp))
@@ -250,19 +284,26 @@ fun SettingsScreen(
                 }
             }
 
-            // ── Battery Optimization ──
+            // ── Battery Optimization (required) ──
             // MIUI and other OEM ROMs aggressively kill background processes,
             // which disconnects the accessibility service. Requesting battery
             // optimization exemption tells the system to keep the process alive.
-            val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
-            val isIgnoringBattery = powerManager.isIgnoringBatteryOptimizations(context.packageName)
-
+            // Without it the "running" service is silently killed and Appause
+            // stops intercepting — so we mark this as required too.
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        stringResource(R.string.battery_optimization),
-                        style = MaterialTheme.typography.titleMedium
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(R.string.battery_optimization),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Text(
+                            text = stringResource(R.string.required_badge),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = stringResource(

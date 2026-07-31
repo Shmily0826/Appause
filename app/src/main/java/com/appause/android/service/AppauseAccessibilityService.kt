@@ -84,6 +84,19 @@ class AppauseAccessibilityService : AccessibilityService() {
         var justCancelledPackage: String? = null
 
         /**
+         * Last seen foreground package. Used to skip duplicate events.
+         * When the same package appears in consecutive events (Activity switch
+         * within the same app), we skip it to avoid re-triggering the cooldown.
+         *
+         * Lives in the companion object (not instance-private) because
+         * [noteCancelled] — called from OverlayManager on Cancel — needs to
+         * reset it so an immediate re-open of the same app re-triggers the
+         * cooldown instead of being swallowed as a stale echo.
+         */
+        @Volatile
+        var lastForegroundPackage: String? = null
+
+        /**
          * Mark an app as "just cancelled" and schedule the suppression to clear
          * after a short grace window.
          *
@@ -103,8 +116,22 @@ class AppauseAccessibilityService : AccessibilityService() {
         private val cancelClearHandler = Handler(Looper.getMainLooper())
         fun noteCancelled(packageName: String) {
             justCancelledPackage = packageName
+            // Reset the last-foreground tracker so an immediate re-open of the
+            // same app is treated as a genuine new foreground (not a stale echo).
+            // Without this, lastForegroundPackage would still equal the cancelled
+            // app, and a quick tap to re-open it would be mistaken for the stale
+            // post-cancel event and silently skipped. After reset, the re-open
+            // flows through the normal foreground check (step 6.5) and re-cools.
+            lastForegroundPackage = null
             cancelClearHandler.removeCallbacksAndMessages(null)
-            cancelClearHandler.postDelayed({ justCancelledPackage = null }, 1500L)
+            // Keep the suppression SHORT. Its only job is to swallow the single
+            // stale window event that fires for the cancelled app in the brief
+            // moment before the launcher takes over — which arrives within a few
+            // hundred ms of Cancel. A long window (the old 1500ms) also swallowed
+            // the user's *immediate* re-open of the same app, so Cancel then let
+            // them back in with no cooldown if they were quick. 800ms is enough
+            // to catch the stale event but lets a genuine quick re-open re-trigger.
+            cancelClearHandler.postDelayed({ justCancelledPackage = null }, 800L)
         }
     }
 
@@ -118,13 +145,6 @@ class AppauseAccessibilityService : AccessibilityService() {
      * without needing the SYSTEM_ALERT_WINDOW permission.
      */
     private val overlayManager = OverlayManager()
-
-    /**
-     * Last seen foreground package. Used to skip duplicate events.
-     * When the same package appears in consecutive events (Activity switch within
-     * the same app), we skip it to avoid re-triggering the cooldown.
-     */
-    private var lastForegroundPackage: String? = null
 
     /** Launcher packages resolved dynamically (covers all OEM launchers). */
     private var homePackages: Set<String> = emptySet()
@@ -298,7 +318,13 @@ class AppauseAccessibilityService : AccessibilityService() {
         // 2.5. Suppress the stale event that fires for the app the user just
         //      cancelled out of (see justCancelledPackage docs). Without this,
         //      the overlay re-appears on the home screen right after Cancel.
-        if (justCancelledPackage != null && packageName == justCancelledPackage) {
+        //      Only skip while we haven't yet confirmed the app actually left
+        //      the foreground (lastForegroundPackage still == justCancelled).
+        //      The moment the foreground moves to another app/launcher (step 3
+        //      below), justCancelledPackage is cleared, so a genuine quick
+        //      re-open re-triggers the cooldown normally.
+        if (justCancelledPackage != null && packageName == justCancelledPackage
+            && lastForegroundPackage == justCancelledPackage) {
             AppLogger.d(TAG, "SKIP: stale event for just-cancelled app ($packageName)")
             return
         }
@@ -319,6 +345,12 @@ class AppauseAccessibilityService : AccessibilityService() {
             // bug: opening a gallery/chooser/player used to clear the bypass and
             // re-pop the cooldown. Now the session survives short detours.
             maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
+            // If the app we just left is the one the user cancelled out of,
+            // confirm it has genuinely left the foreground: clear the cancel
+            // suppression so an immediate re-open re-triggers the cooldown.
+            if (justCancelledPackage != null && lastForegroundPackage == justCancelledPackage) {
+                justCancelledPackage = null
+            }
             lastForegroundPackage = packageName
             return
         }
@@ -386,7 +418,13 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         // 7. Intercept! Show the cooldown overlay.
         AppLogger.d(TAG, "INTERCEPT: $packageName → group=${group.name}, cooldown=${group.cooldownSeconds}s")
-        showCooldownOverlay(packageName, group.id, group.cooldownSeconds, group.reRemindMinutes)
+        showCooldownOverlay(
+            packageName,
+            group.id,
+            group.cooldownSeconds,
+            group.reRemindMinutes,
+            group.reRemindCooldownSeconds
+        )
     }
 
     /**
@@ -446,9 +484,10 @@ class AppauseAccessibilityService : AccessibilityService() {
         groupId: Long,
         cooldownSeconds: Int,
         reRemindMinutes: Int = 0,
+        reRemindCooldownSeconds: Int = 0,
         isReRemind: Boolean = false
     ) {
-        overlayManager.show(this, packageName, groupId, cooldownSeconds, reRemindMinutes, isReRemind)
+        overlayManager.show(this, packageName, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, isReRemind)
     }
 
     /**
@@ -470,7 +509,7 @@ class AppauseAccessibilityService : AccessibilityService() {
      * only ends when the session is re-armed (bypass cleared) or the service is
      * destroyed. Re-arming also cancels this job.
      */
-    internal fun scheduleReRemind(targetPackage: String, groupId: Long, cooldownSeconds: Int, minutes: Int) {
+    internal fun scheduleReRemind(targetPackage: String, groupId: Long, cooldownSeconds: Int, minutes: Int, reRemindCooldownSeconds: Int) {
         if (minutes <= 0) return
 
         // Cancel any existing loop for this package (e.g., from a previous session)
@@ -493,7 +532,10 @@ class AppauseAccessibilityService : AccessibilityService() {
                     // Clear bypass so the overlay shows; the loop keeps running and the
                     // user re-bypasses on Continue (countdown finish → startBypass).
                     InterceptionManager.clearBypass(targetPackage)
-                    showCooldownOverlay(targetPackage, groupId, cooldownSeconds, minutes, isReRemind = true)
+                    // Use the dedicated re-remind cooldown if set, otherwise fall back
+                    // to the initial cooldown (keeps legacy behaviour for old groups).
+                    val rePopSeconds = reRemindCooldownSeconds.takeIf { it > 0 } ?: cooldownSeconds
+                    showCooldownOverlay(targetPackage, groupId, rePopSeconds, minutes, reRemindCooldownSeconds, isReRemind = true)
                 } else {
                     AppLogger.d(TAG, "Re-remind tick but user away from $targetPackage, will re-check")
                 }
@@ -521,7 +563,8 @@ class AppauseAccessibilityService : AccessibilityService() {
         targetPackage: String,
         groupId: Long,
         cooldownSeconds: Int,
-        reRemindMinutes: Int
+        reRemindMinutes: Int,
+        reRemindCooldownSeconds: Int = 0
     ) {
         cancelLeaveTimer(targetPackage)
         sessionStart[targetPackage] = System.currentTimeMillis()
@@ -535,7 +578,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                     (applicationContext as AppauseApp).proState.isPro.first()
                 }.getOrDefault(false)
                 if (isProUser) {
-                    scheduleReRemind(targetPackage, groupId, cooldownSeconds, reRemindMinutes)
+                    scheduleReRemind(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds)
                 }
             }
         }

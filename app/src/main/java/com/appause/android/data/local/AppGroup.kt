@@ -67,7 +67,18 @@ data class AppGroup(
      * Only meaningful for [TYPE_PAUSE] groups. Learning groups are never
      * intercepted, so re-remind does not apply to them.
      */
-    val reRemindMinutes: Int = 0
+    val reRemindMinutes: Int = 0,
+
+    /**
+     * Cooldown duration (in seconds) used for *re-remind* pops specifically.
+     * Range: 0–300. A value of 0 means "use [cooldownSeconds]" (so existing
+     * groups keep the old behaviour — re-remind pause length === first pause
+     * length — until the user sets it explicitly).
+     *
+     * Only meaningful when [reRemindMinutes] > 0. Lets the user make the
+     * repeat reminders shorter/longer than the initial cooldown.
+     */
+    val reRemindCooldownSeconds: Int = 0
 ) {
     companion object {
         /** Distracting apps that get intercepted with a cooldown. */

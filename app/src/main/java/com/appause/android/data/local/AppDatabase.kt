@@ -32,7 +32,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         GroupApp::class,
         AppLaunchRecord::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false  // Simplified for v1; enable for production migration tracking
 )
 @TypeConverters(Converters::class)
@@ -91,6 +91,22 @@ abstract class AppDatabase : RoomDatabase() {
                 )
             }
         }
+
+        /**
+         * Migration from version 4 to 5: add "reRemindCooldownSeconds" column
+         * to app_groups.
+         *
+         * Existing groups get 0, which means "reuse the first cooldown" — so the
+         * re-remind pause length stays identical to the initial cooldown until
+         * the user sets it explicitly in the group editor.
+         */
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE app_groups ADD COLUMN reRemindCooldownSeconds INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
         /**
          * Singleton instance.
          *
@@ -114,7 +130,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "appause.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                     .also { INSTANCE = it }
             }

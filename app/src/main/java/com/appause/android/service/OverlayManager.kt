@@ -83,6 +83,8 @@ class OverlayManager {
      * @param groupId ID of the group this app belongs to (for logging).
      * @param cooldownSeconds How long the countdown should last.
      * @param reRemindMinutes If > 0, the initial entry starts a re-remind loop.
+     * @param reRemindCooldownSeconds Dedicated cooldown length for re-remind pops.
+     *                   If 0, the re-remind pause reuses [cooldownSeconds].
      * @param isReRemind True when this overlay is a re-remind pop (re-bypass only,
      *                   no new session/loop).
      */
@@ -92,6 +94,7 @@ class OverlayManager {
         groupId: Long,
         cooldownSeconds: Int,
         reRemindMinutes: Int = 0,
+        reRemindCooldownSeconds: Int = 0,
         isReRemind: Boolean = false
     ) {
         // Prevent duplicate overlays
@@ -201,7 +204,7 @@ class OverlayManager {
                         if (isReRemind) {
                             InterceptionManager.startBypass(targetPackage)
                         } else {
-                            service.onSessionStart(targetPackage, groupId, cooldownSeconds, reRemindMinutes)
+                            service.onSessionStart(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds)
                         }
                     }
 

@@ -1,6 +1,8 @@
 package com.appause.android.ui.settings
 
 import android.app.Application
+import android.content.Context
+import android.os.PowerManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
@@ -43,9 +45,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _isUsageAccessGranted = MutableStateFlow(false)
     val isUsageAccessGranted: StateFlow<Boolean> = _isUsageAccessGranted
 
+    private val _isIgnoringBattery = MutableStateFlow(false)
+    val isIgnoringBattery: StateFlow<Boolean> = _isIgnoringBattery
+
+    /**
+     * Re-read every permission/status that the Settings screen shows.
+     *
+     * Why we expose this as a manual refresh (instead of a lifecycle observer):
+     * the user grants a permission in a *system* settings page and then navigates
+     * BACK to Appause. On that return there is no reliable lifecycle event the
+     * Composable can hook, so we re-query when the screen becomes visible. The
+     * SettingsScreen calls this from a DisposableEffect on resume.
+     */
     fun refreshServiceStatus() {
-        _isServiceRunning.value = AccessibilityServiceChecker.isEnabled(getApplication())
-        _isUsageAccessGranted.value = ForegroundChecker.isUsageAccessGranted(getApplication())
+        val app = getApplication<Application>()
+        _isServiceRunning.value = AccessibilityServiceChecker.isEnabled(app)
+        _isUsageAccessGranted.value = ForegroundChecker.isUsageAccessGranted(app)
+        val powerManager = app.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        _isIgnoringBattery.value = powerManager?.isIgnoringBatteryOptimizations(app.packageName) ?: false
     }
 
     fun updateDefaultPrompt(prompt: String) {

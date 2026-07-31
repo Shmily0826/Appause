@@ -28,6 +28,8 @@
     <string name="service_running">运行中</string>
     <string name="service_not_enabled">未启用</string>
     <string name="tap_to_enable">点击此处前往系统设置启用。</string>
+    <string name="required_badge">必需</string>
+    <string name="optional_badge">可选</string>
 
     <!-- 状态头部卡片：系统权限状态 -->
     <string name="service_not_enabled_title">服务未启用</string>
@@ -89,6 +91,8 @@
     <string name="re_remind_range_start">1 分钟</string>
     <string name="re_remind_range_end">60 分钟</string>
     <string name="re_remind_disabled_hint">已关闭</string>
+    <string name="re_remind_cooldown_label">再次提醒冷静时长</string>
+    <string name="re_remind_cooldown_reuse">与首次相同</string>
 
     <string name="label_seconds">秒</string>
     <string name="select_apps_button">选择应用（已选 %d 个）</string>

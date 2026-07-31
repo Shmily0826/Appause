@@ -76,6 +76,15 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
     private val _reRemindMinutes = MutableStateFlow(10)
     val reRemindMinutes: StateFlow<Int> = _reRemindMinutes.asStateFlow()
 
+    /**
+     * Dedicated cooldown length (seconds) for re-remind pops. 0 means "reuse
+     * the first cooldown" — the default so existing groups keep old behaviour
+     * until the user sets it. When > 0 the re-remind pause uses this instead
+     * of [cooldownSeconds].
+     */
+    private val _reRemindCooldownSeconds = MutableStateFlow(0)
+    val reRemindCooldownSeconds: StateFlow<Int> = _reRemindCooldownSeconds.asStateFlow()
+
     private val _selectedPackages = MutableStateFlow<List<String>>(emptyList())
     val selectedPackages: StateFlow<List<String>> = _selectedPackages.asStateFlow()
 
@@ -109,6 +118,8 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
                 // DB stores 0 = disabled, 1–60 = enabled with that interval.
                 _reRemindEnabled.value = group.reRemindMinutes > 0
                 _reRemindMinutes.value = group.reRemindMinutes.coerceIn(1, 60)
+                // 0 = reuse first cooldown (legacy default).
+                _reRemindCooldownSeconds.value = group.reRemindCooldownSeconds.coerceAtLeast(0)
                 _selectedPackages.value = repository.getPackageNamesInGroup(groupId)
             }
         }
@@ -136,6 +147,14 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
     fun updateReRemind(minutes: Int) {
         // Clamp to valid range: 1–60 minutes
         _reRemindMinutes.value = minutes.coerceIn(1, 60)
+    }
+
+    /**
+     * Update the re-remind cooldown length. -1 (or any negative) is treated as
+     * "reuse first cooldown" and stored as 0. Otherwise clamped to 1–300s.
+     */
+    fun updateReRemindCooldown(seconds: Int) {
+        _reRemindCooldownSeconds.value = if (seconds <= 0) 0 else seconds.coerceIn(1, 300)
     }
 
     /**
@@ -175,7 +194,9 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
                 cooldownSeconds = _cooldownSeconds.value,
                 type = _type.value,
                 // DB: 0 = disabled, 1–60 = enabled with that interval
-                reRemindMinutes = if (reRemindOn) _reRemindMinutes.value else 0
+                reRemindMinutes = if (reRemindOn) _reRemindMinutes.value else 0,
+                // 0 = reuse first cooldown when re-remind is off too.
+                reRemindCooldownSeconds = if (reRemindOn) _reRemindCooldownSeconds.value else 0
             )
             repository.saveGroupWithApps(group, _selectedPackages.value)
             _saveCompleted.value = true

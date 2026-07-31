@@ -28,6 +28,8 @@
     <string name="service_running">Running</string>
     <string name="service_not_enabled">Not enabled</string>
     <string name="tap_to_enable">Tap here to enable in system settings.</string>
+    <string name="required_badge">Required</string>
+    <string name="optional_badge">Optional</string>
 
     <!-- Status header card: service permission state -->
     <string name="service_not_enabled_title">Service not enabled</string>
@@ -90,6 +92,8 @@
     <string name="re_remind_range_start">1 min</string>
     <string name="re_remind_range_end">60 min</string>
     <string name="re_remind_disabled_hint">Disabled</string>
+    <string name="re_remind_cooldown_label">Re-remind cooldown</string>
+    <string name="re_remind_cooldown_reuse">Same as first</string>
 
     <string name="label_seconds">Seconds</string>
     <string name="select_apps_button">Select Apps (%d selected)</string>

@@ -111,6 +111,7 @@ fun GroupEditorScreen(
     val cooldownSeconds by viewModel.cooldownSeconds.collectAsStateWithLifecycle()
     val reRemindEnabled by viewModel.reRemindEnabled.collectAsStateWithLifecycle()
     val reRemindMinutes by viewModel.reRemindMinutes.collectAsStateWithLifecycle()
+    val reRemindCooldownSeconds by viewModel.reRemindCooldownSeconds.collectAsStateWithLifecycle()
     val selectedPackages by viewModel.selectedPackages.collectAsStateWithLifecycle()
     val isEditing by viewModel.isEditing.collectAsStateWithLifecycle()
     val saveCompleted by viewModel.saveCompleted.collectAsStateWithLifecycle()
@@ -284,6 +285,23 @@ fun GroupEditorScreen(
                             minValue = 1,
                             maxValue = 60,
                             onValueChange = viewModel::updateReRemind
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Re-remind cooldown length: separate from the first
+                        // cooldown so the repeat nudges can be shorter/longer.
+                        // 0 means "reuse the first cooldown" (default).
+                        val reCooldownUnit = stringResource(R.string.label_seconds)
+                        TimeSliderInput(
+                            title = stringResource(R.string.re_remind_cooldown_label),
+                            value = if (reRemindCooldownSeconds <= 0) 0 else reRemindCooldownSeconds,
+                            unit = reCooldownUnit,
+                            minValue = 0,
+                            maxValue = maxCooldown.coerceAtLeast(60),
+                            onValueChange = viewModel::updateReRemindCooldown,
+                            rangeStartLabel = stringResource(R.string.re_remind_cooldown_reuse),
+                            rangeEndLabel = "${maxCooldown.coerceAtLeast(60)}$reCooldownUnit"
                         )
                     } else {
                         Text(
