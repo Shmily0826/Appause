@@ -20,8 +20,20 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import com.appause.android.ui.pause.CountdownRing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.CheckCircle
@@ -79,8 +91,9 @@ import kotlinx.coroutines.launch
  *   without one. When they do open the group editor, the step index is advanced
  *   to the finish page first, so returning lands on "All set" rather than
  *   restarting the guide.
- * - A small looping countdown is shown next to the group CTA as a gentle nudge;
- *   it is purely decorative and never blocks proceeding.
+ * - The group step shows a live preview of the real pause screen (animates in,
+ *   loops a countdown) so the user gets the concept — it is not a nudge to
+ *   create a group, and the Continue/Later buttons stay fully clickable.
  */
 @Composable
 fun OnboardingScreen(
@@ -378,9 +391,10 @@ private fun InfoStep(title: Int, desc: Int) {
 }
 
 /**
- * Group step (page 3): the explanation plus a decorative, looping countdown
- * next to the call-to-action. The countdown is purely cosmetic — the buttons
- * in the bottom bar are always enabled.
+ * Group step (page 3): the explanation plus a live preview of the real
+ * interception screen. The preview animates in and loops a countdown so the
+ * user gets a concrete idea of what they'll see — it is not a nudge to create
+ * a group (the buttons in the bottom bar stay fully clickable).
  */
 @Composable
 private fun GroupStep() {
@@ -390,43 +404,99 @@ private fun GroupStep() {
             desc = R.string.onboarding_group_desc
         )
         Spacer(modifier = Modifier.height(16.dp))
-        GroupCountdownHint()
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn() + scaleIn(initialScale = 0.95f)
+        ) {
+            GroupStepPreview()
+        }
     }
 }
 
 /**
- * Loops 3 → 2 → 1 → 3 … as a gentle visual suggestion to add a group now.
- * It never blocks the user: the Continue/Later buttons stay fully clickable.
+ * A small, non-interactive mock of the pause screen: app icon, name, prompt,
+ * and the same countdown ring + animated number used by the real interception.
+ * Loops 3 → 2 → 1 → done → 3 … to convey the concept, nothing more.
  */
 @Composable
-private fun GroupCountdownHint() {
+private fun GroupStepPreview() {
     var remaining by remember { mutableStateOf(3) }
     LaunchedEffect(Unit) {
         while (true) {
             delay(1000)
-            remaining = if (remaining <= 1) 3 else remaining - 1
+            remaining = if (remaining <= 0) 3 else remaining - 1
         }
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(28.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer)
+    val isFinished = remaining <= 0
+    val progress = if (isFinished) 1f else (3f - remaining) / 3f
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Image(
+                painter = painterResource(R.mipmap.ic_launcher),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+            )
+            Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "$remaining",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+                text = stringResource(R.string.onboarding_preview_app_name),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.prompt_label),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Box(contentAlignment = Alignment.Center) {
+                CountdownRing(
+                    progress = progress,
+                    isFinished = isFinished,
+                    size = 110.dp,
+                    strokeWidth = 5.dp
+                )
+                AnimatedContent(
+                    targetState = if (isFinished) -1 else remaining,
+                    transitionSpec = {
+                        (slideInVertically { it } + fadeIn()) togetherWith
+                            (slideOutVertically { -it } + fadeOut())
+                    },
+                    label = "preview_countdown"
+                ) { number ->
+                    Text(
+                        text = if (number >= 0) "$number" else "✓",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (number >= 0) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.tertiary
+                        }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = stringResource(R.string.onboarding_preview_caption),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
         }
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = stringResource(R.string.onboarding_group_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 

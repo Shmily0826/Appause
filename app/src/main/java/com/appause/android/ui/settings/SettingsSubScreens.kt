@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -43,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -198,6 +200,9 @@ fun PermissionsSettingsScreen(
     val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
     val showNotification by viewModel.showNotification.collectAsStateWithLifecycle()
 
+    // "Enabled" green — legible on both light and dark surfaces.
+    val enabledGreen = if (isSystemInDarkTheme()) Color(0xFF81C784) else Color(0xFF2E7D32)
+
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -215,9 +220,9 @@ fun PermissionsSettingsScreen(
                     Text(stringResource(R.string.accessibility_service), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
-                        text = stringResource(R.string.required_badge),
+                        text = stringResource(if (isServiceRunning) R.string.status_enabled else R.string.status_disabled),
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (isServiceRunning) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
+                        color = if (isServiceRunning) enabledGreen else MaterialTheme.colorScheme.error
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -226,7 +231,7 @@ fun PermissionsSettingsScreen(
                         if (isServiceRunning) R.string.service_running else R.string.service_not_enabled
                     ),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (isServiceRunning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    color = if (isServiceRunning) enabledGreen else MaterialTheme.colorScheme.error
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(onClick = {
@@ -246,9 +251,9 @@ fun PermissionsSettingsScreen(
                     Text(stringResource(R.string.battery_optimization), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
-                        text = stringResource(R.string.required_badge),
+                        text = stringResource(if (isIgnoringBattery) R.string.status_enabled else R.string.status_disabled),
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (isIgnoringBattery) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error
+                        color = if (isIgnoringBattery) enabledGreen else MaterialTheme.colorScheme.error
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -257,7 +262,7 @@ fun PermissionsSettingsScreen(
                         if (isIgnoringBattery) R.string.battery_exempted else R.string.battery_not_exempted
                     ),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (isIgnoringBattery) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                    color = if (isIgnoringBattery) enabledGreen else MaterialTheme.colorScheme.error
                 )
                 if (!isIgnoringBattery) {
                     Spacer(modifier = Modifier.height(8.dp))
@@ -280,9 +285,9 @@ fun PermissionsSettingsScreen(
                     Text(stringResource(R.string.usage_access), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
-                        text = stringResource(R.string.optional_badge),
+                        text = stringResource(if (isUsageAccessGranted) R.string.status_enabled else R.string.status_disabled),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (isUsageAccessGranted) enabledGreen else MaterialTheme.colorScheme.error
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -291,7 +296,7 @@ fun PermissionsSettingsScreen(
                         if (isUsageAccessGranted) R.string.usage_access_granted else R.string.usage_access_not_granted
                     ),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (isUsageAccessGranted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (isUsageAccessGranted) enabledGreen else MaterialTheme.colorScheme.error
                 )
                 if (!isUsageAccessGranted) {
                     Spacer(modifier = Modifier.height(8.dp))

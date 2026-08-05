@@ -30,6 +30,8 @@
     <string name="tap_to_enable">点击此处前往系统设置启用。</string>
     <string name="required_badge">必需</string>
     <string name="optional_badge">可选</string>
+    <string name="status_enabled">已开启</string>
+    <string name="status_disabled">未开启</string>
 
     <!-- 状态头部卡片：系统权限状态 -->
     <string name="service_not_enabled_title">服务未启用</string>
@@ -176,6 +178,9 @@
     <string name="settings_category_pause">暂停设置</string>
     <string name="settings_category_pause_desc">提示语与自定义打开原因</string>
     <string name="settings_category_pro">Appause Pro</string>
+    <string name="pro_active_label">Appause Pro 已开启</string>
+    <string name="pro_banner_title">升级到 Appause Pro</string>
+    <string name="pro_banner_desc">解锁自定义提示语、自定义原因等</string>
     <string name="settings_category_feedback">反馈</string>
     <string name="settings_category_about">关于</string>
     <string name="settings_category_about_desc">版本与调试信息</string>
@@ -185,7 +190,7 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="recommended_apps_title">推荐应用</string>
     <string name="recommended_apps_home_desc">冷却时推荐使用的替代应用</string>
-    <string name="recommended_apps_desc">冷却页面上会推荐这些应用——"不如试试这些？"</string>
+    <string name="recommended_apps_desc">冷却页面上会推荐这些应用——"也可以试试这些应用"</string>
     <string name="recommended_apps_empty">还没有推荐应用。添加后会在冷却时作为替代建议显示。</string>
     <string name="recommended_apps_count">%d 个应用</string>
 
@@ -194,7 +199,7 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="pause_cancel">取消</string>
     <string name="pause_continue">继续</string>
-    <string name="pause_breathe_hint">试着做几次深呼吸。</string>
+    <string name="pause_breathe_hint">停顿几秒，再决定要不要继续。</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Intent Tracking (Pause Screen)               -->
@@ -206,7 +211,7 @@
     <string name="intent_other">其他</string>
 
     <!-- 冷却期间显示的推荐应用 -->
-    <string name="pause_recommended_hint">不如试试这些应用？</string>
+    <string name="pause_recommended_hint">也可以试试这些应用：</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Statistics Screen                            -->
@@ -329,7 +334,7 @@
     <string name="onboarding_language_title">选择语言</string>
     <string name="onboarding_language_desc">选择后，引导与整个应用都会以该语言显示。</string>
     <string name="onboarding_welcome_title">欢迎使用 Appause</string>
-    <string name="onboarding_welcome_desc">打开分心应用前，Appause 会先覆上一层暂停屏，给你片刻喘息，再决定要不要继续。</string>
+    <string name="onboarding_welcome_desc">打开分心应用前，Appause 会先弹出暂停屏，由你决定是否继续打开。</string>
     <string name="onboarding_service_title">开启无障碍服务</string>
     <string name="onboarding_service_desc">Appause 需要「无障碍服务」来检测你正在打开哪个应用并在其上覆盖暂停屏。开启后，返回本应用即可继续。</string>
     <string name="onboarding_service_open">前往系统设置开启</string>
@@ -348,4 +353,6 @@
     <string name="onboarding_lang_zh">简体中文</string>
     <string name="onboarding_lang_en">English</string>
     <string name="onboarding_group_hint">提示：现在就可以添加分组，倒计时只是建议，不用等它结束。</string>
+    <string name="onboarding_preview_app_name">示例应用</string>
+    <string name="onboarding_preview_caption">打开分心应用时，你会看到这样的暂停屏。</string>
 </resources>

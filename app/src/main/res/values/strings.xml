@@ -30,6 +30,8 @@
     <string name="tap_to_enable">Tap here to enable in system settings.</string>
     <string name="required_badge">Required</string>
     <string name="optional_badge">Optional</string>
+    <string name="status_enabled">Enabled</string>
+    <string name="status_disabled">Not enabled</string>
 
     <!-- Status header card: service permission state -->
     <string name="service_not_enabled_title">Service not enabled</string>
@@ -181,6 +183,9 @@
     <string name="settings_category_pause">Pause behavior</string>
     <string name="settings_category_pause_desc">Prompt and custom open reasons</string>
     <string name="settings_category_pro">Appause Pro</string>
+    <string name="pro_active_label">Appause Pro is active</string>
+    <string name="pro_banner_title">Upgrade to Appause Pro</string>
+    <string name="pro_banner_desc">Unlock custom prompts, custom reasons, and more</string>
     <string name="settings_category_feedback">Feedback</string>
     <string name="settings_category_about">About</string>
     <string name="settings_category_about_desc">Version and debug info</string>
@@ -190,7 +195,7 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="recommended_apps_title">Recommended Apps</string>
     <string name="recommended_apps_home_desc">Apps suggested during cooldowns</string>
-    <string name="recommended_apps_desc">These apps are shown as suggestions on the cooldown screen — \"try one of these instead?\"</string>
+    <string name="recommended_apps_desc">These apps are shown as suggestions on the cooldown screen — \"Or try one of these:\"</string>
     <string name="recommended_apps_empty">No recommended apps yet. Add some to see them suggested during cooldowns.</string>
     <string name="recommended_apps_count">%d apps</string>
 
@@ -199,7 +204,7 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="pause_cancel">Cancel</string>
     <string name="pause_continue">Continue</string>
-    <string name="pause_breathe_hint">Try taking a few deep breaths.</string>
+    <string name="pause_breathe_hint">Pause a few seconds before you decide.</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Intent Tracking (Pause Screen)               -->
@@ -211,7 +216,7 @@
     <string name="intent_other">Other</string>
 
     <!-- Recommended apps shown during the cooldown -->
-    <string name="pause_recommended_hint">Try one of these instead?</string>
+    <string name="pause_recommended_hint">Or try one of these:</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Statistics Screen                            -->
@@ -334,7 +339,7 @@
     <string name="onboarding_language_title">Choose your language</string>
     <string name="onboarding_language_desc">Once selected, the guide and the whole app will use this language.</string>
     <string name="onboarding_welcome_title">Welcome to Appause</string>
-    <string name="onboarding_welcome_desc">Before a distracting app opens, Appause covers it with a pause screen so you can take a breath before deciding whether to continue.</string>
+    <string name="onboarding_welcome_desc">Before a distracting app opens, Appause shows a pause screen, and you decide whether to continue.</string>
     <string name="onboarding_service_title">Turn on Accessibility</string>
     <string name="onboarding_service_desc">Appause needs the Accessibility service to detect which app you\'re opening and overlay the pause screen. After enabling it, come back here to continue.</string>
     <string name="onboarding_service_open">Open system settings</string>
@@ -353,4 +358,6 @@
     <string name="onboarding_lang_zh">简体中文</string>
     <string name="onboarding_lang_en">English</string>
     <string name="onboarding_group_hint">Tip: you can add a group now — the countdown is just a suggestion, no need to wait.</string>
+    <string name="onboarding_preview_app_name">Sample App</string>
+    <string name="onboarding_preview_caption">This is the pause screen shown when a distracting app opens.</string>
 </resources>

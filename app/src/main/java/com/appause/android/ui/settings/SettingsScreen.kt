@@ -86,13 +86,6 @@ fun SettingsScreen(
             onClick = onNavigateToPause
         ),
         SettingsCategory(
-            icon = Icons.Default.Star,
-            title = R.string.settings_category_pro,
-            subtitle = null,
-            badge = if (isPro) null else R.string.pro_badge,
-            onClick = onNavigateToPro
-        ),
-        SettingsCategory(
             icon = Icons.Default.Feedback,
             title = R.string.settings_category_feedback,
             subtitle = null,
@@ -130,6 +123,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
+            item { ProBanner(isPro = isPro, onNavigateToPro = onNavigateToPro) }
             items(categories, key = { it.title }) { category ->
                 CategoryItem(category = category)
             }
@@ -194,6 +188,86 @@ private fun CategoryItem(category: SettingsCategory) {
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+    }
+}
+
+/**
+ * Pro promo / status bar shown at the top of Settings — kept out of the category
+ * list so Pro doesn't look like just another setting. Tapping it (when free)
+ * opens the Pro screen; when already Pro it shows a calm "active" note.
+ */
+@Composable
+private fun ProBanner(
+    isPro: Boolean,
+    onNavigateToPro: () -> Unit
+) {
+    if (isPro) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = stringResource(R.string.pro_active_label),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+    } else {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onNavigateToPro),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.pro_banner_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = stringResource(R.string.pro_banner_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
     }
 }

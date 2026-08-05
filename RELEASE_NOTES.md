@@ -1,11 +1,17 @@
-# Appause v0.4.6 — 发布说明 (Release Notes)
+# Appause v0.4.7 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.4.6/Appause-v0.4.6.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.4.7/Appause-v0.4.7.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.4.7)
+- **提示语更直白**：引导页欢迎语去掉「给你片刻喘息」这类绕弯表述；暂停屏的「试着做几次深呼吸」改为「停顿几秒，再决定要不要继续」。
+- **引导页分组步骤改为「暂停屏预览」**：原来的装饰性倒计时换成和真实拦截一样的动画（应用图标、名称、提示语、倒计时环 + 跳动数字），让用户直观看到打开分心应用时看到的界面；它只是概念演示，不催促建分组（底部「稍后创建」依旧可点）。
+- **设置页把 Pro 移到顶部提示栏**：Pro 不再和其他设置项混在同一栏，而是放在设置页最上方的提示栏——已激活时显示「Appause Pro 已开启」，未激活时显示「升级到 Appause Pro」并可点击进入。
+- **权限已授权显示绿色「已开启」**：设置 → 权限页里，无障碍、电池优化、使用情况访问三项，只要已授予就显示绿色的「已开启」（连同下方说明文字一并变绿），未授予才标红。
 
 ### 本次更新 (v0.4.6)
 - **统计「原因分布」显示真正的标签**：之前会直接显示 `work`/`bored` 等英文键（切换系统语言后尤其明显）。现在会显示本地化的打开原因（如「工作需要」「无聊」），Pro 用户自定义过的文字也会正确显示。
@@ -120,6 +126,12 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 ---
 
 ## 🇺🇸 English
+
+### What's new in v0.4.7
+- **Plainer copy**: the onboarding welcome line no longer uses roundabout phrasing like "take a breath"; the pause screen's "try a few deep breaths" is now "pause a few seconds before you decide."
+- **Onboarding group step now shows a live pause-screen preview**: the old decorative countdown is replaced by the same animation the real interception uses (app icon, name, prompt, countdown ring + ticking number), so users see exactly what they'll get when a distracting app opens. It's a concept demo only — it does not push them to create a group (the "Later" button stays tappable).
+- **Pro moved to a top banner in Settings**: Pro is no longer mixed in with the other settings rows. It now sits in a banner at the top of Settings — "Appause Pro is active" when unlocked, or "Upgrade to Appause Pro" (tappable) otherwise.
+- **Granted permissions show green "Enabled"**: in Settings → Permissions, accessibility, battery optimization, and usage access now show a green "Enabled" (with the detail line also green) once granted; only the not-granted state is red.
 
 ### What's new in v0.4.6
 - **Statistics "reason breakdown" shows real labels**: previously it rendered raw keys like `work`/`bored` (most visible after switching the system language). It now shows the localized open-reason labels (e.g. "Work", "Bored"), and respects Pro custom text.

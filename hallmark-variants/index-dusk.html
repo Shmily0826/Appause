@@ -13,9 +13,9 @@
   /* slop-gates passed: no emoji, no gradient, no Inter, css vars, focus-visible, reduced-motion, semantic transition */
 
   :root{
-    --bg:#faf3f0;      --surface:#ffffff;  --surface-2:#f0e3df;
+    --bg:#f3dfd8;      --surface:#ffffff;  --surface-2:#ecd5d0;
     --ink:#2e1f1a;     --muted:#7a6560;    --accent:#c87a72;
-    --accent-soft:#f0d4cf;  --line:#e8d8d4;
+    --accent-soft:#f0d4cf;  --line:#e0c4be;
     --radius:18px;     --maxw:1080px;
     --display:"Lora",Georgia,"Times New Roman",serif;
     --body:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
@@ -28,7 +28,8 @@
   a:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
 
   header.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding:96px 0 64px}
-  .eyebrow{font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 20px;font-style:italic}
+  .eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);font-weight:600;margin:0 0 20px;font-style:italic}
+  .eyebrow .mark{width:18px;height:18px;color:var(--accent);flex:none}
   h1{font-family:var(--display);font-weight:500;font-size:clamp(2.4rem,5vw,3.4rem);line-height:1.06;letter-spacing:-.4px;margin:0 0 22px}
   .tagline{font-size:1.15rem;color:var(--muted);margin:0 0 32px;max-width:34ch;line-height:1.6}
   .cta{display:flex;gap:12px;flex-wrap:wrap}
@@ -38,9 +39,8 @@
   .btn-secondary{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
 
   .hero-visual{position:relative}
-  .hero-visual .logo-img{width:84px;height:84px;border-radius:24px;box-shadow:0 14px 36px rgba(200,122,114,.32);margin-bottom:24px;display:block}
-  .shot-frame{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface-2);width:100%;box-shadow:0 24px 50px -28px rgba(46,31,26,.22)}
-  .shot-frame img{display:block;width:100%}
+  .hero-visual .shot-frame{border:none;border-radius:0;overflow:hidden;background:transparent;width:100%;box-shadow:0 28px 60px -28px rgba(46,31,26,.25)}
+  .hero-visual .shot-frame img{display:block;width:100%;border-radius:22px}
 
   section{padding:64px 0;border-top:1px solid var(--line)}
   .sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:36px}
@@ -78,7 +78,7 @@
 <div class="wrap">
   <header class="hero">
     <div>
-      <p class="eyebrow">本地优先 · 关注注意力</p>
+      <p class="eyebrow"><svg class="mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="5" width="3.2" height="14" rx="1"/><rect x="13.8" y="5" width="3.2" height="14" rx="1"/></svg>本地优先 · 关注注意力</p>
       <h1>打开分心 App 前,<br>先停顿几秒。</h1>
       <p class="tagline">Appause 在你点开想少用的应用时,先弹出一个暂停屏——把那一下冲动,留几秒给自己。</p>
       <div class="cta">
@@ -88,7 +88,6 @@
       <p class="note">安卓 8.0+ · 纯本地 · 无需注册</p>
     </div>
     <div class="hero-visual">
-      <img class="logo-img" src="../output/appause-icon.png" alt="Appause" />
       <div class="shot-frame"><img src="../output/screenshots/home.png" alt="Appause 首页" loading="lazy" /></div>
     </div>
   </header>
