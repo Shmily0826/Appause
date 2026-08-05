@@ -112,7 +112,7 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 ### 已知限制
 - 需手动在系统设置开启「无障碍服务」，且授权后需保持开启；
 - 部分国产 ROM（小米 HyperOS / 华为 / OPPO / vivo）会杀后台或重启后失效，需按 INSTALL.md 加**自启动 / 电池无限制 / 锁定多任务**白名单；
-- 当前免费版分组上限 2 个（Pro 解锁无限分组）；冷却最长 60 秒、统计历史 365 天均已全免费开放；**再次提醒**为 Pro 功能。
+- 当前免费版分组上限 1 个（Pro 解锁无限分组）；冷却最长 60 秒、统计历史 365 天均已全免费开放；**再次提醒**为 Pro 功能。
 
 ### 反馈与问题
 请在 [GitHub Issues](https://github.com/Shmily0826/Appause/issues) 提交，或邮件联系（见 PRIVACY.md）。
@@ -215,7 +215,7 @@ See [PRIVACY.md](PRIVACY.md) — we collect and upload **nothing**.
 ### Known limitations
 - AccessibilityService must be enabled manually and kept on.
 - Some OEM ROMs (Xiaomi HyperOS / Huawei / OPPO / vivo) kill background services or drop them after reboot — whitelist auto-start / battery / task-lock per INSTALL.md.
-- Free tier: max 2 groups (Pro unlocks unlimited); cooldown up to 60s and 365-day stats history are now free for everyone; **re-remind** is a Pro feature.
+- Free tier: max 1 group (Pro unlocks unlimited); cooldown up to 60s and 365-day stats history are now free for everyone; **re-remind** is a Pro feature.
 
 ### Feedback
 File issues at [GitHub Issues](https://github.com/Shmily0826/Appause/issues).
