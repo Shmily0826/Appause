@@ -10,7 +10,11 @@ build/
 .kotlin/
 
 # Local release output (APKs you keep for sideloading; never commit to git)
-output/
+output/*
+# Exception: marketing screenshots + app icon for GitHub Pages (must be published)
+!output/screenshots/
+!output/screenshots/*.png
+!output/appause-icon.png
 
 # Local configuration
 local.properties
@@ -35,6 +39,7 @@ Thumbs.db
 
 # Generated
 captures/
+scripts/__pycache__/
 
 # Signing (never commit keys or signing configs)
 signing.properties

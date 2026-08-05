@@ -1,13 +1,50 @@
-# Appause v0.3.18 — 发布说明 (Release Notes)
+# Appause v0.4.6 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.3.18/Appause-v0.3.18.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.4.6/Appause-v0.4.6.apk`
 
 ---
 
 ## 🇨🇳 中文
 
-### 本次更新 (v0.3.18)
+### 本次更新 (v0.4.6)
+- **统计「原因分布」显示真正的标签**：之前会直接显示 `work`/`bored` 等英文键（切换系统语言后尤其明显）。现在会显示本地化的打开原因（如「工作需要」「无聊」），Pro 用户自定义过的文字也会正确显示。
+- **反馈文案更通顺**：反馈页引导语与发送失败提示语在中文、英文下都做了润色。
+- **权限页不再误用红色**：设置 → 权限页里「必需」徽标原本始终是红色，哪怕权限已授予也会红，容易让人以为还有问题。现在权限已授予时改为中性灰，未授予才标红。
+
+### 本次更新 (v0.4.5)
+- **引导页视觉优化**：每步新增 72dp 圆形图标作为视觉焦点；顶部增加步骤进度圆点（共 5 步，当前步高亮）；标题与说明改为居中，整体更像引导而非纯文字。
+- **修复分组页两个「跳过」**：分组引导页底部次级按钮原先也叫「跳过」，与右上角全局跳过重复。已改为「稍后创建」，仅表示跳过建组、仍进入「一切就绪」页；右上角「跳过」仍是整段引导退出。
+
+### 本次更新 (v0.4.4)
+- **免费版分组数量限制调整为 1 个**：免费用户最多创建 1 个分组，达到上限后首页「新建分组」按钮显示锁形图标并跳转 Pro 介绍页；分组列表上方也会出现提示卡，说明「免费版最多 1 个分组，升级 Pro 解锁无限分组」。Pro 用户分组数量无限制。
+
+### 本次更新 (v0.4.3)
+- **修复分组名输入框光标跳动**：修改分组时，在名称框快速输入光标会跳到最左侧（输入框直接绑定了异步状态流导致）。已改为本地状态 + 外部同步的写法，输入顺畅。顺带复查了所有文本输入框：选择应用搜索框、反馈、激活码、设置提示语/原因等本就正确，无同类问题。
+
+### 本次更新 (v0.4.2)
+- **暂停设置页普通用户可见但上锁**：进入「设置 → 暂停设置」后，默认提示语和自定义打开原因两个区域都会显示；未解锁 Pro 时，输入框呈灰色禁用状态并带锁形图标，点击卡片可跳转 Pro 介绍页。
+- **默认提示语占位文案更清晰**：输入框提示从「暂停画面信息」改为「暂停一下」，避免歧义。
+
+### 本次更新 (v0.4.1)
+- **设置页改为二级菜单**：原本一整页塞满的设置项，现在拆成「外观 / 权限与运行 / 暂停设置 / Pro / 反馈 / 关于」分类，点进去各看各的，不再一长条往下滚。
+- **引导流程更顺**：
+  - 修复"下一步"按钮和手机底部导航栏重叠的问题（已让出系统导航栏安全区）。
+  - 创建分组不再强制：分组引导页提供「跳过」，返回也不会再从头来一遍（步骤状态已记住）。
+  - 分组引导页旁边加了一个循环倒计时提示，纯装饰，不用等它也能直接下一步。
+
+### 本次更新 (v0.4.0)
+- **Pro 介绍页对比更突出**：免费版 / Pro 两列加了列头，Pro 列用实心高亮 pill 强调；每行 Pro 单元格改为高亮圆角卡片，一眼能看到 Pro 多了什么。
+- **新增「更多功能推出中」占位**：对比表底部加了"推出中"标签与一行说明，为后续高级功能留位置。
+- **Pro 激活按钮更清晰**：主按钮由"在线兑换"改为「用激活码激活」，次按钮明确标注「导入许可证（换设备 / 恢复）」，输入框提示收敛为"输入你购买的激活码"，主次操作不再混淆。
+
+### 本次更新 (v0.3.20)
+- **使用统计新增「原因分布」**：统计页现在按"为什么打开"聚合，展示每个原因的次数与占比进度条（仅统计点了「继续」且选了原因的记录）。
+- **再次提醒计时更合理**：下一轮提醒从你点「继续」之后才开始计时，不再在倒计时出现时就已经在计下一轮。
+- **暂停屏新增深呼吸提示**：提示语下方常驻一行"试着做几次深呼吸。"
+- **术语统一**：应用内"冷静时长"统一为"冷却时长"。
+
+### 本次更新 (v0.3.19)
 - **自定义打开原因（Pro）**：Pro 用户可在设置里修改暂停屏上 4 个"打开原因"的文字（工作 / 无聊 / 查消息 / 其他），改成自己习惯的说法。
 
 ### 本次更新 (v0.3.17)
@@ -84,7 +121,33 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 
 ## 🇺🇸 English
 
-### What's new in v0.3.18
+### What's new in v0.4.6
+- **Statistics "reason breakdown" shows real labels**: previously it rendered raw keys like `work`/`bored` (most visible after switching the system language). It now shows the localized open-reason labels (e.g. "Work", "Bored"), and respects Pro custom text.
+- **Smoother feedback copy**: the feedback intro and the "couldn't send" message read more naturally in both Chinese and English.
+- **No more misleading red on granted permissions**: in Settings → Permissions, the "Required" badge used to be red even after the permission was granted, which looked like something was still wrong. It is now neutral gray when granted and red only when not granted.
+
+### What's new in v0.4.5
+- **Onboarding visual polish**: each step now leads with a 72dp circular icon as a visual anchor; a step-dot indicator (5 dots, current highlighted) sits at the top; titles and body text are centered for a more guide-like feel.
+- **Fixed duplicate "Skip" on the group step**: the group step's secondary button used to also say "Skip", duplicating the top-right global skip. It now reads "Later" — it skips only group creation and still lands on the "All set" page, while the top-right "Skip" exits the whole guide.
+
+### What's new in v0.4.4
+- **Free-tier group limit set to 1**: free users can create at most one group. Once reached, the Home "New group" button shows a lock icon and jumps to the Pro screen; a banner above the group list explains "Free version is limited to 1 group — upgrade to Pro for unlimited groups". Pro users have no group limit.
+
+### What's new in v0.4.3
+- **Fixed group-name TextField cursor jump**: when editing a group, typing fast in the name field snapped the cursor to the start (the field was bound directly to an async state flow). Switched to local-state-with-sync, matching the search box. Audited every other text field — all already correct.
+
+### What's new in v0.4.0
+- **Pro page comparison stands out**: the Free/Pro table now has column headers, with the Pro header and every Pro cell rendered as a highlighted pill so it's obvious what Pro adds.
+- **"More coming soon" placeholder**: a "推出中 / coming soon" badge and line at the bottom of the comparison table reserves space for future Pro features.
+- **Clearer Pro activation buttons**: the primary button is now "用激活码激活 / Activate with code", and the secondary is clearly labelled "导入许可证（换设备 / 恢复） / Import license (device switch / restore)". The input hint now reads "输入你购买的激活码 / Enter the activation code you purchased", so the two actions no longer look like duplicates.
+
+### What's new in v0.3.20
+- **Stats: reason breakdown**: the stats page now groups by "why did you open it", showing each reason's count and a proportion bar (counts only records where you tapped Continue and picked a reason).
+- **Re-remind timing fixed**: the next nudge now starts counting only after you tap Continue, instead of counting the next round while the countdown is already on screen.
+- **Pause screen deep-breath hint**: a steady "Try taking a few deep breaths." line now sits under the prompt.
+- **Terminology unified**: in-app "冷静时长" is now consistently "冷却时长" (cooldown).
+
+### What's new in v0.3.19
 - **Custom open reasons (Pro)**: Pro users can rename the four "why are you opening this?" options on the pause screen (Work / Bored / Check messages / Other) to whatever wording they prefer.
 
 ### What's new in v0.3.17

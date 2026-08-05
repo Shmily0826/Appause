@@ -411,6 +411,13 @@ internal fun PauseScreenContent(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            // ── Breathing nudge (always shown) ──
+            Text(
+                text = stringResource(R.string.pause_breathe_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
             Spacer(modifier = Modifier.height(32.dp))
 
             // ── Countdown Ring + Number ──

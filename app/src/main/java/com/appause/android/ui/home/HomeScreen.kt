@@ -23,9 +23,11 @@ import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -136,18 +138,21 @@ fun HomeScreen(
         floatingActionButton = {
             // Extended FAB: icon + label makes the action explicit.
             // The visible "New group" text doubles as the accessibility label.
+            // Free users are limited to a single group. Once they hit the limit
+            // the button sends them to the Pro screen instead of the editor,
+            // and shows a lock icon so the blocked state is obvious.
+            val atGroupLimit = !isPro && groups.size >= ProState.FREE_GROUP_LIMIT
             ExtendedFloatingActionButton(
                 onClick = {
-                    // Free users are limited to a small number of groups.
-                    // Once they hit the limit, send them to the Pro screen
-                    // instead of opening the group editor.
-                    if (!isPro && groups.size >= ProState.FREE_GROUP_LIMIT) {
-                        onNavigateToPro()
-                    } else {
-                        onNavigateToGroupEditor(null)
-                    }
+                    if (atGroupLimit) onNavigateToPro()
+                    else onNavigateToGroupEditor(null)
                 },
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                icon = {
+                    Icon(
+                        imageVector = if (atGroupLimit) Icons.Default.Lock else Icons.Default.Add,
+                        contentDescription = null
+                    )
+                },
                 text = { Text(stringResource(R.string.new_group)) }
             )
         }
@@ -227,6 +232,38 @@ fun HomeScreen(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+
+            // Free-tier group cap notice. Shown once a free user has created
+            // their single allowed group, so the blocked "New group" action is
+            // explained instead of silently bouncing to the Pro screen.
+            if (!isPro && groups.size >= ProState.FREE_GROUP_LIMIT) {
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.free_group_limit_banner),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Button(
+                                onClick = onNavigateToPro,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.upgrade_pro))
+                            }
+                        }
+                    }
+                }
             }
 
             if (sortedGroups.isEmpty()) {

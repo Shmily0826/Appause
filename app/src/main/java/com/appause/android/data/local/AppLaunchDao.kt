@@ -89,6 +89,20 @@ interface AppLaunchDao {
     fun observeTotalRatio(since: Long): Flow<TotalRatio>
 
     /**
+     * Count of "proceeded" events grouped by the reason the user selected.
+     * Used by the stats screen's "reason breakdown" section.
+     * Blank reasons (e.g. cancellations) are excluded so they don't form a bucket.
+     */
+    @Query("""
+        SELECT reason, COUNT(*) AS count
+        FROM app_launch_records
+        WHERE action = 'proceeded' AND reason != '' AND timestamp >= :since
+        GROUP BY reason
+        ORDER BY count DESC
+    """)
+    fun observeReasonCounts(since: Long): Flow<List<ReasonCount>>
+
+    /**
      * Interception count per group (last 7 days).
      * Joins launch records with group_apps to aggregate by groupId.
      * Used to sort groups by usage frequency on the Home screen.

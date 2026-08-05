@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Appause — 打开分心 App 前的停顿空间</title>
-<meta name="description" content="Appause 是一个纯本地的安卓专注工具：打开抖音、微博、游戏前先冷静几秒。不上传、不联网、无账号。" />
+<title>Appause — 打开分心 App 前先停顿几秒</title>
+<meta name="description" content="Appause：打开分心应用前弹出暂停屏，纯本地运行，无需注册。" />
 <style>
   :root {
     --bg: #0f1115;
@@ -41,12 +41,11 @@
     padding: 72px 20px 48px;
     background: radial-gradient(1200px 400px at 50% -10%, rgba(91,140,255,.18), transparent 60%);
   }
-  .logo {
+  .logo-img {
     width: 84px; height: 84px; border-radius: 22px;
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 40px; font-weight: 800; color: #fff; margin-bottom: 18px;
+    margin-bottom: 18px;
     box-shadow: 0 12px 40px rgba(91,140,255,.35);
+    display: block;
   }
   h1 { font-size: 2.1rem; margin: 0 0 8px; letter-spacing: -.5px; }
   .tagline { font-size: 1.15rem; color: var(--muted); margin: 0 auto 28px; max-width: 560px; }
@@ -72,11 +71,11 @@
   .card p { margin: 0; color: var(--muted); font-size: .95rem; }
   .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
   .shot {
-    aspect-ratio: 9/16; border-radius: 14px; border: 1px solid var(--border);
-    background: var(--surface-2);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--muted); font-size: .9rem; text-align: center; padding: 12px;
+    width: 100%; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--surface-2); display: block;
   }
+  .shot-card { margin: 0; }
+  .shot-cap { margin-top: 8px; text-align: center; color: var(--muted); font-size: .85rem; }
   .privacy {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 22px; display: flex; gap: 16px; align-items: flex-start;
@@ -93,9 +92,9 @@
 <body>
 
 <header class="hero">
-  <div class="logo">A</div>
+  <img class="logo-img" src="output/appause-icon.png" alt="Appause" />
   <h1>Appause</h1>
-  <p class="tagline">打开分心 App 前，先给你一个「停顿」的空间——冷静几秒，再决定要不要继续。</p>
+  <p class="tagline">打开分心应用前，先停顿几秒。</p>
   <div class="cta">
     <a class="btn btn-primary" href="https://github.com/Shmily0826/Appause/releases/latest">⬇️ 从 GitHub 下载</a>
     <a class="btn btn-secondary" href="https://appause-pro-worker.rng2018520.workers.dev/api/download?to=https://shmily0826.lanzoup.com/b01eunt29a&t=kP9xQ2mZ8vL3nR7tB4wY6hC1sD5fG0jU">☁️ 蓝奏云镜像</a>
@@ -106,57 +105,69 @@
 <div class="wrap">
 
   <section>
-    <h2>它是怎么帮你的</h2>
-    <p class="sub">打开分心应用前，Appause 会先覆上一层暂停屏，给你片刻喘息，再决定要不要继续。</p>
+    <h2>功能</h2>
+    <p class="sub">选中你想控制的应用，设置暂停时长，剩下的交给 Appause。</p>
     <div class="features">
-      <div class="card"><div class="ico">📦</div><h3>应用分组</h3><p>把抖音、微博、游戏等分心 App 归组，统一设置冷静时长。</p></div>
-      <div class="card"><div class="ico">⏸️</div><h3>暂停屏</h3><p>打开目标 App 即弹出冷静倒计时，几秒后自己选继续或返回。</p></div>
-      <div class="card"><div class="ico">🔔</div><h3>再次提醒</h3><p>冷却结束后再轻推你一下，防止一刷就停不下来。</p></div>
-      <div class="card"><div class="ico">📊</div><h3>使用统计</h3><p>看清时间都花在了哪些 App 上，让改变有依据。</p></div>
-      <div class="card"><div class="ico">🌙</div><h3>深色模式</h3><p>跟随系统或手动切换，夜间也好看。</p></div>
-      <div class="card"><div class="ico">🚀</div><h3>推荐清单</h3><p>一键把常见分心 App 加入分组，开箱即用。</p></div>
+      <div class="card"><div class="ico">📦</div><h3>应用分组</h3><p>按场景把 App 分组，每组独立设置暂停时长。</p></div>
+      <div class="card"><div class="ico">⏸️</div><h3>暂停屏</h3><p>打开目标 App 时弹出倒计时，时间到后选择继续或返回。</p></div>
+      <div class="card"><div class="ico">🔔</div><h3>再次提醒</h3><p>冷却结束后可再次弹出提醒，支持只提醒一次或重复提醒。</p></div>
+      <div class="card"><div class="ico">📊</div><h3>使用统计</h3><p>查看每个 App 的使用时长和打开次数。</p></div>
+      <div class="card"><div class="ico">🌙</div><h3>深色模式</h3><p>跟随系统自动切换，也可手动设置。</p></div>
+      <div class="card"><div class="ico">🚀</div><h3>推荐替代</h3><p>暂停屏上显示你设定的替代 App，一键跳转。</p></div>
     </div>
   </section>
 
   <section>
     <h2>截图</h2>
-    <p class="sub">（把你的真机截图替换下面占位块，建议 16:9 或 9:16）</p>
+    <p class="sub"></p>
     <div class="shots">
-      <div class="shot">暂停屏截图<br>占位</div>
-      <div class="shot">分组列表截图<br>占位</div>
-      <div class="shot">使用统计截图<br>占位</div>
-      <div class="shot">设置页截图<br>占位</div>
+      <figure class="shot-card">
+        <img class="shot" src="output/screenshots/home.png" alt="首页" loading="lazy" />
+        <figcaption class="shot-cap">首页</figcaption>
+      </figure>
+      <figure class="shot-card">
+        <img class="shot" src="output/screenshots/new-group.png" alt="新建分组" loading="lazy" />
+        <figcaption class="shot-cap">新建分组</figcaption>
+      </figure>
+      <figure class="shot-card">
+        <img class="shot" src="output/screenshots/pause.png" alt="暂停屏" loading="lazy" />
+        <figcaption class="shot-cap">暂停屏</figcaption>
+      </figure>
+      <figure class="shot-card">
+        <img class="shot" src="output/screenshots/statistics.png" alt="使用统计" loading="lazy" />
+        <figcaption class="shot-cap">使用统计</figcaption>
+      </figure>
     </div>
   </section>
 
   <section>
-    <h2>隐私，是底线</h2>
+    <h2>隐私</h2>
     <div class="privacy">
       <div class="badge">🔒</div>
       <div>
-        <p style="margin:0">Appause <strong>完全在本地运行</strong>：没有网络请求、没有账号、没有上传、没有统计 SDK。它只通过无障碍服务读取前台应用的<strong>包名</strong>（不读屏幕内容、不监听输入）。详见 <a href="https://github.com/USER/Appause/blob/main/PRIVACY.md">隐私政策</a>。</p>
+        <p style="margin:0"><strong>完全本地运行</strong>，无网络请求、无账号、无上传、无第三方 SDK。仅通过无障碍服务读取前台应用包名（不读屏幕内容、不监听输入）。详见 <a href="https://github.com/Shmily0826/Appause/blob/main/PRIVACY.md">隐私政策</a>。</p>
         <div class="links">
-          <a href="https://github.com/USER/Appause/blob/main/INSTALL.md">📲 如何安装（含 OEM 弹窗放行）</a>
-          <a href="https://github.com/USER/Appause/blob/main/PRIVACY.md">📄 隐私政策</a>
-          <a href="https://github.com/USER/Appause">⭐ GitHub 仓库</a>
+          <a href="https://github.com/Shmily0826/Appause/blob/main/INSTALL.md">📲 安装指引</a>
+          <a href="https://github.com/Shmily0826/Appause/blob/main/PRIVACY.md">📄 隐私政策</a>
+          <a href="https://github.com/Shmily0826/Appause">⭐ GitHub 仓库</a>
         </div>
       </div>
     </div>
   </section>
 
   <section>
-    <h2>开始使用</h2>
-    <p class="sub">无需注册，下载即用。安装时若遇「未知来源 / 可能有害」提示，属正常现象——按 <a href="https://github.com/USER/Appause/blob/main/INSTALL.md">安装指引</a> 放行即可。</p>
+    <h2>下载</h2>
+    <p class="sub">无需注册，下载即用。安装时如遇系统安全提示，按 <a href="https://github.com/Shmily0826/Appause/blob/main/INSTALL.md">安装指引</a> 放行即可。</p>
     <div class="cta" style="justify-content:flex-start">
-      <a class="btn btn-primary" href="https://github.com/USER/Appause/releases/latest">⬇️ 下载最新版</a>
+      <a class="btn btn-primary" href="https://github.com/Shmily0826/Appause/releases/latest">⬇️ 下载最新版</a>
     </div>
   </section>
 
 </div>
 
 <footer>
-  Appause · 一个本地优先的专注小工具 · MIT License<br>
-  遇到问题？在 <a href="https://github.com/USER/Appause/issues" style="color:var(--accent)">GitHub Issues</a> 反馈。
+  Appause · 本地优先的专注工具 · MIT License<br>
+  问题反馈：<a href="https://github.com/Shmily0826/Appause/issues" style="color:var(--accent)">GitHub Issues</a>
 </footer>
 
 </body>

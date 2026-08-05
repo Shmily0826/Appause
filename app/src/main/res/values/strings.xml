@@ -95,7 +95,7 @@
     <string name="re_remind_cooldown_label">Re-remind cooldown</string>
     <string name="re_remind_cooldown_reuse">Same as first</string>
     <string name="re_remind_repeat_label">Repeat reminders</string>
-    <string name="re_remind_repeat_desc">Repeated: pops again every interval. Once: only the first nudge, then stops.</string>
+    <string name="re_remind_repeat_desc">When enabled, the cooldown page pops again every set interval.</string>
     <string name="re_remind_escalate_label">Escalate cooldown</string>
     <string name="re_remind_escalate_desc">Each nudge lasts longer than the last (1×, 2×, 3× …), based on the re-remind cooldown length.</string>
     <string name="show_notification_title">Show monitoring notification</string>
@@ -155,7 +155,7 @@
     <string name="default_prompt_title">Default Prompt</string>
     <string name="custom_reasons_title">Custom open reasons</string>
     <string name="custom_reasons_desc">Pro only: rename the four \"why are you opening this?\" options on the pause screen.</string>
-    <string name="prompt_label">Pause screen message</string>
+    <string name="prompt_label">Pause for a moment</string>
     <string name="debug_info">Debug Info</string>
     <string name="debug_android" formatted="false">Android: API %d (%s)</string>
     <string name="debug_enabled" formatted="false">Appause enabled: %s</string>
@@ -173,6 +173,18 @@
     <string name="theme_dark">Dark</string>
     <string name="theme_system">Follow system</string>
 
+    <!-- Settings sub-categories (hub → sub-screens) -->
+    <string name="settings_category_appearance">Appearance</string>
+    <string name="settings_category_appearance_desc">Language and theme</string>
+    <string name="settings_category_permissions">Permissions &amp; Running</string>
+    <string name="settings_category_permissions_desc">Accessibility, battery, usage access</string>
+    <string name="settings_category_pause">Pause behavior</string>
+    <string name="settings_category_pause_desc">Prompt and custom open reasons</string>
+    <string name="settings_category_pro">Appause Pro</string>
+    <string name="settings_category_feedback">Feedback</string>
+    <string name="settings_category_about">About</string>
+    <string name="settings_category_about_desc">Version and debug info</string>
+
     <!-- ═══════════════════════════════════════════ -->
     <!-- Recommended Apps                             -->
     <!-- ═══════════════════════════════════════════ -->
@@ -187,6 +199,7 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="pause_cancel">Cancel</string>
     <string name="pause_continue">Continue</string>
+    <string name="pause_breathe_hint">Try taking a few deep breaths.</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Intent Tracking (Pause Screen)               -->
@@ -207,6 +220,7 @@
     <string name="stats_weekly">This Week</string>
     <string name="stats_overview">Overview</string>
     <string name="stats_top_apps">Top Apps</string>
+    <string name="stats_reason_title">Reason breakdown</string>
     <string name="stats_no_data">No data yet. Start using Appause to see your statistics.</string>
 
     <!-- ═══════════════════════════════════════════ -->
@@ -237,8 +251,10 @@
     <string name="pro_feature_history">History</string>
     <string name="pro_feature_prompt">Custom prompt</string>
     <string name="pro_feature_reasons">Custom reasons</string>
-    <string name="pro_free_groups">Up to 2</string>
+    <string name="pro_free_groups">1 group</string>
     <string name="pro_pro_groups">Unlimited</string>
+    <string name="free_group_limit_banner">Free version is limited to 1 group. Upgrade to Pro for unlimited groups.</string>
+    <string name="upgrade_pro">Upgrade to Pro</string>
     <string name="pro_free_cooldown">30s</string>
     <string name="pro_pro_cooldown">60s</string>
     <string name="pro_pro_reremind">Included</string>
@@ -252,13 +268,17 @@
     <string name="pro_pro_history">All time</string>
     <string name="pro_pro_prompt">Included</string>
     <string name="pro_pro_reasons">Included</string>
+    <string name="pro_compare_header_free">Free</string>
+    <string name="pro_compare_header_pro">Pro</string>
+    <string name="pro_coming_soon">More advanced features are on the way…</string>
+    <string name="pro_coming_soon_badge">Coming soon</string>
     <string name="pro_activate_title">Activate Appause Pro</string>
     <string name="pro_enter_code">Activation code</string>
-    <string name="pro_code_hint">Enter the code you received, or paste a license token</string>
+    <string name="pro_code_hint">Enter the activation code you purchased</string>
     <string name="pro_activate">Activate</string>
-    <string name="pro_redeem_online">Redeem online</string>
-    <string name="pro_redeem_needs_network">Requires a one-time internet connection to your activation server.</string>
-    <string name="pro_import_token">Or paste a license token</string>
+    <string name="pro_redeem_online">Activate with code</string>
+    <string name="pro_redeem_needs_network">Requires a one-time internet connection to the activation server.</string>
+    <string name="pro_import_token">Import license (device switch / restore)</string>
     <string name="pro_redeem_limit">Device limit reached for this code</string>
     <string name="pro_redeem_invalid">Invalid activation code</string>
     <string name="pro_redeem_not_configured">Activation server not configured</string>
@@ -270,8 +290,11 @@
     <string name="pro_redeem_network">Network error. Check your connection and try again.</string>
     <string name="pro_redeem_network_hint">If it keeps failing, your network may be unable to reach the activation server domain (*.workers.dev can be blocked on some networks). Switch networks or try later.</string>
     <string name="pro_dialog_ok">OK</string>
-    <string name="pro_token_note">Paste the full license token. It is verified on your device and stays valid offline.</string>
+    <string name="pro_token_note">For switching phones or after reinstalling: paste a previously exported license token to restore Pro without re-redeeming.</string>
     <string name="pro_debug_unlock">Unlock (debug)</string>
+    <string name="pro_debug_relock">Relock (debug)</string>
+    <string name="pro_debug_relocked">Relocked (debug)</string>
+    <string name="pro_debug_tools_title">Debug tools (debug build only)</string>
     <string name="pro_license_title">License</string>
     <string name="pro_license_desc">Export your license before a factory reset or device switch, then import it to restore Pro offline.</string>
     <string name="pro_export">Export license</string>
@@ -288,7 +311,7 @@
     <!-- Feedback Screen                              -->
     <!-- ═══════════════════════════════════════════ -->
     <string name="feedback_title">Feedback</string>
-    <string name="feedback_intro">Found a bug or have an idea? Tell us — it goes straight to the developer.</string>
+    <string name="feedback_intro">Found a bug or have a suggestion? Tell us — it goes straight to the developer.</string>
     <string name="feedback_bug">Bug report</string>
     <string name="feedback_suggestion">Suggestion</string>
     <string name="feedback_message_label">Your message</string>
@@ -304,6 +327,30 @@
     <string name="feedback_sent_desc">Thanks! Your message reached the developer. We\'ll take a look.</string>
     <string name="feedback_failed_title">Couldn\'t send</string>
     <string name="feedback_failed_network">Network error. Check your connection and try again.</string>
-    <string name="feedback_failed_generic">Something went wrong. You can also email or open a GitHub issue.</string>
+    <string name="feedback_failed_generic">Something went wrong. You can also email us or open a GitHub issue.</string>
     <string name="feedback_dialog_ok">OK</string>
+
+    <!-- Onboarding (first-launch guide) -->
+    <string name="onboarding_language_title">Choose your language</string>
+    <string name="onboarding_language_desc">Once selected, the guide and the whole app will use this language.</string>
+    <string name="onboarding_welcome_title">Welcome to Appause</string>
+    <string name="onboarding_welcome_desc">Before a distracting app opens, Appause covers it with a pause screen so you can take a breath before deciding whether to continue.</string>
+    <string name="onboarding_service_title">Turn on Accessibility</string>
+    <string name="onboarding_service_desc">Appause needs the Accessibility service to detect which app you\'re opening and overlay the pause screen. After enabling it, come back here to continue.</string>
+    <string name="onboarding_service_open">Open system settings</string>
+    <string name="onboarding_service_on">Enabled — great!</string>
+    <string name="onboarding_service_off">Not enabled yet. Please allow Appause in system settings.</string>
+    <string name="onboarding_group_title">Create your first group</string>
+    <string name="onboarding_group_desc">Put the apps you want to use less of into a group (e.g. \"Short video\") and set a cooldown. You\'ll find the group entry at the top-right of the home screen.</string>
+    <string name="onboarding_group_add">Add a group</string>
+    <string name="onboarding_group_later">Later</string>
+    <string name="onboarding_finish_title">All set</string>
+    <string name="onboarding_finish_desc">You can change the language, prompt, and groups anytime in Settings.</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_back">Back</string>
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_finish">Get started</string>
+    <string name="onboarding_lang_zh">简体中文</string>
+    <string name="onboarding_lang_en">English</string>
+    <string name="onboarding_group_hint">Tip: you can add a group now — the countdown is just a suggestion, no need to wait.</string>
 </resources>

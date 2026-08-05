@@ -18,6 +18,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -32,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
+import com.appause.android.data.local.ReasonCount
 
 /**
  * Statistics screen — shows historical interception data and charts.
@@ -52,6 +54,8 @@ fun StatsScreen(
     val dailyStats by viewModel.dailyStats.collectAsStateWithLifecycle()
     val topApps by viewModel.topApps.collectAsStateWithLifecycle()
     val totalRatio by viewModel.totalRatio.collectAsStateWithLifecycle()
+    val reasonCounts by viewModel.reasonCounts.collectAsStateWithLifecycle()
+    val reasonLabels by viewModel.reasonLabels.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -159,6 +163,23 @@ fun StatsScreen(
                 }
             }
 
+            // ── Section 4: Reason Breakdown ──
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = stringResource(R.string.stats_reason_title),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    ReasonList(reasonCounts = reasonCounts, labelMap = reasonLabels)
+                }
+            }
+
             // Bottom spacing
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -193,5 +214,60 @@ private fun StatRow(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
+    }
+}
+
+/**
+ * "Reason breakdown" list — shows how many times each open-reason was picked.
+ *
+ * Each row shows the reason label and its count, plus a thin bar whose width
+ * is proportional to that reason's share of the most-picked reason.
+ */
+@Composable
+private fun ReasonList(
+    reasonCounts: List<ReasonCount>,
+    labelMap: Map<String, String>,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (reasonCounts.isEmpty()) {
+            Text(
+                text = stringResource(R.string.stats_no_data),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        } else {
+            val maxCount = reasonCounts.maxOf { it.count }.coerceAtLeast(1)
+            reasonCounts.forEach { item ->
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = labelMap[item.reason] ?: item.reason,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = "${item.count}",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    // Bar width = this reason's count relative to the top reason.
+                    val fraction = item.count.toFloat() / maxCount
+                    LinearProgressIndicator(
+                        progress = { fraction },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
     }
 }

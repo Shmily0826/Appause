@@ -19,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -171,6 +172,14 @@ class AppauseAccessibilityService : AccessibilityService() {
      * still in the app, and stops only when the session is re-armed.
      */
     private val reRemindJobs = mutableMapOf<String, Job>()
+
+    /**
+     * Per-package signal completed when the user taps Continue (or Cancel) on a
+     * re-remind pop. The re-remind loop awaits this before starting the next
+     * interval, so the wait is measured from "user continued" rather than from
+     * "overlay appeared".
+     */
+    private val reRemindContinue = mutableMapOf<String, CompletableDeferred<Unit>>()
 
     /**
      * Away cooldown timers (3-min "leave window"), keyed by package.
@@ -625,6 +634,18 @@ class AppauseAccessibilityService : AccessibilityService() {
                         AppLogger.d(TAG, "Re-remind fired once (repeat off), stopping loop")
                         break
                     }
+                    // Anchor the next interval to "user tapped Continue" (or Cancel),
+                    // not to when this overlay appeared. Otherwise the next pop fires
+                    // `minutes` after the overlay showed, ignoring how long the user
+                    // lingered after continuing.
+                    val signal = CompletableDeferred<Unit>()
+                    reRemindContinue[targetPackage] = signal
+                    signal.await()
+                    // If the user cancelled (bypass cleared) or left, stop the loop.
+                    if (!InterceptionManager.isBypassed(targetPackage)) {
+                        AppLogger.d(TAG, "Re-remind loop ends: user did not continue")
+                        break
+                    }
                 } else {
                     AppLogger.d(TAG, "Re-remind tick but user away from $targetPackage, will re-check")
                 }
@@ -641,6 +662,17 @@ class AppauseAccessibilityService : AccessibilityService() {
      */
     private fun cancelReRemind(packageName: String) {
         reRemindJobs.remove(packageName)?.cancel()
+        // Cancel any pending "user continued" signal so the loop's await() ends.
+        reRemindContinue.remove(packageName)?.cancel()
+    }
+
+    /**
+     * Called by OverlayManager when the user taps Continue or Cancel on a
+     * re-remind pop. Completes the loop's wait so the next interval begins
+     * from this moment.
+     */
+    internal fun completeReRemindContinue(packageName: String) {
+        reRemindContinue.remove(packageName)?.complete(Unit)
     }
 
     /**

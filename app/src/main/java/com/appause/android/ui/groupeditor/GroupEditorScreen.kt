@@ -108,6 +108,14 @@ fun GroupEditorScreen(
     viewModel: GroupEditorViewModel = viewModel()
 ) {
     val name by viewModel.name.collectAsStateWithLifecycle()
+    // Local mirror so the cursor stays put while typing. updateName persists to
+    // the ViewModel state asynchronously-ish; binding `value = name` directly
+    // would briefly revert the text each keystroke and jump the cursor to the
+    // start (same bug as the Settings search/name fields elsewhere).
+    var nameLocal by remember { mutableStateOf(name) }
+    LaunchedEffect(name) {
+        if (name != nameLocal) nameLocal = name
+    }
     val cooldownSeconds by viewModel.cooldownSeconds.collectAsStateWithLifecycle()
     val reRemindEnabled by viewModel.reRemindEnabled.collectAsStateWithLifecycle()
     val reRemindMinutes by viewModel.reRemindMinutes.collectAsStateWithLifecycle()
@@ -196,7 +204,7 @@ fun GroupEditorScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Button(
                         onClick = viewModel::save,
-                        enabled = name.isNotBlank()
+                        enabled = nameLocal.isNotBlank()
                     ) {
                         Text(stringResource(R.string.action_save))
                     }
@@ -216,14 +224,17 @@ fun GroupEditorScreen(
 
             // ── Group Name ──
             OutlinedTextField(
-                value = name,
-                onValueChange = viewModel::updateName,
+                value = nameLocal,
+                onValueChange = {
+                    nameLocal = it
+                    viewModel.updateName(it)
+                },
                 label = { Text(stringResource(R.string.label_group_name)) },
                 placeholder = { Text(stringResource(R.string.placeholder_group_name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (name.isBlank()) {
+            if (nameLocal.isBlank()) {
                 Text(
                     text = stringResource(R.string.group_name_required_hint),
                     style = MaterialTheme.typography.bodySmall,

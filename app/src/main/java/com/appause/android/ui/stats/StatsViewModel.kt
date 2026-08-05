@@ -4,13 +4,16 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
+import com.appause.android.R
 import com.appause.android.data.local.AppInterceptionCount
 import com.appause.android.data.local.DailyStats
 import com.appause.android.data.local.TotalRatio
+import com.appause.android.data.local.ReasonCount
 import com.appause.android.data.pro.ProState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import java.util.Calendar
 
@@ -74,5 +77,37 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = TotalRatio(0, 0)
+    )
+
+    /** Proceeded-event counts grouped by reason (for the "reason breakdown" section). */
+    val reasonCounts: StateFlow<List<ReasonCount>> = isPro.flatMapLatest { pro ->
+        repository.observeReasonCounts(windowStart(if (pro) ProState.PRO_STATS_DAYS else ProState.FREE_STATS_DAYS))
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
+
+    /**
+     * Maps each stored reason key ("work"/"bored"/"messages"/"other") to its
+     * display label. Uses the user's custom text (Pro) when set, otherwise the
+     * localized default string resource. Lets the statistics "reason breakdown"
+     * render proper labels instead of raw keys, and stay correct when the system
+     * language changes.
+     */
+    val reasonLabels: StateFlow<Map<String, String>> = repository.reasons.map { custom ->
+        val ctx = getApplication<AppauseApp>()
+        val keys = listOf("work", "bored", "messages", "other")
+        val defaults = listOf(
+            ctx.getString(R.string.intent_work),
+            ctx.getString(R.string.intent_bored),
+            ctx.getString(R.string.intent_messages),
+            ctx.getString(R.string.intent_other)
+        )
+        keys.mapIndexed { i, k -> k to (if (custom[i].isBlank()) defaults[i] else custom[i]) }.toMap()
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyMap()
     )
 }

@@ -91,12 +91,12 @@
     <string name="re_remind_range_start">1 分钟</string>
     <string name="re_remind_range_end">60 分钟</string>
     <string name="re_remind_disabled_hint">已关闭</string>
-    <string name="re_remind_cooldown_label">再次提醒冷静时长</string>
+    <string name="re_remind_cooldown_label">再次提醒冷却时长</string>
     <string name="re_remind_cooldown_reuse">与首次相同</string>
     <string name="re_remind_repeat_label">重复提醒</string>
-    <string name="re_remind_repeat_desc">重复：每隔间隔再次提醒。只一次：仅在第一次间隔后提醒一次，之后不再弹。</string>
+    <string name="re_remind_repeat_desc">开启后，每隔设定间隔再次弹出冷却页面。</string>
     <string name="re_remind_escalate_label">逐次延长冷却</string>
-    <string name="re_remind_escalate_desc">每次提醒的冷静时长比上一次更长（1×、2×、3×……），以再次提醒冷静时长为基准。</string>
+    <string name="re_remind_escalate_desc">每次提醒的冷却时长比上一次更长（1×、2×、3×……），以再次提醒冷却时长为基准。</string>
     <string name="show_notification_title">显示监测通知</string>
     <string name="show_notification_desc">常驻的“Appause 正在监测”通知。关闭后不再显示，服务仍正常运行（部分手机系统可能更易在后台杀掉它）。</string>
 
@@ -150,7 +150,7 @@
     <string name="default_prompt_title">默认提示语</string>
     <string name="custom_reasons_title">自定义打开原因</string>
     <string name="custom_reasons_desc">Pro 专属：自定义暂停屏上 4 个“打开原因”的文字。</string>
-    <string name="prompt_label">暂停画面信息</string>
+    <string name="prompt_label">暂停一下</string>
     <string name="debug_info">调试信息</string>
     <string name="debug_android" formatted="false">Android: API %d (%s)</string>
     <string name="debug_enabled" formatted="false">Appause 已启用：%s</string>
@@ -168,6 +168,18 @@
     <string name="theme_dark">深色</string>
     <string name="theme_system">跟随系统</string>
 
+    <!-- 设置子分类（主页 → 子页面） -->
+    <string name="settings_category_appearance">外观</string>
+    <string name="settings_category_appearance_desc">语言与主题</string>
+    <string name="settings_category_permissions">权限与运行</string>
+    <string name="settings_category_permissions_desc">无障碍、电池优化、使用情况访问</string>
+    <string name="settings_category_pause">暂停设置</string>
+    <string name="settings_category_pause_desc">提示语与自定义打开原因</string>
+    <string name="settings_category_pro">Appause Pro</string>
+    <string name="settings_category_feedback">反馈</string>
+    <string name="settings_category_about">关于</string>
+    <string name="settings_category_about_desc">版本与调试信息</string>
+
     <!-- ═══════════════════════════════════════════ -->
     <!-- Recommended Apps                             -->
     <!-- ═══════════════════════════════════════════ -->
@@ -182,6 +194,7 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="pause_cancel">取消</string>
     <string name="pause_continue">继续</string>
+    <string name="pause_breathe_hint">试着做几次深呼吸。</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Intent Tracking (Pause Screen)               -->
@@ -202,6 +215,7 @@
     <string name="stats_weekly">本周</string>
     <string name="stats_overview">概览</string>
     <string name="stats_top_apps">拦截最多的应用</string>
+    <string name="stats_reason_title">原因分布</string>
     <string name="stats_no_data">暂无数据。开始使用 Appause 后即可查看统计。</string>
 
     <!-- ═══════════════════════════════════════════ -->
@@ -232,8 +246,10 @@
     <string name="pro_feature_history">历史统计</string>
     <string name="pro_feature_prompt">自定义提示</string>
     <string name="pro_feature_reasons">自定义原因</string>
-    <string name="pro_free_groups">最多 2 个</string>
+    <string name="pro_free_groups">最多 1 个</string>
     <string name="pro_pro_groups">无限</string>
+    <string name="free_group_limit_banner">免费版最多 1 个分组，升级 Pro 解锁无限分组。</string>
+    <string name="upgrade_pro">升级 Pro</string>
     <string name="pro_free_cooldown">30 秒</string>
     <string name="pro_pro_cooldown">60 秒</string>
     <string name="pro_pro_reremind">已包含</string>
@@ -247,13 +263,17 @@
     <string name="pro_pro_history">全部</string>
     <string name="pro_pro_prompt">已包含</string>
     <string name="pro_pro_reasons">已包含</string>
+    <string name="pro_compare_header_free">免费版</string>
+    <string name="pro_compare_header_pro">Pro</string>
+    <string name="pro_coming_soon">更多高级功能，陆续推出中…</string>
+    <string name="pro_coming_soon_badge">推出中</string>
     <string name="pro_activate_title">激活 Appause Pro</string>
     <string name="pro_enter_code">激活码</string>
-    <string name="pro_code_hint">输入你收到的激活码，或粘贴许可证令牌</string>
+    <string name="pro_code_hint">输入你购买的激活码</string>
     <string name="pro_activate">激活</string>
-    <string name="pro_redeem_online">在线兑换</string>
-    <string name="pro_redeem_needs_network">需要一次性联网到你的激活服务器。</string>
-    <string name="pro_import_token">或粘贴许可证令牌</string>
+    <string name="pro_redeem_online">用激活码激活</string>
+    <string name="pro_redeem_needs_network">需要一次性联网到激活服务器。</string>
+    <string name="pro_import_token">导入许可证（换设备 / 恢复）</string>
     <string name="pro_redeem_limit">该激活码已达设备上限</string>
     <string name="pro_redeem_invalid">激活码无效</string>
     <string name="pro_redeem_not_configured">未配置激活服务器</string>
@@ -265,8 +285,11 @@
     <string name="pro_redeem_network">网络错误，请检查网络连接后重试。</string>
     <string name="pro_redeem_network_hint">若多次失败，可能是当前网络无法访问激活服务器域名（*.workers.dev 在部分网络会被屏蔽）。可切换网络或稍后再试。</string>
     <string name="pro_dialog_ok">好</string>
-    <string name="pro_token_note">粘贴完整的许可证令牌。它在你的设备上本地校验，离线也长期有效。</string>
+    <string name="pro_token_note">换新手机或重装 App 后，粘贴之前导出的许可证令牌即可恢复 Pro，无需重新兑换。</string>
     <string name="pro_debug_unlock">解锁（调试）</string>
+    <string name="pro_debug_relock">重新上锁（调试）</string>
+    <string name="pro_debug_relocked">已重新上锁（调试）</string>
+    <string name="pro_debug_tools_title">调试工具（仅调试版）</string>
     <string name="pro_license_title">许可证</string>
     <string name="pro_license_desc">恢复出厂或更换设备前导出许可证，之后导入即可离线恢复 Pro。</string>
     <string name="pro_export">导出许可证</string>
@@ -283,7 +306,7 @@
     <!-- 反馈页面                                       -->
     <!-- ═══════════════════════════════════════════ -->
     <string name="feedback_title">反馈</string>
-    <string name="feedback_intro">遇到 Bug 或有好点子？告诉我们——会直接到开发者手里。</string>
+    <string name="feedback_intro">遇到 Bug 或有好建议？告诉我们——我们会直接收到。</string>
     <string name="feedback_bug">问题反馈</string>
     <string name="feedback_suggestion">功能建议</string>
     <string name="feedback_message_label">你的内容</string>
@@ -299,6 +322,30 @@
     <string name="feedback_sent_desc">谢谢！你的留言已送达开发者，我们会查看。</string>
     <string name="feedback_failed_title">发送失败</string>
     <string name="feedback_failed_network">网络错误，请检查网络后重试。</string>
-    <string name="feedback_failed_generic">出了点问题。你也可以改用邮件或在 GitHub 提交。</string>
+    <string name="feedback_failed_generic">出了点问题。你也可以改用邮件，或到 GitHub 提交。</string>
     <string name="feedback_dialog_ok">好</string>
+
+    <!-- Onboarding (first-launch guide) -->
+    <string name="onboarding_language_title">选择语言</string>
+    <string name="onboarding_language_desc">选择后，引导与整个应用都会以该语言显示。</string>
+    <string name="onboarding_welcome_title">欢迎使用 Appause</string>
+    <string name="onboarding_welcome_desc">打开分心应用前，Appause 会先覆上一层暂停屏，给你片刻喘息，再决定要不要继续。</string>
+    <string name="onboarding_service_title">开启无障碍服务</string>
+    <string name="onboarding_service_desc">Appause 需要「无障碍服务」来检测你正在打开哪个应用并在其上覆盖暂停屏。开启后，返回本应用即可继续。</string>
+    <string name="onboarding_service_open">前往系统设置开启</string>
+    <string name="onboarding_service_on">已开启，很好！</string>
+    <string name="onboarding_service_off">尚未开启，请在系统设置中允许 Appause。</string>
+    <string name="onboarding_group_title">创建你的第一个分组</string>
+    <string name="onboarding_group_desc">把想克制使用的应用放进一个分组（例如「短视频」），并设置冷静时长。分组入口在首页右上角。</string>
+    <string name="onboarding_group_add">去添加分组</string>
+    <string name="onboarding_group_later">稍后创建</string>
+    <string name="onboarding_finish_title">一切就绪</string>
+    <string name="onboarding_finish_desc">你可以随时在「设置」里调整语言、提示语和分组。</string>
+    <string name="onboarding_next">下一步</string>
+    <string name="onboarding_back">上一步</string>
+    <string name="onboarding_skip">跳过</string>
+    <string name="onboarding_finish">开始使用</string>
+    <string name="onboarding_lang_zh">简体中文</string>
+    <string name="onboarding_lang_en">English</string>
+    <string name="onboarding_group_hint">提示：现在就可以添加分组，倒计时只是建议，不用等它结束。</string>
 </resources>

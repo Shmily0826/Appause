@@ -38,6 +38,20 @@ data class AppInterceptionCount(
     val interceptionCount: Int
 )
 
+/**
+ * Count of "proceeded" events grouped by the reason the user selected.
+ * Used by the stats screen to show why distracting apps were opened.
+ *
+ * @param reason The stable reason key chosen by the user
+ *               ("work"/"bored"/"messages"/"other"). Display labels are resolved
+ *               at UI time (localized default, or the Pro custom text).
+ * @param count  How many times this reason was picked.
+ */
+data class ReasonCount(
+    val reason: String,
+    val count: Int
+)
+
 /** Interception count per group (for sorting groups by usage frequency). */
 data class GroupInterceptionCount(
     val groupId: Long,

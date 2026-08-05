@@ -3,7 +3,9 @@ package com.appause.android.service
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.drawable.Drawable
+import java.util.Locale
 import com.appause.android.util.AppLogger
 import android.view.WindowManager
 import androidx.compose.foundation.layout.fillMaxSize
@@ -109,7 +111,15 @@ class OverlayManager {
         // AccessibilityService extends Service, which is a valid ContextWrapper
         // with the app's theme applied. applicationContext may lack theme attrs
         // that Compose/Material3 needs for rendering.
-        val context = service
+        // Apply the in-app locale override (same logic as MainActivity /
+        // PauseActivity) here: the AccessibilityService does NOT override locale
+        // itself, and a language switch restarts only the Activities — not this
+        // service — so without wrapping, the overlay would keep rendering the
+        // language that was active when the service was first created. Wrapping
+        // makes every overlay appearance read the current language from
+        // SharedPreferences, so the interception screen stays consistent with
+        // the rest of the app.
+        val context = applyAppLocaleOverride(service)
 
         // Load target app info from PackageManager (icon + display name).
         val pm = context.packageManager
@@ -244,6 +254,8 @@ class OverlayManager {
                             CoroutineScope(Dispatchers.IO).launch {
                                 repository.logLaunch(targetPackage, groupId, "cancelled")
                             }
+                            // Let the re-remind loop end its wait (next interval won't start).
+                            if (isReRemind) service.completeReRemindContinue(targetPackage)
                             InterceptionManager.clearBypass(targetPackage)
                             // Suppress the stale window event that fires for the target
                             // app right before the launcher takes over — otherwise the
@@ -270,6 +282,8 @@ class OverlayManager {
                             CoroutineScope(Dispatchers.IO).launch {
                                 repository.logLaunch(targetPackage, groupId, "proceeded", reason)
                             }
+                            // Anchor the next re-remind interval to this Continue tap.
+                            if (isReRemind) service.completeReRemindContinue(targetPackage)
                             dismiss()
                             // Re-remind is handled by the self-rescheduling loop started
                             // in onSessionStart (initial entry). For a re-remind pop the
@@ -362,6 +376,23 @@ class OverlayManager {
 
     /** Whether the overlay is currently showing. */
     val isShowing: Boolean get() = overlayView != null
+}
+
+/**
+ * Wrap [base] with the user's chosen locale (zh / en), matching the override
+ * applied in AppauseApp / MainActivity / PauseActivity. Returns a context whose
+ * resources resolve strings in the selected language. The AccessibilityService
+ * itself does not override locale, so the overlay must do it explicitly.
+ */
+private fun applyAppLocaleOverride(base: Context): Context {
+    val prefs = base.getSharedPreferences("appause_locale_prefs", Context.MODE_PRIVATE)
+    val languageCode = prefs.getString("language", null)
+        ?: if (Locale.getDefault().language == "zh") "zh" else "en"
+    val locale = Locale(languageCode)
+    Locale.setDefault(locale)
+    val config = Configuration(base.resources.configuration)
+    config.setLocale(locale)
+    return base.createConfigurationContext(config)
 }
 
 /**

@@ -8,6 +8,7 @@ import com.appause.android.data.local.AppLaunchRecord
 import com.appause.android.data.local.DailyStats
 import com.appause.android.data.local.GroupApp
 import com.appause.android.data.local.TotalRatio
+import com.appause.android.data.local.ReasonCount
 import com.appause.android.data.settings.SettingsDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -236,4 +237,8 @@ class AppGroupRepository(
     /** Observe total proceeded vs cancelled ratio. */
     fun observeTotalRatio(since: Long): Flow<TotalRatio> =
         launchDao.observeTotalRatio(since)
+
+    /** Observe proceeded-event counts grouped by the selected reason (reason breakdown). */
+    fun observeReasonCounts(since: Long): Flow<List<ReasonCount>> =
+        launchDao.observeReasonCounts(since)
 }

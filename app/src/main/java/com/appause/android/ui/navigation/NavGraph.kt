@@ -3,6 +3,11 @@ package com.appause.android.ui.navigation
 import android.app.Activity
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavType
@@ -10,12 +15,19 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.appause.android.AppauseApp
+import kotlinx.coroutines.flow.first
 import com.appause.android.ui.appselect.AppSelectScreen
 import com.appause.android.ui.feedback.FeedbackScreen
 import com.appause.android.ui.groupeditor.GroupEditorScreen
 import com.appause.android.ui.home.HomeScreen
+import com.appause.android.ui.onboarding.OnboardingScreen
 import com.appause.android.ui.pro.ProScreen
 import com.appause.android.ui.recommended.RecommendedAppsScreen
+import com.appause.android.ui.settings.AboutSettingsScreen
+import com.appause.android.ui.settings.AppearanceSettingsScreen
+import com.appause.android.ui.settings.PauseSettingsScreen
+import com.appause.android.ui.settings.PermissionsSettingsScreen
 import com.appause.android.ui.settings.SettingsScreen
 import com.appause.android.ui.stats.StatsScreen
 
@@ -37,6 +49,11 @@ object Routes {
     const val STATS = "stats"
     const val PRO = "pro"
     const val FEEDBACK = "feedback"
+    const val ONBOARDING = "onboarding"
+    const val SETTINGS_APPEARANCE = "settings_appearance"
+    const val SETTINGS_PERMISSIONS = "settings_permissions"
+    const val SETTINGS_PAUSE = "settings_pause"
+    const val SETTINGS_ABOUT = "settings_about"
 
     /** Build a route string for editing an existing group. */
     fun groupEditor(groupId: Long): String = "group_editor/$groupId"
@@ -65,6 +82,16 @@ object Routes {
 @Composable
 fun AppNavGraph() {
     val navController = rememberNavController()
+    val app = LocalContext.current.applicationContext as AppauseApp
+
+    // The start destination depends on whether onboarding is finished.
+    // DataStore is async, so we resolve it once before building the NavHost
+    // (a brief blank frame before the first read is acceptable).
+    var startDestination by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        val done = app.settingsDataStore.hasCompletedOnboarding.first()
+        startDestination = if (done) Routes.HOME else Routes.ONBOARDING
+    }
 
     // Guard against rapid back-button taps: only pop when the current
     // destination is fully RESUMED. During a navigation transition the
@@ -77,9 +104,10 @@ fun AppNavGraph() {
         }
     }
 
+    if (startDestination != null) {
     NavHost(
         navController = navController,
-        startDestination = Routes.HOME
+        startDestination = startDestination!!
     ) {
         // ── Home Screen ──
         composable(Routes.HOME) {
@@ -148,31 +176,59 @@ fun AppNavGraph() {
             )
         }
 
-        // ── Settings Screen ──
+        // ── Settings (hub) ──
         composable(Routes.SETTINGS) {
-            val activity = LocalContext.current as? Activity
             SettingsScreen(
                 onNavigateBack = safePopBackStack,
-                onNavigateToPro = {
-                    navController.navigate(Routes.PRO)
-                },
-                onNavigateToFeedback = {
-                    navController.navigate(Routes.FEEDBACK)
-                },
-                onLanguageChanged = {
-                    activity?.let { act ->
-                        val restartIntent = act.packageManager
-                            .getLaunchIntentForPackage(act.packageName)
-                        restartIntent?.addFlags(
-                            Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
-                        )
-                        act.finish()
-                        if (restartIntent != null) {
-                            act.startActivity(restartIntent)
-                        }
+                onNavigateToAppearance = { navController.navigate(Routes.SETTINGS_APPEARANCE) },
+                onNavigateToPermissions = { navController.navigate(Routes.SETTINGS_PERMISSIONS) },
+                onNavigateToPause = { navController.navigate(Routes.SETTINGS_PAUSE) },
+                onNavigateToAbout = { navController.navigate(Routes.SETTINGS_ABOUT) },
+                onNavigateToPro = { navController.navigate(Routes.PRO) },
+                onNavigateToFeedback = { navController.navigate(Routes.FEEDBACK) }
+            )
+        }
+
+        // Restart the app (used after a language switch so attachBaseContext
+        // re-reads the new locale). Defined inside the route's composable
+        // context where LocalContext is available.
+        composable(Routes.SETTINGS_APPEARANCE) {
+            val activity = LocalContext.current as? Activity
+            val restartApp: () -> Unit = {
+                activity?.let { act ->
+                    val restartIntent = act.packageManager
+                        .getLaunchIntentForPackage(act.packageName)
+                    restartIntent?.addFlags(
+                        Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+                    )
+                    act.finish()
+                    if (restartIntent != null) {
+                        act.startActivity(restartIntent)
                     }
                 }
+            }
+            AppearanceSettingsScreen(
+                onNavigateBack = safePopBackStack,
+                onLanguageChanged = restartApp
             )
+        }
+
+        // ── Settings: Permissions & Running ──
+        composable(Routes.SETTINGS_PERMISSIONS) {
+            PermissionsSettingsScreen(onNavigateBack = safePopBackStack)
+        }
+
+        // ── Settings: Pause behavior ──
+        composable(Routes.SETTINGS_PAUSE) {
+            PauseSettingsScreen(
+                onNavigateBack = safePopBackStack,
+                onNavigateToPro = { navController.navigate(Routes.PRO) }
+            )
+        }
+
+        // ── Settings: About ──
+        composable(Routes.SETTINGS_ABOUT) {
+            AboutSettingsScreen(onNavigateBack = safePopBackStack)
         }
 
         // ── Statistics Screen ──
@@ -195,5 +251,20 @@ fun AppNavGraph() {
                 onNavigateBack = safePopBackStack
             )
         }
+
+        // ── Onboarding (first-launch guide) ──
+        composable(Routes.ONBOARDING) {
+            OnboardingScreen(
+                onNavigateToHome = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                    }
+                },
+                onNavigateToGroupEditor = {
+                    navController.navigate(Routes.GROUP_EDITOR)
+                }
+            )
+        }
+    }
     }
 }

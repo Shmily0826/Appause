@@ -70,6 +70,11 @@ class SettingsDataStore(private val context: Context) {
         val PRO_UNLOCKED_KEY = booleanPreferencesKey("pro_unlocked")
         val LICENSE_TOKEN_KEY = stringPreferencesKey("license_token")
 
+        // ── First-launch onboarding ──
+        // Whether the user has finished (or skipped) the onboarding flow.
+        // Drives the NavGraph start destination (ONBOARDING vs HOME).
+        val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("onboarding_done")
+
         // SharedPreferences key for sync locale override (used in attachBaseContext)
         private const val PREFS_NAME = "appause_locale_prefs"
         private const val PREF_LANGUAGE_KEY = "language"
@@ -168,6 +173,14 @@ class SettingsDataStore(private val context: Context) {
         preferences[LICENSE_TOKEN_KEY] ?: ""
     }
 
+    /**
+     * Whether the user has completed (or skipped) the first-launch onboarding.
+     * Default: false — the onboarding screen shows on first launch.
+     */
+    val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[HAS_COMPLETED_ONBOARDING_KEY] ?: false
+    }
+
     // ── Write operations (suspend functions — must be called from a coroutine) ──
 
     /** Update the master toggle. */
@@ -247,6 +260,16 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setLicenseToken(token: String) {
         context.dataStore.edit { preferences ->
             preferences[LICENSE_TOKEN_KEY] = token
+        }
+    }
+
+    /**
+     * Mark the first-launch onboarding as completed (or skipped).
+     * Once true, the NavGraph starts at HOME instead of ONBOARDING.
+     */
+    suspend fun setHasCompletedOnboarding(done: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[HAS_COMPLETED_ONBOARDING_KEY] = done
         }
     }
 

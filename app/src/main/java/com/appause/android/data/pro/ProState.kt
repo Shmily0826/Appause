@@ -47,7 +47,7 @@ class ProState(
     /** Free-tier limits. Paid users are not constrained by these. */
     companion object {
         /** Free users can create at most this many groups. */
-        const val FREE_GROUP_LIMIT = 2
+        const val FREE_GROUP_LIMIT = 1
 
         /**
          * Cooldown cap for everyone. Longer cooldown was a Pro perk but is now
@@ -86,6 +86,16 @@ class ProState(
     /** Debug-only unlock — only ever called from debug builds. */
     suspend fun unlockProDebug() {
         settings.setProUnlocked(true)
+    }
+
+    /**
+     * Debug-only relock — only ever called from debug builds.
+     * Clears both the debug flag and any stored license token so the app
+     * returns to a clean free state (useful for testing the locked experience).
+     */
+    suspend fun relockProDebug() {
+        settings.setProUnlocked(false)
+        settings.setLicenseToken("")
     }
 
     /**
