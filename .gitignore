@@ -59,3 +59,7 @@ worker/node_modules/
 worker/.wrangler/
 worker/.dev.vars          # local secrets (never commit)
 worker/wrangler.toml.local
+
+# Stray design-skill variant templates (not part of Appause)
+hallmark-variants/
+taste-variants/
