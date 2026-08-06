@@ -69,4 +69,13 @@ object InterceptionManager {
         bypassedPackages.remove(packageName)
         AppLogger.d(TAG, "Bypass cleared: $packageName")
     }
+
+    /**
+     * Read-only snapshot of the current bypass list, for the Diagnostics screen.
+     *
+     * A package stuck in this set is one of the few ways interception can look
+     * "broken" while everything else is configured correctly, so showing it
+     * makes that failure mode visible instead of invisible.
+     */
+    fun bypassedSnapshot(): Set<String> = bypassedPackages.toSet()
 }

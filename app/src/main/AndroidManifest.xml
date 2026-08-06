@@ -11,6 +11,14 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!--
+        SYSTEM_ALERT_WINDOW: TYPE_APPLICATION_OVERLAY window for the cooldown
+        screen. TYPE_ACCESSIBILITY_OVERLAY is rejected on some OEM ROMs
+        (HyperOS/Android 16); TYPE_APPLICATION_OVERLAY draws above ALL app
+        tasks so apps like 小红书 can't cover it by re-fronting themselves.
+        Granted by the user via Settings -> 显示悬浮窗 (draw over other apps).
+    -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!--
         INTERNET: used ONLY for the one-time Pro activation handshake
         (/api/redeem). Daily app operation remains fully offline — no telemetry,
         no account, no background network calls.
@@ -87,6 +95,21 @@
         <receiver
             android:name=".service.PauseAlarmReceiver"
             android:exported="false" />
+
+        <!--
+            FileProvider: used ONLY by the debug Diagnostics screen to share the
+            log report as a file attachment. Exposes just cache/logs/ (see
+            res/xml/file_paths.xml) and is not exported.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <!--
             AccessibilityService: detects foreground app changes.

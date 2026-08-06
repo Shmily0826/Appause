@@ -1,12 +1,16 @@
 package com.appause.android.service
 
 import android.annotation.SuppressLint
+import android.app.AlarmManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.drawable.Drawable
+import android.os.Build
 import java.util.Locale
 import com.appause.android.util.AppLogger
+import com.appause.android.util.PersistentLog
 import android.view.WindowManager
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -149,8 +153,24 @@ class OverlayManager {
             fitsSystemWindows = false
         }
 
-        // Set up window layout parameters:
-        // - TYPE_ACCESSIBILITY_OVERLAY: draws above all apps, no special permission needed
+        // Set up window layout parameters.
+        // Window type selection is critical and ROM-dependent:
+        // - TYPE_APPLICATION_OVERLAY: needs SYSTEM_ALERT_WINDOW ("显示悬浮窗")
+        //   but draws ABOVE all app tasks — apps like 小红书 that re-front
+        //   themselves cannot cover it. This is the reliable type on OEM ROMs
+        //   (HyperOS/MIUI) where TYPE_ACCESSIBILITY_OVERLAY is rejected.
+        // - TYPE_ACCESSIBILITY_OVERLAY: needs no extra permission and works on
+        //   stock ROMs, but throws BadTokenException on HyperOS/Android 16.
+        // We prefer TYPE_APPLICATION_OVERLAY when the user has granted the
+        // permission, and fall back to TYPE_ACCESSIBILITY_OVERLAY otherwise.
+        // If the chosen type fails at addView, the catch below tries the
+        // alternate type before giving up to a full-screen Activity (which some
+        // apps can cover by re-fronting).
+        val canDrawOverlays = android.provider.Settings.canDrawOverlays(context)
+        val preferredType = if (canDrawOverlays)
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        else
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
         // - MATCH_PARENT: covers the entire screen
         // - FLAG_LAYOUT_IN_SCREEN: positions the window across the full screen
         // - FLAG_LAYOUT_NO_LIMITS: extends the window behind status bar and
@@ -159,7 +179,7 @@ class OverlayManager {
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            preferredType,
             WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
@@ -309,40 +329,120 @@ class OverlayManager {
             }
         }
 
-        // Add the overlay to the screen.
-        // If this fails (e.g., OEM restriction), fall back to launching PauseActivity.
+        // Add the overlay to the screen. Try the preferred window type first;
+        // if it fails, try the alternate overlay type before falling back to a
+        // full-screen Activity (which some apps can cover by re-fronting).
+        var overlayAdded = false
+        var usedType = preferredType
         try {
             windowManager.addView(composeView, params)
-            overlayView = composeView
+            overlayAdded = true
+        } catch (e: Exception) {
+            AppLogger.w(TAG, "addView failed with type $usedType: ${e.javaClass.simpleName}: ${e.message}")
+            PersistentLog.log(context, "Overlay", "addView FAILED ($usedType): ${e.javaClass.simpleName}: ${e.message}")
+            // Try the alternate overlay type before giving up to an Activity.
+            val altType = if (preferredType == WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
+                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+            else
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            try {
+                params.type = altType
+                usedType = altType
+                windowManager.addView(composeView, params)
+                overlayAdded = true
+                AppLogger.d(TAG, "Overlay added with alternate type $altType")
+                PersistentLog.log(context, "Overlay", "addView OK with alternate type $altType")
+            } catch (e2: Exception) {
+                AppLogger.w(TAG, "addView also failed with alternate type $altType: ${e2.javaClass.simpleName}: ${e2.message}")
+                PersistentLog.log(context, "Overlay", "addView FAILED ($altType): ${e2.javaClass.simpleName}: ${e2.message}")
+            }
+        }
 
+        if (overlayAdded) {
+            overlayView = composeView
             // Create a coroutine scope for this overlay's lifetime
             overlayScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-
             // Mark that the pause screen is showing (prevents re-triggering)
             AppauseAccessibilityService.pauseShown = true
-
-            AppLogger.d(TAG, "Overlay shown for $targetPackage, cooldown=${cooldownSeconds}s")
-        } catch (e: Exception) {
-            AppLogger.w(TAG, "Failed to add overlay to WindowManager, falling back to PauseActivity", e)
-            // Clean up the failed overlay
+            AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
+            AppLogger.d(TAG, "Overlay shown for $targetPackage (type=$usedType), cooldown=${cooldownSeconds}s")
+            PersistentLog.log(context, "Overlay", "overlay shown type=$usedType for $targetPackage")
+        } else {
+            // Both overlay types failed → fall back to launching PauseActivity.
+            // NOTE: an Activity can be covered by apps that re-front themselves
+            // (e.g. 小红书); the overlay above is the preferred path.
+            AppauseAccessibilityService.lastOverlayResult = "fallback_pauseactivity"
+            // Clean up the failed overlay's lifecycle
             lifecycleContainer.destroy()
+            // Optimistically mark the pause as showing so we don't re-trigger the
+            // cooldown while PauseActivity is coming up (or even if it never does).
+            AppauseAccessibilityService.pauseShown = true
 
-            // Fallback: launch PauseActivity directly.
-            // This may not work on some OEM ROMs (MIUI blocks background startActivity),
-            // but it's better than showing nothing at all.
-            try {
-                val intent = Intent(context, com.appause.android.ui.pause.PauseActivity::class.java).apply {
-                    putExtra("target_package", targetPackage)
-                    putExtra("group_id", groupId)
-                    putExtra("cooldown_seconds", cooldownSeconds)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                }
-                context.startActivity(intent)
-                AppauseAccessibilityService.pauseShown = true
-                AppLogger.d(TAG, "Fallback: PauseActivity launched for $targetPackage")
-            } catch (e2: Exception) {
-                AppLogger.e(TAG, "Both overlay and startActivity failed for $targetPackage", e2)
+            // Build the launch intent once, reused by both the fast path and the
+            // AlarmManager backup below.
+            val intent = Intent(context, com.appause.android.ui.pause.PauseActivity::class.java).apply {
+                putExtra("target_package", targetPackage)
+                putExtra("group_id", groupId)
+                putExtra("cooldown_seconds", cooldownSeconds)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
+
+            // Fast path: direct startActivity — works on most stock ROMs.
+            try {
+                context.startActivity(intent)
+                AppLogger.d(TAG, "Fallback: PauseActivity direct launch attempted for $targetPackage")
+            } catch (e2: Exception) {
+                AppLogger.w(TAG, "Direct PauseActivity launch failed (will rely on AlarmManager): ${e2.message}")
+            }
+
+            // Reliable path: AlarmManager has higher system authority than a
+            // background startActivity on MIUI/HyperOS, where the direct launch is
+            // silently dropped. The receiver re-launches PauseActivity ~250ms later;
+            // if the direct launch already won, singleInstance + CLEAR_TOP just
+            // re-fronts the existing instance (no duplicate screen, no reset).
+            schedulePauseViaAlarm(context, targetPackage, groupId, cooldownSeconds)
+        }
+    }
+
+    /**
+     * Launch [com.appause.android.ui.pause.PauseActivity] via [AlarmManager].
+     *
+     * On MIUI/HyperOS a background `startActivity()` from the AccessibilityService
+     * is silently deprioritized and the Activity never reaches the foreground.
+     * AlarmManager (a higher-authority system component) reliably brings it to
+     * the front. This is the real fallback used when the WindowManager overlay
+     * can't be added (e.g. TYPE_ACCESSIBILITY_OVERLAY rejected on Android 16).
+     */
+    private fun schedulePauseViaAlarm(
+        context: Context,
+        targetPackage: String,
+        groupId: Long,
+        cooldownSeconds: Int
+    ) {
+        try {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val alarmIntent = Intent(context, com.appause.android.service.PauseAlarmReceiver::class.java).apply {
+                putExtra("target_package", targetPackage)
+                putExtra("group_id", groupId)
+                putExtra("cooldown_seconds", cooldownSeconds)
+            }
+            val pi = PendingIntent.getBroadcast(
+                context,
+                0,
+                alarmIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val triggerAt = System.currentTimeMillis() + 250L
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+            } else {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi)
+            }
+            AppLogger.d(TAG, "Scheduled PauseActivity via AlarmManager (MIUI/HyperOS fallback)")
+            PersistentLog.log(context, "Overlay", "AlarmManager backup scheduled for $targetPackage")
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "AlarmManager fallback failed for $targetPackage", e)
+            PersistentLog.log(context, "Overlay", "AlarmManager FAILED: ${e.javaClass.simpleName}: ${e.message}")
         }
     }
 

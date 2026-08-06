@@ -1,6 +1,7 @@
 package com.appause.android.ui.home
 
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -95,6 +96,7 @@ fun HomeScreen(
     val groupsExpanded by viewModel.groupsExpanded.collectAsStateWithLifecycle()
     val isEnabled by viewModel.isEnabled.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
+    val canDrawOverlays by viewModel.canDrawOverlays.collectAsStateWithLifecycle()
     val proceededToday by viewModel.proceededToday.collectAsStateWithLifecycle()
     val cancelledToday by viewModel.cancelledToday.collectAsStateWithLifecycle()
     val appCounts by viewModel.appCounts.collectAsStateWithLifecycle()
@@ -187,6 +189,54 @@ fun HomeScreen(
                     cancelled = cancelledToday,
                     onClick = onNavigateToStats
                 )
+            }
+
+            // ── Overlay permission warning (required on OEM ROMs) ──
+            // On HyperOS/MIUI the pause screen can't show without "Display over
+            // other apps". We surface this front-and-center so the user never has
+            // to hunt for the setting. Tapping opens the system grant page.
+            if (!canDrawOverlays) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        ),
+                        onClick = {
+                            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                                data = Uri.parse("package:${context.packageName}")
+                            }
+                            context.startActivity(intent)
+                        }
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = stringResource(R.string.overlay_required_title),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(R.string.overlay_required_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onErrorContainer
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
             // ── Recommended Apps entry ──

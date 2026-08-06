@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug build resources.
+  Overrides the launcher label so the debug build is distinguishable from the
+  release build on the home screen (both can be installed at once).
+-->
+<resources>
+    <string name="app_name">Appause Debug</string>
+</resources>

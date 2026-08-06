@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import com.appause.android.util.AppLogger
+import com.appause.android.util.PersistentLog
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.app.NotificationCompat
 import com.appause.android.AppauseApp
@@ -104,6 +105,42 @@ class AppauseAccessibilityService : AccessibilityService() {
          */
         @Volatile
         var instance: AppauseAccessibilityService? = null
+
+        // ── Diagnostics counters ──
+        // Plain in-memory fields read by the Diagnostics screen (debug builds).
+        // They exist so a tester without adb can see whether the service is
+        // actually alive and receiving foreground events — the single most
+        // common cause of "I granted the permission but nothing is intercepted"
+        // is that the ROM killed the service while the system toggle stays ON.
+
+        /** When onServiceConnected last ran (0 = never in this process). */
+        @Volatile
+        var connectedAt: Long = 0L
+
+        /** How many TYPE_WINDOW_STATE_CHANGED events we have received. */
+        @Volatile
+        var eventCount: Long = 0L
+
+        /** Package of the most recent accessibility event. */
+        @Volatile
+        var lastEventPackage: String? = null
+
+        /** Timestamp of the most recent accessibility event. */
+        @Volatile
+        var lastEventAt: Long = 0L
+
+        /** Outcome of the last interception decision, e.g. "SKIP: not in any group". */
+        @Volatile
+        var lastDecision: String? = null
+
+        /**
+         * How the last cooldown screen was shown — for the Diagnostics screen.
+         *   "overlay_ok"            → TYPE_ACCESSIBILITY_OVERLAY added successfully
+         *   "fallback_pauseactivity"→ overlay addView failed, fell back to PauseActivity
+         *   null                    → nothing intercepted yet this session
+         */
+        @Volatile
+        var lastOverlayResult: String? = null
 
         /**
          * Mark an app as "just cancelled" and schedule the suppression to clear
@@ -221,32 +258,61 @@ class AppauseAccessibilityService : AccessibilityService() {
     private val POLL_INTERVAL_MS = 1500L
     private var lastPolledPackage: String? = null
 
+    /**
+     * Log an interception decision AND remember it, so the Diagnostics screen
+     * can show why the last app was (or was not) intercepted without the tester
+     * needing adb.
+     */
+    private fun decide(message: String) {
+        lastDecision = message
+        AppLogger.d(TAG, message)
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        PersistentLog.log(this, "Svc", "AccessibilityService.onCreate pid=${android.os.Process.myPid()}")
+    }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
+        PersistentLog.log(this, "Svc", "onServiceConnected ENTER")
         AppLogger.d(TAG, "AccessibilityService connected and running")
 
-        // Keep a static reference so the Settings screen can toggle the
-        // monitoring notification at runtime (start/stop foreground).
-        instance = this
+        try {
+            // Keep a static reference so the Settings screen can toggle the
+            // monitoring notification at runtime (start/stop foreground).
+            instance = this
+            connectedAt = System.currentTimeMillis()
+            eventCount = 0L
 
-        // Resolve the device's launcher package(s) so isSystemPackage() can
-        // skip the home screen correctly on every OEM ROM.
-        refreshHomePackages()
+            // Resolve the device's launcher package(s) so isSystemPackage() can
+            // skip the home screen correctly on every OEM ROM.
+            refreshHomePackages()
 
-        // Start the foreground poller (catches opens the window-event stream
-        // misses; see pollJob docs). Harmless if usage access isn't granted.
-        startForegroundPoller()
+            // Start the foreground poller (catches opens the window-event stream
+            // misses; see pollJob docs). Harmless if usage access isn't granted.
+            startForegroundPoller()
 
-        // Show a persistent notification to indicate the service is actively monitoring.
-        // This also acts as a foreground service notification, which helps prevent
-        // the system from killing the service in the background.
-        // Respect the user's "show notification" preference: if disabled, the
-        // service runs as a normal (non-foreground) accessibility service with no
-        // persistent notification.
-        createNotificationChannel()
-        serviceScope.launch {
-            val show = (applicationContext as AppauseApp).settingsDataStore.showNotification.first()
-            if (show) applyMonitoringNotification(true)
+            // Show a persistent notification to indicate the service is actively monitoring.
+            // This also acts as a foreground service notification, which helps prevent
+            // the system from killing the service in the background.
+            // Respect the user's "show notification" preference: if disabled, the
+            // service runs as a normal (non-foreground) accessibility service with no
+            // persistent notification.
+            createNotificationChannel()
+            serviceScope.launch {
+                try {
+                    val show = (applicationContext as AppauseApp).settingsDataStore.showNotification.first()
+                    PersistentLog.log(this@AppauseAccessibilityService, "Svc", "showNotification preference=$show")
+                    if (show) applyMonitoringNotification(true)
+                } catch (e: Exception) {
+                    PersistentLog.log(this@AppauseAccessibilityService, "Svc", "notification preference/apply error: ${e.message}")
+                }
+            }
+            PersistentLog.log(this, "Svc", "onServiceConnected SETUP OK")
+        } catch (e: Exception) {
+            PersistentLog.log(this, "Svc", "onServiceConnected ERROR: ${e.javaClass.simpleName}: ${e.message}")
+            AppLogger.e(TAG, "onServiceConnected error", e)
         }
     }
 
@@ -258,16 +324,26 @@ class AppauseAccessibilityService : AccessibilityService() {
      */
     private fun applyMonitoringNotification(show: Boolean) {
         if (show) {
-            val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
-                .setContentTitle(getString(R.string.app_name))
-                .setContentText(getString(R.string.notification_monitoring))
-                .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
-                .setOngoing(true)
-                .setPriority(NotificationCompat.PRIORITY_LOW)
-                .build()
-            startForeground(NOTIFICATION_ID, notification)
+            try {
+                val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
+                    .setContentTitle(getString(R.string.app_name))
+                    .setContentText(getString(R.string.notification_monitoring))
+                    .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
+                    .setOngoing(true)
+                    .setPriority(NotificationCompat.PRIORITY_LOW)
+                    .build()
+                startForeground(NOTIFICATION_ID, notification)
+                PersistentLog.log(this, "Svc", "startForeground OK")
+            } catch (e: Exception) {
+                PersistentLog.log(this, "Svc", "startForeground FAILED: ${e.javaClass.simpleName}: ${e.message}")
+                AppLogger.e(TAG, "startForeground failed", e)
+            }
         } else {
-            stopForeground(STOP_FOREGROUND_REMOVE)
+            try {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } catch (e: Exception) {
+                PersistentLog.log(this, "Svc", "stopForeground FAILED: ${e.javaClass.simpleName}: ${e.message}")
+            }
         }
     }
 
@@ -331,6 +407,11 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: return
 
+        // Diagnostics: proves the service is genuinely receiving events.
+        eventCount++
+        lastEventPackage = packageName
+        lastEventAt = System.currentTimeMillis()
+
         AppLogger.d(TAG, "Event received: package=$packageName, class=${event.className}")
 
         // Use a coroutine because we need to suspend for Repository queries.
@@ -362,13 +443,13 @@ class AppauseAccessibilityService : AccessibilityService() {
         // 1. Check if Appause is enabled
         val isEnabled = repository.isEnabled.first()
         if (!isEnabled) {
-            AppLogger.d(TAG, "SKIP: Appause is disabled")
+            decide("SKIP: Appause is disabled")
             return
         }
 
         // 2. Skip Appause itself
         if (packageName == applicationContext.packageName) {
-            AppLogger.d(TAG, "SKIP: Appause itself")
+            decide("SKIP: Appause itself")
             lastForegroundPackage = packageName
             return
         }
@@ -383,7 +464,7 @@ class AppauseAccessibilityService : AccessibilityService() {
         //      re-open re-triggers the cooldown normally.
         if (justCancelledPackage != null && packageName == justCancelledPackage
             && lastForegroundPackage == justCancelledPackage) {
-            AppLogger.d(TAG, "SKIP: stale event for just-cancelled app ($packageName)")
+            decide("SKIP: stale event for just-cancelled app ($packageName)")
             return
         }
 
@@ -396,7 +477,7 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         // 3. Skip common system packages (launcher, settings, recents, etc.)
         if (isSystemPackage(packageName)) {
-            AppLogger.d(TAG, "SKIP: system package ($packageName)")
+            decide("SKIP: system package ($packageName)")
             // The user left the previous app (via Home, Recents, etc.).
             // Start its 3-min away cooldown instead of clearing the bypass
             // immediately. This is the core fix for the in-app transient-switch
@@ -424,14 +505,14 @@ class AppauseAccessibilityService : AccessibilityService() {
         //    let them continue without re-interception.
         if (InterceptionManager.isBypassed(packageName)) {
             cancelLeaveTimer(packageName)
-            AppLogger.d(TAG, "RESUME: $packageName (returned within leave window)")
+            decide("RESUME: $packageName (returned within leave window)")
             lastForegroundPackage = packageName
             return
         }
 
         // 4.5. Skip if cooldown overlay is currently showing
         if (pauseShown) {
-            AppLogger.d(TAG, "SKIP: cooldown overlay is showing ($packageName)")
+            decide("SKIP: cooldown overlay is showing ($packageName)")
             // A previously bypassed app is now in the background — start its
             // away cooldown (e.g. user opened app B while the cooldown for app
             // A is on screen). If the user returns within 3 min it resumes.
@@ -446,7 +527,7 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         // 5. Skip duplicate events (same app, different Activity)
         if (packageName == lastForegroundPackage) {
-            AppLogger.d(TAG, "SKIP: duplicate event ($packageName)")
+            decide("SKIP: duplicate event ($packageName)")
             return
         }
 
@@ -455,7 +536,7 @@ class AppauseAccessibilityService : AccessibilityService() {
         // 6. Check if this app belongs to any configured group
         val group = repository.findGroupForPackage(packageName)
         if (group == null) {
-            AppLogger.d(TAG, "SKIP: not in any group ($packageName)")
+            decide("SKIP: not in any group ($packageName)")
             return
         }
 
@@ -488,19 +569,19 @@ class AppauseAccessibilityService : AccessibilityService() {
                     ForegroundChecker.getForegroundPackage(applicationContext)
                 }
                 if (actualRetry != null && actualRetry != packageName) {
-                    AppLogger.d(TAG, "SKIP: $packageName not actually foreground (real=$actualRetry) — likely notification")
+                    decide("SKIP: $packageName not actually foreground (real=$actualRetry) — likely notification")
                     return
                 }
                 // UsageStats settled to this package → genuine open, fall through.
             } else {
                 // A confirmation retry is already pending for this package.
-                AppLogger.d(TAG, "SKIP: confirm pending for $packageName")
+                decide("SKIP: confirm pending for $packageName")
                 return
             }
         }
 
         // 7. Intercept! Show the cooldown overlay.
-        AppLogger.d(TAG, "INTERCEPT: $packageName → group=${group.name}, cooldown=${group.cooldownSeconds}s")
+        decide("INTERCEPT: $packageName → group=${group.name}, cooldown=${group.cooldownSeconds}s")
         showCooldownOverlay(
             packageName,
             group.id,
@@ -759,14 +840,21 @@ class AppauseAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
+        PersistentLog.log(this, "Svc", "onInterrupt")
         AppLogger.d(TAG, "AccessibilityService interrupted")
     }
 
     override fun onDestroy() {
+        PersistentLog.log(this, "Svc", "onDestroy")
         super.onDestroy()
 
         // Drop the static reference so a dead instance can't be toggled.
-        if (instance == this) instance = null
+        // The Diagnostics screen reads this to tell "enabled in system settings"
+        // apart from "actually running" (ROMs often kill the process).
+        if (instance == this) {
+            instance = null
+            connectedAt = 0L
+        }
 
         // Stop the foreground poller
         pollJob?.cancel()

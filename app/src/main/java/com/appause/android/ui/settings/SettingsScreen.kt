@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Info
@@ -41,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.appause.android.BuildConfig
 import com.appause.android.R
 
 /**
@@ -61,6 +63,7 @@ fun SettingsScreen(
     onNavigateToAbout: () -> Unit,
     onNavigateToPro: () -> Unit,
     onNavigateToFeedback: () -> Unit,
+    onNavigateToDiagnostics: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel()
 ) {
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
@@ -127,7 +130,61 @@ fun SettingsScreen(
             items(categories, key = { it.title }) { category ->
                 CategoryItem(category = category)
             }
+            // Troubleshooting entry — debug builds only, never shipped to users.
+            if (BuildConfig.DEBUG) {
+                item { DiagnosticsEntry(onClick = onNavigateToDiagnostics) }
+            }
             item { Spacer(modifier = Modifier.height(8.dp)) }
+        }
+    }
+}
+
+/**
+ * Debug-only shortcut into the Diagnostics screen.
+ *
+ * Kept out of the [SettingsCategory] list (and with hardcoded text) because it
+ * only exists in debug builds — it should not add strings to the translation
+ * files or appear anywhere in the shipped app.
+ */
+@Composable
+private fun DiagnosticsEntry(onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Default.BugReport,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "运行诊断（Debug）",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+                Text(
+                    text = "查看拦截状态与实时日志，可一键分享",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer
+            )
         }
     }
 }

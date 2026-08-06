@@ -7,6 +7,7 @@ import com.appause.android.data.local.AppDatabase
 import com.appause.android.data.pro.ProState
 import com.appause.android.data.repository.AppGroupRepository
 import com.appause.android.data.settings.SettingsDataStore
+import com.appause.android.util.PersistentLog
 import java.util.Locale
 
 /**
@@ -51,6 +52,11 @@ class AppauseApp : Application() {
      */
     val repository: AppGroupRepository by lazy {
         AppGroupRepository(database.appGroupDao(), database.appLaunchDao(), settingsDataStore)
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        PersistentLog.log(this, "App", "Application.onCreate pid=${android.os.Process.myPid()}")
     }
 
     /**

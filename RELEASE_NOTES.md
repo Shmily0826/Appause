@@ -1,11 +1,17 @@
-# Appause v0.4.7 — 发布说明 (Release Notes)
+# Appause v0.5.0 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.4.7/Appause-v0.4.7.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.0/Appause-v0.5.0.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.5.0)
+- **修复小米 / HyperOS（Android 16）暂停屏不显示**：原来依赖的悬浮窗类型在国产 ROM 上被系统拒绝。现在改用**系统覆盖层 `TYPE_APPLICATION_OVERLAY`**（需要「显示悬浮窗」权限），窗口画在**所有 App 任务之上**——连小红书这类会主动把自己重新提到前台、盖掉普通弹窗的 app 也挡得住。
+- **「显示悬浮窗」改为必开且可引导**：之前正式版因没声明该权限，系统设置里根本找不到入口，导致在小米上永远显示不出停顿页。现在首页会出现**红色警告横幅**、设置页新增「显示悬浮窗」权限卡片、首次引导也新增一步，点了直接跳到系统授权页，不再悄悄失败。
+- **修复"5 秒弹出第二个窗口"**：兜底启动时原本会重建 PauseActivity、把倒计时归零，表现为"第二个窗口"。现已改为只把现有页面提前台、不重建。
+- **后台启动更稳**：保留 `AlarmManager` 兜底拉起 PauseActivity，确保 MIUI/HyperOS 上能稳定把它提到前台。
 
 ### 本次更新 (v0.4.7)
 - **提示语更直白**：引导页欢迎语去掉「给你片刻喘息」这类绕弯表述；暂停屏的「试着做几次深呼吸」改为「停顿几秒，再决定要不要继续」。
@@ -126,6 +132,12 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 ---
 
 ## 🇺🇸 English
+
+### What's new in v0.5.0
+- **Fixed pause screen not showing on Xiaomi / HyperOS (Android 16)**: the previous overlay type was rejected by OEM ROMs. Appause now uses a **system overlay (`TYPE_APPLICATION_OVERLAY`)**, which requires the "Display over other apps" permission and draws **above all app tasks** — including anti-tamper apps like RedNote/Xiaohongshu that try to re-front themselves over a normal dialog.
+- **"Display over other apps" is now required and guided**: the release build previously never declared the permission, so the entry was missing from system settings and the pause screen silently never appeared on Xiaomi. Now a **red warning banner** shows on the Home screen, a **Settings permission card** is added, and **onboarding** has a new step — each opens the system grant page directly, so it can never fail silently again.
+- **Fixed the "second window ~5s later"**: the backup launch used to rebuild PauseActivity and reset the countdown, looking like a duplicate window. It now re-fronts the existing screen without rebuilding.
+- **More reliable foreground launch**: kept the `AlarmManager` fallback that brings PauseActivity to the foreground on MIUI/HyperOS.
 
 ### What's new in v0.4.7
 - **Plainer copy**: the onboarding welcome line no longer uses roundabout phrasing like "take a breath"; the pause screen's "try a few deep breaths" is now "pause a few seconds before you decide."

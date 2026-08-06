@@ -238,6 +238,20 @@
     <string name="battery_not_exempted">未豁免 — 服务可能在后台被终止</string>
     <string name="request_battery_exempt">请求豁免</string>
 
+    <!-- 显示悬浮窗（在其它应用上层显示暂停页，部分国产 ROM 必需） -->
+    <string name="overlay_permission">显示悬浮窗</string>
+    <string name="overlay_permission_desc">允许 Appause 在其它应用上方显示暂停页。在小米/红米等机型上，若不开此权限，暂停页可能被目标应用（如小红书）自动顶掉而看不见。</string>
+    <string name="open_overlay_settings">打开显示悬浮窗设置</string>
+    <string name="overlay_granted">已授权 — 暂停页可正常覆盖在最上层</string>
+    <string name="overlay_not_granted">未授权 — 部分机型暂停页可能不显示</string>
+    <string name="overlay_required_title">需要「显示悬浮窗」权限</string>
+    <string name="overlay_required_desc">未开启此权限时，暂停页在小米等手机上可能无法显示。点此前往开启。</string>
+    <string name="onboarding_overlay_title">开启「显示悬浮窗」</string>
+    <string name="onboarding_overlay_desc">允许 Appause 在其它应用上方显示暂停页。小米/华为等机型必须开启，否则暂停页会被目标应用盖住。</string>
+    <string name="onboarding_overlay_open">前往系统设置开启</string>
+    <string name="onboarding_overlay_on">已开启，很好！</string>
+    <string name="onboarding_overlay_off">尚未开启，请在系统设置中允许 Appause「显示悬浮窗」。</string>
+
     <!-- ═══════════════════════════════════════════ -->
     <!-- Appause Pro 页面                              -->
     <!-- ═══════════════════════════════════════════ -->

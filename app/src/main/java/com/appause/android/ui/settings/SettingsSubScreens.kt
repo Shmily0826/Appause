@@ -198,6 +198,7 @@ fun PermissionsSettingsScreen(
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
     val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
     val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
+    val canDrawOverlays by viewModel.canDrawOverlays.collectAsStateWithLifecycle()
     val showNotification by viewModel.showNotification.collectAsStateWithLifecycle()
 
     // "Enabled" green — legible on both light and dark surfaces.
@@ -240,6 +241,44 @@ fun PermissionsSettingsScreen(
                     context.startActivity(intent)
                 }) {
                     Text(stringResource(R.string.open_accessibility_settings))
+                }
+            }
+        }
+
+        // ── Display over other apps (required on OEM ROMs like HyperOS) ──
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.overlay_permission), style = MaterialTheme.typography.titleMedium)
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = stringResource(if (canDrawOverlays) R.string.status_enabled else R.string.status_disabled),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (canDrawOverlays) enabledGreen else MaterialTheme.colorScheme.error
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(if (canDrawOverlays) R.string.overlay_granted else R.string.overlay_not_granted),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (canDrawOverlays) enabledGreen else MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                if (!canDrawOverlays) {
+                    Text(
+                        text = stringResource(R.string.overlay_permission_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                Button(onClick = {
+                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                    }
+                    context.startActivity(intent)
+                }) {
+                    Text(stringResource(R.string.open_overlay_settings))
                 }
             }
         }

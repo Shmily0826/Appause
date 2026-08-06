@@ -1,6 +1,7 @@
 package com.appause.android.ui.home
 
 import android.app.Application
+import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
@@ -92,6 +93,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
 
     /**
+     * Whether "Display over other apps" (SYSTEM_ALERT_WINDOW) is granted.
+     * Required on OEM ROMs (HyperOS/MIUI, Android 16) where the TYPE_ACCESSIBILITY_OVERLAY
+     * window is rejected and the fallback Activity can be covered by the target app
+     * (e.g. 小红书 re-fronting itself). When false, the pause screen can't show.
+     */
+    private val _canDrawOverlays = MutableStateFlow(false)
+    val canDrawOverlays: StateFlow<Boolean> = _canDrawOverlays.asStateFlow()
+
+    /**
      * Number of apps in each group (groupId -> count).
      * Backs the "N apps" row on each group card.
      * Groups with no apps are absent from the map (the UI treats that as 0).
@@ -118,6 +128,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     /** Re-check the accessibility service status. Called when the screen resumes. */
     fun refreshServiceStatus() {
         _isServiceRunning.value = AccessibilityServiceChecker.isEnabled(getApplication())
+        _canDrawOverlays.value = Settings.canDrawOverlays(getApplication())
     }
 
     /**

@@ -3,6 +3,7 @@ package com.appause.android.ui.settings
 import android.app.Application
 import android.content.Context
 import android.os.PowerManager
+import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
@@ -49,6 +50,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _isIgnoringBattery = MutableStateFlow(false)
     val isIgnoringBattery: StateFlow<Boolean> = _isIgnoringBattery
 
+    /**
+     * Whether "Display over other apps" (SYSTEM_ALERT_WINDOW) is granted.
+     * Required on OEM ROMs (HyperOS/MIUI) where the overlay window otherwise
+     * can't be shown. Surfaced in the Permissions screen so the user can grant it.
+     */
+    private val _canDrawOverlays = MutableStateFlow(false)
+    val canDrawOverlays: StateFlow<Boolean> = _canDrawOverlays
+
     /** Whether the persistent monitoring notification is shown. Default true. */
     val showNotification: StateFlow<Boolean> = (getApplication<Application>() as AppauseApp).settingsDataStore.showNotification
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
@@ -68,6 +77,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         _isUsageAccessGranted.value = ForegroundChecker.isUsageAccessGranted(app)
         val powerManager = app.getSystemService(Context.POWER_SERVICE) as? PowerManager
         _isIgnoringBattery.value = powerManager?.isIgnoringBatteryOptimizations(app.packageName) ?: false
+        _canDrawOverlays.value = Settings.canDrawOverlays(app)
     }
 
     fun updateDefaultPrompt(prompt: String) {

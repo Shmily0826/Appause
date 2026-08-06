@@ -1,3 +1,4 @@
+import java.util.Date
 import java.util.Properties
 
 plugins {
@@ -23,8 +24,15 @@ android {
         applicationId = "com.appause.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 47
-        versionName = "0.4.7"
+        versionCode = 52
+        versionName = "0.5.0"
+        // Baked at build time; lets a shared diagnostics report prove exactly
+        // which APK is installed (used by the Diagnostics "build time" row).
+        buildConfigField(
+            "String",
+            "BUILD_TIME",
+            "\"${Date()}\""
+        )
     }
 
     signingConfigs {
@@ -38,6 +46,22 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Use a separate applicationId so the debug build can be installed
+            // SIDE-BY-SIDE with the release build (it will NOT overwrite it).
+            // The accessibility service, DataStore, and app data are all scoped
+            // to this id, so the two installs never clash.
+            applicationIdSuffix = ".debug"
+            // Distinct name so the app's own version string proves which build
+            // is installed; the HIGHER versionCode (set in defaultConfig) makes
+            // any stale old APK be rejected as a downgrade.
+            versionNameSuffix = "-debug"
+            isDebuggable = true
+            // Debug build keeps AppLogger output (BuildConfig.DEBUG == true),
+            // so interception is visible in logcat — this is the test build.
+            // (BUILD_TIME is now defined in defaultConfig, so both debug and
+            //  release diagnostics reports can prove which APK is installed.)
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

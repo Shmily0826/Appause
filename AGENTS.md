@@ -109,7 +109,14 @@ This file defines rules that ALL AI agents (and human developers) MUST follow wh
   device-bound license JWTs and must never receive, store, or sync user data.
   Do not extend it into an account/sync system.
 - Do not add Flutter, React Native, or any cross-platform framework.
-- Do not use `SYSTEM_ALERT_WINDOW` (overlay) permission — use regular Activity for the pause screen.
+- Pause screen display: prefer a regular Activity first; on OEM ROMs (HyperOS/MIUI,
+  Android 16) where the Activity can be covered by the target app re-fronting itself
+  (e.g. 小红书), fall back to a `TYPE_APPLICATION_OVERLAY` WindowManager window, which
+  requires the `SYSTEM_ALERT_WINDOW` ("显示悬浮窗") permission. This permission MUST be
+  declared in the manifest AND guided in-app (Home warning banner + Settings permission
+  card + Onboarding step), because on HyperOS the pause screen is invisible without it.
+  Do NOT use `TYPE_ACCESSIBILITY_OVERLAY` as the only path — it is rejected (BadTokenException)
+  on HyperOS/Android 16, so the overlay would never show.
 - Do not hardcode specific app package names (e.g., `com.zhiliaoapp.musically` for TikTok).
 - Do not create empty interfaces, abstract classes, or "architecture placeholders" that have no immediate use.
 - Do not add logging frameworks (use `android.util.Log` for debug logging).

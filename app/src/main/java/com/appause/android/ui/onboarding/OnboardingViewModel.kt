@@ -1,6 +1,7 @@
 package com.appause.android.ui.onboarding
 
 import android.app.Application
+import android.provider.Settings
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -40,6 +41,10 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     private val _isServiceRunning = MutableStateFlow(false)
     val isServiceRunning: StateFlow<Boolean> = _isServiceRunning
 
+    /** Whether "Display over other apps" (SYSTEM_ALERT_WINDOW) is granted. */
+    private val _canDrawOverlays = MutableStateFlow(false)
+    val canDrawOverlays: StateFlow<Boolean> = _canDrawOverlays
+
     /**
      * Current onboarding step (0 = language … 4 = finish).
      * Stored in the ViewModel (not in the Composable) so the position is kept
@@ -49,13 +54,14 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     var page = mutableIntStateOf(0)
         private set
 
-    fun setPage(p: Int) { page.value = p.coerceIn(0, 4) }
-    fun nextPage() { page.value = (page.value + 1).coerceAtMost(4) }
+    fun setPage(p: Int) { page.value = p.coerceIn(0, 5) }
+    fun nextPage() { page.value = (page.value + 1).coerceAtMost(5) }
     fun prevPage() { page.value = (page.value - 1).coerceAtLeast(0) }
 
     /** Re-query the accessibility service status (call when the screen resumes). */
     fun refreshServiceStatus() {
         _isServiceRunning.value = AccessibilityServiceChecker.isEnabled(getApplication())
+        _canDrawOverlays.value = Settings.canDrawOverlays(getApplication())
     }
 
     /** Persist the chosen language. The UI recreates the Activity to apply it. */

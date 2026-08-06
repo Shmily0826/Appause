@@ -154,6 +154,20 @@
     <string name="usage_access_not_granted">Not granted — false-positive filter disabled</string>
     <string name="usage_access_desc">Lets Appause confirm which app is really on screen, so a media notification in the shade (e.g. a video playing) doesn\'t trigger the pause by mistake.</string>
     <string name="open_usage_access_settings">Open usage access settings</string>
+
+    <!-- Display over other apps (required on OEM ROMs like HyperOS) -->
+    <string name="overlay_permission">Display over other apps</string>
+    <string name="overlay_permission_desc">Lets Appause show the pause screen above other apps. On Xiaomi/Huawei and other OEM ROMs, without this permission the pause screen can be covered by the target app (e.g. 小红书) and never seen.</string>
+    <string name="open_overlay_settings">Open display-over-other-apps settings</string>
+    <string name="overlay_granted">Granted — the pause screen can overlay on top</string>
+    <string name="overlay_not_granted">Not granted — pause screen may not show on some devices</string>
+    <string name="overlay_required_title">"Display over other apps" permission required</string>
+    <string name="overlay_required_desc">Without this permission the pause screen may not appear on phones like Xiaomi. Tap to open settings.</string>
+    <string name="onboarding_overlay_title">Enable "Display over other apps"</string>
+    <string name="onboarding_overlay_desc">Lets Appause show the pause screen above other apps. Required on Xiaomi/Huawei and other OEM ROMs, otherwise the target app covers the pause screen.</string>
+    <string name="onboarding_overlay_open">Open system settings</string>
+    <string name="onboarding_overlay_on">Enabled, great!</string>
+    <string name="onboarding_overlay_off">Not enabled yet — please allow Appause "Display over other apps" in system settings.</string>
     <string name="default_prompt_title">Default Prompt</string>
     <string name="custom_reasons_title">Custom open reasons</string>
     <string name="custom_reasons_desc">Pro only: rename the four \"why are you opening this?\" options on the pause screen.</string>

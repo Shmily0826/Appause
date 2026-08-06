@@ -18,6 +18,7 @@ import androidx.navigation.navArgument
 import com.appause.android.AppauseApp
 import kotlinx.coroutines.flow.first
 import com.appause.android.ui.appselect.AppSelectScreen
+import com.appause.android.ui.diagnostics.DiagnosticsScreen
 import com.appause.android.ui.feedback.FeedbackScreen
 import com.appause.android.ui.groupeditor.GroupEditorScreen
 import com.appause.android.ui.home.HomeScreen
@@ -54,6 +55,9 @@ object Routes {
     const val SETTINGS_PERMISSIONS = "settings_permissions"
     const val SETTINGS_PAUSE = "settings_pause"
     const val SETTINGS_ABOUT = "settings_about"
+
+    /** Debug-only troubleshooting screen (entry point is gated on BuildConfig.DEBUG). */
+    const val DIAGNOSTICS = "diagnostics"
 
     /** Build a route string for editing an existing group. */
     fun groupEditor(groupId: Long): String = "group_editor/$groupId"
@@ -185,8 +189,14 @@ fun AppNavGraph() {
                 onNavigateToPause = { navController.navigate(Routes.SETTINGS_PAUSE) },
                 onNavigateToAbout = { navController.navigate(Routes.SETTINGS_ABOUT) },
                 onNavigateToPro = { navController.navigate(Routes.PRO) },
-                onNavigateToFeedback = { navController.navigate(Routes.FEEDBACK) }
+                onNavigateToFeedback = { navController.navigate(Routes.FEEDBACK) },
+                onNavigateToDiagnostics = { navController.navigate(Routes.DIAGNOSTICS) }
             )
+        }
+
+        // ── Diagnostics (debug builds only — Settings hides the entry otherwise) ──
+        composable(Routes.DIAGNOSTICS) {
+            DiagnosticsScreen(onNavigateBack = safePopBackStack)
         }
 
         // Restart the app (used after a language switch so attachBaseContext

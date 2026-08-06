@@ -2,6 +2,7 @@ package com.appause.android.ui.onboarding
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -40,6 +41,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -108,6 +110,7 @@ fun OnboardingScreen(
     val page by viewModel.page
     val language by viewModel.language.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
+    val canDrawOverlays by viewModel.canDrawOverlays.collectAsStateWithLifecycle()
 
     // Re-query accessibility status every time the screen resumes (e.g. after the
     // user enables the service in system settings and comes back).
@@ -125,6 +128,7 @@ fun OnboardingScreen(
         Icons.Default.Language,
         Icons.Default.Pause,
         Icons.Default.Accessibility,
+        Icons.Default.Visibility,
         Icons.Default.GroupAdd,
         Icons.Default.CheckCircle
     )
@@ -189,8 +193,17 @@ fun OnboardingScreen(
                         context.startActivity(intent)
                     }
                 )
-                3 -> GroupStep()
-                4 -> InfoStep(
+                3 -> OverlayStep(
+                    isGranted = canDrawOverlays,
+                    onOpenSettings = {
+                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    }
+                )
+                4 -> GroupStep()
+                5 -> InfoStep(
                     title = R.string.onboarding_finish_title,
                     desc = R.string.onboarding_finish_desc
                 )
@@ -213,12 +226,12 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             when (page) {
-                3 -> {
+                4 -> {
                     // Primary: open the existing group editor. We advance the step
                     // to "finish" first, so returning from the editor lands on the
                     // "All set" page instead of restarting the guide.
                     Button(onClick = {
-                        viewModel.setPage(4)
+                        viewModel.setPage(5)
                         onNavigateToGroupEditor()
                     }) {
                         Text(stringResource(R.string.onboarding_group_add))
@@ -226,11 +239,11 @@ fun OnboardingScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     // Secondary: continue without creating a group (distinct from the
                     // top-right "Skip", which exits the whole guide).
-                    TextButton(onClick = { viewModel.setPage(4) }) {
+                    TextButton(onClick = { viewModel.setPage(5) }) {
                         Text(stringResource(R.string.onboarding_group_later))
                     }
                 }
-                4 -> Button(onClick = {
+                5 -> Button(onClick = {
                     viewModel.completeOnboarding()
                     onNavigateToHome()
                 }) {
@@ -540,6 +553,55 @@ private fun ServiceStep(
 
         Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.onboarding_service_open))
+        }
+    }
+}
+
+/**
+ * Display-over-other-apps step (page 3): explains the "显示悬浮窗" permission and
+ * links to the system grant page. On OEM ROMs (HyperOS/MIUI) the pause screen
+ * can't show without it, so onboarding makes this explicit and easy to enable.
+ */
+@Composable
+private fun OverlayStep(
+    isGranted: Boolean,
+    onOpenSettings: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = stringResource(R.string.onboarding_overlay_title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.onboarding_overlay_desc),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val statusColor = if (isGranted) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.error
+        }
+        Text(
+            text = if (isGranted) {
+                stringResource(R.string.onboarding_overlay_on)
+            } else {
+                stringResource(R.string.onboarding_overlay_off)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = statusColor,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.onboarding_overlay_open))
         }
     }
 }
