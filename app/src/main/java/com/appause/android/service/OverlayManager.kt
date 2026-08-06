@@ -73,6 +73,17 @@ class OverlayManager {
 
     companion object {
         private const val TAG = "OverlayManager"
+
+        /**
+         * True while a cooldown overlay view is attached to the WindowManager.
+         *
+         * Static because the pause-guard watchdog lives in the
+         * AccessibilityService's companion object and has no instance to ask.
+         * Mirrors [overlayView] != null.
+         */
+        @Volatile
+        var overlayAttached: Boolean = false
+            private set
     }
 
     /** The overlay view — null when no overlay is showing. */
@@ -362,6 +373,8 @@ class OverlayManager {
             overlayView = composeView
             // Create a coroutine scope for this overlay's lifetime
             overlayScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+            // Liveness signal for the service's pause-guard watchdog.
+            overlayAttached = true
             // Mark that the pause screen is showing (prevents re-triggering)
             AppauseAccessibilityService.pauseShown = true
             AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
@@ -372,6 +385,9 @@ class OverlayManager {
             // NOTE: an Activity can be covered by apps that re-front themselves
             // (e.g. 小红书); the overlay above is the preferred path.
             AppauseAccessibilityService.lastOverlayResult = "fallback_pauseactivity"
+            // No overlay view exists on this path — the watchdog relies on
+            // PauseActivity's visibility instead.
+            overlayAttached = false
             // Clean up the failed overlay's lifecycle
             lifecycleContainer.destroy()
             // Optimistically mark the pause as showing so we don't re-trigger the
@@ -465,6 +481,7 @@ class OverlayManager {
         // Clean up the lifecycle so Compose effects stop running
         // (The LifecycleContainer will be garbage collected along with the view)
         overlayView = null
+        overlayAttached = false
 
         // Cancel any running coroutines (countdown timer, etc.)
         overlayScope?.coroutineContext?.get(Job)?.cancel()

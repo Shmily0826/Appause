@@ -176,7 +176,7 @@ fun StatsScreen(
                         style = MaterialTheme.typography.titleMedium
                     )
                     Spacer(modifier = Modifier.height(12.dp))
-                    ReasonList(reasonCounts = reasonCounts, labelMap = reasonLabels)
+                    ReasonList(reasonCounts = reasonCounts, customLabels = reasonLabels)
                 }
             }
 
@@ -226,7 +226,7 @@ private fun StatRow(
 @Composable
 private fun ReasonList(
     reasonCounts: List<ReasonCount>,
-    labelMap: Map<String, String>,
+    customLabels: Map<String, String>,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -243,13 +243,23 @@ private fun ReasonList(
         } else {
             val maxCount = reasonCounts.maxOf { it.count }.coerceAtLeast(1)
             reasonCounts.forEach { item ->
+                // Reason keys are stored in English (work/bored/messages/other).
+                // The default display label must follow the CURRENT UI language,
+                // so we resolve it with stringResource (the Activity context).
+                // Do NOT take it from the ViewModel: its Application context keeps
+                // the locale from process start and is never updated after an
+                // in-app language switch (the "restart" only re-creates the
+                // Activity, not the Application), so it would stay in the old
+                // language. Pro custom labels (non-blank) always pass through.
+                val label = customLabels[item.reason]?.takeIf { it.isNotBlank() }
+                    ?: reasonDefaultLabel(item.reason)
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = labelMap[item.reason] ?: item.reason,
+                            text = label,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f)
                         )
@@ -264,10 +274,26 @@ private fun ReasonList(
                     val fraction = item.count.toFloat() / maxCount
                     LinearProgressIndicator(
                         progress = { fraction },
+                        trackColor = androidx.compose.ui.graphics.Color.Transparent,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
         }
+    }
+}
+
+/**
+ * Maps a stored reason key to its localized default label using the current
+ * UI language (Activity context). Kept separate so the language switch works
+ * even though the Application context is not recreated on an in-app restart.
+ */
+@Composable
+private fun reasonDefaultLabel(reason: String): String {
+    return when (reason) {
+        "work" -> stringResource(R.string.intent_work)
+        "bored" -> stringResource(R.string.intent_bored)
+        "messages" -> stringResource(R.string.intent_messages)
+        else -> stringResource(R.string.intent_other)
     }
 }

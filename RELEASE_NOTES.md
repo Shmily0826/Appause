@@ -1,11 +1,20 @@
-# Appause v0.5.0 — 发布说明 (Release Notes)
+# Appause v0.5.1 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.0/Appause-v0.5.0.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.1/Appause-v0.5.1.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.5.1)
+- **修复「用着用着突然不拦截了」**：停顿屏有个内部标记，用来避免倒计时期间重复弹窗。原先这个标记只在停顿屏正常关闭时才复位——一旦覆盖层没能显示，或停顿页被某些 App 挤到后台，标记就会永久卡住，之后**所有**拦截都被静默跳过，表现就是 App 突然失灵。现在加了看门狗：只要屏幕上既没有覆盖层、也没有可见的停顿页，标记会自动释放。
+- **首页权限提示合并成一条**：原来无障碍和悬浮窗分两处提醒，现在统一为顶部一条「请开启必要权限」横幅，缺哪个列哪个，点「去开启」直达系统授权页。
+- **设置里说明每个权限的用途**：新增「为什么需要这些权限？」卡片，逐条讲清用途和边界（例如悬浮窗只用于绘制 Appause 自己的停顿屏）。
+- **新增「开源可审计」说明**：注明 MIT 许可证、代码全部公开、无账号、无埋点，并提供仓库直达按钮。
+- **修复统计页「原因分布」不跟随语言**：切换到英文后，原因标签仍显示中文。原因是标签在语言切换时没有重新取值，现已改为跟随当前界面语言。
+- **进度条视觉修正**：原因分布的进度条右侧不再有一截多余的浅色轨道。
+- **文档补齐悬浮窗权限**：README / 隐私政策 / 安装指南此前都没写这个权限，甚至写着"不需要"，容易让人装完以为坏了。现已全部更正为必需权限并说明用途。
 
 ### 本次更新 (v0.5.0)
 - **修复小米 / HyperOS（Android 16）暂停屏不显示**：原来依赖的悬浮窗类型在国产 ROM 上被系统拒绝。现在改用**系统覆盖层 `TYPE_APPLICATION_OVERLAY`**（需要「显示悬浮窗」权限），窗口画在**所有 App 任务之上**——连小红书这类会主动把自己重新提到前台、盖掉普通弹窗的 app 也挡得住。
@@ -132,6 +141,15 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 ---
 
 ## 🇺🇸 English
+
+### What's new in v0.5.1
+- **Fixed: interception silently stopping after a while.** An internal guard flag keeps the pause screen from re-triggering during a countdown, but it was only cleared when the pause screen closed normally. If the overlay failed to attach, or another app buried the pause screen, the flag stuck raised forever and every later interception was skipped — the app looked broken. A watchdog now releases the guard whenever neither the overlay nor a visible pause screen exists.
+- **One permission banner on the home screen** instead of two separate warnings. It lists exactly which permissions are missing and links straight to the system settings page.
+- **Settings now explains each permission** — a "Why are these permissions needed?" card covers what each one does and where the limits are (e.g. the overlay permission only draws Appause's own pause screen).
+- **Open-source notice added**: MIT licence, full source, no account, no tracking, with a button to the repository.
+- **Fixed: reason breakdown ignored the language setting.** Switching the app to English still showed Chinese reason labels, because the labels were not re-resolved on a language change.
+- **Visual fix**: the reason-breakdown progress bars no longer show a leftover tinted track on the right.
+- **Docs corrected**: the README, privacy policy and install guide never mentioned the overlay permission — the README even claimed it was not required. All now list it as mandatory and explain what it is used for.
 
 ### What's new in v0.5.0
 - **Fixed pause screen not showing on Xiaomi / HyperOS (Android 16)**: the previous overlay type was rejected by OEM ROMs. Appause now uses a **system overlay (`TYPE_APPLICATION_OVERLAY`)**, which requires the "Display over other apps" permission and draws **above all app tasks** — including anti-tamper apps like RedNote/Xiaohongshu that try to re-front themselves over a normal dialog.

@@ -8,6 +8,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import com.appause.android.util.AppLogger
 import com.appause.android.util.PersistentLog
 import android.view.accessibility.AccessibilityEvent
@@ -53,14 +54,73 @@ class AppauseAccessibilityService : AccessibilityService() {
         private const val NOTIFICATION_ID = 1
 
         /**
-         * Guard flag: true while the cooldown overlay is showing.
-         * Prevents re-triggering interception while a cooldown is in progress.
+         * How long the guard may stay raised while nothing is actually on
+         * screen. Covers the fallback path, where PauseActivity is launched
+         * asynchronously (direct startActivity, then an AlarmManager retry
+         * ~250ms later) and may need a moment to become visible.
+         */
+        private const val PAUSE_GUARD_GRACE_MS = 8_000L
+
+        /**
+         * Raw backing field for [pauseShown]. Do NOT read this directly —
+         * always go through [pauseShown], whose getter runs the staleness
+         * watchdog described below.
          *
          * @Volatile so the broadcast-thread PauseAlarmReceiver sees the latest
          * value when it reads this flag off the main thread.
          */
         @Volatile
-        var pauseShown: Boolean = false
+        private var pauseGuardRaised: Boolean = false
+
+        /** elapsedRealtime() when [pauseGuardRaised] was last set to true. */
+        @Volatile
+        private var pauseGuardRaisedAt: Long = 0L
+
+        /**
+         * True while PauseActivity is actually on screen (onStart..onStop).
+         *
+         * Deliberately tied to the *visible* window rather than to
+         * onCreate/onDestroy: on HyperOS an anti-tamper app (e.g. 小红书) can
+         * re-front itself and bury PauseActivity without destroying it. A
+         * created-but-covered Activity is not a pause screen the user can see,
+         * so it must not keep the guard raised.
+         */
+        @Volatile
+        var pauseActivityVisible: Boolean = false
+
+        /**
+         * Guard flag: true while the cooldown screen is showing.
+         * Prevents re-triggering interception while a cooldown is in progress.
+         *
+         * WATCHDOG (this was a real bug): the flag used to be cleared in
+         * exactly two places — OverlayManager.dismiss() and
+         * PauseActivity.onDestroy(). When the overlay failed to attach and the
+         * fallback Activity was killed or buried before either ran, the flag
+         * stayed true forever, every later interception was silently skipped
+         * ("SKIP: cooldown overlay is showing"), and the app looked like it had
+         * simply stopped working.
+         *
+         * The getter therefore checks the flag against reality: if neither the
+         * overlay view nor a visible PauseActivity exists, and the grace period
+         * for the fallback launch has elapsed, the guard is released.
+         */
+        var pauseShown: Boolean
+            get() {
+                if (!pauseGuardRaised) return false
+                // Something is genuinely on screen → the guard is legitimate.
+                if (OverlayManager.overlayAttached || pauseActivityVisible) return true
+                // Nothing is on screen. Give the fallback Activity a moment to
+                // come up before declaring the guard stale.
+                if (SystemClock.elapsedRealtime() - pauseGuardRaisedAt < PAUSE_GUARD_GRACE_MS) return true
+                pauseGuardRaised = false
+                lastDecision = "WATCHDOG: released a stale cooldown guard (nothing on screen)"
+                AppLogger.w(TAG, "Pause guard watchdog: no overlay and no visible PauseActivity — releasing guard")
+                return false
+            }
+            set(value) {
+                pauseGuardRaised = value
+                if (value) pauseGuardRaisedAt = SystemClock.elapsedRealtime()
+            }
 
         /**
          * The package the user just cancelled out of on the Pause screen.

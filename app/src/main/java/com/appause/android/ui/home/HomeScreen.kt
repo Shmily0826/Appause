@@ -166,20 +166,39 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ── Unified Status Header (service status + master toggle) ──
+            // ── Unified permission/status header ──
+            // When a required permission is missing we show ONE banner at the top
+            // that lists everything that is needed, instead of separate cards.
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                StatusHeaderCard(
-                    isServiceRunning = isServiceRunning,
-                    isEnabled = isEnabled,
-                    onToggle = viewModel::toggleEnabled,
-                    onOpenSettings = {
-                        // Open the system Accessibility Settings page
-                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        context.startActivity(intent)
-                    }
-                )
+                if (!isServiceRunning || !canDrawOverlays) {
+                    RequiredPermissionsBanner(
+                        isServiceRunning = isServiceRunning,
+                        canDrawOverlays = canDrawOverlays,
+                        onOpenAccessibilitySettings = {
+                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                        },
+                        onOpenOverlaySettings = {
+                            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                                data = Uri.parse("package:${context.packageName}")
+                            }
+                            context.startActivity(intent)
+                        }
+                    )
+                } else {
+                    StatusHeaderCard(
+                        isServiceRunning = isServiceRunning,
+                        isEnabled = isEnabled,
+                        onToggle = viewModel::toggleEnabled,
+                        onOpenSettings = {
+                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            context.startActivity(intent)
+                        }
+                    )
+                }
             }
 
             // ── Today's Statistics ──
@@ -189,54 +208,6 @@ fun HomeScreen(
                     cancelled = cancelledToday,
                     onClick = onNavigateToStats
                 )
-            }
-
-            // ── Overlay permission warning (required on OEM ROMs) ──
-            // On HyperOS/MIUI the pause screen can't show without "Display over
-            // other apps". We surface this front-and-center so the user never has
-            // to hunt for the setting. Tapping opens the system grant page.
-            if (!canDrawOverlays) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer
-                        ),
-                        onClick = {
-                            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-                                data = Uri.parse("package:${context.packageName}")
-                            }
-                            context.startActivity(intent)
-                        }
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.overlay_required_title),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = stringResource(R.string.overlay_required_desc),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
-                        }
-                    }
-                }
             }
 
             // ── Recommended Apps entry ──
@@ -361,6 +332,118 @@ fun HomeScreen(
             // Bottom spacing so FAB doesn't cover last item
             item { Spacer(modifier = Modifier.height(80.dp)) }
         }
+    }
+}
+
+/**
+ * Unified required-permissions banner shown at the top of the home screen.
+ *
+ * Replaces the previous split "service disabled" + "overlay disabled" cards
+ * with a single card that lists every missing permission and explains why it
+ * is needed. Tapping the primary action opens the most urgent settings page
+ * (accessibility first, overlay second); the secondary action shows an in-app
+ * explanation so users don't have to trust the banner blindly.
+ */
+@Composable
+private fun RequiredPermissionsBanner(
+    isServiceRunning: Boolean,
+    canDrawOverlays: Boolean,
+    onOpenAccessibilitySettings: () -> Unit,
+    onOpenOverlaySettings: () -> Unit
+) {
+    var showWhyDialog by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.required_permissions_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.required_permissions_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            if (!isServiceRunning) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.required_permissions_accessibility),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+            if (!canDrawOverlays) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.required_permissions_overlay),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = {
+                    if (!isServiceRunning) onOpenAccessibilitySettings()
+                    else onOpenOverlaySettings()
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.required_permissions_action))
+            }
+            TextButton(
+                onClick = { showWhyDialog = true },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = stringResource(R.string.required_permissions_learn_more),
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+    }
+
+    if (showWhyDialog) {
+        AlertDialog(
+            onDismissRequest = { showWhyDialog = false },
+            title = { Text(stringResource(R.string.permissions_why_title)) },
+            text = { Text(stringResource(R.string.permissions_why_body)) },
+            confirmButton = {
+                TextButton(onClick = { showWhyDialog = false }) {
+                    Text(stringResource(R.string.got_it))
+                }
+            }
+        )
     }
 }
 

@@ -306,11 +306,28 @@ class PauseActivity : ComponentActivity() {
         finish()
     }
 
+    override fun onStart() {
+        super.onStart()
+        // Liveness signal for the service's pause-guard watchdog: the pause
+        // screen is only "showing" while its window is actually visible.
+        AppauseAccessibilityService.pauseActivityVisible = true
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Covered or backgrounded (e.g. an anti-tamper app re-fronted itself),
+        // so the user can no longer see the pause screen. Dropping this lets
+        // the watchdog release the guard instead of blocking every later
+        // interception.
+        AppauseAccessibilityService.pauseActivityVisible = false
+    }
+
     override fun onDestroy() {
         super.onDestroy()
 
         // Reset the guard flag so the next target app open can trigger interception
         AppauseAccessibilityService.pauseShown = false
+        AppauseAccessibilityService.pauseActivityVisible = false
 
         // If the user didn't proceed, clean up the bypass.
         // This handles cases like: system kills the Activity, user swipes from recents, etc.

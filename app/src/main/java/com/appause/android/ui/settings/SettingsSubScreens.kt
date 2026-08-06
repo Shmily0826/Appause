@@ -46,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -195,6 +196,7 @@ fun PermissionsSettingsScreen(
     viewModel: SettingsViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
     val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
     val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
@@ -214,6 +216,25 @@ fun PermissionsSettingsScreen(
     }
 
     SettingsSubScaffold(R.string.settings_category_permissions, onNavigateBack) {
+        // ── Why these permissions? ──
+        // Put this first so users see the privacy explanation before they judge
+        // each individual toggle. Also defends against "this app is malicious"
+        // anxiety on OEM ROMs that aggressively warn about accessibility access.
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    stringResource(R.string.permissions_why_title),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    stringResource(R.string.permissions_why_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
         // ── Accessibility Service (required) ──
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -374,6 +395,30 @@ fun PermissionsSettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+
+        // ── Open-source / privacy reassurance ──
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    stringResource(R.string.open_source_footer_title),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.open_source_footer_body),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                val repoUrl = stringResource(R.string.github_repo_url)
+                Button(
+                    onClick = { uriHandler.openUri(repoUrl) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.github_repo_button))
+                }
             }
         }
     }

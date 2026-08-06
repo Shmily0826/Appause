@@ -34,12 +34,22 @@ Appause 通过本页面或网盘链接**直接分发 APK**（未上架传统应�
 - **华为（EMUI / HarmonyOS）**：弹"纯净模式"拦截时点"**退出纯净模式**"或"继续安装（风险自负）"。
 - **OPPO / vivo**：类似，选"**允许安装**"即可。
 
-## 第四步：完成安装并开启无障碍服务
+## 第四步：完成安装并开启两个必需权限
 
-1. 打开 Appause；
-2. 按应用内引导开启**无障碍服务（AccessibilityService）**——
-   这是 Appause 检测前台应用、弹出暂停屏所必需的，无法绕过；
-3. 按提示将 Appause 加入系统**自启动白名单 / 电池无限制 / 多任务锁定**，
+打开 Appause 后，首页顶部会列出还没开的权限，点「去开启」逐个授权。
+**下面两个都必须开，少一个 Appause 就不工作：**
+
+1. **无障碍服务（AccessibilityService）** —— 用来检测你打开了哪个应用。
+   没有它，Appause 不知道该在什么时候介入。
+2. **显示悬浮窗 / 在其他应用上层显示** —— 用来把停顿界面画在你刚打开的
+   那个应用之上。**没有它，检测照常工作，但你永远看不到停顿界面**，
+   表现就是"装了却没反应"。
+   入口：系统设置 → 应用 → Appause → 权限管理 → 其他权限 → 显示悬浮窗
+   （部分机型叫"在其他应用上层显示""后台弹出界面"）。
+
+再补两步，保证长期稳定：
+
+3. 将 Appause 加入系统**自启动白名单 / 电池无限制 / 多任务锁定**，
    避免被系统杀后台（否则拦截会失效）；
 4. 为减少误报，建议在系统设置 → 应用 → 特殊应用权限 → **使用情况访问**
    里给 Appause 授权（设置页也有入口）。授权后，通知栏里的媒体通知
@@ -50,6 +60,8 @@ Appause 通过本页面或网盘链接**直接分发 APK**（未上架传统应�
 ## 常见问题
 
 - **安装被拦截 / 解析失败**：确认 APK 下载完整（重新下载），并检查"未知来源"权限已开。
+- **打开目标应用没有任何反应**：先查**显示悬浮窗**权限是否已开——这是最常见的原因。
+  首页顶部横幅会直接提示缺哪个权限。
 - **装完不拦截**：多半是无障碍服务被关或后台被清理，回设置重开并加白名单。
 - **如何更新**：卸载旧版再装新版即可。配置存在本机数据库，正常不会丢；
   保险起见可在设置里先**导出配置**。
@@ -64,7 +76,12 @@ Appause 通过本页面或网盘链接**直接分发 APK**（未上架传统应�
 3. If Play Protect or your device maker shows a *"harmful app"* warning,
    choose **"Install anyway"** — this is a generic warning for all non-store APKs,
    not specific to Appause.
-4. Open Appause and enable the **AccessibilityService** when prompted, then
-   exempt it from battery optimization so it is not killed in the background.
+4. Open Appause and grant **both** required permissions from the banner at the
+   top of the home screen:
+   - **AccessibilityService** — detects which app you opened.
+   - **Display over other apps** — draws the pause screen on top of that app.
+     Without it detection still runs, but the pause screen never appears.
+5. Exempt Appause from battery optimization and allow auto-start so it is not
+   killed in the background.
 
 [GitHub Releases]: https://github.com/Shmily0826/Appause/releases

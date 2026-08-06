@@ -39,6 +39,14 @@
     <string name="service_active">Service active</string>
     <string name="open_settings">Open settings</string>
 
+    <!-- Home unified permission banner -->
+    <string name="required_permissions_title">Required permissions missing</string>
+    <string name="required_permissions_desc">Appause needs the following permissions to work:</string>
+    <string name="required_permissions_accessibility">Accessibility service — detect the foreground app</string>
+    <string name="required_permissions_overlay">Display over other apps — show the pause screen</string>
+    <string name="required_permissions_action">Open settings</string>
+    <string name="required_permissions_learn_more">Learn why these permissions are needed</string>
+
     <!-- OEM guidance dialog (Xiaomi / Huawei background management) -->
     <string name="service_off_help">Why it keeps turning off</string>
     <string name="service_help_title">Keeping the service running</string>
@@ -159,6 +167,19 @@
     <string name="overlay_permission">Display over other apps</string>
     <string name="overlay_permission_desc">Lets Appause show the pause screen above other apps. On Xiaomi/Huawei and other OEM ROMs, without this permission the pause screen can be covered by the target app (e.g. 小红书) and never seen.</string>
     <string name="open_overlay_settings">Open display-over-other-apps settings</string>
+
+    <!-- Settings: permission explanations and open-source statement -->
+    <string name="permissions_why_title">Why does Appause need these permissions?</string>
+    <string name="permissions_why_body">Appause does not read your messages, browsing history, or account info, and does not upload any data to a server. All permissions are used locally only.
+
+• Accessibility service: detects which app is currently in the foreground so Appause can show the pause screen when a blocked app is opened.
+• Display over other apps: draws the full-screen pause screen above the blocked app. Required on Xiaomi/Redmi, otherwise the target app can cover the pause screen.
+• Battery optimization: keeps the background service alive so interceptions continue to work.
+• Usage access (optional): confirms the real foreground app to avoid false triggers from media notifications in the shade.</string>
+    <string name="open_source_footer_title">Open source &amp; auditable</string>
+    <string name="open_source_footer_body">Appause is released under the MIT license and its source code is available on GitHub. No personal data is uploaded, no account is required, and there is no malicious code or ad tracking.</string>
+    <string name="github_repo_button">View GitHub repo</string>
+    <string name="github_repo_url">https://github.com/Shmily0826/Appause</string>
     <string name="overlay_granted">Granted — the pause screen can overlay on top</string>
     <string name="overlay_not_granted">Not granted — pause screen may not show on some devices</string>
     <string name="overlay_required_title">"Display over other apps" permission required</string>

@@ -33,9 +33,15 @@
 
 ### What we DON'T need from higher APIs:
 
-- `UsageStatsManager` (API 22) — we use AccessibilityService instead
-- `SYSTEM_ALERT_WINDOW` overlay — we use a regular Activity for the pause screen
 - Bubble API (API 29) — not needed for v1
+
+> **Superseded (v0.5.0).** This list originally also claimed we needed neither
+> `UsageStatsManager` nor `SYSTEM_ALERT_WINDOW`. Both turned out to be
+> necessary in practice: usage access confirms the real foreground app (so a
+> media notification cannot trigger a false pause), and the overlay permission
+> is what lets the pause screen appear at all — an accessibility overlay is
+> refused by the window manager on Android 12+/HyperOS, and a plain Activity
+> can be pushed back behind apps that re-front themselves. See §6.4.
 
 **Decision: minSdk = 26, compileSdk = 35, targetSdk = 35.**
 

@@ -39,6 +39,14 @@
     <string name="service_active">服务运行中</string>
     <string name="open_settings">打开设置</string>
 
+    <!-- 首页统一权限提醒 -->
+    <string name="required_permissions_title">请开启必要权限</string>
+    <string name="required_permissions_desc">Appause 需要以下权限才能正常工作：</string>
+    <string name="required_permissions_accessibility">无障碍服务 — 检测当前前台应用</string>
+    <string name="required_permissions_overlay">显示悬浮窗 — 在目标应用上显示暂停页</string>
+    <string name="required_permissions_action">去开启</string>
+    <string name="required_permissions_learn_more">了解这些权限的用途</string>
+
     <!-- OEM 引导对话框（小米/华为后台管理） -->
     <string name="service_off_help">为什么总是被关闭</string>
     <string name="service_help_title">让服务保持运行</string>
@@ -242,6 +250,19 @@
     <string name="overlay_permission">显示悬浮窗</string>
     <string name="overlay_permission_desc">允许 Appause 在其它应用上方显示暂停页。在小米/红米等机型上，若不开此权限，暂停页可能被目标应用（如小红书）自动顶掉而看不见。</string>
     <string name="open_overlay_settings">打开显示悬浮窗设置</string>
+
+    <!-- 设置页：权限说明与开源声明 -->
+    <string name="permissions_why_title">为什么需要这些权限？</string>
+    <string name="permissions_why_body">Appause 不会读取你的聊天记录、浏览内容或账号信息，也不会把任何数据上传到服务器。所有权限都只在本地使用。
+
+• 无障碍服务：检测你当前打开了哪个应用，以便在打开被限制的应用时弹出暂停页。
+• 显示悬浮窗：在被限制的应用上层显示全屏暂停页。小米/红米等机型必须开启，否则暂停页会被目标应用自动顶掉。
+• 电池优化：防止系统在省电时终止后台服务，导致拦截失效。
+• 使用情况访问（可选）：确认真正在前台的应用，避免通知栏里的媒体通知等误触发暂停。</string>
+    <string name="open_source_footer_title">开源可审计</string>
+    <string name="open_source_footer_body">Appause 是 MIT 开源项目，源代码可在 GitHub 上查看。我们不上传任何个人数据，也无需注册账号，没有任何恶意代码或广告追踪。</string>
+    <string name="github_repo_button">查看 GitHub 仓库</string>
+    <string name="github_repo_url">https://github.com/Shmily0826/Appause</string>
     <string name="overlay_granted">已授权 — 暂停页可正常覆盖在最上层</string>
     <string name="overlay_not_granted">未授权 — 部分机型暂停页可能不显示</string>
     <string name="overlay_required_title">需要「显示悬浮窗」权限</string>

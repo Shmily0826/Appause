@@ -71,6 +71,7 @@ security tool.
 | Permission | Why it is needed |
 |------------|------------------|
 | AccessibilityService | To detect the foreground app by package name (as described above). |
+| Display over other apps (`SYSTEM_ALERT_WINDOW`) | To draw the pause screen on top of the app you just opened. Without it the pause screen cannot appear on many devices, so Appause has nothing to show you. It draws only Appause's own pause screen; it never reads or records what is underneath. |
 | Foreground Service | To keep foreground-app detection running while the device is in use. |
 | POST_NOTIFICATIONS (Android 13+) | To show the persistent "detection active" notification. |
 | INTERNET | Only for the **one-time** Appause Pro license redeem and for feedback you choose to send via "Send via Appause". Not used during normal use, and the app works fully offline otherwise. |
@@ -135,6 +136,7 @@ Appause 使用系统的 AccessibilityService，**仅用于**检测当前前台�
 | 权限 | 用途 |
 |------|------|
 | AccessibilityService | 如上所述，通过包名检测前台应用。 |
+| 显示悬浮窗 / 在其他应用上层显示（`SYSTEM_ALERT_WINDOW`） | 把停顿界面画在你刚打开的那个应用之上。不开这个权限，很多设备上停顿界面根本弹不出来，Appause 也就没东西可展示。它只负责绘制 Appause 自己的停顿界面，不会读取或记录下层内容。 |
 | 前台服务 (Foreground Service) | 在设备使用期间保持前台应用检测持续运行。 |
 | POST_NOTIFICATIONS（Android 13+） | 显示常驻的"检测中"通知。 |
 | INTERNET（联网） | 仅用于激活 **Appause Pro 时的一次性许可证兑换**，以及你主动选择的「通过 Appause 发送」反馈。日常使用不会联网，其余功能完全离线。 |

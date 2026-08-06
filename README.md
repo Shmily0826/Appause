@@ -65,13 +65,18 @@ redeem when you activate Appause Pro; after that, Pro works fully offline.
 | Permission | Why |
 |------------|-----|
 | AccessibilityService | Detect the foreground app by package name (see above). |
+| Display over other apps (`SYSTEM_ALERT_WINDOW`) | **Required.** Draw the pause screen on top of the app you just opened. |
 | Foreground Service | Keep detection alive while the device is in use. |
 | POST_NOTIFICATIONS (Android 13+) | Show the "detection active" notification. |
 | INTERNET | Only for the one-time Appause Pro license redeem and for feedback you choose to send via Appause. Not used during normal use. |
 | Usage Access (`PACKAGE_USAGE_STATS`) | Optional but recommended. Confirms which app is genuinely on screen before showing the pause screen, so a media notification (e.g. a video playing in the shade) won't trigger a false pause. The query is local — no usage data leaves your device. |
 
-Appause does **not** request the `SYSTEM_ALERT_WINDOW` (overlay) permission;
-the pause screen uses an accessibility overlay instead.
+> ⚠️ **Grant "Display over other apps".** Appause draws the pause screen as a
+> system overlay. On Android 12+ — and on HyperOS / MIUI in particular — an
+> accessibility overlay is refused by the window manager, and some apps can
+> push themselves back in front of a normal Activity. Without this permission
+> detection still runs, but you will never see the pause screen. Appause uses
+> it only to draw its own pause screen; it never reads what is underneath.
 
 ---
 
