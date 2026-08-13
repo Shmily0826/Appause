@@ -109,14 +109,20 @@ This file defines rules that ALL AI agents (and human developers) MUST follow wh
   device-bound license JWTs and must never receive, store, or sync user data.
   Do not extend it into an account/sync system.
 - Do not add Flutter, React Native, or any cross-platform framework.
-- Pause screen display: prefer a regular Activity first; on OEM ROMs (HyperOS/MIUI,
-  Android 16) where the Activity can be covered by the target app re-fronting itself
-  (e.g. 小红书), fall back to a `TYPE_APPLICATION_OVERLAY` WindowManager window, which
-  requires the `SYSTEM_ALERT_WINDOW` ("显示悬浮窗") permission. This permission MUST be
-  declared in the manifest AND guided in-app (Home warning banner + Settings permission
-  card + Onboarding step), because on HyperOS the pause screen is invisible without it.
-  Do NOT use `TYPE_ACCESSIBILITY_OVERLAY` as the only path — it is rejected (BadTokenException)
-  on HyperOS/Android 16, so the overlay would never show.
+- Pause screen display on OEM ROMs (HyperOS/MIUI, Android 16):
+  - `TYPE_ACCESSIBILITY_OVERLAY` (2032) is the PRIMARY window type. It sits above
+    every app and anti-tamper apps (e.g. 小红书) CANNOT hide it via `setHideOverlayWindows`.
+    This is the type the working release (base.apk / v0.5.1) uses, and it shows over 小红书.
+    It requires the AccessibilityService's own window token: obtain `WindowManager` from the
+    RAW `service` context (not a locale-wrapped/configuration context) or `addView()` throws
+    `BadTokenException`.
+  - `TYPE_APPLICATION_OVERLAY` (2038) gets HIDDEN by 小红书's `setHideOverlayWindows` even
+    when `addView()` succeeds — so the pause screen is added but rendered INVISIBLE. Use it
+    ONLY as a fallback when 2032 is rejected. (It does NOT require `SYSTEM_ALERT_WINDOW`.)
+  - A regular foreground Activity is the LAST-resort fallback: 小红书 re-fronts itself and
+    covers the Activity within ~300 ms on HyperOS, so the user may not see it. Do not treat
+    Activity as the primary path.
+  - Therefore: prefer 2032 → fall back to 2038 → fall back to Activity.
 - Do not hardcode specific app package names (e.g., `com.zhiliaoapp.musically` for TikTok).
 - Do not create empty interfaces, abstract classes, or "architecture placeholders" that have no immediate use.
 - Do not add logging frameworks (use `android.util.Log` for debug logging).

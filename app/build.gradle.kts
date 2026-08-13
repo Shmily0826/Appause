@@ -24,8 +24,8 @@ android {
         applicationId = "com.appause.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 53
-        versionName = "0.5.1"
+        versionCode = 81
+        versionName = "0.5.29"
         // Baked at build time; lets a shared diagnostics report prove exactly
         // which APK is installed (used by the Diagnostics "build time" row).
         buildConfigField(
@@ -36,6 +36,17 @@ android {
     }
 
     signingConfigs {
+        // Optional override for the debug keystore location. Normally AGP uses
+        // ~/.android/debug.keystore; pass -PappauseDebugKeystore=<path> when
+        // that directory isn't writable (e.g. a restricted build sandbox).
+        // Point it at a COPY of the usual debug.keystore so the signature stays
+        // the same and existing debug installs can still be updated in place.
+        providers.gradleProperty("appauseDebugKeystore").orNull?.let { path ->
+            getByName("debug") {
+                storeFile = file(path)
+            }
+        }
+
         create("release") {
             // Values come from local.properties, which is git-ignored.
             storeFile = file(localProps.getProperty("APPause_KEYSTORE_PATH", "release.keystore"))

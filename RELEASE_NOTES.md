@@ -1,11 +1,85 @@
-# Appause v0.5.1 — 发布说明 (Release Notes)
+# Appause v0.5.29 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.1/Appause-v0.5.1.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.29/Appause-v0.5.29.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.5.29) — 新增「电池优化」警告 + 校正权限说明
+- **首页新增醒目的「电池优化未关闭」红色警告**：在 HyperOS / 小米上，若 Appause 的电源限制是「智能」（未豁免省电），系统会**在后台杀掉无障碍服务、且不会自动重启**——表现就是最经典的那句抱怨：「第一次打开被限制的应用不拦截，切回 Appause 才拦，再开才正常」。以前只有 debug 诊断页提了一句，普通用户根本看不到。现在只要没设成「无限制」，首页顶部就常驻这条红色警告，点一下直接跳到「电池优化」设置，把坑挡在前面。
+- **校正权限说明（重要）**：之前首页把「显示悬浮窗」列为必开权限，这是**错的**。停顿屏用的是 `TYPE_ACCESSIBILITY_OVERLAY`（2032）覆盖层，小红书无法藏掉它，且**不需要**「显示悬浮窗」权限；反而授予它会让部分路径回退到 2038、被小红书藏掉。正确的权限要求见下方「必须开启的权限」。
+- 诊断页（debug）也新增「电池优化（省电策略）」状态行，并写入诊断报告。
+- 升到 v0.5.29 / 81。
+
+### ✅ 必须开启的权限（首次使用请逐项确认）
+1. **无障碍服务（必须）** — 系统「设置 → 无障碍 → Appause」打开开关。这是 Appause 检测前台 app 的唯一方式。
+2. **电池优化 = 无限制（必须）** — 系统「设置 → 应用 → Appause → 电池 → 无限制」。**不设这个，拦截会静默失效**（服务被后台杀掉且不重启）。v0.5.29 首页会直接警告你。
+3. **使用情况访问（强烈建议）** — 系统「设置 → 隐私 / 安全 → 使用情况访问 → Appause」。让前后台判定最准；不授权也能拦，但可能误判前台 app。
+
+> ⚠️ **不需要**「显示悬浮窗（悬浮窗 / 在其他应用上层显示）」：新版停顿屏用无障碍覆盖层（2032），小红书藏不掉它，且无需该权限。授予它反而可能让停顿屏走 2038 被小红书藏掉。
+>
+> 额外建议（小米 / HyperOS）：在「最近任务」把 Appause 卡片**锁定**，并在应用设置里允许**自启动**，服务更稳。
+
+### 本次更新 (v0.5.28)（已被 v0.5.29 取代，但 2032 窗口类型修复保留）
+- 彻底修好「第一次打开小红书不拦截 / 看不到停顿屏」：根因是悬浮窗窗口类型选错。反编译能用的 release（base.apk / v0.5.1）证明它用 **`TYPE_ACCESSIBILITY_OVERLAY`（2032）**，而小红书的 `setHideOverlayWindows()` 会把 **`TYPE_APPLICATION_OVERLAY`（2038）** 藏掉。v0.5.28 把 2032 设为唯一优先类型。该修复在 v0.5.29 中保留。
+
+### 本次更新 (v0.5.27)（已被 v0.5.28 的根因修复取代）
+- 曾把悬浮窗改回 2038 优先——但实测 2038 在 HyperOS/小红书 上被 `setHideOverlayWindows` 藏掉，故 v0.5.28 改用 2032 优先。（0.5.27 仍贡献了守卫宽限 8s→1.5s + 30s 硬上限的修复，已保留。）
+
+### 本次更新 (v0.5.26)（已被 v0.5.27 回退）
+- 原方案：停顿屏改用真正前台 Activity（PauseActivity）。实测在 HyperOS 上小红书会重新前台盖住 Activity、且守卫卡死，故 v0.5.27 改回悬浮窗优先方案。
+
+### 本次更新 (v0.5.25)
+- **修好「第一次打开小红书不拦截」**：v0.5.24 偶尔出现——首次打开 xhs 停顿屏不弹，切去 Appause 再切回来才拦，第三次起正常。根因是去重守卫（`lastForegroundPackage` 相等就静默跳过）记了**过期**的「当前前台 = xhs」：HyperOS 吞掉「离开 app」的窗口事件，且 `getForegroundPackage()` 对受控 app 不可信（后台的 xhs 也可能被报成前台），于是下次真开 xhs 时被当成「同 app 内切换」直接吞掉，没有日志、没有拦截。修法两条：(1) 去重守卫改为只在「**上一条事件也是同一个 app**」时才跳过——这能区分「真重开（离开过→上一条是别的应用）」和「app 内切页（feed→笔记）」；(2) 前台轮询器不再用 `getForegroundPackage()` 给受控 app 重新「确认前台」，避免它把后台的 xhs 误报成前台、污染去重状态。停顿屏现在每次真开都弹。升到 v0.5.25 / 77。
+
+### 本次更新 (v0.5.24)
+- **彻底修好「回到 Appause 才拦截 / xhs 和 bilibili 都不拦」**：v0.5.23 的诊断直接证明——这台 HyperOS 上系统用量日志对这两个 app **根本不可信**：开 xhs 时无障碍事件已经是 `event=com.xingin.xhs`，但 `getForegroundPackage()` 却返回 `com.appause.android.debug`（Appause 自己！），`wasResumedRecently(xhs)` 也是 false，于是确认逻辑把 xhs 判定为误报跳过；bilibili 只能靠 `wasResumedRecently` 在 600ms 复查那一刻拦到，但那时你已经回 Appause 了，停顿屏弹在了 Appause 里。根因就是「不可信的用量日志 + 600ms 延迟」。v0.5.24 **直接信任无障碍事件**：事件一到就立刻拦截（事件包名就是真前台），**唯一的抑制只剩「最近任务重放」风暴守卫**，且阈值从 2 个真实包提高到 3 个（`BURST_MIN_DISTINCT=3`）——真开一个 app 顶多 1 个、从另一个被控 app 直接切过来最多 2 个真实包，都碰不到 3，所以真启动永不误杀；而 HyperOS 的「重放」同一瞬间炸出一堆缓存任务（≥3 个真实 app），仍会被正确挡掉。停顿屏现在**在 app 还显示在屏幕上时就盖上去**，不再等你切回 Appause。升到 v0.5.24 / 76。
+- 顺手把你之前要的「步骤 6.5 满诊断日志」保持下来：会打出 `6.5 event=… burstSuppress=… burstReal=…`，配合 `overlay added while fg=… type=…`，一眼能看清拦没拦、为什么。
+
+### 本次更新 (v0.5.23)
+- **回退 v0.5.11–v0.5.22 的「数包数风暴守卫」——它是误杀真启动的元凶**：你分组里 xhs 和 bilibili 都在，开 xhs 时无障碍事件簇里天然就有两个真实包，被守卫误判成「最近任务重放」直接 SKIP，所以两个 app 都不拦。对照 git 历史（tag v0.5.1 / commit 0c2504f，即你手机上能用的 release base.apk）确认：v0.5.1 根本没有这个守卫，拦截稳定。v0.5.23 把步骤 6.5 **完整恢复成 v0.5.1 的用量日志确认逻辑**（立即查，不一致则等 600ms 复查一次，仍不一致才算误报→跳过；未授权用量访问则直接放行）。
+- **新增 `wasResumedRecently` 兜底（只增不减拦截）**：HyperOS 用量日志的「当前最前」可能滞后于一次极短的打开，但 RESUMED 事件仍证明用户确实打开了 app。现在即便「当前最前」读错，只要最近 5s 内有被控 app 的 RESUMED 就照样拦截——通知/最近任务重放不会产生 RESUMED，不会被误拦。
+- **步骤 6.5 加满诊断日志（你要求的）**：打出 `6.5 #1 event=… usageLog=… burstSuppress=…` 与 `6.5 #2 usageLogRetry=… resumedRecently=…`，方便直接看清楚「系统用量日志到底返回了什么、为什么拦/不拦」。风暴守卫现在只记录、不再门控。
+- 升到 v0.5.23 / 75。
+
+### 本次更新 (v0.5.22)
+- **照你手机上能用的 release（base.apk, v0.5.1）逐字节对齐修复**：反编译对比发现 base.apk 的代码和 debug 完全一样，差别在**运行时权限**——release 版没开「使用情况访问」，所以它的确认逻辑直接跳过、**事件一到立刻拦截**；而 debug 版开了「使用情况访问」，确认逻辑去读 HyperOS 的用量日志（已证实它根本不记录小红书的 RESUMED），结果要么误判、要么拖慢 200–600ms，停顿屏弹出来时已经错过时机。v0.5.22 **彻底不用用量日志确认**：事件簇沉降 60ms（只够识别最近任务重放）就立刻拦截，和 release 一样快。升到 v0.5.22 / 74。
+- **停顿屏恢复悬浮窗优先（2038），与 base.apk 一致**：之前的失败是拦截太晚，不是悬浮窗类型不对。现在拦截几乎即时，悬浮窗在小红书窗口还没站稳时就盖上。addView 失败再退 2032 → PauseActivity。
+- **修复 AlarmManager SecurityException**：Android 14+ 无 SCHEDULE_EXACT_ALARM 权限会抛异常，PauseActivity 兜底改用手头就有的 Handler 重拉（无需权限）。
+- **真正修好「在 rednote/小红书 里看不到停顿屏、切回 Appause 才看到」**：对照**能成功的旧版 v0.4.7**（诊断 2026-08-06 14:36）发现根因——旧版悬浮窗 `addView` 抛 `BadTokenException` → **回退到 PauseActivity（一个 Activity）**，而 Activity 不受 `setHideOverlayWindows` 影响、小红书藏不了，所以停顿屏稳稳盖在小红书上面（实测停了 65s）。后来你授予了「显示悬浮窗」权限，`TYPE_APPLICATION_OVERLAY` 的 `addView` **不再抛异常、直接成功**，于是代码用悬浮窗、**不再回退到 PauseActivity**——但小红书会调 `Window.setHideOverlayWindows()` 把 `TYPE_APPLICATION_OVERLAY` 藏起来，悬浮窗加成功了却看不见。这就是"自从某版本后就不能正常拦截"的真相：不是拦截逻辑坏了，是悬浮窗成功反而绕过了能用的 PauseActivity。**修复**：① 优先用 `TYPE_ACCESSIBILITY_OVERLAY`（无障碍叠层，`setHideOverlayWindows` 对它无效，小红书藏不了）；② 若它抛异常，**直接回退 PauseActivity**（不再试会被藏的 `TYPE_APPLICATION_OVERLAY`），恢复 v0.4.7 那条被验证可用的路径。用 service 原始 context 取 WindowManager 以保住无障碍 token。另加诊断日志 `overlay added while fg=… type=…` 印证。升到 v0.5.20 / 72。
+- 附带保留 v0.5.19 的时序改进（确认窗口从 600ms 缩到 ~200ms），让停顿屏在可见时也更跟手。
+
+### 本次更新 (v0.5.19)
+- **停顿屏现在"打开 app 的瞬间"就弹，不再要等 600ms、看起来像"切回 Appause 才拦"**：v0.5.18 虽然识别出了真启动，但仍沿用 v0.5.1 的 600ms 用量日志二次确认延迟——而窗口事件比用量日志早几百毫秒到达，于是判定要等 600ms 后才落。若你在这 600ms 内切回了 Appause（实测你确实常常这么做：16:20:14.125 开小红书，16:20:14.288 就回 Appause），停顿屏就弹在 Appause 里，而不是小红书里，看起来像"只在切回 Appause 后才拦"。v0.5.19 改为：**事件簇形状本身就是结论**——真启动的簇只有"被控 app 1 个真实包 + 启动器 + 系统组件"，开 app 的瞬间就已定型。现在只等约 200ms（刚好让"最近任务重放"的第二个真实包露出面）就拦截，比 600ms 快近 3 倍，且仍然能正确拦掉重放、仍然不受你切回 Appause 的影响。升到 v0.5.19 / 71。
+- **彻底修好「开了又立刻回 Appause 看诊断 → 不拦截」**：v0.5.17 改成查"被控 app 最近有没有真正 RESUMED（被打开过）"，但实测发现 HyperOS 上**极短时间的打开（<~200ms）根本不会在用量日志里留下 RESUMED 记录**——而你开小红书后往往不到 200ms 就跳回 Appause 抓报告，于是 `wasResumedRecently` 返回 false，照样被跳过（诊断实测：09:05:24.657 开小红书，09:05:24.814 就回 Appause，仅隔 157ms）。v0.5.18 改用**三个互相独立的信号任一成立即拦截**：① 600ms 后用量日志仍显示被控 app 在最前；② 用量日志里查到被控 app 的 RESUMED；③ **无障碍事件簇本身是"真启动"形状**（被控 app + 启动器 + 系统组件 = 只有 1 个真实 app），而不是"最近任务重放"形状（同一瞬间炸出 2+ 个真实 app）。第 ③ 个信号读的是无障碍事件簇、不依赖用量日志，所以"开了就拦，回去早也不影响"这次真正成立。通知和最近任务重放仍会被 ③ 正确识别并忽略。
+- **风暴守卫恢复参与判定，但不再单独门控**：旧版"数包数"风暴守卫（isBurstSuppressed）重新接回，但只作为上面 ③ 这一路信号，且是「三选一」的其中一项——它能帮忙拦掉明确的"最近任务重放"，却再也无法单独把一次真启动误杀（这是 v0.5.11–14 反复踩坑的根因）。同时把 Appause 自己的包排除在"真实 app"计数外，避免从 Appause 里点开被控 app 被误判为重放。
+- 暂停屏文案保持单行"给自己几秒，再决定是否继续。"不变。升到 v0.5.18 / 70。
+
+### 本次更新 (v0.5.17)
+- **拦截现在"开了就拦"，不再被你自己回 Appause 看诊断的操作误杀**：之前步骤 6.5 在 600ms 宽限后复查"当前前台是不是被控 app"，而你的测试习惯是开小红书后立刻跳回 Appause 抓报告——此时系统前台已变成 Appause，于是被判定"不是真前台"而跳过（诊断里显示 `SKIP: not actually foreground (real=com.appause.android.debug)`）。现改为复查"被控 app 在最近窗口里有没有真正 RESUMED（被打开过）"，只要真打开过就拦，回去早也不影响。通知、最近任务重放仍不会产生被控 app 的 RESUMED，照常忽略。
+- **暂停屏文案收敛为单行**：只保留"给自己几秒，再决定是否继续。"，去掉了之前多加的第二行提示。纯文案改动本不升版本号，但因本次同时改了拦截逻辑，升到 v0.5.17 / 69。
+
+### 本次更新 (v0.5.16)
+- **与能正常使用的旧 release（base.apk = v0.5.1）逐行对齐拦截逻辑**：对照旧版反编译 + git 历史（commit 0c2504f / tag v0.5.1）确认，旧版能稳定拦截靠的是「读系统用量日志（ForegroundChecker.queryEvents）作为权威判定 + 600ms 宽限期二次确认」，根本没有“数包数”的风暴守卫。v0.5.11 把这段用量日志判定整段删掉、只留不可靠的风暴守卫，才是“装了不拦截”的真正根因（HyperOS 真开 app 与最近任务重放发出的无障碍事件字节级相同，数包数分不出来）。v0.5.16 把步骤 6.5 完整恢复成 v0.5.1 的逻辑：立即查用量日志，若不一致则在 600ms 宽限后复查一次，仍不一致才算误报（通知）→ 跳过；一致即拦截。未授权用量访问时直接放行（同 v0.5.1）。
+- **风暴守卫已彻底退出拦截判定**：旧版“数包数”的风暴守卫（recordWindowEvent / isBurstSuppressed / isBurstNoisePackage）不再参与门控，避免它把真启动误判为最近任务重放。
+- **诊断页「被控应用最近判定」现在显示真正原因**：授权后若仍不拦截会显示 `SKIP: not actually foreground (real=…)`（真·误报，如通知），而不是旧的 `SKIP: burst replay`。
+
+### 本次更新 (v0.5.15)
+- **真·修复「装了不拦截」：恢复系统用量日志作为权威判定**。v0.5.11 把原来可靠的「真启动判定」（`ForegroundChecker` 读系统 `queryEvents()` 用量日志）整个删掉，改成只靠包数量的风暴守卫。这才是 v0.5.11–v0.5.14 连续四个版本都"还是不拦截"的根因——在 HyperOS 上，**真开 app 和最近任务重放发出的无障碍事件字节级相同**（目标包 + 启动器 + 一堆缓存任务的窗口事件，里面还夹着别的真实 app 比如邮件）。数包数根本分不出来，所以真启动被当成重放跳过了。现在步骤 6.5 在已授予"使用情况访问"时，直接问系统用量日志（HyperOS 不会伪造它）：真是你打开的 app 才有真正的 `ACTIVITY_RESUMED`，所以能准确识别。未授权时才退回风暴守卫兜底。
+- **判定前等 400ms 再查系统**：窗口事件会比用量日志早几百毫秒到达，先等事件风暴平息、用量日志记好真前台，再判定，避免读到"打开之前"的 app。实测 400ms 既能准确判定，又不会像旧版 1s 那样出现"用户回 Appause 看一眼就判定失败"的死循环。
+- **诊断页「被控应用最近判定」现在会显示真正原因**：授权后若仍不拦截，会显示 `SKIP: not the real foreground app (real=…)`（说明系统认定前台是别的 app）；只有未授权时才会显示旧的 `SKIP: burst replay`。
+
+### 上版本 (v0.5.14)
+- **彻底修好「不拦截」：不再靠手写系统包名单**。v0.5.11–v0.5.13 连续三个版本都栽在同一个坑：风暴守卫要区分"真启动"和"最近任务重放"，靠的是一份手写的 OEM 系统组件名单；而 HyperOS 每次开 app 附带的组件都不一样（搜索框、SystemUI 插件、个人助理……），只要漏了一个，就会被当成"第二个真实 app"→ 真启动被误判为重放 → 不弹停顿屏。现在改为直接问系统：凡是随系统镜像预装的包（`FLAG_SYSTEM`）一律算背景噪音，不再逐个写名字。真启动永远只剩「你点开的那一个」真实包 → 稳定拦截。
+- **风暴判定改为相对目标 app**：只有当同一簇事件里出现了目标 app **之外**的真实 app，才算最近任务重放。这样即便被控 app 本身是厂商预装（例如自带浏览器），也不会自己把自己的拦截压掉。
+- **修复风暴守卫过度抑制（真启动被误判为 phantom）**：HyperOS 真从桌面开 app 时会在同一毫秒内发出 目标包 + 启动器 + 系统搜索框 + SystemUI 插件 等多个包，旧规则「120ms 内 ≥3 个不同包即判风暴」把这些系统包也算进去，导致真启动被跳过。现改为只统计「非系统、非启动器」的真实 app 包，且需 ≥2 个真实 app 才判为风暴——真启动（仅目标 1 个真实包）正常拦截，最近任务重放（含第二个真实 app 如 personalassistant）仍被挡住。
+- **权限说明可折叠 + 每条另起一行**：设置 → 权限页顶部「为什么需要这些权限？」改为可点开/收起的卡片，展开后每条说明各自占一行，不再挤成一大段；首页弹窗同步采用同样的逐条排版。
+- **权限已授权就隐藏「打开设置」按钮**：无障碍、显示悬浮窗、使用情况访问三项一旦已授予，对应的系统设置入口按钮直接隐藏，避免「已经开了还让我点」的困惑。
+- **消灭权限页红→绿闪烁**：进入权限页前会先读取真实权限状态，不再默认显示红色「未开启」再刷新成绿色。
+- **关于页不再显示原始 true/false**：调试信息改为显示「已开启 / 未开启」并带颜色；顺手修了 Android 版本号之前一直显示 "%d (%s)" 的 bug。
+- **开源卡排版优化**：底部「开源可审计」卡片的按钮改为描边样式并带上外链图标，不再占满整行。
 
 ### 本次更新 (v0.5.1)
 - **修复「用着用着突然不拦截了」**：停顿屏有个内部标记，用来避免倒计时期间重复弹窗。原先这个标记只在停顿屏正常关闭时才复位——一旦覆盖层没能显示，或停顿页被某些 App 挤到后台，标记就会永久卡住，之后**所有**拦截都被静默跳过，表现就是 App 突然失灵。现在加了看门狗：只要屏幕上既没有覆盖层、也没有可见的停顿页，标记会自动释放。
@@ -141,6 +215,13 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 ---
 
 ## 🇺🇸 English
+
+### What's new in v0.5.2
+- **Collapsible, line-per-item permission explainer**: the "Why does Appause need these permissions?" card on Settings → Permissions is now expandable/collapsible, and each reason sits on its own line instead of one dense paragraph. The home-screen dialog uses the same line-per-item layout.
+- **Hide "open settings" once granted**: the system-settings buttons for Accessibility, Display over other apps, and Usage access disappear as soon as the permission is granted, so there is no confusing "open settings" on an already-granted item.
+- **No more red-to-green flash**: permission status is read before the screen shows, so it no longer enters red ("Not enabled") and then refreshes to green.
+- **About no longer shows raw true/false**: debug info now reads "Enabled / Not enabled" with colour; also fixed the Android-version line that used to render as "%d (%s)".
+- **Open-source card polish**: the bottom "open source & auditable" card now uses an outlined button with an external-link icon instead of a full-width button.
 
 ### What's new in v0.5.1
 - **Fixed: interception silently stopping after a while.** An internal guard flag keeps the pause screen from re-triggering during a countdown, but it was only cleared when the pause screen closed normally. If the overlay failed to attach, or another app buried the pause screen, the flag stuck raised forever and every later interception was skipped — the app looked broken. A watchdog now releases the guard whenever neither the overlay nor a visible pause screen exists.

@@ -1,5 +1,15 @@
 # Appause — Development Progress
 
+## v0.5.2 (WIP, uncommitted)
+- GroupEditorScreen re-remind refinement (task #50 follow-up):
+  - Re-remind block already in default-collapsed CollapsibleCard (everyone).
+  - "Same as first" cooldown now explicit: added a switch; slider min is 1s (no implicit 0). Data model keeps `0 = same as first`.
+  - Renamed 重复提醒 → 循环提醒 (Loop reminders).
+  - Simplified 逐次延长冷却 desc with concrete example (30 → 60 → 90 s).
+  - Collapsed re-remind card shows a summary ("已开启 · 每 X 分钟" / Off / Pro only).
+  - Slider: continuous track (no steps), default circular thumb; number input shrunk to 56dp so all three time controls share one layout.
+  - Debug build green → output/Appause-debug-v0.5.2.apk.
+
 ## Phase Overview
 
 | Phase | Name | Status | Notes |

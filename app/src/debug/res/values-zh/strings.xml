@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Debug build resources (Chinese locale).
+  The main values-zh/strings.xml defines app_name = "Appause", which takes
+  priority over the debug values/ override on Chinese-locale devices. Without
+  this file, the debug build shows "Appause" instead of "Appause Debug" in
+  system permission pages, making it hard to tell apart from the release build.
+-->
+<resources>
+    <string name="app_name">Appause Debug</string>
+</resources>

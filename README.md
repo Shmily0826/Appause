@@ -17,8 +17,8 @@ brief pause screen before those apps open, so you take a moment before continuin
 
 - **App groups** — bundle distracting apps (e.g. Social, Entertainment) and
   manage them together.
-- **Per-group cooldown** — a configurable pause (e.g. 10–30s free / up to 60s
-  Pro) before a grouped app opens.
+- **Per-group cooldown** — a configurable pause (up to 60s) before a grouped
+  app opens.
 - **Pause screen** — a calm, dismissible screen instead of an instant block.
   Cancel always returns you to the home screen.
 - **Session timer + re-remind** — optionally get nudged again while you're still
@@ -33,9 +33,10 @@ brief pause screen before those apps open, so you take a moment before continuin
   Settings. Device info is attached automatically and shown to you before
   sending. You can send anonymously through Appause (no email or account
   needed), or open an email / GitHub issue if you prefer.
-- **Appause Pro (optional)** — unlock unlimited groups, longer cooldowns,
-  custom pause text and full history. Activation is a one-time, offline-verified
-  license — see [worker/README.md](worker/README.md).
+- **Appause Pro (optional)** — unlock unlimited groups, re-remind while you're
+  still inside a distracting app, a custom pause prompt, and custom "why are you
+  opening this?" reasons. Activation is a one-time, offline-verified license —
+  see [worker/README.md](worker/README.md).
 
 ---
 
@@ -148,18 +149,23 @@ locally (no usage data leaves your device) for more accurate detection.
 
 ## Status
 
-Current version: **0.3.14**. All MVP phases are complete (project setup, data
+Current version: **0.5.2**. All MVP phases are complete (project setup, data
 layer, interception, groups, pause UI, stats, re-remind, dark mode, OEM
-guidance, usage access, in-app feedback). Appause Pro (server-activated license) is in
-preview.
+guidance, usage access, in-app feedback). Appause Pro is implemented as a
+device-bound, offline-verified license (Plan B): the app verifies a
+server-signed JWT locally, so a fork of this open-source repo can validate but
+never mint tokens.
 
 Known work:
 
 - Real-device testing across OEM ROMs (Xiaomi HyperOS, Huawei, OPPO, vivo) to
-  verify AccessibilityService survival after reboot / battery optimization.
+  verify AccessibilityService survival after reboot / battery optimization —
+  current builds include the "Display over other apps" overlay path that is
+  required on HyperOS / MIUI for the pause screen to be visible.
 - On-boarding flow that walks users through auto-start and battery whitelisting
   per device.
-- Plan B step 4: payment / code distribution for Appause Pro.
+- Plan B step 4: payment / code distribution for Appause Pro (the redeem and
+  verify plumbing is done; the "user pays → code is issued" layer is not).
 
 See [PROGRESS.md](PROGRESS.md) for the full development log.
 

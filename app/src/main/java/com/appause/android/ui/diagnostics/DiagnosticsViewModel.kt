@@ -1,6 +1,8 @@
 package com.appause.android.ui.diagnostics
 
 import android.app.Application
+import android.content.Context
+import android.os.PowerManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
@@ -10,6 +12,7 @@ import com.appause.android.service.AccessibilityServiceChecker
 import com.appause.android.service.AppauseAccessibilityService
 import com.appause.android.service.ForegroundChecker
 import com.appause.android.util.PersistentLog
+import com.appause.android.util.CrashLog
 import android.content.ComponentName
 import android.content.Intent
 import kotlinx.coroutines.Dispatchers
@@ -39,15 +42,31 @@ data class DiagnosticsState(
     val masterEnabled: Boolean = true,
     val usageAccessGranted: Boolean = false,
     val overlayPermissionGranted: Boolean = false,
+    /**
+     * Whether the app is exempt from battery optimization ("无限制"). When
+     * false on HyperOS/MIUI, the AccessibilityService is killed in the
+     * background with no auto-restart — the #1 cause of "first open isn't
+     * intercepted". Surfaced here so the tester can confirm it at a glance.
+     */
+    val batteryExempted: Boolean = false,
+    /**
+     * Other Appause builds (e.g. the release build alongside this debug one)
+     * whose accessibility service is ALSO enabled. Non-empty means two copies
+     * are intercepting the same apps and each pops its own pause screen.
+     */
+    val otherAppauseBuilds: List<String> = emptyList(),
     val eventCount: Long = 0L,
     val lastEventPackage: String? = null,
     val lastEventAt: Long = 0L,
     val lastDecision: String? = null,
+    /** Last decision for a controlled (grouped) app — survives launcher/Recents noise. */
+    val lastTargetDecision: String? = null,
     val overlayResult: String? = null,
     val foregroundPackage: String? = null,
     val bypassed: Set<String> = emptySet(),
     val groups: List<GroupDiag> = emptyList(),
     val persistentLog: String = "",
+    val crashLog: String = "",
     val forceStartResult: String? = null
 ) {
     /** Groups that can actually intercept something (pause type, at least 1 app). */
@@ -112,6 +131,10 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
                 PersistentLog.read(context)
             }
 
+            val crashLog = withContext(Dispatchers.IO) {
+                CrashLog.read()
+            }
+
             _state.value = _state.value.copy(
                 accessibilityEnabledInSettings = AccessibilityServiceChecker.isEnabled(context),
                 serviceAlive = AppauseAccessibilityService.instance != null,
@@ -119,15 +142,20 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
                 masterEnabled = repository.isEnabled.first(),
                 usageAccessGranted = ForegroundChecker.isUsageAccessGranted(context),
                 overlayPermissionGranted = android.provider.Settings.canDrawOverlays(context),
+                batteryExempted = (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)
+                    ?.isIgnoringBatteryOptimizations(context.packageName) ?: false,
+                otherAppauseBuilds = AccessibilityServiceChecker.otherAppauseBuildsEnabled(context),
                 eventCount = AppauseAccessibilityService.eventCount,
                 lastEventPackage = AppauseAccessibilityService.lastEventPackage,
                 lastEventAt = AppauseAccessibilityService.lastEventAt,
                 lastDecision = AppauseAccessibilityService.lastDecision,
+                lastTargetDecision = AppauseAccessibilityService.lastTargetDecision,
                 overlayResult = AppauseAccessibilityService.lastOverlayResult,
                 foregroundPackage = foreground,
                 bypassed = InterceptionManager.bypassedSnapshot(),
                 groups = groups,
-                persistentLog = persistentLog
+                persistentLog = persistentLog,
+                crashLog = crashLog
             )
         }
     }
