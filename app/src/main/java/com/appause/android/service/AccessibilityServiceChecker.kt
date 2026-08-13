@@ -71,4 +71,42 @@ object AccessibilityServiceChecker {
         }
         return false
     }
+
+    /**
+     * Find OTHER installed Appause builds whose accessibility service is also
+     * enabled right now.
+     *
+     * Why this exists: the debug build (`com.appause.android.debug`) installs
+     * alongside the release build, and both register the same accessibility
+     * service class. If the user forgets to switch one off, BOTH intercept the
+     * same apps and each shows its own pause screen — which looks exactly like
+     * "I cancelled it and it popped again", but is an environment problem, not
+     * a bug in the interception logic. Guessing at that from a log wastes a lot
+     * of time, so the Diagnostics screen reports it explicitly.
+     *
+     * @return package names of other Appause builds currently enabled (usually
+     *         empty).
+     */
+    fun otherAppauseBuildsEnabled(context: Context): List<String> {
+        val enabledServices = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return emptyList()
+
+        val expected = ComponentName(context, AppauseAccessibilityService::class.java)
+        val others = mutableListOf<String>()
+
+        val splitter = TextUtils.SimpleStringSplitter(':')
+        splitter.setString(enabledServices)
+        for (entry in splitter) {
+            val component = ComponentName.unflattenFromString(entry) ?: continue
+            // Same service class, different application id = a sibling build.
+            if (component.className == expected.className &&
+                component.packageName != expected.packageName
+            ) {
+                others.add(component.packageName)
+            }
+        }
+        return others
+    }
 }

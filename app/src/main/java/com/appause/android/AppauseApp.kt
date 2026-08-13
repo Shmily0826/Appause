@@ -8,6 +8,7 @@ import com.appause.android.data.pro.ProState
 import com.appause.android.data.repository.AppGroupRepository
 import com.appause.android.data.settings.SettingsDataStore
 import com.appause.android.util.PersistentLog
+import com.appause.android.util.CrashLog
 import java.util.Locale
 
 /**
@@ -56,6 +57,7 @@ class AppauseApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        CrashLog.install(this)
         PersistentLog.log(this, "App", "Application.onCreate pid=${android.os.Process.myPid()}")
     }
 

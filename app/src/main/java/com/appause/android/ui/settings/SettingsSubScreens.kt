@@ -6,6 +6,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,19 +17,24 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -94,6 +101,30 @@ private fun SettingsSubScaffold(
         ) {
             content(innerPadding)
         }
+    }
+}
+
+/**
+ * One bullet line: small dot + text, each on its own line.
+ * Used inside the collapsible "Why does Appause need these permissions?" card.
+ */
+@Composable
+private fun BulletLine(text: String) {
+    Row(
+        modifier = Modifier.padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = "\u2022",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -215,23 +246,43 @@ fun PermissionsSettingsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    var whyExpanded by remember { mutableStateOf(false) }
+
     SettingsSubScaffold(R.string.settings_category_permissions, onNavigateBack) {
-        // ── Why these permissions? ──
-        // Put this first so users see the privacy explanation before they judge
-        // each individual toggle. Also defends against "this app is malicious"
-        // anxiety on OEM ROMs that aggressively warn about accessibility access.
+        // ── Why these permissions? (collapsible) ──
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    stringResource(R.string.permissions_why_title),
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    stringResource(R.string.permissions_why_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { whyExpanded = !whyExpanded },
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(R.string.permissions_why_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = if (whyExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null
+                    )
+                }
+                AnimatedVisibility(visible = whyExpanded) {
+                    Column {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            stringResource(R.string.permissions_why_intro),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        BulletLine(stringResource(R.string.permissions_why_accessibility))
+                        BulletLine(stringResource(R.string.permissions_why_overlay))
+                        BulletLine(stringResource(R.string.permissions_why_battery))
+                        BulletLine(stringResource(R.string.permissions_why_usage))
+                    }
+                }
             }
         }
 
@@ -255,13 +306,15 @@ fun PermissionsSettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (isServiceRunning) enabledGreen else MaterialTheme.colorScheme.error
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = {
-                    val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(intent)
-                }) {
-                    Text(stringResource(R.string.open_accessibility_settings))
+                if (!isServiceRunning) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = {
+                        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    }) {
+                        Text(stringResource(R.string.open_accessibility_settings))
+                    }
                 }
             }
         }
@@ -293,13 +346,15 @@ fun PermissionsSettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
-                Button(onClick = {
-                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-                        data = Uri.parse("package:${context.packageName}")
+                if (!canDrawOverlays) {
+                    Button(onClick = {
+                        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    }) {
+                        Text(stringResource(R.string.open_overlay_settings))
                     }
-                    context.startActivity(intent)
-                }) {
-                    Text(stringResource(R.string.open_overlay_settings))
                 }
             }
         }
@@ -367,13 +422,15 @@ fun PermissionsSettingsScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = {
-                    val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    context.startActivity(intent)
-                }) {
-                    Text(stringResource(R.string.open_usage_access_settings))
+                if (!isUsageAccessGranted) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = {
+                        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    }) {
+                        Text(stringResource(R.string.open_usage_access_settings))
+                    }
                 }
             }
         }
@@ -413,11 +470,16 @@ fun PermissionsSettingsScreen(
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 val repoUrl = stringResource(R.string.github_repo_url)
-                Button(
-                    onClick = { uriHandler.openUri(repoUrl) },
-                    modifier = Modifier.fillMaxWidth()
+                OutlinedButton(
+                    onClick = { uriHandler.openUri(repoUrl) }
                 ) {
                     Text(stringResource(R.string.github_repo_button))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.OpenInNew,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
         }
@@ -558,6 +620,34 @@ private fun ProLockedCard(
 }
 
 /**
+ * One debug-info row: label on the left, localized status on the right.
+ * `enabled = null` means the row has no boolean state (e.g. Android version).
+ */
+@Composable
+private fun DebugStatusRow(label: String, enabled: Boolean?) {
+    val enabledGreen = if (isSystemInDarkTheme()) Color(0xFF81C784) else Color(0xFF2E7D32)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium
+        )
+        if (enabled != null) {
+            Text(
+                text = stringResource(if (enabled) R.string.status_enabled else R.string.status_disabled),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (enabled) enabledGreen else MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
+/**
  * About sub-screen: version + debug info, in case the user (or support) needs
  * to report what's running.
  */
@@ -583,22 +673,22 @@ fun AboutSettingsScreen(
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(stringResource(R.string.debug_info), style = MaterialTheme.typography.titleMedium)
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    stringResource(R.string.debug_android, Build.VERSION.SDK_INT, Build.VERSION.RELEASE),
-                    style = MaterialTheme.typography.bodySmall
+                Spacer(modifier = Modifier.height(12.dp))
+                DebugStatusRow(
+                    label = stringResource(R.string.debug_android, Build.VERSION.SDK_INT, Build.VERSION.RELEASE),
+                    enabled = null
                 )
-                Text(
-                    stringResource(R.string.debug_enabled, isEnabled.toString()),
-                    style = MaterialTheme.typography.bodySmall
+                DebugStatusRow(
+                    label = stringResource(R.string.debug_enabled),
+                    enabled = isEnabled
                 )
-                Text(
-                    stringResource(R.string.debug_service, isServiceRunning.toString()),
-                    style = MaterialTheme.typography.bodySmall
+                DebugStatusRow(
+                    label = stringResource(R.string.debug_service),
+                    enabled = isServiceRunning
                 )
-                Text(
-                    stringResource(R.string.debug_usage_access, isUsageAccessGranted.toString()),
-                    style = MaterialTheme.typography.bodySmall
+                DebugStatusRow(
+                    label = stringResource(R.string.debug_usage_access),
+                    enabled = isUsageAccessGranted
                 )
             }
         }

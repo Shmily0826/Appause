@@ -14,7 +14,7 @@
     </string>
 
     <!-- Default prompt shown on the pause screen -->
-    <string name="default_prompt">暂停一下。</string>
+    <string name="default_prompt">给自己几秒，再决定是否继续。</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Home Screen                                  -->
@@ -44,8 +44,11 @@
     <string name="required_permissions_desc">Appause 需要以下权限才能正常工作：</string>
     <string name="required_permissions_accessibility">无障碍服务 — 检测当前前台应用</string>
     <string name="required_permissions_overlay">显示悬浮窗 — 在目标应用上显示暂停页</string>
+    <string name="required_permissions_usage">使用情况访问 — 确认真正在屏幕上的应用</string>
     <string name="required_permissions_action">去开启</string>
     <string name="required_permissions_learn_more">了解这些权限的用途</string>
+    <string name="battery_warning_title">电池优化未关闭</string>
+    <string name="battery_warning_desc">系统会在省电时杀死 Appause 的后台服务，且不会自动重启——表现就是「第一次打开被限制的应用不拦截，切回 Appause 才拦」。请把它设为「无限制」。</string>
 
     <!-- OEM 引导对话框（小米/华为后台管理） -->
     <string name="service_off_help">为什么总是被关闭</string>
@@ -103,10 +106,19 @@
     <string name="re_remind_disabled_hint">已关闭</string>
     <string name="re_remind_cooldown_label">再次提醒冷却时长</string>
     <string name="re_remind_cooldown_reuse">与首次相同</string>
-    <string name="re_remind_repeat_label">重复提醒</string>
-    <string name="re_remind_repeat_desc">开启后，每隔设定间隔再次弹出冷却页面。</string>
+    <string name="re_remind_repeat_label">循环提醒</string>
+    <string name="re_remind_repeat_desc">开启后，每隔设定间隔循环弹出冷却页。</string>
     <string name="re_remind_escalate_label">逐次延长冷却</string>
-    <string name="re_remind_escalate_desc">每次提醒的冷却时长比上一次更长（1×、2×、3×……），以再次提醒冷却时长为基准。</string>
+    <string name="re_remind_escalate_desc">每次弹窗后的冷却逐步变长：若基准为 30 秒，则依次约 30 → 60 → 90 秒。</string>
+    <string name="re_remind_sameasfirst_caption">将使用首次冷却（%1$d 秒）</string>
+    <string name="re_remind_summary_on">已开启 · 每 %1$d 分钟</string>
+    <string name="re_remind_summary_off">已关闭</string>
+    <string name="re_remind_summary_locked">需 Pro</string>
+    <string name="re_remind_enable">开启</string>
+    <string name="re_remind_more_options">更多选项</string>
+    <string name="re_remind_pro_unlock">升级 Appause Pro 以开启</string>
+    <string name="cd_expand_section">展开</string>
+    <string name="cd_collapse_section">收起</string>
     <string name="show_notification_title">显示监测通知</string>
     <string name="show_notification_desc">常驻的“Appause 正在监测”通知。关闭后不再显示，服务仍正常运行（部分手机系统可能更易在后台杀掉它）。</string>
 
@@ -154,18 +166,18 @@
     <string name="open_accessibility_settings">打开无障碍设置</string>
     <string name="usage_access">使用情况访问</string>
     <string name="usage_access_granted">已授权</string>
-    <string name="usage_access_not_granted">未授权 — 误报过滤未生效</string>
-    <string name="usage_access_desc">允许 Appause 确认真正在前台的 App，避免通知栏里的媒体通知（例如正在播放的视频）误触发暂停。</string>
+    <string name="usage_access_not_granted">未授权 — 暂停页可能在错误的时机弹出</string>
+    <string name="usage_access_desc">允许 Appause 确认真正显示在屏幕上的应用。不授权时，打开最近任务或切换应用可能会为你根本没打开的应用弹出暂停页。</string>
     <string name="open_usage_access_settings">打开使用情况访问设置</string>
     <string name="default_prompt_title">默认提示语</string>
     <string name="custom_reasons_title">自定义打开原因</string>
     <string name="custom_reasons_desc">Pro 专属：自定义暂停屏上 4 个“打开原因”的文字。</string>
     <string name="prompt_label">暂停一下</string>
     <string name="debug_info">调试信息</string>
-    <string name="debug_android" formatted="false">Android: API %d (%s)</string>
-    <string name="debug_enabled" formatted="false">Appause 已启用：%s</string>
-    <string name="debug_service" formatted="false">服务运行中：%s</string>
-    <string name="debug_usage_access" formatted="false">使用情况访问：%s</string>
+    <string name="debug_android">Android: API %d (%s)</string>
+    <string name="debug_enabled">Appause 已启用</string>
+    <string name="debug_service">服务运行中</string>
+    <string name="debug_usage_access">使用情况访问</string>
 
     <!-- Language -->
     <string name="language">语言</string>
@@ -207,7 +219,6 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="pause_cancel">取消</string>
     <string name="pause_continue">继续</string>
-    <string name="pause_breathe_hint">停顿几秒，再决定要不要继续。</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Intent Tracking (Pause Screen)               -->
@@ -253,12 +264,11 @@
 
     <!-- 设置页：权限说明与开源声明 -->
     <string name="permissions_why_title">为什么需要这些权限？</string>
-    <string name="permissions_why_body">Appause 不会读取你的聊天记录、浏览内容或账号信息，也不会把任何数据上传到服务器。所有权限都只在本地使用。
-
-• 无障碍服务：检测你当前打开了哪个应用，以便在打开被限制的应用时弹出暂停页。
-• 显示悬浮窗：在被限制的应用上层显示全屏暂停页。小米/红米等机型必须开启，否则暂停页会被目标应用自动顶掉。
-• 电池优化：防止系统在省电时终止后台服务，导致拦截失效。
-• 使用情况访问（可选）：确认真正在前台的应用，避免通知栏里的媒体通知等误触发暂停。</string>
+    <string name="permissions_why_intro">Appause 不会读取你的聊天记录、浏览内容或账号信息，也不会把任何数据上传到服务器。所有权限都只在本地使用。</string>
+    <string name="permissions_why_accessibility">无障碍服务 — 检测你当前打开了哪个应用，以便在打开被限制的应用时弹出暂停页。</string>
+    <string name="permissions_why_overlay">显示悬浮窗 — 可选。新版已用无障碍覆盖层显示暂停页，通常无需此权限；仅在极少数机型无障碍覆盖层被拒时作为兜底。</string>
+    <string name="permissions_why_battery">电池优化 — 防止系统在省电时终止后台服务，导致拦截失效。</string>
+    <string name="permissions_why_usage">使用情况访问 — 确认真正在前台的应用。不授权时，最近任务和切换应用可能会误触发暂停页。</string>
     <string name="open_source_footer_title">开源可审计</string>
     <string name="open_source_footer_body">Appause 是 MIT 开源项目，源代码可在 GitHub 上查看。我们不上传任何个人数据，也无需注册账号，没有任何恶意代码或广告追踪。</string>
     <string name="github_repo_button">查看 GitHub 仓库</string>

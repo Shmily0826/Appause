@@ -87,7 +87,7 @@ import java.util.Locale
  * What it shows:
  * - Appause brand name
  * - Target app icon and name
- * - Prompt message (e.g., "Take a moment.")
+ * - Prompt message (e.g., "Take a few seconds before deciding whether to continue.")
  * - Countdown timer (large number + progress ring)
  * - Cancel button (returns to home screen)
  * - Continue button (appears when countdown reaches 0)
@@ -342,7 +342,7 @@ class PauseActivity : ComponentActivity() {
  *
  * Layout (top to bottom):
  * 1. App icon + name
- * 2. Prompt message (e.g., "Take a moment.")
+ * 2. Prompt message (e.g., "Take a few seconds before deciding whether to continue.")
  * 3. Countdown ring with animated number (or checkmark when finished)
  * 4. 2x2 reason selection grid (always enabled, single-select)
  * 5. Continue button (enabled only after countdown finishes)
@@ -425,13 +425,6 @@ internal fun PauseScreenContent(
             Text(
                 text = prompt,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            // ── Breathing nudge (always shown) ──
-            Text(
-                text = stringResource(R.string.pause_breathe_hint),
-                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 

@@ -454,13 +454,24 @@ private fun GroupStepPreview() {
             modifier = Modifier.padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(
-                painter = painterResource(R.mipmap.ic_launcher),
-                contentDescription = null,
+            // NOTE: R.mipmap.ic_launcher is an *adaptive* icon
+            // (<adaptive-icon> XML). Compose's painterResource only supports
+            // VectorDrawable and raster assets, so loading it crashes with
+            // IllegalArgumentException. We use the foreground vector drawable
+            // (a plain VectorDrawable) on a brand-colored circle instead.
+            Box(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-            )
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
             Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = stringResource(R.string.onboarding_preview_app_name),
@@ -474,7 +485,13 @@ private fun GroupStepPreview() {
             )
             Spacer(modifier = Modifier.height(20.dp))
 
-            Box(contentAlignment = Alignment.Center) {
+            // Explicit size matching the CountdownRing prevents the ring from
+            // shifting when surrounding Chinese text changes the Column's
+            // measured width (the ring would otherwise look tilted/offset).
+            Box(
+                modifier = Modifier.size(110.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 CountdownRing(
                     progress = progress,
                     isFinished = isFinished,

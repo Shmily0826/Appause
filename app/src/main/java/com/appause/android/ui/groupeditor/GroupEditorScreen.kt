@@ -1,10 +1,12 @@
 package com.appause.android.ui.groupeditor
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,6 +33,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -88,12 +92,13 @@ private val InactiveTrackColor = Color(0xFFD8DEE9)
 /**
  * Group Editor Screen — create or edit an app group.
  *
- * Layout:
+ * Layout (top level keeps only the essentials):
  * - Top bar with back button, title, and delete button (edit mode only)
  * - Group name text field
- * - Group type selector (Cooldown vs Recommended)
  * - Cooldown time setting (slider + number input, bidirectionally synced)
- * - Re-remind setting (switch + slider + number input)
+ * - Re-remind — collapsed Card by default (everyone). Expanding it reveals the
+ *   enable switch, interval slider, re-remind cooldown, and a "More options"
+ *   sub-card holding Repeat + Escalate.
  * - "Add apps" list item (navigates to App Select screen)
  * - "Apps in this group" section (icon + name + remove button, or empty state)
  * - Pinned Save/Cancel bottom bar (keyboard- and nav-bar-aware)
@@ -242,129 +247,178 @@ fun GroupEditorScreen(
                 )
             }
 
-            // ── Cooldown + Re-remind ──
+            // ── Cooldown (top-level, always visible) ──
             Spacer(modifier = Modifier.height(8.dp))
 
-                // Cooldown time — unified slider + input component.
-                // The maximum is gated by Pro: free users top out at 30s,
-                // Pro users can go up to 60s.
-                val cooldownUnit = stringResource(R.string.cooldown_seconds_suffix)
-                TimeSliderInput(
-                    title = stringResource(R.string.cooldown_label),
-                    value = cooldownSeconds.coerceAtMost(maxCooldown),
-                    unit = cooldownUnit,
-                    minValue = 1,
-                    maxValue = maxCooldown,
-                    onValueChange = viewModel::updateCooldown,
-                    rangeStartLabel = "1$cooldownUnit",
-                    rangeEndLabel = "$maxCooldown$cooldownUnit"
-                )
+            // Cooldown time — unified slider + input component.
+            // The maximum is gated by Pro: free users top out at 30s,
+            // Pro users can go up to 60s.
+            val cooldownUnit = stringResource(R.string.cooldown_seconds_suffix)
+            TimeSliderInput(
+                title = stringResource(R.string.cooldown_label),
+                value = cooldownSeconds.coerceAtMost(maxCooldown),
+                unit = cooldownUnit,
+                minValue = 1,
+                maxValue = maxCooldown,
+                onValueChange = viewModel::updateCooldown,
+                rangeStartLabel = "1$cooldownUnit",
+                rangeEndLabel = "$maxCooldown$cooldownUnit"
+            )
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-                // Re-remind is a Pro feature. Free users see a locked row that
-                // deep-links to the Pro screen; Pro users get the full control.
+            // ── Re-remind (collapsed Card by default, for everyone) ──
+            // Free users see a Pro badge in the header; expanding reveals the
+            // upsell. Pro users get the full controls inside.
+            // Collapsed-header summary so the state is visible without expanding.
+            val reRemindSummary = when {
+                !isPro -> stringResource(R.string.re_remind_summary_locked)
+                !reRemindEnabled -> stringResource(R.string.re_remind_summary_off)
+                else -> stringResource(R.string.re_remind_summary_on, reRemindMinutes)
+            }
+            CollapsibleCard(
+                title = stringResource(R.string.re_remind_label),
+                description = stringResource(R.string.re_remind_desc),
+                badge = if (!isPro) stringResource(R.string.pro_badge) else null,
+                collapsedSummary = reRemindSummary
+            ) {
                 if (isPro) {
-                    // Re-remind: Switch header + description
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    // Enable switch — the card title already says "Re-remind".
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.re_remind_enable),
+                            style = MaterialTheme.typography.titleMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Switch(
+                            checked = reRemindEnabled,
+                            onCheckedChange = viewModel::updateReRemindEnabled
+                        )
+                    }
+
+                    if (reRemindEnabled) {
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        // Interval — slider (replaces the old number-only input).
+                        val reUnit = stringResource(R.string.re_remind_unit)
+                        TimeSliderInput(
+                            title = stringResource(R.string.re_remind_interval_label),
+                            value = reRemindMinutes,
+                            unit = reUnit,
+                            minValue = 1,
+                            maxValue = 60,
+                            onValueChange = viewModel::updateReRemind,
+                            rangeStartLabel = stringResource(R.string.re_remind_range_start),
+                            rangeEndLabel = stringResource(R.string.re_remind_range_end)
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Re-remind cooldown length. The data model stores 0 to
+                        // mean "same as first cooldown", but we never surface that
+                        // 0 in the UI. Instead we expose an explicit switch:
+                        //  ON  -> stored value is 0; slider is disabled and shows
+                        //         the first cooldown as a reference.
+                        //  OFF -> slider edits a real 1..max seconds value.
+                        val reCooldownUnit = stringResource(R.string.label_seconds)
+                        val sameAsFirst = reRemindCooldownSeconds <= 0
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = stringResource(R.string.re_remind_label),
+                                text = stringResource(R.string.re_remind_cooldown_reuse),
                                 style = MaterialTheme.typography.titleMedium,
                                 modifier = Modifier.weight(1f)
                             )
                             Switch(
-                                checked = reRemindEnabled,
-                                onCheckedChange = viewModel::updateReRemindEnabled
+                                checked = sameAsFirst,
+                                onCheckedChange = { on ->
+                                    if (on) viewModel.updateReRemindCooldown(0)
+                                    else viewModel.updateReRemindCooldown(
+                                        if (reRemindCooldownSeconds > 0) reRemindCooldownSeconds
+                                        else cooldownSeconds.coerceIn(1, 300)
+                                    )
+                                }
                             )
                         }
-                        Text(
-                            text = stringResource(R.string.re_remind_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    // Interval input (visible only when switch is on) — no slider,
-                    // just a compact number input for precise manual entry.
-                    if (reRemindEnabled) {
-                        TimeInputRow(
-                            title = stringResource(R.string.re_remind_interval_label),
-                            value = reRemindMinutes,
-                            unit = stringResource(R.string.re_remind_unit),
+                        if (sameAsFirst) {
+                            Text(
+                                text = stringResource(R.string.re_remind_sameasfirst_caption, cooldownSeconds),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        TimeSliderInput(
+                            title = stringResource(R.string.re_remind_cooldown_label),
+                            value = if (sameAsFirst) cooldownSeconds else reRemindCooldownSeconds,
+                            unit = reCooldownUnit,
                             minValue = 1,
-                            maxValue = 60,
-                            onValueChange = viewModel::updateReRemind
+                            maxValue = maxCooldown.coerceAtLeast(60),
+                            onValueChange = viewModel::updateReRemindCooldown,
+                            enabled = !sameAsFirst,
+                            rangeStartLabel = "1$reCooldownUnit",
+                            rangeEndLabel = "${maxCooldown.coerceAtLeast(60)}$reCooldownUnit"
                         )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Re-remind cooldown length: separate from the first
-                        // cooldown so the repeat nudges can be shorter/longer.
-                        // 0 means "reuse the first cooldown" (default).
-                        val reCooldownUnit = stringResource(R.string.label_seconds)
-                        TimeSliderInput(
-                            title = stringResource(R.string.re_remind_cooldown_label),
-                            value = if (reRemindCooldownSeconds <= 0) 0 else reRemindCooldownSeconds,
-                            unit = reCooldownUnit,
-                            minValue = 0,
-                            maxValue = maxCooldown.coerceAtLeast(60),
-                            onValueChange = viewModel::updateReRemindCooldown,
-                            rangeStartLabel = stringResource(R.string.re_remind_cooldown_reuse),
-                            rangeEndLabel = "${maxCooldown.coerceAtLeast(60)}$reCooldownUnit"
-                        )
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // "Repeat" switch — fire every interval (on) or only once (off).
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                        // Repeat + Escalate live inside "More options".
+                        CollapsibleCard(
+                            title = stringResource(R.string.re_remind_more_options),
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            border = null
+                        ) {
+                            // "Repeat" switch — fire every interval (on) or only once (off).
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.re_remind_repeat_label),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Switch(
+                                        checked = reRemindRepeat,
+                                        onCheckedChange = viewModel::updateReRemindRepeat
+                                    )
+                                }
                                 Text(
-                                    text = stringResource(R.string.re_remind_repeat_label),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Switch(
-                                    checked = reRemindRepeat,
-                                    onCheckedChange = viewModel::updateReRemindRepeat
+                                    text = stringResource(R.string.re_remind_repeat_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            Text(
-                                text = stringResource(R.string.re_remind_repeat_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
 
-                        // "Escalate" switch — each successive pop lasts longer (base × N).
-                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            // "Escalate" switch — each successive pop lasts longer (base × N).
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.re_remind_escalate_label),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Switch(
+                                        checked = reRemindEscalate,
+                                        onCheckedChange = viewModel::updateReRemindEscalate
+                                    )
+                                }
                                 Text(
-                                    text = stringResource(R.string.re_remind_escalate_label),
-                                    style = MaterialTheme.typography.titleMedium,
-                                    modifier = Modifier.weight(1f)
-                                )
-                                Switch(
-                                    checked = reRemindEscalate,
-                                    onCheckedChange = viewModel::updateReRemindEscalate
+                                    text = stringResource(R.string.re_remind_escalate_desc),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            Text(
-                                text = stringResource(R.string.re_remind_escalate_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         }
                     } else {
                         Text(
@@ -375,39 +429,26 @@ fun GroupEditorScreen(
                         )
                     }
                 } else {
-                    // Locked placeholder row — tap to learn about Pro.
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        onClick = onNavigateToPro,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
-                        )
+                    // Locked upsell — tap to learn about / enable Pro.
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onNavigateToPro() }
+                            .padding(4.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = stringResource(R.string.re_remind_label),
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                                Text(
-                                    text = stringResource(R.string.pro_locked_hint),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Text(
-                                text = stringResource(R.string.pro_badge),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                        Text(
+                            text = stringResource(R.string.pro_locked_hint),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.re_remind_pro_unlock),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -558,83 +599,86 @@ fun GroupEditorScreen(
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * A compact input-only time setting row (no slider).
- * Used for "Re-remind interval" where the user prefers manual entry.
+ * A Card whose header row toggles an expandable body.
  *
- * Layout: [title]                    [ input ] [unit]
- *
- * Same validation logic as TimeSliderInput: clamp on focus loss / IME Done.
+ * Only the header is clickable, so interactive controls inside the body
+ * (switches, sliders) never accidentally collapse the card. The body is
+ * collapsed by default unless [defaultExpanded] is set.
  */
 @Composable
-private fun TimeInputRow(
+private fun CollapsibleCard(
     title: String,
-    value: Int,
-    unit: String,
-    minValue: Int,
-    maxValue: Int,
-    onValueChange: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    description: String? = null,
+    modifier: Modifier = Modifier,
+    defaultExpanded: Boolean = false,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    border: BorderStroke? = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    badge: String? = null,
+    collapsedSummary: String? = null,
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    val focusManager = LocalFocusManager.current
-    var textValue by remember { mutableStateOf(value.toString()) }
-    var isEditing by remember { mutableStateOf(false) }
-
-    LaunchedEffect(value) {
-        if (!isEditing) {
-            textValue = value.toString()
-        }
-    }
-
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically
+    var expanded by remember { mutableStateOf(defaultExpanded) }
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = border
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        OutlinedTextField(
-            value = textValue,
-            onValueChange = { newText ->
-                val digits = newText.filter { it.isDigit() }.take(2)
-                textValue = digits
-                digits.toIntOrNull()?.let { parsed ->
-                    onValueChange(parsed.coerceIn(minValue, maxValue))
-                }
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = { focusManager.clearFocus() }
-            ),
-            singleLine = true,
-            textStyle = LocalTextStyle.current.copy(
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurface
-            ),
-            modifier = Modifier
-                .width(64.dp)
-                .onFocusChanged { focusState ->
-                    if (focusState.isFocused) {
-                        isEditing = true
-                    } else if (isEditing) {
-                        isEditing = false
-                        val validated = textValue.toIntOrNull()
-                            ?.coerceIn(minValue, maxValue) ?: value
-                        textValue = validated.toString()
-                        onValueChange(validated)
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expanded = !expanded }
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    // When collapsed, prefer the dynamic summary (if provided);
+                    // otherwise fall back to the static description.
+                    val subtitle = if (!expanded && collapsedSummary != null) collapsedSummary else description
+                    if (subtitle != null) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = unit,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+                if (badge != null) {
+                    Text(
+                        text = badge,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                }
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = stringResource(
+                        if (expanded) R.string.cd_collapse_section else R.string.cd_expand_section
+                    ),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (expanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    content()
+                }
+            }
+        }
     }
 }
 
@@ -719,7 +763,7 @@ private fun TimeSliderInput(
                     color = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .width(64.dp)
+                    .width(56.dp)
                     .onFocusChanged { focusState ->
                         if (focusState.isFocused) {
                             isEditing = true
@@ -741,8 +785,8 @@ private fun TimeSliderInput(
             )
         }
 
-        // Row 2: Slider — standard circular thumb, continuous track.
-        // No `steps` parameter → smooth track, no dense tick dots.
+        // Row 2: Slider — continuous track (no `steps`), and the default M3
+        // thumb is already a clear filled circle, so the grab handle is obvious.
         Slider(
             value = value.toFloat(),
             onValueChange = { onValueChange(it.toInt()) },

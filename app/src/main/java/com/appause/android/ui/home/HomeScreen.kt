@@ -97,6 +97,8 @@ fun HomeScreen(
     val isEnabled by viewModel.isEnabled.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
     val canDrawOverlays by viewModel.canDrawOverlays.collectAsStateWithLifecycle()
+    val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
+    val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
     val proceededToday by viewModel.proceededToday.collectAsStateWithLifecycle()
     val cancelledToday by viewModel.cancelledToday.collectAsStateWithLifecycle()
     val appCounts by viewModel.appCounts.collectAsStateWithLifecycle()
@@ -166,24 +168,46 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // ── Battery optimization warning ──
+            // Shown whenever the app is NOT exempt from battery optimization,
+            // even if the service is currently running. On HyperOS/MIUI a
+            // non-exempt app gets its AccessibilityService killed in the
+            // background and is NOT auto-restarted — so interception silently
+            // stops until the user opens Appause again. This is the most common
+            // cause of "first open isn't intercepted". (See RELEASE_NOTES.)
+            item {
+                if (!isIgnoringBattery) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    BatteryWarningBanner(
+                        onOpenBatterySettings = {
+                            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                data = Uri.parse("package:${context.packageName}")
+                            }
+                            context.startActivity(intent)
+                        }
+                    )
+                }
+            }
+
             // ── Unified permission/status header ──
             // When a required permission is missing we show ONE banner at the top
             // that lists everything that is needed, instead of separate cards.
+            // Note: "Display over other apps" (SYSTEM_ALERT_WINDOW) is intentionally
+            // NOT required here — the 2032 accessibility overlay works without it.
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                if (!isServiceRunning || !canDrawOverlays) {
+                if (!isServiceRunning || !isUsageAccessGranted) {
                     RequiredPermissionsBanner(
                         isServiceRunning = isServiceRunning,
-                        canDrawOverlays = canDrawOverlays,
+                        isUsageAccessGranted = isUsageAccessGranted,
                         onOpenAccessibilitySettings = {
                             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             context.startActivity(intent)
                         },
-                        onOpenOverlaySettings = {
-                            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-                                data = Uri.parse("package:${context.packageName}")
-                            }
+                        onOpenUsageAccessSettings = {
+                            val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             context.startActivity(intent)
                         }
                     )
@@ -344,12 +368,62 @@ fun HomeScreen(
  * (accessibility first, overlay second); the secondary action shows an in-app
  * explanation so users don't have to trust the banner blindly.
  */
+/**
+ * Prominent warning shown at the top of the Home screen whenever the app is
+ * NOT exempt from battery optimization ("智能"/restricted). This is the #1
+ * cause of "first open isn't intercepted, only works after switching to
+ * Appause": a non-exempt app gets its AccessibilityService killed in the
+ * background with no auto-restart. The warning stays until the user grants the
+ * exemption, so the silent failure can never bite again.
+ */
+@Composable
+private fun BatteryWarningBanner(
+    onOpenBatterySettings: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.battery_warning_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.battery_warning_desc),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Button(
+                onClick = onOpenBatterySettings,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.request_battery_exempt))
+            }
+        }
+    }
+}
+
 @Composable
 private fun RequiredPermissionsBanner(
     isServiceRunning: Boolean,
-    canDrawOverlays: Boolean,
+    isUsageAccessGranted: Boolean,
     onOpenAccessibilitySettings: () -> Unit,
-    onOpenOverlaySettings: () -> Unit
+    onOpenUsageAccessSettings: () -> Unit
 ) {
     var showWhyDialog by remember { mutableStateOf(false) }
 
@@ -396,7 +470,7 @@ private fun RequiredPermissionsBanner(
                     )
                 }
             }
-            if (!canDrawOverlays) {
+            if (!isUsageAccessGranted) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "•",
@@ -405,7 +479,7 @@ private fun RequiredPermissionsBanner(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(R.string.required_permissions_overlay),
+                        text = stringResource(R.string.required_permissions_usage),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -414,8 +488,11 @@ private fun RequiredPermissionsBanner(
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = {
+                    // Open the most urgent one first; the banner stays until
+                    // every listed permission is granted, so repeated taps walk
+                    // the user through them one at a time.
                     if (!isServiceRunning) onOpenAccessibilitySettings()
-                    else onOpenOverlaySettings()
+                    else onOpenUsageAccessSettings()
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -437,7 +514,36 @@ private fun RequiredPermissionsBanner(
         AlertDialog(
             onDismissRequest = { showWhyDialog = false },
             title = { Text(stringResource(R.string.permissions_why_title)) },
-            text = { Text(stringResource(R.string.permissions_why_body)) },
+            text = {
+                Column {
+                    Text(
+                        text = stringResource(R.string.permissions_why_intro),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "\u2022 " + stringResource(R.string.permissions_why_accessibility),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "\u2022 " + stringResource(R.string.permissions_why_overlay),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "\u2022 " + stringResource(R.string.permissions_why_battery),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "\u2022 " + stringResource(R.string.permissions_why_usage),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
             confirmButton = {
                 TextButton(onClick = { showWhyDialog = false }) {
                     Text(stringResource(R.string.got_it))

@@ -176,9 +176,9 @@ the shipped app differs from the original v1 spec so the document stays honest.
 - **Appause Pro (Plan B) — paid activation.** A Cloudflare Worker (`worker/`)
   issues device-bound RS256 license JWTs. The app verifies the token **on
   device** (embedded server public key) and works offline afterwards. Free tier:
-  2 groups, 30s cooldown cap, 7-day stats. Pro: unlimited groups, 60s cooldown,
-  custom prompt, full history. *This is a paid license, not a backend/sync
-  account — no user data is uploaded.*
+  1 group. Everyone gets a 60s cooldown cap and 365-day stats history. Pro unlocks
+  unlimited groups, re-remind, a custom pause prompt, and custom open reasons.
+  *This is a paid license, not a backend/sync account — no user data is uploaded.*
 - **Re-remind / session timer.** The original flow cleared the bypass the moment
   the user left the target app. The shipped behavior is a session model: a
   session keeps counting wall-clock time even during brief in-app switches

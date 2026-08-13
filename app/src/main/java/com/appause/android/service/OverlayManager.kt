@@ -89,6 +89,13 @@ class OverlayManager {
     /** The overlay view — null when no overlay is showing. */
     private var overlayView: ComposeView? = null
 
+    /**
+     * The WindowManager the overlay was added to. Stored so [dismiss] removes
+     * the view via the SAME manager (addView via the service context for the
+     * accessibility token; removeView must match, or it can throw).
+     */
+    private var overlayWindowManager: WindowManager? = null
+
     /** Coroutine scope for the countdown timer — cancelled on dismiss. */
     private var overlayScope: CoroutineScope? = null
 
@@ -116,9 +123,9 @@ class OverlayManager {
         reRemindRepeat: Boolean = true,
         reRemindEscalate: Boolean = false
     ) {
-        // Prevent duplicate overlays
-        if (overlayView != null) {
-            AppLogger.d(TAG, "Overlay already showing, skipping")
+        // Prevent launching a second pause screen while one is already up.
+        if (AppauseAccessibilityService.pauseShown) {
+            AppLogger.d(TAG, "Pause screen already showing, skipping")
             return
         }
 
@@ -153,8 +160,13 @@ class OverlayManager {
         val repository = (context.applicationContext as AppauseApp).repository
         val defaultPromptText = context.resources.getString(R.string.default_prompt)
 
-        // Create WindowManager from service context
-        val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        // Create WindowManager from the RAW AccessibilityService context (not the
+        // locale-wrapped one). TYPE_ACCESSIBILITY_OVERLAY needs the service's own
+        // window token to addView successfully; createConfigurationContext can
+        // drop that token → BadTokenException. The ComposeView below still uses
+        // the locale-wrapped `context` for correct string resources — the view's
+        // context and the WindowManager's context are allowed to differ.
+        val windowManager = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
         // Create the Compose view that will host our UI.
         // fitsSystemWindows = false prevents the view from adding padding
@@ -165,23 +177,21 @@ class OverlayManager {
         }
 
         // Set up window layout parameters.
-        // Window type selection is critical and ROM-dependent:
-        // - TYPE_APPLICATION_OVERLAY: needs SYSTEM_ALERT_WINDOW ("显示悬浮窗")
-        //   but draws ABOVE all app tasks — apps like 小红书 that re-front
-        //   themselves cannot cover it. This is the reliable type on OEM ROMs
-        //   (HyperOS/MIUI) where TYPE_ACCESSIBILITY_OVERLAY is rejected.
-        // - TYPE_ACCESSIBILITY_OVERLAY: needs no extra permission and works on
-        //   stock ROMs, but throws BadTokenException on HyperOS/Android 16.
-        // We prefer TYPE_APPLICATION_OVERLAY when the user has granted the
-        // permission, and fall back to TYPE_ACCESSIBILITY_OVERLAY otherwise.
-        // If the chosen type fails at addView, the catch below tries the
-        // alternate type before giving up to a full-screen Activity (which some
-        // apps can cover by re-fronting).
-        val canDrawOverlays = android.provider.Settings.canDrawOverlays(context)
-        val preferredType = if (canDrawOverlays)
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        else
-            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+        // Window type selection is critical and ROM-dependent.
+        //
+        // v0.5.27 (ROOT-CAUSE FIX): ALWAYS prefer TYPE_ACCESSIBILITY_OVERLAY
+        // (2032). 小红书 (and other anti-tamper apps) call setHideOverlayWindows
+        // on HyperOS, which HIDES every TYPE_APPLICATION_OVERLAY (2038) window
+        // of other packages — even ones that addView() succeeded on. That is
+        // exactly why 0.5.25/0.5.26 added the pause screen yet it was invisible
+        // (user saw nothing, and the guard stuck on "already showing").
+        // TYPE_ACCESSIBILITY_OVERLAY is immune to that hide call, which is why
+        // the daily-working release (base.apk / v0.5.1) draws over 小红书. We
+        // only fall back to 2038 if 2032 is rejected (BadTokenException) on a
+        // given ROM. WindowManager MUST come from the RAW service context (set
+        // above) — TYPE_ACCESSIBILITY_OVERLAY needs the service's window token,
+        // and a locale-wrapped context can drop it and trigger BadTokenException.
+        val preferredType = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
         // - MATCH_PARENT: covers the entire screen
         // - FLAG_LAYOUT_IN_SCREEN: positions the window across the full screen
         // - FLAG_LAYOUT_NO_LIMITS: extends the window behind status bar and
@@ -340,82 +350,73 @@ class OverlayManager {
             }
         }
 
-        // Add the overlay to the screen. Try the preferred window type first;
-        // if it fails, try the alternate overlay type before falling back to a
-        // full-screen Activity (which some apps can cover by re-fronting).
+        // v0.5.27 (ROOT-CAUSE FIX): show via a TYPE_ACCESSIBILITY_OVERLAY (2032)
+        // window first. It sits above every app and 小红书's setHideOverlayWindows
+        // cannot hide it (unlike 2038). If 2032 is rejected on a ROM, retry with
+        // 2038; only if BOTH fail do we fall back to PauseActivity (which some
+        // anti-tamper apps can cover by re-fronting).
+        AppauseAccessibilityService.lastOverlayResult = "overlay_try"
+        overlayAttached = false
+        // Raise the guard so we don't double-trigger while the window attaches.
+        AppauseAccessibilityService.pauseShown = true
+
         var overlayAdded = false
         var usedType = preferredType
         try {
             windowManager.addView(composeView, params)
+            overlayView = composeView
+            overlayWindowManager = windowManager
+            overlayAttached = true
             overlayAdded = true
+            AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
+            AppLogger.d(TAG, "Overlay shown for $targetPackage (type=$usedType)")
+            PersistentLog.log(context, "Overlay", "Overlay shown for $targetPackage type=$usedType")
         } catch (e: Exception) {
             AppLogger.w(TAG, "addView failed with type $usedType: ${e.javaClass.simpleName}: ${e.message}")
             PersistentLog.log(context, "Overlay", "addView FAILED ($usedType): ${e.javaClass.simpleName}: ${e.message}")
             // Try the alternate overlay type before giving up to an Activity.
-            val altType = if (preferredType == WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
-                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
-            else
+            val altType = if (preferredType == WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY)
                 WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else
+                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
             try {
                 params.type = altType
                 usedType = altType
                 windowManager.addView(composeView, params)
+                overlayView = composeView
+                overlayWindowManager = windowManager
+                overlayAttached = true
                 overlayAdded = true
                 AppLogger.d(TAG, "Overlay added with alternate type $altType")
                 PersistentLog.log(context, "Overlay", "addView OK with alternate type $altType")
+                AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
             } catch (e2: Exception) {
                 AppLogger.w(TAG, "addView also failed with alternate type $altType: ${e2.javaClass.simpleName}: ${e2.message}")
                 PersistentLog.log(context, "Overlay", "addView FAILED ($altType): ${e2.javaClass.simpleName}: ${e2.message}")
             }
         }
 
-        if (overlayAdded) {
-            overlayView = composeView
-            // Create a coroutine scope for this overlay's lifetime
-            overlayScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-            // Liveness signal for the service's pause-guard watchdog.
-            overlayAttached = true
-            // Mark that the pause screen is showing (prevents re-triggering)
-            AppauseAccessibilityService.pauseShown = true
-            AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
-            AppLogger.d(TAG, "Overlay shown for $targetPackage (type=$usedType), cooldown=${cooldownSeconds}s")
-            PersistentLog.log(context, "Overlay", "overlay shown type=$usedType for $targetPackage")
-        } else {
-            // Both overlay types failed → fall back to launching PauseActivity.
-            // NOTE: an Activity can be covered by apps that re-front themselves
-            // (e.g. 小红书); the overlay above is the preferred path.
-            AppauseAccessibilityService.lastOverlayResult = "fallback_pauseactivity"
-            // No overlay view exists on this path — the watchdog relies on
-            // PauseActivity's visibility instead.
+        if (!overlayAdded) {
+            // Both overlay types failed → fall back to PauseActivity. Never leave
+            // the half-built view attached.
+            overlayView = null
+            overlayWindowManager = null
             overlayAttached = false
-            // Clean up the failed overlay's lifecycle
-            lifecycleContainer.destroy()
-            // Optimistically mark the pause as showing so we don't re-trigger the
-            // cooldown while PauseActivity is coming up (or even if it never does).
-            AppauseAccessibilityService.pauseShown = true
-
-            // Build the launch intent once, reused by both the fast path and the
-            // AlarmManager backup below.
+            AppauseAccessibilityService.lastOverlayResult = "fallback_pauseactivity"
+            AppLogger.w(TAG, "Overlay addView failed (type=$usedType) — falling back to PauseActivity")
+            PersistentLog.log(context, "Overlay", "Overlay FAILED type=$usedType → PauseActivity fallback")
             val intent = Intent(context, com.appause.android.ui.pause.PauseActivity::class.java).apply {
                 putExtra("target_package", targetPackage)
                 putExtra("group_id", groupId)
                 putExtra("cooldown_seconds", cooldownSeconds)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
-
-            // Fast path: direct startActivity — works on most stock ROMs.
             try {
                 context.startActivity(intent)
-                AppLogger.d(TAG, "Fallback: PauseActivity direct launch attempted for $targetPackage")
+                AppLogger.d(TAG, "PauseActivity direct launch attempted for $targetPackage")
             } catch (e2: Exception) {
-                AppLogger.w(TAG, "Direct PauseActivity launch failed (will rely on AlarmManager): ${e2.message}")
+                AppLogger.w(TAG, "Direct PauseActivity launch failed (AlarmManager backup): ${e2.message}")
             }
-
-            // Reliable path: AlarmManager has higher system authority than a
-            // background startActivity on MIUI/HyperOS, where the direct launch is
-            // silently dropped. The receiver re-launches PauseActivity ~250ms later;
-            // if the direct launch already won, singleInstance + CLEAR_TOP just
-            // re-fronts the existing instance (no duplicate screen, no reset).
             schedulePauseViaAlarm(context, targetPackage, groupId, cooldownSeconds)
         }
     }
@@ -459,6 +460,25 @@ class OverlayManager {
         } catch (e: Exception) {
             AppLogger.e(TAG, "AlarmManager fallback failed for $targetPackage", e)
             PersistentLog.log(context, "Overlay", "AlarmManager FAILED: ${e.javaClass.simpleName}: ${e.message}")
+            // v0.5.22: Android 14+ denies setExactAndAllowWhileIdle without
+            // SCHEDULE_EXACT_ALARM (SecurityException). The service process is
+            // alive at interception time, so a plain Handler re-launch is a
+            // perfectly good backup and needs no permission.
+            try {
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    val retry = Intent(context, com.appause.android.ui.pause.PauseActivity::class.java).apply {
+                        putExtra("target_package", targetPackage)
+                        putExtra("group_id", groupId)
+                        putExtra("cooldown_seconds", cooldownSeconds)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    }
+                    context.startActivity(retry)
+                    PersistentLog.log(context, "Overlay", "PauseActivity Handler backup fired for $targetPackage")
+                }, 250L)
+            } catch (e2: Exception) {
+                AppLogger.e(TAG, "Handler backup also failed for $targetPackage", e2)
+                PersistentLog.log(context, "Overlay", "Handler backup FAILED: ${e2.javaClass.simpleName}: ${e2.message}")
+            }
         }
     }
 
@@ -471,8 +491,12 @@ class OverlayManager {
         val view = overlayView ?: return
 
         try {
-            val windowManager = view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-            windowManager.removeView(view)
+            // Remove via the SAME WindowManager that added the view (stored in
+            // overlayWindowManager). Falling back to the view's own context is a
+            // safety net, but normally they must match or removeView can throw.
+            val wm = overlayWindowManager
+                ?: view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            wm.removeView(view)
             AppLogger.d(TAG, "Overlay dismissed")
         } catch (e: Exception) {
             AppLogger.w(TAG, "Error removing overlay", e)
@@ -481,6 +505,7 @@ class OverlayManager {
         // Clean up the lifecycle so Compose effects stop running
         // (The LifecycleContainer will be garbage collected along with the view)
         overlayView = null
+        overlayWindowManager = null
         overlayAttached = false
 
         // Cancel any running coroutines (countdown timer, etc.)

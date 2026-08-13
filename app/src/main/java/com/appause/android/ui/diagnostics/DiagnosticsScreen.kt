@@ -59,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.BuildConfig
 import com.appause.android.data.local.AppGroup
+import com.appause.android.util.CrashLog
 import com.appause.android.util.LogBuffer
 import kotlinx.coroutines.delay
 import java.io.File
@@ -134,6 +135,8 @@ fun DiagnosticsScreen(
             item { GroupsCard(state = state) }
 
             item { PersistentLogCard(state = state, viewModel = viewModel) }
+
+            item { CrashLogCard(state = state) }
 
             item {
                 LogHeader(
@@ -316,7 +319,19 @@ private fun StatusCard(state: DiagnosticsState) {
                 ok = state.overlayPermissionGranted,
                 warnOnly = true,
                 label = "悬浮窗权限（显示悬浮窗）",
-                value = if (state.overlayPermissionGranted) "已授权" else "未授权（小红书等 app 可能盖住停顿页）"
+                value = if (state.overlayPermissionGranted) "已授权" else "未授权（可选：2032 覆盖层无需此项）"
+            )
+            StatusRow(
+                ok = state.batteryExempted,
+                warnOnly = true,
+                label = "电池优化（省电策略）",
+                value = if (state.batteryExempted) "无限制（已豁免）" else "智能/受限 — 服务可能被后台杀掉"
+            )
+            StatusRow(
+                ok = state.otherAppauseBuilds.isEmpty(),
+                label = "其他 Appause 版本的无障碍服务",
+                value = if (state.otherAppauseBuilds.isEmpty()) "无（正常）"
+                        else "冲突：${state.otherAppauseBuilds.joinToString()} 也在拦截"
             )
             StatusRow(
                 ok = state.eventCount > 0,
@@ -328,6 +343,7 @@ private fun StatusCard(state: DiagnosticsState) {
             InfoRow("最近事件", state.lastEventPackage?.let { "$it · ${sinceText(state.lastEventAt)}" } ?: "无")
             InfoRow("系统认定的前台", state.foregroundPackage ?: "未知（需使用情况权限）")
             InfoRow("最近一次判断", state.lastDecision ?: "无")
+            InfoRow("被控应用最近判定", state.lastTargetDecision ?: "无（未触发过被控 app）")
             InfoRow(
                 "阻断界面",
                 when (state.overlayResult) {
@@ -438,6 +454,58 @@ private fun PersistentLogCard(state: DiagnosticsState, viewModel: DiagnosticsVie
                         lineHeight = 14.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CrashLogCard(state: DiagnosticsState) {
+    val context = LocalContext.current
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "上次崩溃堆栈（debug 专用）",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.weight(1f)
+                )
+                if (state.crashLog.isNotBlank()) {
+                    OutlinedButton(onClick = { copyToClipboard(context, state.crashLog.trim()) }) {
+                        Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("复制", style = MaterialTheme.typography.labelMedium)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    IconButton(onClick = { CrashLog.clear() }) {
+                        Icon(Icons.Default.DeleteSweep, contentDescription = "清空崩溃日志")
+                    }
+                }
+            }
+            if (state.crashLog.isBlank()) {
+                Text(
+                    text = "暂无崩溃记录。复现闪退后回到此页即可看到堆栈。",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = state.crashLog.trim(),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -595,10 +663,13 @@ private fun buildReport(state: DiagnosticsState, logs: List<String>): String {
         appendLine("总开关: ${state.masterEnabled}")
         appendLine("使用情况权限: ${state.usageAccessGranted}")
         appendLine("悬浮窗权限(SYSTEM_ALERT_WINDOW): ${state.overlayPermissionGranted}")
+        appendLine("电池优化豁免: ${state.batteryExempted}")
+        appendLine("其他 Appause 版本同时启用: ${state.otherAppauseBuilds.ifEmpty { "无" }}")
         appendLine("事件数: ${state.eventCount}")
         appendLine("最近事件: ${state.lastEventPackage} @ ${state.lastEventAt}")
         appendLine("系统前台: ${state.foregroundPackage}")
         appendLine("最近判断: ${state.lastDecision}")
+        appendLine("被控应用最近判定: ${state.lastTargetDecision ?: "无"}")
         appendLine("阻断界面方式: ${state.overlayResult ?: "无"}")
         appendLine("放行中: ${state.bypassed}")
         appendLine()
@@ -613,6 +684,9 @@ private fun buildReport(state: DiagnosticsState, logs: List<String>): String {
         appendLine()
         appendLine("--- 持久化服务日志 ---")
         appendLine(state.persistentLog.ifBlank { "（无）" })
+        appendLine()
+        appendLine("--- 上次崩溃堆栈 ---")
+        appendLine(state.crashLog.ifBlank { "（无）" })
     }
 }
 

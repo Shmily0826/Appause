@@ -52,14 +52,23 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
         add(Calendar.DAY_OF_YEAR, -(days - 1))
     }.timeInMillis
 
-    /** Daily stats for the current window (for bar chart). */
-    val dailyStats: StateFlow<List<DailyStats>> = isPro.flatMapLatest { pro ->
-        repository.observeDailyStats(windowStart(if (pro) ProState.PRO_STATS_DAYS else ProState.FREE_STATS_DAYS))
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
+    /**
+     * Daily stats for the "This Week" bar chart.
+     *
+     * Always the last 7 days — this is a *trend* chart, independent of the
+     * stats history window (which is 365 days for everyone, free and Pro).
+     * Before commit 438c0ee the free window was 7 days, so the chart happened
+     * to match; once FREE_STATS_DAYS became 365 the chart was fed up to 365
+     * daily rows and rendered ~1px-wide bars with overlapping date labels.
+     * Pinning to 7 keeps the weekly chart readable regardless of the window.
+     */
+    val dailyStats: StateFlow<List<DailyStats>> =
+        repository.observeDailyStats(windowStart(7))
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
 
     /** Top intercepted apps in the current window. */
     val topApps: StateFlow<List<AppInterceptionCount>> = isPro.flatMapLatest { pro ->

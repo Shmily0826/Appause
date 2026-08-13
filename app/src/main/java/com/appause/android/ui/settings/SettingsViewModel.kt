@@ -62,6 +62,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val showNotification: StateFlow<Boolean> = (getApplication<Application>() as AppauseApp).settingsDataStore.showNotification
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    init {
+        // Initialise immediately so the permissions screen does not flash red
+        // before the first ON_RESUME refresh.
+        refreshServiceStatus()
+    }
+
     /**
      * Re-read every permission/status that the Settings screen shows.
      *
