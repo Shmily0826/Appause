@@ -1,5 +1,6 @@
 package com.appause.android.ui.stats
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,7 +19,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -28,6 +28,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -272,14 +275,54 @@ private fun ReasonList(
                     Spacer(modifier = Modifier.height(6.dp))
                     // Bar width = this reason's count relative to the top reason.
                     val fraction = item.count.toFloat() / maxCount
-                    LinearProgressIndicator(
-                        progress = { fraction },
-                        trackColor = androidx.compose.ui.graphics.Color.Transparent,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    ReasonBar(fraction = fraction)
                 }
             }
         }
+    }
+}
+
+/**
+ * A simple continuous rounded bar for the reason breakdown.
+ *
+ * Material3's LinearProgressIndicator draws a separate rounded cap at the
+ * end of the progress track. When the track is transparent, that cap looks
+ * like a floating dot under the count number for small fractions. This bar
+ * draws the filled portion as one continuous rounded rectangle anchored to
+ * the left edge, so there is no detached dot.
+ */
+@Composable
+private fun ReasonBar(
+    fraction: Float,
+    modifier: Modifier = Modifier
+) {
+    val fillColor = MaterialTheme.colorScheme.primary
+    val trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(6.dp)
+    ) {
+        val barHeight = size.height
+        val radius = barHeight / 2f
+        val filledWidth = (size.width * fraction.coerceIn(0f, 1f))
+            .coerceAtLeast(barHeight) // keep tiny values as a small pill, not a dot
+
+        // Full-width background track
+        drawRoundRect(
+            color = trackColor,
+            topLeft = Offset.Zero,
+            size = Size(size.width, barHeight),
+            cornerRadius = CornerRadius(radius, radius)
+        )
+
+        // Filled portion anchored to the left
+        drawRoundRect(
+            color = fillColor,
+            topLeft = Offset.Zero,
+            size = Size(filledWidth, barHeight),
+            cornerRadius = CornerRadius(radius, radius)
+        )
     }
 }
 

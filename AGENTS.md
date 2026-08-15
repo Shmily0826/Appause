@@ -101,7 +101,26 @@ This file defines rules that ALL AI agents (and human developers) MUST follow wh
 
 ---
 
-## 8. What NOT to Do
+## 8. Debug Tools (Diagnostics Screen)
+
+The Diagnostics screen (`ui/diagnostics`) ships **only in the `debug` build flavor**
+(`com.appause.android.debug`). Release builds do NOT include it. It exists purely for the
+developer's manual testing and contains two test toggles:
+
+1. **Pro on/off toggle** — forcibly sets the Pro-unlocked state locally so Pro-locked features
+   (unlimited groups, re-remind, custom pause text / open reason) can be exercised without a
+   real license. It does NOT issue or simulate a real license JWT; never treat it as a production
+   activation path.
+2. **Restart onboarding button** (v0.5.35) — calls `SettingsDataStore.clearOnboarding()` (clears
+   `HAS_COMPLETED_ONBOARDING_KEY` and `HAS_SEEN_PERMISSION_INTRO_KEY`) then navigates to
+   `Routes.ONBOARDING`, so the onboarding flow can be re-tested without uninstalling/reinstalling.
+
+These are internal test aids for the developer only. Do not document them in README or expose them
+to end users, and do not wire them into real product flows.
+
+---
+
+## 9. What NOT to Do
 
 - Do not implement features from future phases.
 - Do not add user accounts, cloud sync, or analytics SDKs. The Appause Pro

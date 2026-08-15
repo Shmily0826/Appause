@@ -99,6 +99,22 @@ class AppauseAccessibilityService : AccessibilityService() {
         var pauseActivityVisible: Boolean = false
 
         /**
+         * The package currently being intercepted by a cooldown screen.
+         *
+         * Lets handleForegroundChange detect "the user swiped away from the
+         * cooldown without continuing" and release the guard. On HyperOS a
+         * TYPE_ACCESSIBILITY_OVERLAY that the user navigated away from can be
+         * hidden but NOT removed, so overlayAttached stays true and the
+         * watchdog (which only releases a guard with NO window attached) can't
+         * free it — pauseShown sticks true forever and every later open reads
+         * "SKIP: cooldown overlay is showing" (the "completely stops popping
+         * up" symptom). Tracking the target lets us dismiss the overlay the
+         * moment a different real app becomes foreground.
+         */
+        @Volatile
+        var pauseTargetPackage: String? = null
+
+        /**
          * Guard flag: true while the cooldown screen is showing.
          * Prevents re-triggering interception while a cooldown is in progress.
          *
@@ -384,6 +400,9 @@ class AppauseAccessibilityService : AccessibilityService() {
      * "overlay appeared".
      */
     private val reRemindContinue = mutableMapOf<String, CompletableDeferred<Unit>>()
+    /** Signalled when the user taps Continue on the INITIAL cooldown, so the
+     *  first re-remind pop is anchored to that tap (not to session start). */
+    private val initialContinueSignal = mutableMapOf<String, CompletableDeferred<Unit>>()
 
     /**
      * Away cooldown timers (3-min "leave window"), keyed by package.
@@ -400,6 +419,14 @@ class AppauseAccessibilityService : AccessibilityService() {
 
     /** Wall-clock time each session started; used for logging/debug. */
     private val sessionStart = mutableMapOf<String, Long>()
+
+    /**
+     * Guards against starting a session/loop twice for the same package. The
+     * initial cooldown's Countdown-finish AND its Continue tap both want to
+     * begin the session, but only the first must win — otherwise the loop is
+     * cancelled and re-scheduled (resetting the clock to the later event).
+     */
+    private val sessionActive = mutableSetOf<String>()
 
     /** How long a user can be away before the session is re-armed. */
     private val LEAVE_COOLDOWN_MS = 3 * 60 * 1000L
@@ -823,6 +850,25 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         // 4.5. Skip if cooldown overlay is currently showing
         if (pauseShown) {
+            // Mid-cooldown switch-away: if a DIFFERENT real app just became
+            // foreground while the pause screen is up and the user never tapped
+            // Continue, they abandoned it (swiped to recents / another app).
+            // On HyperOS the accessibility overlay can be hidden-but-not-removed,
+            // leaving overlayAttached=true and the guard stuck forever (the
+            // watchdog can't release an attached window). Dismiss it now so the
+            // guard is released and the next genuine open re-cools instead of
+            // being silently skipped forever.
+            val target = AppauseAccessibilityService.pauseTargetPackage
+            if (target != null && packageName != target &&
+                !InterceptionManager.isBypassed(target)) {
+                AppLogger.w(TAG, "Cooldown abandoned (user left to $packageName before continuing) — dismissing overlay to release guard")
+                overlayManager.dismiss()
+                InterceptionManager.clearBypass(target)
+                AppauseAccessibilityService.noteCancelled(target)
+                AppauseAccessibilityService.pauseTargetPackage = null
+                lastForegroundPackage = packageName
+                return
+            }
             decide("SKIP: cooldown overlay is showing ($packageName)")
             // A previously bypassed app is now in the background — start its
             // away cooldown (e.g. user opened app B while the cooldown for app
@@ -1043,6 +1089,13 @@ class AppauseAccessibilityService : AccessibilityService() {
     internal fun scheduleReRemind(targetPackage: String, groupId: Long, cooldownSeconds: Int, minutes: Int, reRemindCooldownSeconds: Int, repeat: Boolean = true, escalate: Boolean = false) {
         if (minutes <= 0) return
 
+        // Grab the shared initial-continue signal BEFORE cancelReRemind() runs.
+        // cancelReRemind() removes it from the map, and if we grabbed it after,
+        // await() would hang forever (the Continue tap's completed signal would be
+        // gone). Holding the reference here survives the map removal.
+        val initialSignal = initialContinueSignal[targetPackage]
+            ?: CompletableDeferred<Unit>().also { initialContinueSignal[targetPackage] = it }
+
         // Cancel any existing loop for this package (e.g., from a previous session)
         cancelReRemind(targetPackage)
 
@@ -1052,8 +1105,27 @@ class AppauseAccessibilityService : AccessibilityService() {
             // Counts how many re-reminds have actually popped, so escalation
             // (base × N) and the "fire once" mode know where they are.
             var remindCount = 0
+            // Wait for the INITIAL cooldown's Continue so the FIRST re-pop is
+            // anchored to it (user: "计时从点继续开始"). The initial cooldown is
+            // shown by the intercept path, not this loop, so we await its signal
+            // before computing the first interval. Every later cycle is anchored
+            // to its own Continue tap below, so continue → next-continue == exactly
+            // `minutes` (not minutes + cooldown, which the user reported as "等了
+            // 不止 1 分钟").
+            initialSignal.await()
+            initialContinueSignal.remove(targetPackage)
+            var lastContinueAt = System.currentTimeMillis()
+            AppLogger.d(TAG, "Re-remind CLOCK START (initial continue) @ $lastContinueAt for $targetPackage")
             while (true) {
-                delay(minutes * 60 * 1000L)
+                // Cooldown the NEXT pop will use, so we can subtract it and land the
+                // next "Continue" exactly `minutes` after the previous one.
+                val base = reRemindCooldownSeconds.takeIf { it > 0 } ?: cooldownSeconds
+                val rePopSeconds = if (escalate) base * (remindCount + 1) else base
+                // Target appearance: previousContinue + minutes - rePopSeconds, so that
+                // (appearance + rePopSeconds) == previousContinue + minutes.
+                val targetAppearAt = lastContinueAt + minutes * 60_000L - rePopSeconds * 1000L
+                val waitMs = (targetAppearAt - System.currentTimeMillis()).coerceAtLeast(0L)
+                delay(waitMs)
 
                 // Session was re-armed (left > cooldown window, or cancelled) → stop looping.
                 if (!InterceptionManager.isBypassed(targetPackage)) {
@@ -1061,16 +1133,26 @@ class AppauseAccessibilityService : AccessibilityService() {
                     break
                 }
 
-                if (lastForegroundPackage == targetPackage && !pauseShown) {
+                // Decide whether the user is genuinely still in the target app.
+                // Prefer the system usage-event log (ForegroundChecker) — it is the
+                // authoritative "what is actually on screen" signal and is immune
+                // to the Recents/task-switch event bursts. The naive
+                // `lastForegroundPackage` only updates on window-state *changes*,
+                // so if the user stays put (no new event) it goes stale and the
+                // loop would wrongly think they left and never re-pop. Fall back
+                // to the naive signal only when usage access hasn't been granted.
+                val stillInApp = if (ForegroundChecker.isUsageAccessGranted(applicationContext)) {
+                    ForegroundChecker.getForegroundPackage(applicationContext) == targetPackage
+                } else {
+                    lastForegroundPackage == targetPackage
+                }
+                if (stillInApp && !pauseShown) {
                     AppLogger.d(TAG, "Re-remind fired: user still in $targetPackage, showing overlay")
                     // Clear bypass so the overlay shows; the loop keeps running and the
                     // user re-bypasses on Continue (countdown finish → startBypass).
                     InterceptionManager.clearBypass(targetPackage)
                     // Use the dedicated re-remind cooldown if set, otherwise fall back
                     // to the initial cooldown (keeps legacy behaviour for old groups).
-                    val base = reRemindCooldownSeconds.takeIf { it > 0 } ?: cooldownSeconds
-                    // Escalation: the Nth pop lasts base × N (1st = base×1, 2nd = base×2, …).
-                    val rePopSeconds = if (escalate) base * (remindCount + 1) else base
                     showCooldownOverlay(targetPackage, groupId, rePopSeconds, minutes, reRemindCooldownSeconds, isReRemind = true)
                     remindCount++
                     // "Fire once" mode: after the first pop, stop the loop.
@@ -1078,20 +1160,23 @@ class AppauseAccessibilityService : AccessibilityService() {
                         AppLogger.d(TAG, "Re-remind fired once (repeat off), stopping loop")
                         break
                     }
-                    // Anchor the next interval to "user tapped Continue" (or Cancel),
-                    // not to when this overlay appeared. Otherwise the next pop fires
-                    // `minutes` after the overlay showed, ignoring how long the user
-                    // lingered after continuing.
                     val signal = CompletableDeferred<Unit>()
                     reRemindContinue[targetPackage] = signal
                     signal.await()
+                    // Record the Continue time so the next cycle lands exactly `minutes` later.
+                    lastContinueAt = System.currentTimeMillis()
+                    val nextTarget = lastContinueAt + minutes * 60_000L - rePopSeconds * 1000L
+                    AppLogger.d(TAG, "Re-remind CONTINUE @ $lastContinueAt for $targetPackage -> next pop target @ $nextTarget")
                     // If the user cancelled (bypass cleared) or left, stop the loop.
                     if (!InterceptionManager.isBypassed(targetPackage)) {
                         AppLogger.d(TAG, "Re-remind loop ends: user did not continue")
                         break
                     }
                 } else {
-                    AppLogger.d(TAG, "Re-remind tick but user away from $targetPackage, will re-check")
+                    // User away (or a pop is mid-show) — re-check soon instead of waiting
+                    // another full `minutes` (which would make the gap ~2× and feel "stuck").
+                    AppLogger.d(TAG, "Re-remind tick but user away from $targetPackage, re-checking soon")
+                    delay(2000L)
                 }
             }
             reRemindJobs.remove(targetPackage)
@@ -1104,10 +1189,15 @@ class AppauseAccessibilityService : AccessibilityService() {
      * Cancel a pending re-remind timer for the given package.
      * Called when the user leaves the app (bypass cleanup) or the service is destroyed.
      */
-    private fun cancelReRemind(packageName: String) {
+    internal fun cancelReRemind(packageName: String) {
         reRemindJobs.remove(packageName)?.cancel()
         // Cancel any pending "user continued" signal so the loop's await() ends.
         reRemindContinue.remove(packageName)?.cancel()
+        // Also cancel the initial-cooldown wait (e.g. user cancelled the first
+        // cooldown before tapping Continue) so the loop doesn't hang forever.
+        initialContinueSignal.remove(packageName)?.cancel()
+        // Session is over → allow a fresh one to start on next entry.
+        sessionActive.remove(packageName)
     }
 
     /**
@@ -1117,6 +1207,19 @@ class AppauseAccessibilityService : AccessibilityService() {
      */
     internal fun completeReRemindContinue(packageName: String) {
         reRemindContinue.remove(packageName)?.complete(Unit)
+    }
+
+    /**
+     * Called by OverlayManager when the user taps Continue on the INITIAL
+     * cooldown (isReRemind == false). Unblocks the re-remind loop's first
+     * interval so it starts counting from this moment.
+     */
+    internal fun completeInitialContinue(packageName: String) {
+        // Create (if needed) and complete the SAME shared signal the loop awaits,
+        // so order between the Continue tap and scheduleReRemind doesn't matter.
+        val signal = initialContinueSignal[packageName]
+            ?: CompletableDeferred<Unit>().also { initialContinueSignal[packageName] = it }
+        signal.complete(Unit)
     }
 
     /**
@@ -1133,6 +1236,15 @@ class AppauseAccessibilityService : AccessibilityService() {
         reRemindRepeat: Boolean = true,
         reRemindEscalate: Boolean = false
     ) {
+        // Only the first trigger (Continue tap OR countdown-finish) starts the
+        // session; the other must be ignored so the loop isn't re-scheduled and
+        // its clock reset. Tapping Continue must be the one that wins, because
+        // the user explicitly asked to proceed — that's the moment the re-remind
+        // interval should be anchored to ("计时从点继续开始").
+        if (!sessionActive.add(targetPackage)) {
+            AppLogger.d(TAG, "Session start ignored (already active): $targetPackage")
+            return
+        }
         cancelLeaveTimer(targetPackage)
         sessionStart[targetPackage] = System.currentTimeMillis()
         InterceptionManager.startBypass(targetPackage)

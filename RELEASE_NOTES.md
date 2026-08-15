@@ -1,11 +1,18 @@
-# Appause v0.5.29 — 发布说明 (Release Notes)
+# Appause v0.5.37 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.29/Appause-v0.5.29.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.37/Appause-v0.5.37.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.5.37) — 无障碍覆盖层稳定拦截 + 反馈自带诊断
+- **悬浮窗权限改为「可选」**：暂停屏走无障碍覆盖层（TYPE_ACCESSIBILITY_OVERLAY，小红书无法藏掉），通常不需要「显示悬浮窗」权限。引导页与设置页已说明：若发现暂停页不显示、或拦截没有生效，再回来开启它重试。未开启时不再显示为红色告警。
+- **反馈自动附带诊断状态**：在「设置 → 反馈」提交问题（bug / 建议）时，会自动附带本机结构化诊断状态（无障碍服务是否在运行、总开关、电池豁免、悬浮窗权限、最近一次拦截判定、被控应用最近判定、阻断界面方式、分组数等）。通过邮件 / GitHub / Appause 发送都会带上，你收到反馈就能直接看到「为什么没拦住」，无需让用户手动开诊断页复制。说明卡已注明：不含任何应用使用记录或隐私内容。
+- **文案优化**：引导页去掉「分心应用」等不准确表述（改为「目标应用」），并整体润色更通顺；权限说明同步更新。
+- **细节修复**：新建/编辑分组页滑块内缩、冷却输入更紧凑、分组名为空时的错误提示时机更合理、Pro 锁定区合并为单个升级按钮；统计页「原因分析」进度条去掉误绘的悬浮端点。
+- **调试工具（仅 Debug 版）**：诊断页新增「重新开启引导页」按钮（与开关 Pro 并列），方便反复测试引导流程。Debug 包（`com.appause.android.debug`）才有，Release 包不含。
 
 ### 本次更新 (v0.5.29) — 新增「电池优化」警告 + 校正权限说明
 - **首页新增醒目的「电池优化未关闭」红色警告**：在 HyperOS / 小米上，若 Appause 的电源限制是「智能」（未豁免省电），系统会**在后台杀掉无障碍服务、且不会自动重启**——表现就是最经典的那句抱怨：「第一次打开被限制的应用不拦截，切回 Appause 才拦，再开才正常」。以前只有 debug 诊断页提了一句，普通用户根本看不到。现在只要没设成「无限制」，首页顶部就常驻这条红色警告，点一下直接跳到「电池优化」设置，把坑挡在前面。
@@ -215,6 +222,13 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 ---
 
 ## 🇺🇸 English
+
+### What's new in v0.5.37 — stable accessibility-overlay interception + self-diagnosing feedback
+- **"Display over other apps" is now optional**: the pause screen draws on the accessibility overlay (TYPE_ACCESSIBILITY_OVERLAY, which apps like Xiaohongshu cannot hide), so the permission is normally not needed. Onboarding and Settings now say: if the pause screen doesn't show, or interception stops working, come back and enable it and try again. When ungranted, it no longer shows as a red error.
+- **Feedback now attaches diagnostic status**: when you submit a bug/suggestion from Settings → Feedback, it automatically includes the device's structured diagnostic state (whether the accessibility service is alive, master switch, battery exemption, overlay permission, last interception decision, last target-app decision, which overlay type was used, group count, etc.). It is attached to the email / GitHub / in-app send, so you can see "why didn't it block" without asking the user to copy a diagnostics report. A note states it contains no usage history or private data.
+- **Copy polish**: onboarding no longer says "distracting apps" (now "target apps") and reads more naturally throughout; permission explanations updated to match.
+- **Fixes**: group editor slider inset and tighter cooldown input; group-name error appears at the right time; Pro lock merged into a single upgrade button; stats "reason breakdown" progress bar no longer draws a stray floating dot.
+- **Debug-only tooling**: the Diagnostics screen gained a "Restart onboarding" button (next to the Pro toggle) for quick testing. Only in the debug build (`com.appause.android.debug`); not in release.
 
 ### What's new in v0.5.2
 - **Collapsible, line-per-item permission explainer**: the "Why does Appause need these permissions?" card on Settings → Permissions is now expandable/collapsible, and each reason sits on its own line instead of one dense paragraph. The home-screen dialog uses the same line-per-item layout.

@@ -34,6 +34,7 @@ import java.util.Calendar
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = (application as AppauseApp).repository
+    private val settingsDataStore = (application as AppauseApp).settingsDataStore
 
     /**
      * List of all groups, observed from Room via Flow.
@@ -190,6 +191,26 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleEnabled() {
         viewModelScope.launch {
             repository.setEnabled(!isEnabled.value)
+        }
+    }
+
+    /**
+     * Whether the user has seen the one-time permission-rationale explanation.
+     * Drives the "explain before first request" gate on the home permission
+     * banners: the first tap of any "open settings" action shows the rationale
+     * dialog; afterwards taps go straight to system settings.
+     */
+    val hasSeenPermissionIntro: StateFlow<Boolean> = settingsDataStore.hasSeenPermissionIntro
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = false
+        )
+
+    /** Record that the permission rationale has been shown. */
+    fun markPermissionIntroSeen() {
+        viewModelScope.launch {
+            settingsDataStore.setPermissionIntroSeen()
         }
     }
 }

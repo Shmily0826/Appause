@@ -2,15 +2,11 @@ package com.appause.android.ui.diagnostics
 
 import android.app.Application
 import android.content.Context
-import android.os.PowerManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
 import com.appause.android.data.local.AppGroup
-import com.appause.android.interception.InterceptionManager
-import com.appause.android.service.AccessibilityServiceChecker
 import com.appause.android.service.AppauseAccessibilityService
-import com.appause.android.service.ForegroundChecker
 import com.appause.android.util.PersistentLog
 import com.appause.android.util.CrashLog
 import android.content.ComponentName
@@ -113,47 +109,16 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             val context = getApplication<Application>()
 
-            val groups = repository.observeAllGroups().first().map { group ->
-                GroupDiag(
-                    name = group.name,
-                    type = group.type,
-                    cooldownSeconds = group.cooldownSeconds,
-                    packages = repository.getPackageNamesInGroup(group.id)
-                )
-            }
-
-            // UsageStats queries hit the system service — keep them off the main thread.
-            val foreground = withContext(Dispatchers.IO) {
-                ForegroundChecker.getForegroundPackage(context)
-            }
-
+            // Persistent/crash logs are debug-only; the structured status comes
+            // from the shared collector so it stays in lock-step with Feedback.
             val persistentLog = withContext(Dispatchers.IO) {
                 PersistentLog.read(context)
             }
-
             val crashLog = withContext(Dispatchers.IO) {
                 CrashLog.read()
             }
 
-            _state.value = _state.value.copy(
-                accessibilityEnabledInSettings = AccessibilityServiceChecker.isEnabled(context),
-                serviceAlive = AppauseAccessibilityService.instance != null,
-                connectedAt = AppauseAccessibilityService.connectedAt,
-                masterEnabled = repository.isEnabled.first(),
-                usageAccessGranted = ForegroundChecker.isUsageAccessGranted(context),
-                overlayPermissionGranted = android.provider.Settings.canDrawOverlays(context),
-                batteryExempted = (context.getSystemService(Context.POWER_SERVICE) as? PowerManager)
-                    ?.isIgnoringBatteryOptimizations(context.packageName) ?: false,
-                otherAppauseBuilds = AccessibilityServiceChecker.otherAppauseBuildsEnabled(context),
-                eventCount = AppauseAccessibilityService.eventCount,
-                lastEventPackage = AppauseAccessibilityService.lastEventPackage,
-                lastEventAt = AppauseAccessibilityService.lastEventAt,
-                lastDecision = AppauseAccessibilityService.lastDecision,
-                lastTargetDecision = AppauseAccessibilityService.lastTargetDecision,
-                overlayResult = AppauseAccessibilityService.lastOverlayResult,
-                foregroundPackage = foreground,
-                bypassed = InterceptionManager.bypassedSnapshot(),
-                groups = groups,
+            _state.value = collectDiagnostics(context).copy(
                 persistentLog = persistentLog,
                 crashLog = crashLog
             )
@@ -213,5 +178,16 @@ class DiagnosticsViewModel(application: Application) : AndroidViewModel(applicat
 
     fun clearForceStartResult() {
         _state.value = _state.value.copy(forceStartResult = null)
+    }
+
+    /**
+     * Debug-only: clear the onboarding-completed flag (and the permission-intro
+     * flag) so the guide can be re-shown. The caller is expected to navigate to
+     * the ONBOARDING route right after this returns.
+     */
+    fun resetOnboarding() {
+        viewModelScope.launch {
+            app.settingsDataStore.clearOnboarding()
+        }
     }
 }

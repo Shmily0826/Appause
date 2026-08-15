@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -105,6 +107,19 @@ fun HomeScreen(
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
+    // ── Permission-rationale gating ──
+    // The first time the user taps any "open settings" action for a permission,
+    // show a one-time explanation (so they understand WHY) before jumping to the
+    // system page. After that the flag is set and taps go straight through.
+    val hasSeenIntro by viewModel.hasSeenPermissionIntro.collectAsStateWithLifecycle()
+    var showWhy by remember { mutableStateOf(false) }
+    var showIntro by remember { mutableStateOf(false) }
+    var pendingAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    fun gate(action: () -> Unit) {
+        if (hasSeenIntro) action()
+        else { pendingAction = action; showIntro = true }
+    }
+
     // Refresh service status + app counts every time the screen becomes visible.
     // Unlike LaunchedEffect(Unit) which fires only once on first composition,
     // this lifecycle observer fires on every ON_RESUME — so the status updates
@@ -179,11 +194,14 @@ fun HomeScreen(
                 if (!isIgnoringBattery) {
                     Spacer(modifier = Modifier.height(8.dp))
                     BatteryWarningBanner(
+                        onShowWhy = { showWhy = true },
                         onOpenBatterySettings = {
-                            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                data = Uri.parse("package:${context.packageName}")
+                            gate {
+                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = Uri.parse("package:${context.packageName}")
+                                }
+                                context.startActivity(intent)
                             }
-                            context.startActivity(intent)
                         }
                     )
                 }
@@ -200,15 +218,20 @@ fun HomeScreen(
                     RequiredPermissionsBanner(
                         isServiceRunning = isServiceRunning,
                         isUsageAccessGranted = isUsageAccessGranted,
+                        onShowWhy = { showWhy = true },
                         onOpenAccessibilitySettings = {
-                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
+                            gate {
+                                val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            }
                         },
                         onOpenUsageAccessSettings = {
-                            val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            context.startActivity(intent)
+                            gate {
+                                val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            }
                         }
                     )
                 } else {
@@ -356,6 +379,118 @@ fun HomeScreen(
             // Bottom spacing so FAB doesn't cover last item
             item { Spacer(modifier = Modifier.height(80.dp)) }
         }
+
+        // ── Permission-rationale dialogs ──
+        // On-demand (the "?" button): just an explanation, "Got it" to close.
+        if (showWhy) {
+            PermissionIntroDialog(
+                onDismiss = { showWhy = false },
+                confirmLabel = stringResource(R.string.got_it),
+                onConfirm = { showWhy = false }
+            )
+        }
+        // First-time gate: explains WHY, then proceeds to the system settings
+        // the user originally tapped, and records that the intro was seen.
+        if (showIntro) {
+            PermissionIntroDialog(
+                onDismiss = { showIntro = false },
+                confirmLabel = stringResource(R.string.continue_to_settings),
+                onConfirm = {
+                    showIntro = false
+                    viewModel.markPermissionIntroSeen()
+                    pendingAction?.invoke()
+                    pendingAction = null
+                }
+            )
+        }
+    }
+}
+
+/**
+ * A small circular "?" button shown beside a permission banner's heading.
+ * Tapping it opens the in-app explanation of why Appause needs its permissions,
+ * so users who dismissed the one-time rationale (or never saw it) can still
+ * learn the reason on demand.
+ */
+@Composable
+private fun WhyButton(onClick: () -> Unit) {
+    val cd = stringResource(R.string.cd_why_permissions)
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(28.dp)
+            .semantics { contentDescription = cd }
+    ) {
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.14f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "?",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer
+            )
+        }
+    }
+}
+
+/**
+ * One shared explanation of why Appause needs its permissions. Reused by both
+ * the on-demand "?" button and the first-time rationale gate. [confirmLabel]
+ * changes with the trigger: "Got it" for the on-demand view, "Continue to
+ * settings" when it precedes a system-settings jump.
+ */
+@Composable
+private fun PermissionIntroDialog(
+    onDismiss: () -> Unit,
+    confirmLabel: String,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.permissions_why_title)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    text = stringResource(R.string.permissions_why_intro),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Bullet(stringResource(R.string.permissions_why_accessibility))
+                Bullet(stringResource(R.string.permissions_why_usage))
+                Bullet(stringResource(R.string.permissions_why_battery))
+                Bullet(stringResource(R.string.permissions_why_overlay))
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) { Text(confirmLabel) }
+        }
+    )
+}
+
+/** A single bullet line used inside [PermissionIntroDialog]. */
+@Composable
+private fun Bullet(text: String) {
+    Row(
+        modifier = Modifier.padding(vertical = 2.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Text(
+            text = "\u2022",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
@@ -378,7 +513,8 @@ fun HomeScreen(
  */
 @Composable
 private fun BatteryWarningBanner(
-    onOpenBatterySettings: () -> Unit
+    onOpenBatterySettings: () -> Unit,
+    onShowWhy: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -400,6 +536,8 @@ private fun BatteryWarningBanner(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
+                Spacer(Modifier.width(6.dp))
+                WhyButton(onClick = onShowWhy)
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -423,10 +561,9 @@ private fun RequiredPermissionsBanner(
     isServiceRunning: Boolean,
     isUsageAccessGranted: Boolean,
     onOpenAccessibilitySettings: () -> Unit,
-    onOpenUsageAccessSettings: () -> Unit
+    onOpenUsageAccessSettings: () -> Unit,
+    onShowWhy: () -> Unit
 ) {
-    var showWhyDialog by remember { mutableStateOf(false) }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -447,6 +584,8 @@ private fun RequiredPermissionsBanner(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
+                Spacer(modifier = Modifier.width(6.dp))
+                WhyButton(onClick = onShowWhy)
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -498,58 +637,7 @@ private fun RequiredPermissionsBanner(
             ) {
                 Text(stringResource(R.string.required_permissions_action))
             }
-            TextButton(
-                onClick = { showWhyDialog = true },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = stringResource(R.string.required_permissions_learn_more),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
         }
-    }
-
-    if (showWhyDialog) {
-        AlertDialog(
-            onDismissRequest = { showWhyDialog = false },
-            title = { Text(stringResource(R.string.permissions_why_title)) },
-            text = {
-                Column {
-                    Text(
-                        text = stringResource(R.string.permissions_why_intro),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "\u2022 " + stringResource(R.string.permissions_why_accessibility),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "\u2022 " + stringResource(R.string.permissions_why_overlay),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "\u2022 " + stringResource(R.string.permissions_why_battery),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "\u2022 " + stringResource(R.string.permissions_why_usage),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showWhyDialog = false }) {
-                    Text(stringResource(R.string.got_it))
-                }
-            }
-        )
     }
 }
 

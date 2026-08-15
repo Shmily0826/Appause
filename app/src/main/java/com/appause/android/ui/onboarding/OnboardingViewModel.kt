@@ -1,12 +1,15 @@
 package com.appause.android.ui.onboarding
 
 import android.app.Application
+import android.content.Context
+import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
 import com.appause.android.service.AccessibilityServiceChecker
+import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -45,8 +48,18 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     private val _canDrawOverlays = MutableStateFlow(false)
     val canDrawOverlays: StateFlow<Boolean> = _canDrawOverlays
 
+    /** Whether "Usage access" (PACKAGE_USAGE_STATS) is granted. */
+    private val _isUsageAccessGranted = MutableStateFlow(false)
+    val isUsageAccessGranted: StateFlow<Boolean> = _isUsageAccessGranted
+
+    /** Whether the app is exempt from battery optimization ("Unrestricted"). */
+    private val _isIgnoringBattery = MutableStateFlow(false)
+    val isIgnoringBattery: StateFlow<Boolean> = _isIgnoringBattery
+
     /**
-     * Current onboarding step (0 = language … 4 = finish).
+     * Current onboarding step.
+     * 0 = language, 1 = welcome, 2 = accessibility, 3 = usage access,
+     * 4 = battery, 5 = display-over-other-apps, 6 = create group, 7 = finish.
      * Stored in the ViewModel (not in the Composable) so the position is kept
      * when the user opens the group editor and comes back — otherwise returning
      * would restart the whole guide.
@@ -54,14 +67,18 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     var page = mutableIntStateOf(0)
         private set
 
-    fun setPage(p: Int) { page.value = p.coerceIn(0, 5) }
-    fun nextPage() { page.value = (page.value + 1).coerceAtMost(5) }
+    fun setPage(p: Int) { page.value = p.coerceIn(0, 7) }
+    fun nextPage() { page.value = (page.value + 1).coerceAtMost(7) }
     fun prevPage() { page.value = (page.value - 1).coerceAtLeast(0) }
 
-    /** Re-query the accessibility service status (call when the screen resumes). */
+    /** Re-query permission status (call when the screen resumes). */
     fun refreshServiceStatus() {
-        _isServiceRunning.value = AccessibilityServiceChecker.isEnabled(getApplication())
-        _canDrawOverlays.value = Settings.canDrawOverlays(getApplication())
+        val app = getApplication<Application>()
+        _isServiceRunning.value = AccessibilityServiceChecker.isEnabled(app)
+        _canDrawOverlays.value = Settings.canDrawOverlays(app)
+        _isUsageAccessGranted.value = ForegroundChecker.isUsageAccessGranted(app)
+        val pm = app.getSystemService(Context.POWER_SERVICE) as? PowerManager
+        _isIgnoringBattery.value = pm?.isIgnoringBatteryOptimizations(app.packageName) ?: false
     }
 
     /** Persist the chosen language. The UI recreates the Activity to apply it. */
@@ -80,10 +97,25 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
         settingsDataStore.setLanguage(languageCode)
     }
 
+    /**
+     * Skip the guide and jump straight to HOME. Does NOT mark the permission
+     * rationale as seen — if the user skipped, they haven't seen the inline
+     * explanations, so the home screen will still show the one-time rationale
+     * on the first permission request.
+     */
+    fun skipOnboarding() {
+        viewModelScope.launch {
+            settingsDataStore.setHasCompletedOnboarding(true)
+        }
+    }
+
     /** Mark onboarding as done so the app starts at HOME next time. */
     fun completeOnboarding() {
         viewModelScope.launch {
             settingsDataStore.setHasCompletedOnboarding(true)
+            // The guide itself explains why each permission is needed, so the
+            // one-time rationale dialog on the home screen is no longer required.
+            settingsDataStore.setPermissionIntroSeen()
         }
     }
 }

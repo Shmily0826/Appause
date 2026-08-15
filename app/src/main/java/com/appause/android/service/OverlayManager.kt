@@ -221,6 +221,31 @@ class OverlayManager {
         // Query service for resolving recommended app names.
         val appQueryService = AppQueryService(context.applicationContext)
 
+        // DEBUG-ONLY auto-continue action: identical to the real "Continue" button
+        // path, but invokable programmatically by the headless emulator test so the
+        // re-remind loop cycles without a human. Defined at show() scope so the
+        // auto-continue scheduling (below, outside setContent) can reference it.
+        // Gated everywhere it is scheduled.
+        val continueAction: (String) -> Unit = { reason ->
+            CoroutineScope(Dispatchers.IO).launch {
+                repository.logLaunch(targetPackage, groupId, "proceeded", reason)
+            }
+            if (isReRemind) {
+                // Re-bypass so the user stays in the app AND the loop keeps
+                // running (otherwise isBypassed is false and the loop ends).
+                InterceptionManager.startBypass(targetPackage)
+                service.completeReRemindContinue(targetPackage)
+            } else {
+                // Tapping Continue starts the session + re-remind loop NOW,
+                // anchored to this tap (user: "计时从点继续开始"), not when the
+                // cooldown would have naturally finished. onSessionStart is
+                // guarded so the later countdown-finish is ignored.
+                service.completeInitialContinue(targetPackage)
+                service.onSessionStart(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, reRemindRepeat, reRemindEscalate)
+            }
+            dismiss()
+        }
+
         composeView.setContent {
             AppauseTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -277,10 +302,17 @@ class OverlayManager {
                         if (isReRemind) {
                             InterceptionManager.startBypass(targetPackage)
                         } else {
+                            // User let the initial cooldown finish without tapping
+                            // Continue — that still counts as "proceeded", so complete
+                            // the initial-continue signal (otherwise the re-remind loop
+                            // started below would await it forever) and start the session.
+                            service.completeInitialContinue(targetPackage)
                             service.onSessionStart(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, reRemindRepeat, reRemindEscalate)
                         }
                     }
 
+                    // DEBUG-ONLY auto-continue action is defined at show() scope (see
+                    // above) so the scheduling code outside setContent can reference it.
                     PauseScreenContent(
                         appName = appName,
                         appIcon = appIcon,
@@ -297,6 +329,7 @@ class OverlayManager {
                             }
                             // Let the re-remind loop end its wait (next interval won't start).
                             if (isReRemind) service.completeReRemindContinue(targetPackage)
+                            else service.cancelReRemind(targetPackage) // cancelled before first Continue → stop loop
                             InterceptionManager.clearBypass(targetPackage)
                             // Suppress the stale window event that fires for the target
                             // app right before the launcher takes over — otherwise the
@@ -318,18 +351,7 @@ class OverlayManager {
                                 AppLogger.w(TAG, "Failed to send to home", e)
                             }
                         },
-                        onContinueWithReason = { reason ->
-                            // Log the successful proceed with the selected reason
-                            CoroutineScope(Dispatchers.IO).launch {
-                                repository.logLaunch(targetPackage, groupId, "proceeded", reason)
-                            }
-                            // Anchor the next re-remind interval to this Continue tap.
-                            if (isReRemind) service.completeReRemindContinue(targetPackage)
-                            dismiss()
-                            // Re-remind is handled by the self-rescheduling loop started
-                            // in onSessionStart (initial entry). For a re-remind pop the
-                            // loop is already running, so nothing extra to schedule here.
-                        },
+                        onContinueWithReason = continueAction,
                         recommendedApps = recommendedApps,
                         onOpenRecommendedApp = { pkg ->
                             // Open the recommended (learning) app instead of the target.
@@ -359,6 +381,7 @@ class OverlayManager {
         overlayAttached = false
         // Raise the guard so we don't double-trigger while the window attaches.
         AppauseAccessibilityService.pauseShown = true
+        AppauseAccessibilityService.pauseTargetPackage = targetPackage
 
         var overlayAdded = false
         var usedType = preferredType
@@ -514,6 +537,7 @@ class OverlayManager {
 
         // Reset the guard flag so the next target app open can trigger interception
         AppauseAccessibilityService.pauseShown = false
+        AppauseAccessibilityService.pauseTargetPackage = null
     }
 
     /** Whether the overlay is currently showing. */

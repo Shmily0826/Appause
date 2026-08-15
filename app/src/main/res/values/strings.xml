@@ -47,6 +47,8 @@
     <string name="required_permissions_usage">Usage access — confirm which app is really on screen</string>
     <string name="required_permissions_action">Open settings</string>
     <string name="required_permissions_learn_more">Learn why these permissions are needed</string>
+    <string name="continue_to_settings">Continue to settings</string>
+    <string name="cd_why_permissions">Why these permissions are needed</string>
     <string name="battery_warning_title">Battery optimization is on</string>
     <string name="battery_warning_desc">The system will kill Appause\'s background service in battery-saver mode and won\'t restart it — so interception silently stops (e.g. \"first open isn\'t blocked, only works after switching back to Appause\"). Set it to \"Unrestricted\" (no restrictions).</string>
 
@@ -85,7 +87,7 @@
     <string name="title_new_group">New Group</string>
     <string name="label_group_name">Group name</string>
     <string name="placeholder_group_name">e.g., Social Media</string>
-    <string name="group_name_required_hint">Enter a group name to enable Save</string>
+    <string name="group_name_required_hint">Please enter a group name</string>
     <string name="group_type_label">Group type</string>
     <string name="group_type_pause">Cooldown</string>
     <string name="group_type_pause_desc">Adds a cooldown before opening selected apps.</string>
@@ -117,7 +119,7 @@
     <string name="re_remind_summary_locked">Pro only</string>
     <string name="re_remind_enable">Enabled</string>
     <string name="re_remind_more_options">More options</string>
-    <string name="re_remind_pro_unlock">Upgrade to Appause Pro to enable</string>
+    <string name="re_remind_pro_unlock">Upgrade to Appause Pro</string>
     <string name="cd_expand_section">Expand</string>
     <string name="cd_collapse_section">Collapse</string>
     <string name="show_notification_title">Show monitoring notification</string>
@@ -184,7 +186,7 @@
     <string name="permissions_why_title">Why does Appause need these permissions?</string>
     <string name="permissions_why_intro">Appause does not read your messages, browsing history, or account info, and does not upload any data to a server. All permissions are used locally only.</string>
     <string name="permissions_why_accessibility">Accessibility service — detects which app is currently in the foreground so Appause can show the pause screen when a blocked app is opened.</string>
-    <string name="permissions_why_overlay">Display over other apps — optional. The new version draws the pause screen with an accessibility overlay, so this is usually not needed; it only helps as a fallback on rare devices where that overlay is rejected.</string>
+    <string name="permissions_why_overlay">Display over other apps — optional. The new version uses an accessibility overlay, so this is usually not needed; if the pause screen is hidden or covered, try enabling it.</string>
     <string name="permissions_why_battery">Battery optimization exemption — keeps the background service alive so interceptions continue to work.</string>
     <string name="permissions_why_usage">Usage access — confirms the real foreground app. Without it, Recents and app switching can trigger the pause screen by mistake.</string>
     <string name="open_source_footer_title">Open source &amp; auditable</string>
@@ -195,17 +197,27 @@
     <string name="overlay_not_granted">Not granted — pause screen may not show on some devices</string>
     <string name="overlay_required_title">"Display over other apps" permission required</string>
     <string name="overlay_required_desc">Without this permission the pause screen may not appear on phones like Xiaomi. Tap to open settings.</string>
-    <string name="onboarding_overlay_title">Enable "Display over other apps"</string>
-    <string name="onboarding_overlay_desc">Lets Appause show the pause screen above other apps. Required on Xiaomi/Huawei and other OEM ROMs, otherwise the target app covers the pause screen.</string>
+    <string name="onboarding_overlay_title">Display over other apps (optional)</string>
+    <string name="onboarding_overlay_desc">Optional permission. The new version draws the pause screen with an accessibility overlay, so this is usually not needed. If the pause screen does not appear, or interception is not working, come back here and enable it, then try again.</string>
     <string name="onboarding_overlay_open">Open system settings</string>
-    <string name="onboarding_overlay_on">Enabled, great!</string>
-    <string name="onboarding_overlay_off">Not enabled yet — please allow Appause "Display over other apps" in system settings.</string>
+    <string name="onboarding_overlay_on">Enabled.</string>
+    <string name="onboarding_overlay_off">Not enabled yet (optional). If the pause screen does not show, you can enable it here.</string>
+    <string name="onboarding_usage_title">Enable "Usage access"</string>
+    <string name="onboarding_usage_desc">Lets Appause accurately tell which app is truly open right now. Without it, opening Recents or switching apps can wrongly trigger the pause screen.</string>
+    <string name="onboarding_usage_open">Open system settings</string>
+    <string name="onboarding_usage_on">Enabled, great!</string>
+    <string name="onboarding_usage_off">Not enabled yet — please allow Appause "Usage access" in system settings.</string>
+    <string name="onboarding_battery_title">Turn off battery optimization</string>
+    <string name="onboarding_battery_desc">Set Appause to "Unrestricted" so the system won\'t shut down its background service in battery-saver mode. Otherwise interception can silently stop working.</string>
+    <string name="onboarding_battery_open">Open system settings</string>
+    <string name="onboarding_battery_on">Unrestricted, great!</string>
+    <string name="onboarding_battery_off">Not unrestricted yet — please set Appause to "Unrestricted" in battery settings.</string>
     <string name="default_prompt_title">Default Prompt</string>
     <string name="custom_reasons_title">Custom open reasons</string>
     <string name="custom_reasons_desc">Pro only: rename the four \"why are you opening this?\" options on the pause screen.</string>
     <string name="prompt_label">Pause for a moment</string>
     <string name="debug_info">Debug Info</string>
-    <string name="debug_android">Android: API %d (%s)</string>
+    <string name="debug_android">Android: API %1$d (%2$s)</string>
     <string name="debug_enabled">Appause enabled</string>
     <string name="debug_service">Service running</string>
     <string name="debug_usage_access">Usage access</string>
@@ -368,7 +380,8 @@
     <string name="feedback_message_hint">Describe the bug or your suggestion…</string>
     <string name="feedback_contact_label">Contact (optional)</string>
     <string name="feedback_contact_hint">Email so we can follow up</string>
-    <string name="feedback_auto_info">The following info is attached automatically:</string>
+    <string name="feedback_auto_info">The following is attached automatically (no usage history):</string>
+    <string name="feedback_diag_note">Feedback also includes on-device diagnostic status (e.g. whether the accessibility service is running, the last interception decision, etc.) so problems can be pinpointed. No app-usage records or private content are sent.</string>
     <string name="feedback_send_email">Send via Email</string>
     <string name="feedback_open_issue">Open GitHub Issue</string>
     <string name="feedback_send_appause">Send via Appause</string>
@@ -382,14 +395,14 @@
 
     <!-- Onboarding (first-launch guide) -->
     <string name="onboarding_language_title">Choose your language</string>
-    <string name="onboarding_language_desc">Once selected, the guide and the whole app will use this language.</string>
+    <string name="onboarding_language_desc">Once selected, the whole app — including this guide — will use that language.</string>
     <string name="onboarding_welcome_title">Welcome to Appause</string>
-    <string name="onboarding_welcome_desc">Before a distracting app opens, Appause shows a pause screen, and you decide whether to continue.</string>
+    <string name="onboarding_welcome_desc">Once you add apps to a group, Appause shows a pause screen before they open, and you decide whether to continue.</string>
     <string name="onboarding_service_title">Turn on Accessibility</string>
     <string name="onboarding_service_desc">Appause needs the Accessibility service to detect which app you\'re opening and overlay the pause screen. After enabling it, come back here to continue.</string>
     <string name="onboarding_service_open">Open system settings</string>
     <string name="onboarding_service_on">Enabled — great!</string>
-    <string name="onboarding_service_off">Not enabled yet. Please allow Appause in system settings.</string>
+    <string name="onboarding_service_off">Not enabled yet — please allow Appause to use the Accessibility service in system settings.</string>
     <string name="onboarding_group_title">Create your first group</string>
     <string name="onboarding_group_desc">Put the apps you want to use less of into a group (e.g. \"Short video\") and set a cooldown. You\'ll find the group entry at the top-right of the home screen.</string>
     <string name="onboarding_group_add">Add a group</string>
@@ -402,7 +415,7 @@
     <string name="onboarding_finish">Get started</string>
     <string name="onboarding_lang_zh">简体中文</string>
     <string name="onboarding_lang_en">English</string>
-    <string name="onboarding_group_hint">Tip: you can add a group now — the countdown is just a suggestion, no need to wait.</string>
+    <string name="onboarding_group_hint">Tip: you can add a group now. The countdown here is just a demo — no need to wait for it to finish.</string>
     <string name="onboarding_preview_app_name">Sample App</string>
-    <string name="onboarding_preview_caption">This is the pause screen shown when a distracting app opens.</string>
+    <string name="onboarding_preview_caption">This is the pause screen shown when a target app opens.</string>
 </resources>

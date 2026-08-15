@@ -75,6 +75,15 @@ class SettingsDataStore(private val context: Context) {
         // Drives the NavGraph start destination (ONBOARDING vs HOME).
         val HAS_COMPLETED_ONBOARDING_KEY = booleanPreferencesKey("onboarding_done")
 
+        // ── Permission-rationale intro ──
+        // Whether the user has already seen the in-app explanation of WHY
+        // Appause needs its permissions (accessibility / usage / battery /
+        // overlay). Once true, tapping any "open settings" action goes straight
+        // to the system page; before that, the app shows a one-time rationale
+        // dialog first. Onboarding completion also sets this, since the guide
+        // itself explains the permissions.
+        val HAS_SEEN_PERMISSION_INTRO_KEY = booleanPreferencesKey("permission_intro_seen")
+
         // SharedPreferences key for sync locale override (used in attachBaseContext)
         private const val PREFS_NAME = "appause_locale_prefs"
         private const val PREF_LANGUAGE_KEY = "language"
@@ -181,6 +190,16 @@ class SettingsDataStore(private val context: Context) {
         preferences[HAS_COMPLETED_ONBOARDING_KEY] ?: false
     }
 
+    /**
+     * Whether the user has seen the one-time permission-rationale explanation.
+     * Default: false — the first permission request will show the rationale
+     * dialog before jumping to system settings. Set true once shown (or when
+     * onboarding is completed, since the guide explains the same thing).
+     */
+    val hasSeenPermissionIntro: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[HAS_SEEN_PERMISSION_INTRO_KEY] ?: false
+    }
+
     // ── Write operations (suspend functions — must be called from a coroutine) ──
 
     /** Update the master toggle. */
@@ -270,6 +289,30 @@ class SettingsDataStore(private val context: Context) {
     suspend fun setHasCompletedOnboarding(done: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[HAS_COMPLETED_ONBOARDING_KEY] = done
+        }
+    }
+
+    /**
+     * Mark the permission-rationale explanation as seen, so subsequent
+     * permission requests skip the one-time dialog and go straight to settings.
+     */
+    suspend fun setPermissionIntroSeen() {
+        context.dataStore.edit { preferences ->
+            preferences[HAS_SEEN_PERMISSION_INTRO_KEY] = true
+        }
+    }
+
+    /**
+     * Debug-only: reset the first-launch state so the onboarding guide can be
+     * re-shown for testing. Clears both the completed flag and the
+     * permission-intro-seen flag, so a re-run shows the full guide AND the
+     * one-time permission rationale again. Mirrors the Pro debug tools in
+     * ProScreen, which flip a similar test-only flag.
+     */
+    suspend fun clearOnboarding() {
+        context.dataStore.edit { preferences ->
+            preferences[HAS_COMPLETED_ONBOARDING_KEY] = false
+            preferences[HAS_SEEN_PERMISSION_INTRO_KEY] = false
         }
     }
 

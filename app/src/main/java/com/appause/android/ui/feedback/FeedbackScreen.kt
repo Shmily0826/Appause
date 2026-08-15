@@ -38,8 +38,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.BuildConfig
 import com.appause.android.R
+import com.appause.android.ui.diagnostics.DiagnosticsState
 import java.net.URLEncoder
 import java.util.Locale
 
@@ -74,7 +77,8 @@ private sealed class FeedbackResult {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FeedbackScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: FeedbackViewModel = viewModel()
 ) {
     var type by remember { mutableStateOf("bug") } // "bug" | "suggestion"
     var message by remember { mutableStateOf("") }
@@ -82,6 +86,12 @@ fun FeedbackScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var feedbackResult by remember { mutableStateOf<FeedbackResult?>(null) }
+
+    // On-device diagnostic snapshot attached to every submission (see FeedbackViewModel).
+    val diagState by viewModel.state.collectAsStateWithLifecycle()
+    val diagnosticBlock = remember(diagState) {
+        buildDiagnosticBlock(diagState, viewModel.logTail())
+    }
 
     // Static per-install info. Computed once with remember.
     val deviceInfo = remember {
@@ -94,7 +104,7 @@ fun FeedbackScreen(
     }
 
     // The report body the user will send. Recomposed when inputs change.
-    val reportBody = remember(message, contact, deviceInfo) {
+    val reportBody = remember(message, contact, deviceInfo, diagnosticBlock) {
         buildString {
             if (contact.isNotBlank()) appendLine("Contact: $contact")
             appendLine()
@@ -102,6 +112,10 @@ fun FeedbackScreen(
             appendLine()
             appendLine("---")
             appendLine(deviceInfo)
+            if (diagnosticBlock.isNotBlank()) {
+                appendLine()
+                appendLine(diagnosticBlock)
+            }
         }.trimEnd()
     }
 
@@ -192,11 +206,22 @@ fun FeedbackScreen(
                 }
             }
 
+            // ── Diagnostic status notice (transparency) ──
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        stringResource(R.string.feedback_diag_note),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             // ── Send actions ──
             Button(
                 onClick = {
                     scope.launch {
-                        feedbackResult = submitFeedbackViaServer(type, message, contact)
+                        feedbackResult = submitFeedbackViaServer(type, message, contact, diagnosticBlock)
                     }
                 },
                 enabled = canSend,
@@ -275,11 +300,16 @@ private fun encode(value: String): String =
  * Submit feedback anonymously to the Appause Worker (/api/feedback).
  * Mirrors the Pro redeem network call: HttpURLConnection + JSONObject, on IO.
  * No email or account is required. Returns a [FeedbackResult].
+ *
+ * @param diagnostics Human-readable on-device diagnostic status (structured
+ *   signals only — see [buildDiagnosticBlock]). Attached so the developer can
+ *   see why interception may be failing for this user, without any usage history.
  */
 private suspend fun submitFeedbackViaServer(
     type: String,
     message: String,
-    contact: String
+    contact: String,
+    diagnostics: String
 ): FeedbackResult = withContext(Dispatchers.IO) {
     val base = ProConfig.WORKER_BASE_URL
     if (base.isBlank()) return@withContext FeedbackResult.Error("worker_not_configured")
@@ -292,6 +322,7 @@ private suspend fun submitFeedbackViaServer(
             put("androidVersion", "${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
             put("deviceModel", "${Build.MANUFACTURER} ${Build.MODEL}")
             put("language", Locale.getDefault().toLanguageTag())
+            put("diagnostics", diagnostics)
         }.toString()
         val url = URL("$base/api/feedback")
         val conn = url.openConnection() as HttpURLConnection
@@ -319,4 +350,35 @@ private suspend fun submitFeedbackViaServer(
     } catch (e: Exception) {
         FeedbackResult.Error("network_error")
     }
+}
+
+/**
+ * Build the on-device diagnostic block attached to every feedback submission.
+ * Uses only the structured status signals the Diagnostics screen already shows —
+ * never free-text production logs. [logTail] is the in-memory ring buffer, which
+ * is empty in release builds (debug-only), so it is appended only when present.
+ */
+private fun buildDiagnosticBlock(state: DiagnosticsState?, logTail: String): String {
+    if (state == null) return ""
+    return buildString {
+        appendLine("--- 诊断状态 / Diagnostics ---")
+        appendLine("verdict: ${state.verdict}")
+        appendLine("accessibility(系统): ${state.accessibilityEnabledInSettings}")
+        appendLine("serviceAlive: ${state.serviceAlive}")
+        appendLine("masterEnabled: ${state.masterEnabled}")
+        appendLine("usageAccess: ${state.usageAccessGranted}")
+        appendLine("overlayPermission: ${state.overlayPermissionGranted}")
+        appendLine("batteryExempted: ${state.batteryExempted}")
+        appendLine("otherAppauseBuilds: ${state.otherAppauseBuilds.ifEmpty { "无/none" }}")
+        appendLine("overlayResult: ${state.overlayResult ?: "无/none"}")
+        appendLine("lastDecision: ${state.lastDecision ?: "无/none"}")
+        appendLine("lastTargetDecision: ${state.lastTargetDecision ?: "无/none"}")
+        appendLine("foreground: ${state.foregroundPackage ?: "无/none"}")
+        appendLine("groups: ${state.groups.size} (activeIntercepting: ${state.activeGroups.size})")
+        if (logTail.isNotBlank()) {
+            appendLine()
+            appendLine("--- 内存日志 (debug only) ---")
+            appendLine(logTail)
+        }
+    }.trimEnd()
 }

@@ -196,7 +196,10 @@ fun AppNavGraph() {
 
         // ── Diagnostics (debug builds only — Settings hides the entry otherwise) ──
         composable(Routes.DIAGNOSTICS) {
-            DiagnosticsScreen(onNavigateBack = safePopBackStack)
+            DiagnosticsScreen(
+                onNavigateBack = safePopBackStack,
+                onNavigateToOnboarding = { navController.navigate(Routes.ONBOARDING) }
+            )
         }
 
         // Restart the app (used after a language switch so attachBaseContext

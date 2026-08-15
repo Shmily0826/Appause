@@ -121,6 +121,10 @@ fun GroupEditorScreen(
     LaunchedEffect(name) {
         if (name != nameLocal) nameLocal = name
     }
+    // Name error is shown only after the user interacts (types then clears) or
+    // taps Save with an empty name — not on first open (Section 5).
+    var showNameError by remember { mutableStateOf(false) }
+    var nameHadTyped by remember { mutableStateOf(false) }
     val cooldownSeconds by viewModel.cooldownSeconds.collectAsStateWithLifecycle()
     val reRemindEnabled by viewModel.reRemindEnabled.collectAsStateWithLifecycle()
     val reRemindMinutes by viewModel.reRemindMinutes.collectAsStateWithLifecycle()
@@ -208,8 +212,17 @@ fun GroupEditorScreen(
                     }
                     Spacer(modifier = Modifier.width(12.dp))
                     Button(
-                        onClick = viewModel::save,
-                        enabled = nameLocal.isNotBlank()
+                        onClick = {
+                            // Validate on click so an empty name shows the inline
+                            // error (Section 5) instead of silently doing nothing.
+                            // The ViewModel still refuses to persist an empty name.
+                            if (nameLocal.isBlank()) {
+                                showNameError = true
+                            } else {
+                                viewModel.save()
+                            }
+                        },
+                        enabled = true
                     ) {
                         Text(stringResource(R.string.action_save))
                     }
@@ -233,19 +246,20 @@ fun GroupEditorScreen(
                 onValueChange = {
                     nameLocal = it
                     viewModel.updateName(it)
+                    if (it.isNotBlank()) nameHadTyped = true
+                    // Error only after the user has typed something and then
+                    // cleared it — not on the initial empty state.
+                    showNameError = nameHadTyped && it.isBlank()
                 },
                 label = { Text(stringResource(R.string.label_group_name)) },
                 placeholder = { Text(stringResource(R.string.placeholder_group_name)) },
                 singleLine = true,
+                isError = showNameError,
+                supportingText = if (showNameError) {
+                    { Text(stringResource(R.string.group_name_required_hint)) }
+                } else null,
                 modifier = Modifier.fillMaxWidth()
             )
-            if (nameLocal.isBlank()) {
-                Text(
-                    text = stringResource(R.string.group_name_required_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
 
             // ── Cooldown (top-level, always visible) ──
             Spacer(modifier = Modifier.height(8.dp))
@@ -429,23 +443,13 @@ fun GroupEditorScreen(
                         )
                     }
                 } else {
-                    // Locked upsell — tap to learn about / enable Pro.
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onNavigateToPro() }
-                            .padding(4.dp)
+                    // Locked upsell — a single, clearly-clickable upgrade action.
+                    // The PRO badge and the header expand/collapse stay intact.
+                    Button(
+                        onClick = onNavigateToPro,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = stringResource(R.string.pro_locked_hint),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.re_remind_pro_unlock),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Text(stringResource(R.string.re_remind_pro_unlock))
                     }
                 }
             }
@@ -485,7 +489,7 @@ fun GroupEditorScreen(
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = stringResource(R.string.add_apps),
                         style = MaterialTheme.typography.bodyLarge,
@@ -699,6 +703,7 @@ private fun CollapsibleCard(
  */
 @Composable
 private fun TimeSliderInput(
+    modifier: Modifier = Modifier,
     title: String,
     value: Int,
     unit: String,
@@ -707,8 +712,7 @@ private fun TimeSliderInput(
     onValueChange: (Int) -> Unit,
     rangeStartLabel: String,
     rangeEndLabel: String,
-    enabled: Boolean = true,
-    modifier: Modifier = Modifier
+    enabled: Boolean = true
 ) {
     val focusManager = LocalFocusManager.current
 
@@ -727,9 +731,9 @@ private fun TimeSliderInput(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Row 1: title … [input] unit
+        // Row 1: title (left) … [input] unit (right)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = title,
@@ -763,7 +767,7 @@ private fun TimeSliderInput(
                     color = MaterialTheme.colorScheme.onSurface
                 ),
                 modifier = Modifier
-                    .width(56.dp)
+                    .width(64.dp)
                     .onFocusChanged { focusState ->
                         if (focusState.isFocused) {
                             isEditing = true
@@ -785,37 +789,50 @@ private fun TimeSliderInput(
             )
         }
 
-        // Row 2: Slider — continuous track (no `steps`), and the default M3
-        // thumb is already a clear filled circle, so the grab handle is obvious.
-        Slider(
-            value = value.toFloat(),
-            onValueChange = { onValueChange(it.toInt()) },
-            valueRange = minValue.toFloat()..maxValue.toFloat(),
-            enabled = enabled,
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = InactiveTrackColor,
-                disabledThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
-                disabledActiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f),
-                disabledInactiveTrackColor = InactiveTrackColor.copy(alpha = 0.38f)
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        // Row 3: range endpoint labels
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = rangeStartLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+        // Row 2 + 3: Slider and range labels, inset from the screen edge so the
+        // track (and the min/max thumb positions) clear the Android edge-gesture
+        // zones. The labels get an extra inset equal to the slider thumb radius
+        // so they line up with the visual track ends. The standard M3 Slider
+        // already draws one continuous track (active → thumb → inactive) with a
+        // filled circular thumb — no custom boxes/canvas needed.
+        Column(modifier = Modifier.padding(horizontal = 12.dp)) {
+            Slider(
+                value = value.toFloat(),
+                onValueChange = { onValueChange(it.toInt()) },
+                valueRange = minValue.toFloat()..maxValue.toFloat(),
+                enabled = enabled,
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                    inactiveTrackColor = InactiveTrackColor,
+                    disabledThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                    disabledActiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f),
+                    disabledInactiveTrackColor = InactiveTrackColor.copy(alpha = 0.38f)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics {
+                        contentDescription = "$title: $value $unit"
+                    }
             )
-            Spacer(modifier = Modifier.weight(1f))
-            Text(
-                text = rangeEndLabel,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = rangeStartLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = rangeEndLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

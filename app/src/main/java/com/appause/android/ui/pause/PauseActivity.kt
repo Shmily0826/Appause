@@ -328,6 +328,7 @@ class PauseActivity : ComponentActivity() {
         // Reset the guard flag so the next target app open can trigger interception
         AppauseAccessibilityService.pauseShown = false
         AppauseAccessibilityService.pauseActivityVisible = false
+        AppauseAccessibilityService.pauseTargetPackage = null
 
         // If the user didn't proceed, clean up the bypass.
         // This handles cases like: system kills the Activity, user swipes from recents, etc.

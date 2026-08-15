@@ -83,6 +83,7 @@ private val WarnAmber = Color(0xFFFFB300)
 @Composable
 fun DiagnosticsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToOnboarding: () -> Unit,
     viewModel: DiagnosticsViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -129,6 +130,15 @@ fun DiagnosticsScreen(
             item { Spacer(Modifier.height(4.dp)) }
 
             item { VerdictCard(state = state, context = context, viewModel = viewModel) }
+
+            item {
+                DebugToolsCard(
+                    onRestartOnboarding = {
+                        viewModel.resetOnboarding()
+                        onNavigateToOnboarding()
+                    }
+                )
+            }
 
             item { StatusCard(state = state) }
 
@@ -281,6 +291,30 @@ private fun VerdictCard(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+/** Debug-only quick actions, mirroring the Pro debug tools in ProScreen. */
+@Composable
+private fun DebugToolsCard(onRestartOnboarding: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            SectionTitle("测试工具（Debug）")
+            Text(
+                text = "方便反复测试引导页与首次权限说明流程，不影响真实用户。",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onRestartOnboarding,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("重新开启引导页")
             }
         }
     }

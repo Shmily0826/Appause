@@ -39,8 +39,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.GroupAdd
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -111,6 +113,8 @@ fun OnboardingScreen(
     val language by viewModel.language.collectAsStateWithLifecycle()
     val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
     val canDrawOverlays by viewModel.canDrawOverlays.collectAsStateWithLifecycle()
+    val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
+    val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
 
     // Re-query accessibility status every time the screen resumes (e.g. after the
     // user enables the service in system settings and comes back).
@@ -128,6 +132,8 @@ fun OnboardingScreen(
         Icons.Default.Language,
         Icons.Default.Pause,
         Icons.Default.Accessibility,
+        Icons.Default.Info,
+        Icons.Default.Power,
         Icons.Default.Visibility,
         Icons.Default.GroupAdd,
         Icons.Default.CheckCircle
@@ -150,7 +156,7 @@ fun OnboardingScreen(
             PageDots(current = page, total = stepIcons.size)
             Spacer(modifier = Modifier.weight(1f))
             TextButton(onClick = {
-                viewModel.completeOnboarding()
+                viewModel.skipOnboarding()
                 onNavigateToHome()
             }) {
                 Text(stringResource(R.string.onboarding_skip))
@@ -193,7 +199,24 @@ fun OnboardingScreen(
                         context.startActivity(intent)
                     }
                 )
-                3 -> OverlayStep(
+                3 -> UsageStep(
+                    isGranted = isUsageAccessGranted,
+                    onOpenSettings = {
+                        val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(intent)
+                    }
+                )
+                4 -> BatteryStep(
+                    isIgnoring = isIgnoringBattery,
+                    onOpenSettings = {
+                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                        }
+                        context.startActivity(intent)
+                    }
+                )
+                5 -> OverlayStep(
                     isGranted = canDrawOverlays,
                     onOpenSettings = {
                         val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
@@ -202,8 +225,8 @@ fun OnboardingScreen(
                         context.startActivity(intent)
                     }
                 )
-                4 -> GroupStep()
-                5 -> InfoStep(
+                6 -> GroupStep()
+                7 -> InfoStep(
                     title = R.string.onboarding_finish_title,
                     desc = R.string.onboarding_finish_desc
                 )
@@ -226,12 +249,12 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             when (page) {
-                4 -> {
+                6 -> {
                     // Primary: open the existing group editor. We advance the step
                     // to "finish" first, so returning from the editor lands on the
                     // "All set" page instead of restarting the guide.
                     Button(onClick = {
-                        viewModel.setPage(5)
+                        viewModel.setPage(7)
                         onNavigateToGroupEditor()
                     }) {
                         Text(stringResource(R.string.onboarding_group_add))
@@ -239,11 +262,11 @@ fun OnboardingScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     // Secondary: continue without creating a group (distinct from the
                     // top-right "Skip", which exits the whole guide).
-                    TextButton(onClick = { viewModel.setPage(5) }) {
+                    TextButton(onClick = { viewModel.setPage(7) }) {
                         Text(stringResource(R.string.onboarding_group_later))
                     }
                 }
-                5 -> Button(onClick = {
+                7 -> Button(onClick = {
                     viewModel.completeOnboarding()
                     onNavigateToHome()
                 }) {
@@ -450,8 +473,14 @@ private fun GroupStepPreview() {
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         )
     ) {
+        // fillMaxWidth + CenterHorizontally keeps the icon, texts and ring
+        // centered in the card. Without it the Column is measured at its
+        // content width and left-aligned inside the card (Card's default
+        // placement), so the whole preview sits off-center / "tilted".
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // NOTE: R.mipmap.ic_launcher is an *adaptive* icon
@@ -600,10 +629,11 @@ private fun OverlayStep(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
+        // 悬浮窗 is optional — an ungranted state is informational, not an error.
         val statusColor = if (isGranted) {
             MaterialTheme.colorScheme.primary
         } else {
-            MaterialTheme.colorScheme.error
+            MaterialTheme.colorScheme.onSurfaceVariant
         }
         Text(
             text = if (isGranted) {
@@ -619,6 +649,106 @@ private fun OverlayStep(
 
         Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.onboarding_overlay_open))
+        }
+    }
+}
+
+/**
+ * Usage-access step (page 3): explains the "使用情况访问" permission and links
+ * to the system grant page. Without it Appause can't reliably tell a real app
+ * launch from the burst of window events OEM ROMs replay when the user opens
+ * Recents or switches apps — so the pause screen can appear by mistake.
+ */
+@Composable
+private fun UsageStep(
+    isGranted: Boolean,
+    onOpenSettings: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = stringResource(R.string.onboarding_usage_title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.onboarding_usage_desc),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val statusColor = if (isGranted) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.error
+        }
+        Text(
+            text = if (isGranted) {
+                stringResource(R.string.onboarding_usage_on)
+            } else {
+                stringResource(R.string.onboarding_usage_off)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = statusColor,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.onboarding_usage_open))
+        }
+    }
+}
+
+/**
+ * Battery-optimization step (page 4): explains why Appause must be set to
+ * "Unrestricted" and links to the system battery settings. On HyperOS/MIUI a
+ * non-exempt app gets its AccessibilityService killed in the background with no
+ * auto-restart, so interception silently stops until the app is reopened.
+ */
+@Composable
+private fun BatteryStep(
+    isIgnoring: Boolean,
+    onOpenSettings: () -> Unit
+) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = stringResource(R.string.onboarding_battery_title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.onboarding_battery_desc),
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        val statusColor = if (isIgnoring) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.error
+        }
+        Text(
+            text = if (isIgnoring) {
+                stringResource(R.string.onboarding_battery_on)
+            } else {
+                stringResource(R.string.onboarding_battery_off)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = statusColor,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.onboarding_battery_open))
         }
     }
 }

@@ -47,6 +47,8 @@
     <string name="required_permissions_usage">使用情况访问 — 确认真正在屏幕上的应用</string>
     <string name="required_permissions_action">去开启</string>
     <string name="required_permissions_learn_more">了解这些权限的用途</string>
+    <string name="continue_to_settings">去设置</string>
+    <string name="cd_why_permissions">为什么需要这些权限</string>
     <string name="battery_warning_title">电池优化未关闭</string>
     <string name="battery_warning_desc">系统会在省电时杀死 Appause 的后台服务，且不会自动重启——表现就是「第一次打开被限制的应用不拦截，切回 Appause 才拦」。请把它设为「无限制」。</string>
 
@@ -84,7 +86,7 @@
     <string name="title_new_group">新建分组</string>
     <string name="label_group_name">分组名称</string>
     <string name="placeholder_group_name">例如：社交媒体</string>
-    <string name="group_name_required_hint">输入分组名称后才能保存</string>
+    <string name="group_name_required_hint">请输入分组名称</string>
     <string name="group_type_label">分组类型</string>
     <string name="group_type_pause">冷却</string>
     <string name="group_type_pause_desc">打开所选应用前先进入冷却。</string>
@@ -116,7 +118,7 @@
     <string name="re_remind_summary_locked">需 Pro</string>
     <string name="re_remind_enable">开启</string>
     <string name="re_remind_more_options">更多选项</string>
-    <string name="re_remind_pro_unlock">升级 Appause Pro 以开启</string>
+    <string name="re_remind_pro_unlock">升级到 Appause Pro</string>
     <string name="cd_expand_section">展开</string>
     <string name="cd_collapse_section">收起</string>
     <string name="show_notification_title">显示监测通知</string>
@@ -174,7 +176,7 @@
     <string name="custom_reasons_desc">Pro 专属：自定义暂停屏上 4 个“打开原因”的文字。</string>
     <string name="prompt_label">暂停一下</string>
     <string name="debug_info">调试信息</string>
-    <string name="debug_android">Android: API %d (%s)</string>
+    <string name="debug_android">Android: API %1$d (%2$s)</string>
     <string name="debug_enabled">Appause 已启用</string>
     <string name="debug_service">服务运行中</string>
     <string name="debug_usage_access">使用情况访问</string>
@@ -266,7 +268,7 @@
     <string name="permissions_why_title">为什么需要这些权限？</string>
     <string name="permissions_why_intro">Appause 不会读取你的聊天记录、浏览内容或账号信息，也不会把任何数据上传到服务器。所有权限都只在本地使用。</string>
     <string name="permissions_why_accessibility">无障碍服务 — 检测你当前打开了哪个应用，以便在打开被限制的应用时弹出暂停页。</string>
-    <string name="permissions_why_overlay">显示悬浮窗 — 可选。新版已用无障碍覆盖层显示暂停页，通常无需此权限；仅在极少数机型无障碍覆盖层被拒时作为兜底。</string>
+    <string name="permissions_why_overlay">显示悬浮窗 — 可选。新版已用无障碍覆盖层显示，通常无需此权限；若暂停页不显示或被盖住，再尝试开启它。</string>
     <string name="permissions_why_battery">电池优化 — 防止系统在省电时终止后台服务，导致拦截失效。</string>
     <string name="permissions_why_usage">使用情况访问 — 确认真正在前台的应用。不授权时，最近任务和切换应用可能会误触发暂停页。</string>
     <string name="open_source_footer_title">开源可审计</string>
@@ -277,11 +279,21 @@
     <string name="overlay_not_granted">未授权 — 部分机型暂停页可能不显示</string>
     <string name="overlay_required_title">需要「显示悬浮窗」权限</string>
     <string name="overlay_required_desc">未开启此权限时，暂停页在小米等手机上可能无法显示。点此前往开启。</string>
-    <string name="onboarding_overlay_title">开启「显示悬浮窗」</string>
-    <string name="onboarding_overlay_desc">允许 Appause 在其它应用上方显示暂停页。小米/华为等机型必须开启，否则暂停页会被目标应用盖住。</string>
+    <string name="onboarding_overlay_title">显示悬浮窗（可选）</string>
+    <string name="onboarding_overlay_desc">可选权限。新版已用无障碍覆盖层显示暂停页，通常无需此权限。若你发现暂停页不显示、或拦截没有生效，可回到这里开启它再试一次。</string>
     <string name="onboarding_overlay_open">前往系统设置开启</string>
-    <string name="onboarding_overlay_on">已开启，很好！</string>
-    <string name="onboarding_overlay_off">尚未开启，请在系统设置中允许 Appause「显示悬浮窗」。</string>
+    <string name="onboarding_overlay_on">已开启。</string>
+    <string name="onboarding_overlay_off">尚未开启（可选）。若暂停页不显示或被盖住，可回到这里开启。</string>
+    <string name="onboarding_usage_title">开启「使用情况访问」</string>
+    <string name="onboarding_usage_desc">让 Appause 能准确判断当前真正打开的是哪个应用。不授权时，打开最近任务或切换应用可能会误弹出暂停屏。</string>
+    <string name="onboarding_usage_open">前往系统设置开启</string>
+    <string name="onboarding_usage_on">已开启，很好！</string>
+    <string name="onboarding_usage_off">尚未开启，请在系统设置中允许 Appause「使用情况访问」。</string>
+    <string name="onboarding_battery_title">关闭电池优化</string>
+    <string name="onboarding_battery_desc">把 Appause 设为「无限制」，系统在省电时就不会关闭它的后台服务。否则拦截可能会悄悄停止工作。</string>
+    <string name="onboarding_battery_open">前往系统设置</string>
+    <string name="onboarding_battery_on">已无限制，很好！</string>
+    <string name="onboarding_battery_off">尚未设为无限制，请在电池设置里把 Appause 设为「无限制」。</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Appause Pro 页面                              -->
@@ -363,7 +375,8 @@
     <string name="feedback_message_hint">描述你遇到的问题或建议……</string>
     <string name="feedback_contact_label">联系方式（选填）</string>
     <string name="feedback_contact_hint">留下邮箱，方便我们回复你</string>
-    <string name="feedback_auto_info">以下内容会自动附带：</string>
+    <string name="feedback_auto_info">以下内容会自动附带（均不含你的使用记录）：</string>
+    <string name="feedback_diag_note">反馈会附带本机诊断状态（如无障碍服务是否在运行、最近一次拦截判定结果等），帮助更准确地定位问题。不会发送任何应用使用记录或隐私内容。</string>
     <string name="feedback_send_email">通过邮件发送</string>
     <string name="feedback_open_issue">在 GitHub 提交</string>
     <string name="feedback_send_appause">通过 Appause 发送</string>
@@ -377,16 +390,16 @@
 
     <!-- Onboarding (first-launch guide) -->
     <string name="onboarding_language_title">选择语言</string>
-    <string name="onboarding_language_desc">选择后，引导与整个应用都会以该语言显示。</string>
+    <string name="onboarding_language_desc">选择后，本引导与应用其余部分都会使用此语言。</string>
     <string name="onboarding_welcome_title">欢迎使用 Appause</string>
-    <string name="onboarding_welcome_desc">打开分心应用前，Appause 会先弹出暂停屏，由你决定是否继续打开。</string>
+    <string name="onboarding_welcome_desc">把应用加入分组后，Appause 会在你打开它们时先弹出暂停屏，由你决定是否继续。</string>
     <string name="onboarding_service_title">开启无障碍服务</string>
-    <string name="onboarding_service_desc">Appause 需要「无障碍服务」来检测你正在打开哪个应用并在其上覆盖暂停屏。开启后，返回本应用即可继续。</string>
+    <string name="onboarding_service_desc">Appause 需要「无障碍服务」来识别你正在打开哪个应用，并在它上面显示暂停屏。开启后返回本应用即可继续。</string>
     <string name="onboarding_service_open">前往系统设置开启</string>
     <string name="onboarding_service_on">已开启，很好！</string>
-    <string name="onboarding_service_off">尚未开启，请在系统设置中允许 Appause。</string>
+    <string name="onboarding_service_off">尚未开启，请在系统设置里允许 Appause 使用无障碍服务。</string>
     <string name="onboarding_group_title">创建你的第一个分组</string>
-    <string name="onboarding_group_desc">把想克制使用的应用放进一个分组（例如「短视频」），并设置冷静时长。分组入口在首页右上角。</string>
+    <string name="onboarding_group_desc">把想控制使用的应用放进一个分组（例如「短视频」），并设置暂停的冷静时长。分组入口在首页右上角。</string>
     <string name="onboarding_group_add">去添加分组</string>
     <string name="onboarding_group_later">稍后创建</string>
     <string name="onboarding_finish_title">一切就绪</string>
@@ -397,7 +410,7 @@
     <string name="onboarding_finish">开始使用</string>
     <string name="onboarding_lang_zh">简体中文</string>
     <string name="onboarding_lang_en">English</string>
-    <string name="onboarding_group_hint">提示：现在就可以添加分组，倒计时只是建议，不用等它结束。</string>
+    <string name="onboarding_group_hint">提示：现在就能添加分组。这里的倒计时只是演示，不用等它走完。</string>
     <string name="onboarding_preview_app_name">示例应用</string>
-    <string name="onboarding_preview_caption">打开分心应用时，你会看到这样的暂停屏。</string>
+    <string name="onboarding_preview_caption">打开目标应用时，你会看到这样的暂停屏。</string>
 </resources>
