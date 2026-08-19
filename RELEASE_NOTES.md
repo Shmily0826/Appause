@@ -1,11 +1,19 @@
-# Appause v0.5.37 — 发布说明 (Release Notes)
+# Appause v0.5.38 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.37/Appause-v0.5.37.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.38/Appause-v0.5.38.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.5.38) — 先体验再授权 + 发布说明校正
+- **首次引导改为价值优先**：语言选择后先展示真实暂停页预览，再说明产品作用和隐私边界，之后才进入权限设置，减少第一次使用时连续授权带来的压力。
+- **隐私说明提前**：在请求无障碍服务前明确说明，Appause 只识别当前打开的应用，不读取屏幕内容、聊天记录或账号信息。
+- **中文表达优化**：引导页改用「等待时间」「提醒页面」等更自然的说法，英文内容同步更新。
+- **界面无障碍与本地化修正**：诊断页标题、返回和刷新说明改用资源文案；设置页图标补充可读说明。
+- **安装与隐私文档校正**：显示悬浮窗是可选兼容性备用权限，不再写成必需；更新时应直接覆盖安装，不能先卸载；用户主动发送反馈前会看到诊断内容，其中可能包含分组名和应用包名。
+- **发布资料更新**：README、安装指南、隐私政策、酷安材料、中英文截图和国内/海外收款路线说明与当前实现保持一致。
 
 ### 本次更新 (v0.5.37) — 无障碍覆盖层稳定拦截 + 反馈自带诊断
 - **悬浮窗权限改为「可选」**：暂停屏走无障碍覆盖层（TYPE_ACCESSIBILITY_OVERLAY，小红书无法藏掉），通常不需要「显示悬浮窗」权限。引导页与设置页已说明：若发现暂停页不显示、或拦截没有生效，再回来开启它重试。未开启时不再显示为红色告警。
@@ -222,6 +230,14 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 ---
 
 ## 🇺🇸 English
+
+### What's new in v0.5.38 — value-first onboarding and accurate release docs
+- **Value-first onboarding**: users now see the real pause-screen preview before permission setup, followed by a clear explanation of what Appause does and why permissions are needed.
+- **Privacy before Accessibility**: the guide explicitly says Appause identifies the currently open app only; it does not read screen content, messages, or account information.
+- **Clearer copy**: Chinese wording now uses familiar terms such as “waiting time” and “reminder screen”; English copy has been updated to match.
+- **Accessibility and localization polish**: Diagnostics and Settings controls now use localized, readable content descriptions.
+- **Correct install/privacy guidance**: “Display over other apps” is documented as an optional compatibility fallback; upgrades should install over the existing app; user-initiated feedback accurately discloses the diagnostic fields shown before sending.
+- **Release materials refreshed**: README, install guide, privacy policy, store notes, bilingual screenshots, and domestic/overseas payment-route notes now match the app.
 
 ### What's new in v0.5.37 — stable accessibility-overlay interception + self-diagnosing feedback
 - **"Display over other apps" is now optional**: the pause screen draws on the accessibility overlay (TYPE_ACCESSIBILITY_OVERLAY, which apps like Xiaohongshu cannot hide), so the permission is normally not needed. Onboarding and Settings now say: if the pause screen doesn't show, or interception stops working, come back and enable it and try again. When ungranted, it no longer shows as a red error.

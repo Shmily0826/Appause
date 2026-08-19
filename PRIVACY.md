@@ -34,12 +34,14 @@ and never leave your device.
   which returns a signed license token that is **verified on your device** and
   works offline afterwards. No browsing history, messages, or app usage is sent.
 - Feedback is sent **only when you choose to** (Settings → Feedback). The app
-  never sends anything automatically. The "Send via Appause" option transmits
-  your message plus the auto-attached device/app metadata (version, Android
-  version, model, language) to our server (a Cloudflare Worker) for the
-  developer to read — no email or account is required, and you can leave the
-  optional contact field blank to stay fully anonymous. The email and GitHub
-  options remain available.
+  never sends anything automatically. Before sending, it shows the message,
+  optional contact detail, device/app metadata, and a diagnostic snapshot. The
+  snapshot can include service and permission state, recent foreground and
+  interception state, configured group names, and package names in those
+  groups. It does not include screen content, messages, account information,
+  or a chronological usage history. "Send via Appause" transmits the displayed
+  information to our Cloudflare Worker; email and GitHub options send the same
+  displayed report through the app you choose.
 - We keep a single **aggregate download counter** on our server (the same
   Cloudflare Worker) to track how many times Appause has been installed across
   all download channels (GitHub Releases and mirrors). It records **only a
@@ -71,7 +73,7 @@ security tool.
 | Permission | Why it is needed |
 |------------|------------------|
 | AccessibilityService | To detect the foreground app by package name (as described above). |
-| Display over other apps (`SYSTEM_ALERT_WINDOW`) | To draw the pause screen on top of the app you just opened. Without it the pause screen cannot appear on many devices, so Appause has nothing to show you. It draws only Appause's own pause screen; it never reads or records what is underneath. |
+| Display over other apps (`SYSTEM_ALERT_WINDOW`) | Optional compatibility fallback. Appause normally uses an accessibility overlay that does not require this permission. If the pause screen does not appear on a device, enabling this permission allows the application-overlay fallback. It never reads or records what is underneath. |
 | Foreground Service | To keep foreground-app detection running while the device is in use. |
 | POST_NOTIFICATIONS (Android 13+) | To show the persistent "detection active" notification. |
 | INTERNET | Only for the **one-time** Appause Pro license redeem and for feedback you choose to send via "Send via Appause". Not used during normal use, and the app works fully offline otherwise. |
@@ -114,7 +116,7 @@ or email [rng2018520@gmail.com](mailto:rng2018520@gmail.com).
   不带个人身份的「设备指纹」（本机密钥的 SHA-256 哈希）到激活服务器，服务器
   返回一张经过签名的许可证令牌，令牌在你的设备上**本地校验**，之后完全离线
   可用。不会上传任何浏览记录、消息或使用行为。
-- 反馈**只有你主动选择时才会发送**（设置 → 反馈），应用不会自动上传任何内容。「通过 Appause 发送」会把你的留言以及自动附带的设备/版本信息（版本号、Android 版本、机型、语言）发到我们的服务器（Cloudflare Worker）供开发者查看——无需邮箱或账号，联系方式留空即可完全匿名。邮件与 GitHub 方式依然可用。
+- 反馈**只有你主动选择时才会发送**（设置 → 反馈），应用不会自动上传任何内容。发送前，页面会展示留言、可选联系方式、设备/版本信息和诊断快照。诊断可能包含服务与权限状态、最近的前台应用和拦截状态、已配置的分组名称及其中的应用包名；不包含屏幕内容、聊天记录、账号信息或按时间排列的使用历史。「通过 Appause 发送」会把页面中展示的内容发到 Cloudflare Worker；邮件与 GitHub 方式会通过你选择的应用发送同一份报告。
 - 我们在服务器（同一个 Cloudflare Worker）上维护一个**纯聚合的下载计数器**，用来统计 Appause 通过各个渠道（GitHub Release 及镜像）被安装的总次数。它**只记录一个数字**——不会保存任何 IP 地址、设备标识或个人数据。这是聚合统计，不是用户追踪。由于计数器运行在我们自己的服务器上，它是一个自报、近似的数字，请将其视为粗略下限而非经审计的精确值；权威的安装数据来自各分发平台本身（如 GitHub Release 下载量、酷安下载量）。
 - 你的所有配置（应用分组、冷却时间、使用统计）都**仅保存在本机**的数据库
   （Room）和偏好存储（DataStore）中。
@@ -136,7 +138,7 @@ Appause 使用系统的 AccessibilityService，**仅用于**检测当前前台�
 | 权限 | 用途 |
 |------|------|
 | AccessibilityService | 如上所述，通过包名检测前台应用。 |
-| 显示悬浮窗 / 在其他应用上层显示（`SYSTEM_ALERT_WINDOW`） | 把停顿界面画在你刚打开的那个应用之上。不开这个权限，很多设备上停顿界面根本弹不出来，Appause 也就没东西可展示。它只负责绘制 Appause 自己的停顿界面，不会读取或记录下层内容。 |
+| 显示悬浮窗 / 在其他应用上层显示（`SYSTEM_ALERT_WINDOW`） | 可选的兼容性备用权限。Appause 通常使用不需要该权限的无障碍覆盖层；如果某台设备不显示暂停页，开启后可以使用普通应用覆盖层作为备用。它不会读取或记录下层内容。 |
 | 前台服务 (Foreground Service) | 在设备使用期间保持前台应用检测持续运行。 |
 | POST_NOTIFICATIONS（Android 13+） | 显示常驻的"检测中"通知。 |
 | INTERNET（联网） | 仅用于激活 **Appause Pro 时的一次性许可证兑换**，以及你主动选择的「通过 Appause 发送」反馈。日常使用不会联网，其余功能完全离线。 |

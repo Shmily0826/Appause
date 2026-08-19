@@ -391,15 +391,15 @@
     <!-- Onboarding (first-launch guide) -->
     <string name="onboarding_language_title">选择语言</string>
     <string name="onboarding_language_desc">选择后，本引导与应用其余部分都会使用此语言。</string>
-    <string name="onboarding_welcome_title">欢迎使用 Appause</string>
-    <string name="onboarding_welcome_desc">把应用加入分组后，Appause 会在你打开它们时先弹出暂停屏，由你决定是否继续。</string>
+    <string name="onboarding_welcome_title">在打开应用前，给自己一个选择</string>
+    <string name="onboarding_welcome_desc">Appause 只识别当前打开的应用名称，不读取屏幕内容、聊天记录或账号信息。把想少用的应用加入分组后，打开它们时会先看到一个短暂的提醒页面，由你决定是否继续。</string>
     <string name="onboarding_service_title">开启无障碍服务</string>
     <string name="onboarding_service_desc">Appause 需要「无障碍服务」来识别你正在打开哪个应用，并在它上面显示暂停屏。开启后返回本应用即可继续。</string>
     <string name="onboarding_service_open">前往系统设置开启</string>
     <string name="onboarding_service_on">已开启，很好！</string>
     <string name="onboarding_service_off">尚未开启，请在系统设置里允许 Appause 使用无障碍服务。</string>
     <string name="onboarding_group_title">创建你的第一个分组</string>
-    <string name="onboarding_group_desc">把想控制使用的应用放进一个分组（例如「短视频」），并设置暂停的冷静时长。分组入口在首页右上角。</string>
+    <string name="onboarding_group_desc">把想少用的应用放进一个分组（例如「短视频」），并设置打开前的等待时间。分组入口在首页右上角。</string>
     <string name="onboarding_group_add">去添加分组</string>
     <string name="onboarding_group_later">稍后创建</string>
     <string name="onboarding_finish_title">一切就绪</string>
@@ -413,4 +413,10 @@
     <string name="onboarding_group_hint">提示：现在就能添加分组。这里的倒计时只是演示，不用等它走完。</string>
     <string name="onboarding_preview_app_name">示例应用</string>
     <string name="onboarding_preview_caption">打开目标应用时，你会看到这样的暂停屏。</string>
+
+    <!-- 运行诊断（仅 Debug 版本） -->
+    <string name="diagnostics_title">运行诊断</string>
+    <string name="diagnostics_card_title">运行诊断（Debug）</string>
+    <string name="diagnostics_card_subtitle">查看拦截状态与实时日志，可一键分享。</string>
+    <string name="cd_refresh">刷新</string>
 </resources>

@@ -124,7 +124,7 @@
       <li>没有账号、没有登录、没有注册。</li>
       <li>应用<strong>在日常使用中不进行任何网络请求</strong>——没有分析统计、没有崩溃上报、没有广告，也没有任何第三方 SDK。</li>
       <li>唯一的联网场景是激活 <strong>Appause Pro 时的一次性兑换</strong>：会发送兑换码和一个不带个人身份的「设备指纹」（本机密钥的 SHA-256 哈希）到激活服务器。服务器返回一张经过签名的许可证令牌，令牌在你的设备上<strong>本地校验</strong>，之后完全离线可用。不会上传任何浏览记录、消息或使用行为。</li>
-      <li>反馈<strong>只有你主动选择时才会发送</strong>（设置 → 反馈），通过系统邮件或预填的 GitHub Issue 完成；应用不会自动上传任何内容。</li>
+      <li>反馈<strong>只有你主动选择时才会发送</strong>（设置 → 反馈），应用不会自动上传。发送前会展示留言、可选联系方式、设备/版本信息和诊断快照；诊断可能包含服务与权限状态、最近的前台应用和拦截状态、分组名称及应用包名，但不包含屏幕内容、聊天记录、账号信息或按时间排列的使用历史。你可以通过 Appause、系统邮件或预填的 GitHub Issue 发送同一份报告。</li>
       <li>你的所有配置（应用分组、冷却时间、使用统计）都<strong>仅保存在本机</strong>的数据库（Room）和偏好存储（DataStore）中。</li>
     </ul>
 
@@ -173,7 +173,7 @@
       <li>There is no account, no login, and no registration.</li>
       <li>The app makes <strong>no network requests during normal use</strong> — no analytics, no crash reporters, no advertisements, and no third-party SDKs.</li>
       <li>The only network use is a <strong>one-time</strong> license redeem when you activate Appause Pro. It sends a redemption code and a non-identifying device fingerprint (a SHA-256 hash of an on-device key) to the activation server, which returns a signed license token that is <strong>verified on your device</strong> and works offline afterwards. No browsing history, messages, or app usage is sent.</li>
-      <li>Feedback is sent <strong>only when you choose to</strong> (Settings → Feedback) via your system email or a pre-filled GitHub issue. The app never sends anything automatically.</li>
+      <li>Feedback is sent <strong>only when you choose to</strong> (Settings → Feedback); the app never uploads it automatically. Before sending, the app shows your message, optional contact detail, device/app metadata, and a diagnostic snapshot. The snapshot may include service and permission state, recent foreground/interception state, configured group names, and package names. It does not include screen content, messages, account information, or a chronological usage history. You can send the displayed report through Appause, email, or a pre-filled GitHub issue.</li>
       <li>All configuration (your app groups, cooldowns, and usage stats) is stored <strong>locally</strong> in an on-device database (Room) and preferences store (DataStore).</li>
     </ul>
 
@@ -191,9 +191,11 @@
       <thead><tr><th>Permission</th><th>Why it is needed</th></tr></thead>
       <tbody>
         <tr><td>AccessibilityService</td><td>To detect the foreground app by package name (as described above).</td></tr>
+        <tr><td>Display over other apps</td><td>Optional compatibility fallback. Appause normally uses an accessibility overlay that does not need this permission. Enable it only if the pause screen does not appear on your device.</td></tr>
         <tr><td>Foreground Service</td><td>To keep foreground-app detection running while the device is in use.</td></tr>
         <tr><td>POST_NOTIFICATIONS (Android 13+)</td><td>To show the persistent "detection active" notification.</td></tr>
-        <tr><td>INTERNET</td><td>Only for the <strong>one-time</strong> Appause Pro license redeem. Not used during normal use, and the app works fully offline otherwise.</td></tr>
+        <tr><td>INTERNET</td><td>Only for the <strong>one-time</strong> Appause Pro license redeem and feedback you explicitly choose to send through Appause. Not used during normal use.</td></tr>
+        <tr><td>Usage Access</td><td>Optional local foreground confirmation that reduces false triggers. No usage data leaves the device unless it is part of the diagnostic report displayed before user-initiated feedback.</td></tr>
       </tbody>
     </table>
 

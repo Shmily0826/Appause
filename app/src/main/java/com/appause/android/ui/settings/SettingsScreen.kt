@@ -170,12 +170,12 @@ private fun DiagnosticsEntry(onClick: () -> Unit) {
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "运行诊断（Debug）",
+                    text = stringResource(R.string.diagnostics_card_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
                 Text(
-                    text = "查看拦截状态与实时日志，可一键分享",
+                    text = stringResource(R.string.diagnostics_card_subtitle),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )

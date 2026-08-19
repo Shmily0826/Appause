@@ -1,59 +1,81 @@
 # Appause
 
-**App + Pause** — Between the impulse and the app, take a moment.
+**App + Pause**: between the impulse and the app, take a moment.
 
 Appause is a personal Android app that helps you build mindful habits. Create
 groups of distracting apps, set a cooldown for each group, and Appause shows a
-brief pause screen before those apps open, so you take a moment before continuing.
+brief pause screen before those apps open, so you take a moment before deciding
+whether to continue.
 
 > 🔒 **Privacy-first:** Appause is **local-first**. No account, no analytics,
 > no ads, and your groups/stats never leave your device. The only network use
-> is a **one-time** license check when you activate Appause Pro — daily use is
-> fully offline. See [PRIVACY.md](PRIVACY.md).
+> is a **one-time** license check when you activate Appause Pro, and the
+> feedback you choose to send. Daily use is fully offline.
+> See [PRIVACY.md](PRIVACY.md).
 
 ---
 
 ## Features
 
 - **App groups** — bundle distracting apps (e.g. Social, Entertainment) and
-  manage them together.
+  manage them together. Free tier: 1 group; Pro unlocks unlimited groups.
 - **Per-group cooldown** — a configurable pause (up to 60s) before a grouped
   app opens.
-- **Pause screen** — a calm, dismissible screen instead of an instant block.
-  Cancel always returns you to the home screen.
-- **Session timer + re-remind** — optionally get nudged again while you're still
-  inside a distracting app. A session keeps counting even if you briefly switch
-  apps; a real leave (home screen, or 3+ minutes away) re-arms the cooldown.
+- **Pause screen** — a calm, dismissible countdown instead of an instant
+  block. Cancel always returns you to the home screen.
+- **Session timer + re-remind** — optionally get nudged again while you are
+  still inside a distracting app. A session keeps counting even if you briefly
+  switch apps; a real leave (home screen, or 3+ minutes away) re-arms the
+  cooldown.
+- **Usage stats** — see how your groups are performing over time, including a
+  breakdown of why you chose to continue.
 - **Dark mode** — follows the system theme.
 - **Recommended apps** — suggestions to help you build your first groups.
-- **Usage stats** — see how your groups are performing over time.
 - **OEM guidance** — built-in explanations for why detection may stop on some
-  devices (battery optimization, auto-start) and how to fix it.
+  devices (battery optimization, auto-start) and how to fix it. On
+  Xiaomi/HyperOS the home screen shows a persistent warning whenever battery
+  optimization is not set to "unrestricted", because the system would
+  otherwise kill the background service and never restart it.
 - **In-app feedback** — report a bug or suggest a feature straight from
-  Settings. Device info is attached automatically and shown to you before
-  sending. You can send anonymously through Appause (no email or account
-  needed), or open an email / GitHub issue if you prefer.
-- **Appause Pro (optional)** — unlock unlimited groups, re-remind while you're
-  still inside a distracting app, a custom pause prompt, and custom "why are you
-  opening this?" reasons. Activation is a one-time, offline-verified license —
-  see [worker/README.md](worker/README.md).
+  Settings, anonymously via Appause or through email / GitHub. A structured
+  diagnostic snapshot is attached automatically (service status, permissions,
+  recent interception state, configured group/package details). It is shown
+  before sending and is never uploaded automatically.
+- **Appause Pro (optional)** — unlock unlimited groups, re-remind, a custom
+  pause prompt, and custom "why are you opening this?" reasons. Activation is
+  a one-time, offline-verified license (device-bound JWT): enter an activation
+  code, or import a license to move to a new device. See
+  [worker/README.md](worker/README.md).
 
 ---
 
 ## Screenshots
 
-> 📷 Add 3–5 screenshots here (group list, pause screen, settings) before
-> publishing. A short GIF / video of the pause-screen countdown is the single
-> most effective promo asset.
+| Home | Pause screen | Groups |
+|---|---|---|
+| ![Home](images/screenshots/en/home.png) | ![Pause](images/screenshots/en/pause.png) | ![Groups](images/screenshots/en/group.png) |
+
+| Stats | Settings | Feedback |
+|---|---|---|
+| ![Stats](images/screenshots/en/statistics.png) | ![Settings](images/screenshots/en/settings.png) | ![Feedback](images/screenshots/en/feedback.png) |
 
 ---
 
 ## How it works
 
 Appause uses Android's **AccessibilityService** to detect which app is in the
-foreground, by its **package name only** (`canRetrieveWindowContent = false` —
-it never reads your screen). When the foreground app belongs to a group you
+foreground, by its **package name only** (`canRetrieveWindowContent = false`
+— it never reads your screen). When the foreground app belongs to a group you
 configured, Appause shows the pause screen for that group's cooldown.
+
+Interception is immediate: the accessibility event itself is the foreground
+signal. Genuine opens are only suppressed when the system is replaying the
+recent-apps list, which fires a burst of many real apps at once and never
+happens for a normal single-app open. The pause screen is drawn with the
+**accessibility overlay**, which sits above every app and cannot be hidden by
+apps that try to cover overlays (e.g. Xiaohongshu). The "Display over other
+apps" permission is therefore optional: grant it only if the pause screen ever
+fails to show.
 
 Everything is stored **locally** (Room database + DataStore). There is no
 account and no cloud sync. The only network request is a **one-time** license
@@ -65,19 +87,23 @@ redeem when you activate Appause Pro; after that, Pro works fully offline.
 
 | Permission | Why |
 |------------|-----|
-| AccessibilityService | Detect the foreground app by package name (see above). |
-| Display over other apps (`SYSTEM_ALERT_WINDOW`) | **Required.** Draw the pause screen on top of the app you just opened. |
+| AccessibilityService | Detect the foreground app by package name (see above). **Required.** |
+| Battery optimization = "unrestricted" | **Required on Xiaomi / HyperOS and similar ROMs.** Without it the system kills the background service and does not restart it, so interception silently stops. The home screen warns when this is not set. |
+| Usage Access (`PACKAGE_USAGE_STATS`) | Optional but recommended. Confirms which app is genuinely on screen for the most accurate detection, so e.g. a media notification won't trigger a false pause. The query is local; no usage data leaves your device. Interception still works without it. |
+| Display over other apps (`SYSTEM_ALERT_WINDOW`) | Optional fallback. Normally not needed: the pause screen uses the accessibility overlay, which other apps cannot hide and which does not require this permission. If the pause screen ever fails to show, grant it and try again. |
 | Foreground Service | Keep detection alive while the device is in use. |
 | POST_NOTIFICATIONS (Android 13+) | Show the "detection active" notification. |
-| INTERNET | Only for the one-time Appause Pro license redeem and for feedback you choose to send via Appause. Not used during normal use. |
-| Usage Access (`PACKAGE_USAGE_STATS`) | Optional but recommended. Confirms which app is genuinely on screen before showing the pause screen, so a media notification (e.g. a video playing in the shade) won't trigger a false pause. The query is local — no usage data leaves your device. |
+| INTERNET | Only for the one-time Appause Pro license redeem and for feedback you choose to send. Not used during normal use. |
 
-> ⚠️ **Grant "Display over other apps".** Appause draws the pause screen as a
-> system overlay. On Android 12+ — and on HyperOS / MIUI in particular — an
-> accessibility overlay is refused by the window manager, and some apps can
-> push themselves back in front of a normal Activity. Without this permission
-> detection still runs, but you will never see the pause screen. Appause uses
-> it only to draw its own pause screen; it never reads what is underneath.
+> ⚠️ **Set battery optimization to "unrestricted".** On Xiaomi / HyperOS and
+> other OEM ROMs, the system may kill Appause's background service and won't
+> restart it, so detection silently stops. Set battery to **unrestricted**,
+> lock the app in recents, and allow auto-start, per [INSTALL.md](INSTALL.md).
+>
+> ℹ️ **"Display over other apps" is optional.** Appause draws the pause screen
+> on the accessibility overlay, which other apps cannot hide and which does not
+> need this permission. If you ever see no pause screen at all, grant it and
+> try again.
 
 ---
 
@@ -121,15 +147,18 @@ Open this folder in Android Studio, then **Run** or **Build → Build Bundle(s)
 
 ## Install
 
-- **GitHub Releases** — download the latest signed APK.
-- **蓝奏云镜像** — the mirror link is routed through a self-hosted aggregate
-  counter (`/api/download?to=https://shmily0826.lanzoup.com/b01eunt29a&t=kP9xQ2mZ8vL3nR7tB4wY6hC1sD5fG0jU`),
-  so mirror installs are
-  captured in one cross-channel total. This total is an *approximate floor*
-  (no personal data stored) and is not independently auditable — a supplement,
-  not the headline number.
+- **GitHub Releases** — download the latest signed APK:
+  <https://github.com/Shmily0826/Appause/releases/latest>
+- **蓝奏云镜像 (China mirror)** — the mirror link is routed through a
+  self-hosted aggregate counter (`/api/download?to=...&t=...`), so mirror
+  installs are captured in one cross-channel total. This total is an
+  *approximate floor* (no personal data stored) and is not independently
+  auditable — a supplement, not the headline number.
 - GitHub's Release download count is the verified headline number; the
   counter only supplements the mirror channel.
+- First-run setup (allow unknown sources, dismiss OEM install warnings,
+  enable accessibility, whitelist battery / auto-start): see
+  [INSTALL.md](INSTALL.md).
 
 > Appause is distributed directly as an APK. It is **not** on Google Play,
 > because Google Play restricts AccessibilityService to accessibility-use cases
@@ -149,23 +178,30 @@ locally (no usage data leaves your device) for more accurate detection.
 
 ## Status
 
-Current version: **0.5.2**. All MVP phases are complete (project setup, data
+Current version: **0.5.38**. All MVP phases are complete (project setup, data
 layer, interception, groups, pause UI, stats, re-remind, dark mode, OEM
 guidance, usage access, in-app feedback). Appause Pro is implemented as a
 device-bound, offline-verified license (Plan B): the app verifies a
 server-signed JWT locally, so a fork of this open-source repo can validate but
 never mint tokens.
 
+The Pro activation chain is live: the app redeems an activation code
+(`APPAUSE-XXXX-XXXX`) against the license worker, which signs a device-bound
+JWT (up to 3 devices, lifetime). Code distribution is being set up on both
+channels:
+
+- **Domestic (China)**: Afdian card-code store, see
+  [docs/afdian-domestic-route.md](docs/afdian-domestic-route.md).
+- **Overseas**: Merchant-of-Record platforms (Lemon Squeezy / Dodo Payments /
+  Paddle), see [docs/overseas-route.md](docs/overseas-route.md).
+
 Known work:
 
 - Real-device testing across OEM ROMs (Xiaomi HyperOS, Huawei, OPPO, vivo) to
-  verify AccessibilityService survival after reboot / battery optimization —
-  current builds include the "Display over other apps" overlay path that is
-  required on HyperOS / MIUI for the pause screen to be visible.
-- On-boarding flow that walks users through auto-start and battery whitelisting
-  per device.
-- Plan B step 4: payment / code distribution for Appause Pro (the redeem and
-  verify plumbing is done; the "user pays → code is issued" layer is not).
+  verify AccessibilityService survival after reboot / battery optimization.
+- Overseas product fit: an English UI already exists; the remaining work is
+  adapting the default group suggestions to overseas apps (Instagram, TikTok,
+  YouTube) and localizing store copy.
 
 See [PROGRESS.md](PROGRESS.md) for the full development log.
 
@@ -187,15 +223,18 @@ Found a bug or have an idea? You can report it without leaving the app:
 - **In-app:** Settings → **Feedback** — pick "Bug report" or "Suggestion",
   write your message, and send. "Send via Appause" delivers it anonymously to
   the developer (no email or account needed); you can also open an email or a
-  GitHub issue instead. Your app version, Android version, device model and
-  locale are attached automatically (and shown to you before sending).
+  GitHub issue instead. Your app version, Android version, device model,
+  locale, and a structured diagnostic snapshot (service and permission state,
+  recent foreground/interception state, configured group names and package
+  names) are attached automatically and shown to you before sending. Nothing
+  is uploaded unless you choose a send option.
 
 - **Direct:** open an issue on
   [GitHub](https://github.com/Shmily0826/Appause/issues) or email
   [rng2018520@gmail.com](mailto:rng2018520@gmail.com).
 
 Appause does not collect telemetry, so please include steps to reproduce for
-bugs — the auto-attached device info helps a lot.
+bugs; the auto-attached diagnostic snapshot helps a lot.
 
 ---
 

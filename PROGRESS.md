@@ -1,6 +1,19 @@
 # Appause — Development Progress
 
-## v0.5.2 (WIP, uncommitted)
+## v0.5.38 (release candidate)
+- Release documentation and packaging audit:
+  - Version bumped to 0.5.38 / 90.
+  - Corrected INSTALL.md: accessibility is required; overlay permission is an optional fallback; upgrades must install over the existing app rather than uninstalling first.
+  - Corrected privacy disclosures for user-initiated diagnostic feedback, including group/package and recent foreground/interception fields shown before sending.
+  - Corrected the manifest overlay comment to match the actual 2032 → 2038 → Activity fallback order.
+  - Updated README, hosted privacy policy, Coolapk materials, and domestic/overseas payment-route notes.
+- Onboarding flow refinement:
+  - Reordered the guide so users see the pause-screen preview before configuring permissions.
+  - Moved the privacy/value explanation ahead of AccessibilityService setup.
+  - Reworded Chinese copy to use more natural terms such as “等待时间” and “提醒页面”.
+  - Added a clear explanation that Appause identifies the foreground app only and does not read screen content, messages, or account information.
+  - English copy updated to match the new value-first flow.
+  - Debug build verified with `gradlew assembleDebug` → BUILD SUCCESSFUL.
 - GroupEditorScreen re-remind refinement (task #50 follow-up):
   - Re-remind block already in default-collapsed CollapsibleCard (everyone).
   - "Same as first" cooldown now explicit: added a switch; slider min is 1s (no implicit 0). Data model keeps `0 = same as first`.
@@ -41,6 +54,36 @@
 - Future: app icon display in group editor, usage statistics, scheduled profiles.
 
 ## Log
+
+### 2026-08-18 (English landing page design directions)
+- Added an isolated comparison hub at `taste-variants/skills-en/index.html`.
+- Added four complete English landing page directions without replacing the
+  current site:
+  - Precision: technical Workbench layout with a cobalt instrument aesthetic.
+  - Quiet: calm evergreen Split Studio layout with a clear screenshot-led
+    product story.
+  - Still: low-stimulation dark Feature Stack built around notice, pause, and
+    choose moments.
+  - Breathe: clear-water Map / Diagram layout that visualizes the short path
+    from selecting an app to making a deliberate choice.
+- Removed the high-contrast Poster direction after design review.
+- Added three follow-up English directions after a second design review:
+  - Moment: a fixed-light product campaign with the pause, setup, and outcome
+    visible in a short page.
+  - Daylight: a bright consumer direction centered on a close crop of the real
+    countdown rather than a simulated device frame.
+  - Direct: a conversion-led product proof page that shows what appears before
+    YouTube opens and keeps supporting screenshots compact.
+- Updated the comparison hub to place the three follow-up directions first and
+  retain the previous four for reference.
+- Reused real English app screenshots and current product/privacy facts; added
+  dedicated token files plus Hallmark preflight and rotation records.
+- Verified at 320, 375, 414, 768, 1280, and 1920 px with no horizontal overflow;
+  all screenshots loaded, clickable labels stayed on one line, and the Precision
+  Ctrl/Cmd K dialog worked.
+- Fixed the pre-existing debug build error by adding the missing
+  `com.appause.android.R` import to `DiagnosticsScreen.kt`.
+- BUILD SUCCESSFUL via `assembleDebug` using Java 17.
 
 ### 2026-07-28 (In-app feedback + doc refresh + v0.3.9)
 - Added an in-app **Feedback** flow (Settings → Feedback): choose Bug report /

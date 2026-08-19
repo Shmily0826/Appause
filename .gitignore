@@ -39,6 +39,7 @@ Thumbs.db
 
 # Generated
 captures/
+__pycache__/
 scripts/__pycache__/
 
 # Signing (never commit keys or signing configs)
@@ -63,3 +64,19 @@ worker/wrangler.toml.local
 # Stray design-skill variant templates (not part of Appause)
 hallmark-variants/
 taste-variants/
+
+# Generated activation codes (valid redeemable codes once seeded into KV — never commit)
+worker/codes.batch.json
+worker/codes.txt
+
+# Screenshot-script debug output (root of images/screenshots/ only — keeps en/ and zh/ subdirs)
+images/screenshots/*.png
+images/screenshots/*.xml
+
+# Misc local debug artifacts (never part of the app)
+shot.py
+db_inspect/
+db2/
+.gradle-user/
+.android-user/
+.hallmark/

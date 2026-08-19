@@ -11,11 +11,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!--
-        SYSTEM_ALERT_WINDOW: TYPE_APPLICATION_OVERLAY window for the cooldown
-        screen. TYPE_ACCESSIBILITY_OVERLAY is rejected on some OEM ROMs
-        (HyperOS/Android 16); TYPE_APPLICATION_OVERLAY draws above ALL app
-        tasks so apps like 小红书 can't cover it by re-fronting themselves.
-        Granted by the user via Settings -> 显示悬浮窗 (draw over other apps).
+        SYSTEM_ALERT_WINDOW: optional compatibility fallback for the cooldown
+        screen. The primary window is TYPE_ACCESSIBILITY_OVERLAY, which uses the
+        AccessibilityService token and needs no separate overlay permission.
+        If that is rejected, Appause tries TYPE_APPLICATION_OVERLAY and finally
+        a regular Activity. Granted via Settings -> Display over other apps.
     -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!--

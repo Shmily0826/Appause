@@ -58,8 +58,8 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
 
     /**
      * Current onboarding step.
-     * 0 = language, 1 = welcome, 2 = accessibility, 3 = usage access,
-     * 4 = battery, 5 = display-over-other-apps, 6 = create group, 7 = finish.
+     * 0 = language, 1 = preview/group, 2 = privacy/value, 3 = accessibility,
+     * 4 = usage access, 5 = battery, 6 = display-over-other-apps, 7 = finish.
      * Stored in the ViewModel (not in the Composable) so the position is kept
      * when the user opens the group editor and comes back — otherwise returning
      * would restart the whole guide.

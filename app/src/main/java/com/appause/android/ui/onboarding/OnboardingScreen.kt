@@ -83,14 +83,15 @@ import kotlinx.coroutines.launch
  * A short, skippable guide that walks a new user through four things that are
  * otherwise easy to miss:
  *   1. Pick a language (applied immediately, the rest of the app follows).
- *   2. What Appause does (one-line welcome).
- *   3. Enable the accessibility service (reusing the system settings Intent).
- *   4. Create the first group (deep-links to the existing group editor).
+ *   2. See what Appause does (a live pause-screen preview).
+ *   3. Understand the privacy model and enable the accessibility service.
+ *   4. Complete the optional accuracy and reliability settings.
+ *   5. Create the first group (deep-links to the existing group editor).
  *   5. Done — mark onboarding complete and enter the app.
  *
  * The whole flow is optional: "Skip" (top-right) finishes it at any point.
  *
- * Notes on the group step (page 3):
+ * Notes on the group step (page 1):
  * - Creating a group is NOT required. A "Later" button lets the user continue
  *   without one. When they do open the group editor, the step index is advanced
  *   to the finish page first, so returning lands on "All set" rather than
@@ -131,11 +132,11 @@ fun OnboardingScreen(
     val stepIcons = listOf(
         Icons.Default.Language,
         Icons.Default.Pause,
+        Icons.Default.Info,
         Icons.Default.Accessibility,
         Icons.Default.Info,
         Icons.Default.Power,
         Icons.Default.Visibility,
-        Icons.Default.GroupAdd,
         Icons.Default.CheckCircle
     )
 
@@ -187,11 +188,12 @@ fun OnboardingScreen(
                         }
                     }
                 )
-                1 -> InfoStep(
+                1 -> GroupStep()
+                2 -> InfoStep(
                     title = R.string.onboarding_welcome_title,
                     desc = R.string.onboarding_welcome_desc
                 )
-                2 -> ServiceStep(
+                3 -> ServiceStep(
                     isRunning = isServiceRunning,
                     onOpenSettings = {
                         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
@@ -199,7 +201,7 @@ fun OnboardingScreen(
                         context.startActivity(intent)
                     }
                 )
-                3 -> UsageStep(
+                4 -> UsageStep(
                     isGranted = isUsageAccessGranted,
                     onOpenSettings = {
                         val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
@@ -207,7 +209,7 @@ fun OnboardingScreen(
                         context.startActivity(intent)
                     }
                 )
-                4 -> BatteryStep(
+                5 -> BatteryStep(
                     isIgnoring = isIgnoringBattery,
                     onOpenSettings = {
                         val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
@@ -216,7 +218,7 @@ fun OnboardingScreen(
                         context.startActivity(intent)
                     }
                 )
-                5 -> OverlayStep(
+                6 -> OverlayStep(
                     isGranted = canDrawOverlays,
                     onOpenSettings = {
                         val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
@@ -225,7 +227,6 @@ fun OnboardingScreen(
                         context.startActivity(intent)
                     }
                 )
-                6 -> GroupStep()
                 7 -> InfoStep(
                     title = R.string.onboarding_finish_title,
                     desc = R.string.onboarding_finish_desc
@@ -249,7 +250,7 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             when (page) {
-                6 -> {
+                1 -> {
                     // Primary: open the existing group editor. We advance the step
                     // to "finish" first, so returning from the editor lands on the
                     // "All set" page instead of restarting the guide.

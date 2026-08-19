@@ -396,15 +396,15 @@
     <!-- Onboarding (first-launch guide) -->
     <string name="onboarding_language_title">Choose your language</string>
     <string name="onboarding_language_desc">Once selected, the whole app — including this guide — will use that language.</string>
-    <string name="onboarding_welcome_title">Welcome to Appause</string>
-    <string name="onboarding_welcome_desc">Once you add apps to a group, Appause shows a pause screen before they open, and you decide whether to continue.</string>
+    <string name="onboarding_welcome_title">A moment to choose before you open</string>
+    <string name="onboarding_welcome_desc">Appause only identifies which app is currently open. It does not read your screen, messages, or account information. Add apps you want to use less to a group, and you will see a brief reminder before opening them — then you decide whether to continue.</string>
     <string name="onboarding_service_title">Turn on Accessibility</string>
     <string name="onboarding_service_desc">Appause needs the Accessibility service to detect which app you\'re opening and overlay the pause screen. After enabling it, come back here to continue.</string>
     <string name="onboarding_service_open">Open system settings</string>
     <string name="onboarding_service_on">Enabled — great!</string>
     <string name="onboarding_service_off">Not enabled yet — please allow Appause to use the Accessibility service in system settings.</string>
     <string name="onboarding_group_title">Create your first group</string>
-    <string name="onboarding_group_desc">Put the apps you want to use less of into a group (e.g. \"Short video\") and set a cooldown. You\'ll find the group entry at the top-right of the home screen.</string>
+    <string name="onboarding_group_desc">Put the apps you want to use less of into a group (e.g. \"Short video\") and set a waiting time before they open. You\'ll find the group entry at the top-right of the home screen.</string>
     <string name="onboarding_group_add">Add a group</string>
     <string name="onboarding_group_later">Later</string>
     <string name="onboarding_finish_title">All set</string>
@@ -418,4 +418,10 @@
     <string name="onboarding_group_hint">Tip: you can add a group now. The countdown here is just a demo — no need to wait for it to finish.</string>
     <string name="onboarding_preview_app_name">Sample App</string>
     <string name="onboarding_preview_caption">This is the pause screen shown when a target app opens.</string>
+
+    <!-- Diagnostics screen (debug build only) -->
+    <string name="diagnostics_title">Run Diagnostics</string>
+    <string name="diagnostics_card_title">Run Diagnostics (Debug)</string>
+    <string name="diagnostics_card_subtitle">View interception status and live logs; share with one tap.</string>
+    <string name="cd_refresh">Refresh</string>
 </resources>
