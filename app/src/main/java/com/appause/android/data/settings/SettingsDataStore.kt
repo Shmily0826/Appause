@@ -38,7 +38,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
  *
  * For structured data (groups, apps, records), we use Room instead.
  */
-class SettingsDataStore(private val context: Context) {
+open class SettingsDataStore(private val context: Context) {
 
     // ── Keys ──
     // Keys define the "schema" of our preferences.
@@ -186,7 +186,7 @@ class SettingsDataStore(private val context: Context) {
      * Whether the user has completed (or skipped) the first-launch onboarding.
      * Default: false — the onboarding screen shows on first launch.
      */
-    val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { preferences ->
+    open val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[HAS_COMPLETED_ONBOARDING_KEY] ?: false
     }
 
@@ -196,7 +196,7 @@ class SettingsDataStore(private val context: Context) {
      * dialog before jumping to system settings. Set true once shown (or when
      * onboarding is completed, since the guide explains the same thing).
      */
-    val hasSeenPermissionIntro: Flow<Boolean> = context.dataStore.data.map { preferences ->
+    open val hasSeenPermissionIntro: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[HAS_SEEN_PERMISSION_INTRO_KEY] ?: false
     }
 
@@ -286,7 +286,7 @@ class SettingsDataStore(private val context: Context) {
      * Mark the first-launch onboarding as completed (or skipped).
      * Once true, the NavGraph starts at HOME instead of ONBOARDING.
      */
-    suspend fun setHasCompletedOnboarding(done: Boolean) {
+    open suspend fun setHasCompletedOnboarding(done: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[HAS_COMPLETED_ONBOARDING_KEY] = done
         }
@@ -296,7 +296,7 @@ class SettingsDataStore(private val context: Context) {
      * Mark the permission-rationale explanation as seen, so subsequent
      * permission requests skip the one-time dialog and go straight to settings.
      */
-    suspend fun setPermissionIntroSeen() {
+    open suspend fun setPermissionIntroSeen() {
         context.dataStore.edit { preferences ->
             preferences[HAS_SEEN_PERMISSION_INTRO_KEY] = true
         }

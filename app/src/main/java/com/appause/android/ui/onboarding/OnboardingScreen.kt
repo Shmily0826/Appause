@@ -86,19 +86,13 @@ import kotlinx.coroutines.launch
  *   2. See what Appause does (a live pause-screen preview).
  *   3. Understand the privacy model and enable the accessibility service.
  *   4. Complete the optional accuracy and reliability settings.
- *   5. Create the first group (deep-links to the existing group editor).
- *   5. Done — mark onboarding complete and enter the app.
+ *   5. Create the optional first group (deep-links to the existing group editor).
  *
  * The whole flow is optional: "Skip" (top-right) finishes it at any point.
  *
- * Notes on the group step (page 1):
- * - Creating a group is NOT required. A "Later" button lets the user continue
- *   without one. When they do open the group editor, the step index is advanced
- *   to the finish page first, so returning lands on "All set" rather than
- *   restarting the guide.
- * - The group step shows a live preview of the real pause screen (animates in,
- *   loops a countdown) so the user gets the concept — it is not a nudge to
- *   create a group, and the Continue/Later buttons stay fully clickable.
+ * The group step is the final page. Creating a group is optional; choosing
+ * "Later" completes onboarding and enters Home. The live pause-screen preview
+ * is shown earlier and is separate from this creation step.
  */
 @Composable
 fun OnboardingScreen(
@@ -137,7 +131,7 @@ fun OnboardingScreen(
         Icons.Default.Info,
         Icons.Default.Power,
         Icons.Default.Visibility,
-        Icons.Default.CheckCircle
+        Icons.Default.GroupAdd
     )
 
     Column(
@@ -188,7 +182,7 @@ fun OnboardingScreen(
                         }
                     }
                 )
-                1 -> GroupStep()
+                1 -> PreviewStep()
                 2 -> InfoStep(
                     title = R.string.onboarding_welcome_title,
                     desc = R.string.onboarding_welcome_desc
@@ -228,8 +222,8 @@ fun OnboardingScreen(
                     }
                 )
                 7 -> InfoStep(
-                    title = R.string.onboarding_finish_title,
-                    desc = R.string.onboarding_finish_desc
+                    title = R.string.onboarding_group_title,
+                    desc = R.string.onboarding_group_desc
                 )
             }
         }
@@ -250,28 +244,23 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             when (page) {
-                1 -> {
-                    // Primary: open the existing group editor. We advance the step
-                    // to "finish" first, so returning from the editor lands on the
-                    // "All set" page instead of restarting the guide.
+                7 -> {
+                    // Creating a group is deliberately the last optional step. The
+                    // user has seen every permission explanation before leaving the
+                    // guide, so this no longer skips essential setup information.
                     Button(onClick = {
-                        viewModel.setPage(7)
+                        viewModel.completeOnboarding()
                         onNavigateToGroupEditor()
                     }) {
                         Text(stringResource(R.string.onboarding_group_add))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
-                    // Secondary: continue without creating a group (distinct from the
-                    // top-right "Skip", which exits the whole guide).
-                    TextButton(onClick = { viewModel.setPage(7) }) {
+                    TextButton(onClick = {
+                        viewModel.completeOnboarding()
+                        onNavigateToHome()
+                    }) {
                         Text(stringResource(R.string.onboarding_group_later))
                     }
-                }
-                7 -> Button(onClick = {
-                    viewModel.completeOnboarding()
-                    onNavigateToHome()
-                }) {
-                    Text(stringResource(R.string.onboarding_finish))
                 }
                 else -> Button(onClick = { viewModel.nextPage() }) {
                     Text(stringResource(R.string.onboarding_next))
@@ -428,17 +417,17 @@ private fun InfoStep(title: Int, desc: Int) {
 }
 
 /**
- * Group step (page 3): the explanation plus a live preview of the real
+ * Preview step: the explanation plus a live preview of the real
  * interception screen. The preview animates in and loops a countdown so the
  * user gets a concrete idea of what they'll see — it is not a nudge to create
  * a group (the buttons in the bottom bar stay fully clickable).
  */
 @Composable
-private fun GroupStep() {
+private fun PreviewStep() {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         InfoStep(
-            title = R.string.onboarding_group_title,
-            desc = R.string.onboarding_group_desc
+            title = R.string.onboarding_preview_title,
+            desc = R.string.onboarding_preview_desc
         )
         Spacer(modifier = Modifier.height(16.dp))
         AnimatedVisibility(

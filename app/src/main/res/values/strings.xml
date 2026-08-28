@@ -46,6 +46,10 @@
     <string name="required_permissions_overlay">Display over other apps — show the pause screen</string>
     <string name="required_permissions_usage">Usage access — confirm which app is really on screen</string>
     <string name="required_permissions_action">Open settings</string>
+    <string name="setup_checklist_title">Finish setup</string>
+    <string name="setup_checklist_desc">Complete these items so Appause can remind you reliably.</string>
+    <string name="setup_checklist_battery">Battery setting — set Appause to "Unrestricted" so the system keeps it running</string>
+    <string name="setup_checklist_action">Continue setup</string>
     <string name="required_permissions_learn_more">Learn why these permissions are needed</string>
     <string name="continue_to_settings">Continue to settings</string>
     <string name="cd_why_permissions">Why these permissions are needed</string>
@@ -403,21 +407,19 @@
     <string name="onboarding_service_open">Open system settings</string>
     <string name="onboarding_service_on">Enabled — great!</string>
     <string name="onboarding_service_off">Not enabled yet — please allow Appause to use the Accessibility service in system settings.</string>
+    <string name="onboarding_preview_title">This is the reminder you will see</string>
+    <string name="onboarding_preview_desc">Appause does not block an app outright. It gives you a few seconds, then lets you decide whether to continue.</string>
     <string name="onboarding_group_title">Create your first group</string>
-    <string name="onboarding_group_desc">Put the apps you want to use less of into a group (e.g. \"Short video\") and set a waiting time before they open. You\'ll find the group entry at the top-right of the home screen.</string>
-    <string name="onboarding_group_add">Add a group</string>
+    <string name="onboarding_group_desc">Choose apps that distract you and set a waiting time before they open.</string>
+    <string name="onboarding_group_add">Create group</string>
     <string name="onboarding_group_later">Later</string>
-    <string name="onboarding_finish_title">All set</string>
-    <string name="onboarding_finish_desc">You can change the language, prompt, and groups anytime in Settings.</string>
     <string name="onboarding_next">Next</string>
     <string name="onboarding_back">Back</string>
     <string name="onboarding_skip">Skip</string>
-    <string name="onboarding_finish">Get started</string>
     <string name="onboarding_lang_zh">简体中文</string>
     <string name="onboarding_lang_en">English</string>
-    <string name="onboarding_group_hint">Tip: you can add a group now. The countdown here is just a demo — no need to wait for it to finish.</string>
     <string name="onboarding_preview_app_name">Sample App</string>
-    <string name="onboarding_preview_caption">This is the pause screen shown when a target app opens.</string>
+    <string name="onboarding_preview_caption">Before these apps open, Appause gives you a few seconds to pause.</string>
 
     <!-- Diagnostics screen (debug build only) -->
     <string name="diagnostics_title">Run Diagnostics</string>

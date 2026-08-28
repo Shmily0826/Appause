@@ -8,8 +8,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -23,6 +25,7 @@ import com.appause.android.ui.feedback.FeedbackScreen
 import com.appause.android.ui.groupeditor.GroupEditorScreen
 import com.appause.android.ui.home.HomeScreen
 import com.appause.android.ui.onboarding.OnboardingScreen
+import com.appause.android.ui.onboarding.OnboardingViewModel
 import com.appause.android.ui.pro.ProScreen
 import com.appause.android.ui.recommended.RecommendedAppsScreen
 import com.appause.android.ui.settings.AboutSettingsScreen
@@ -87,6 +90,7 @@ object Routes {
 fun AppNavGraph() {
     val navController = rememberNavController()
     val app = LocalContext.current.applicationContext as AppauseApp
+    var returnHomeAfterOnboardingGroup by remember { mutableStateOf(false) }
 
     // The start destination depends on whether onboarding is finished.
     // DataStore is async, so we resolve it once before building the NavHost
@@ -142,7 +146,16 @@ fun AppNavGraph() {
         composable(Routes.GROUP_EDITOR) {
             GroupEditorScreen(
                 groupId = -1L,
-                onNavigateBack = safePopBackStack,
+                onNavigateBack = {
+                    if (returnHomeAfterOnboardingGroup) {
+                        returnHomeAfterOnboardingGroup = false
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.ONBOARDING) { inclusive = true }
+                        }
+                    } else {
+                        safePopBackStack()
+                    }
+                },
                 onNavigateToAppSelect = { navController.navigate(Routes.APP_SELECT) },
                 onNavigateToPro = { navController.navigate(Routes.PRO) }
             )
@@ -267,13 +280,18 @@ fun AppNavGraph() {
 
         // ── Onboarding (first-launch guide) ──
         composable(Routes.ONBOARDING) {
+            val onboardingViewModel: OnboardingViewModel = viewModel(
+                factory = OnboardingViewModel.Factory(LocalContext.current.applicationContext as AppauseApp)
+            )
             OnboardingScreen(
+                viewModel = onboardingViewModel,
                 onNavigateToHome = {
                     navController.navigate(Routes.HOME) {
                         popUpTo(Routes.ONBOARDING) { inclusive = true }
                     }
                 },
                 onNavigateToGroupEditor = {
+                    returnHomeAfterOnboardingGroup = true
                     navController.navigate(Routes.GROUP_EDITOR)
                 }
             )

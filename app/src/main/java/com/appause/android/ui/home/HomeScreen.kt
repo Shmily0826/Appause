@@ -183,41 +183,17 @@ fun HomeScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // ── Battery optimization warning ──
-            // Shown whenever the app is NOT exempt from battery optimization,
-            // even if the service is currently running. On HyperOS/MIUI a
-            // non-exempt app gets its AccessibilityService killed in the
-            // background and is NOT auto-restarted — so interception silently
-            // stops until the user opens Appause again. This is the most common
-            // cause of "first open isn't intercepted". (See RELEASE_NOTES.)
-            item {
-                if (!isIgnoringBattery) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    BatteryWarningBanner(
-                        onShowWhy = { showWhy = true },
-                        onOpenBatterySettings = {
-                            gate {
-                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                    data = Uri.parse("package:${context.packageName}")
-                                }
-                                context.startActivity(intent)
-                            }
-                        }
-                    )
-                }
-            }
-
-            // ── Unified permission/status header ──
-            // When a required permission is missing we show ONE banner at the top
-            // that lists everything that is needed, instead of separate cards.
-            // Note: "Display over other apps" (SYSTEM_ALERT_WINDOW) is intentionally
-            // NOT required here — the 2032 accessibility overlay works without it.
+            // ── Setup checklist / status header ──
+            // Before the app is ready, show one calm checklist instead of stacking
+            // red error cards. Battery protection is important on MIUI/HyperOS, but
+            // it is preparation work rather than an app failure.
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                if (!isServiceRunning || !isUsageAccessGranted) {
-                    RequiredPermissionsBanner(
+                if (!isServiceRunning || !isUsageAccessGranted || !isIgnoringBattery) {
+                    SetupChecklistCard(
                         isServiceRunning = isServiceRunning,
                         isUsageAccessGranted = isUsageAccessGranted,
+                        isIgnoringBattery = isIgnoringBattery,
                         onShowWhy = { showWhy = true },
                         onOpenAccessibilitySettings = {
                             gate {
@@ -230,6 +206,14 @@ fun HomeScreen(
                             gate {
                                 val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
                                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                context.startActivity(intent)
+                            }
+                        },
+                        onOpenBatterySettings = {
+                            gate {
+                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = Uri.parse("package:${context.packageName}")
+                                }
                                 context.startActivity(intent)
                             }
                         }
@@ -503,23 +487,20 @@ private fun Bullet(text: String) {
  * (accessibility first, overlay second); the secondary action shows an in-app
  * explanation so users don't have to trust the banner blindly.
  */
-/**
- * Prominent warning shown at the top of the Home screen whenever the app is
- * NOT exempt from battery optimization ("智能"/restricted). This is the #1
- * cause of "first open isn't intercepted, only works after switching to
- * Appause": a non-exempt app gets its AccessibilityService killed in the
- * background with no auto-restart. The warning stays until the user grants the
- * exemption, so the silent failure can never bite again.
- */
 @Composable
-private fun BatteryWarningBanner(
+private fun SetupChecklistCard(
+    isServiceRunning: Boolean,
+    isUsageAccessGranted: Boolean,
+    isIgnoringBattery: Boolean,
+    onOpenAccessibilitySettings: () -> Unit,
+    onOpenUsageAccessSettings: () -> Unit,
     onOpenBatterySettings: () -> Unit,
     onShowWhy: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -527,71 +508,23 @@ private fun BatteryWarningBanner(
                 Icon(
                     imageVector = Icons.Default.Warning,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = stringResource(R.string.battery_warning_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-                Spacer(Modifier.width(6.dp))
-                WhyButton(onClick = onShowWhy)
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.battery_warning_desc),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Button(
-                onClick = onOpenBatterySettings,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.request_battery_exempt))
-            }
-        }
-    }
-}
-
-@Composable
-private fun RequiredPermissionsBanner(
-    isServiceRunning: Boolean,
-    isUsageAccessGranted: Boolean,
-    onOpenAccessibilitySettings: () -> Unit,
-    onOpenUsageAccessSettings: () -> Unit,
-    onShowWhy: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = stringResource(R.string.required_permissions_title),
+                    text = stringResource(R.string.setup_checklist_title),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 WhyButton(onClick = onShowWhy)
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.required_permissions_desc),
+                text = stringResource(R.string.setup_checklist_desc),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onErrorContainer
+                color = MaterialTheme.colorScheme.onSecondaryContainer
             )
             Spacer(modifier = Modifier.height(8.dp))
             if (!isServiceRunning) {
@@ -599,13 +532,13 @@ private fun RequiredPermissionsBanner(
                     Text(
                         text = "•",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.required_permissions_accessibility),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
             }
@@ -614,28 +547,43 @@ private fun RequiredPermissionsBanner(
                     Text(
                         text = "•",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.required_permissions_usage),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
+            if (!isIgnoringBattery) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "•",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.setup_checklist_battery),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
                     )
                 }
             }
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = {
-                    // Open the most urgent one first; the banner stays until
-                    // every listed permission is granted, so repeated taps walk
-                    // the user through them one at a time.
+                    // Open one item at a time, in the order that makes the core
+                    // pause flow reliable. The card updates on return.
                     if (!isServiceRunning) onOpenAccessibilitySettings()
-                    else onOpenUsageAccessSettings()
+                    else if (!isUsageAccessGranted) onOpenUsageAccessSettings()
+                    else onOpenBatterySettings()
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.required_permissions_action))
+                Text(stringResource(R.string.setup_checklist_action))
             }
         }
     }

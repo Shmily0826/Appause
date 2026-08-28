@@ -9,7 +9,9 @@ import com.appause.android.data.local.AppInterceptionCount
 import com.appause.android.data.local.DailyStats
 import com.appause.android.data.local.TotalRatio
 import com.appause.android.data.local.ReasonCount
+import com.appause.android.data.repository.AppGroupRepository
 import com.appause.android.data.pro.ProState
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -32,12 +34,18 @@ import java.util.Calendar
  * Why AndroidViewModel?
  * - We need application context to access the repository singleton.
  */
-class StatsViewModel(application: Application) : AndroidViewModel(application) {
+class StatsViewModel(
+    application: Application,
+    // Test seam: lets unit tests inject a fake repository (defaults to the real one).
+    repositoryOverride: AppGroupRepository? = null,
+    // Test seam: lets unit tests drive the Pro state without a real ProState.
+    isProOverride: Flow<Boolean>? = null
+) : AndroidViewModel(application) {
 
-    private val repository = (application as AppauseApp).repository
+    private val repository = repositoryOverride ?: (application as AppauseApp).repository
 
     /** Whether Appause Pro is unlocked (drives the stats window). */
-    val isPro: StateFlow<Boolean> = (application as AppauseApp).proState.isPro
+    val isPro: StateFlow<Boolean> = (isProOverride ?: (application as AppauseApp).proState.isPro)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     /**

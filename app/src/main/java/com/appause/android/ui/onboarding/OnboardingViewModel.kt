@@ -7,7 +7,10 @@ import android.provider.Settings
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.appause.android.AppauseApp
+import com.appause.android.data.settings.SettingsDataStore
 import com.appause.android.service.AccessibilityServiceChecker
 import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,9 +33,13 @@ import kotlinx.coroutines.launch
  *   when the screen leaves the composition),
  * - marks onboarding as completed (or skipped) when the user finishes.
  */
-class OnboardingViewModel(application: Application) : AndroidViewModel(application) {
+class OnboardingViewModel(
+    application: Application,
+    // Test seam: lets unit tests inject a SettingsDataStore (defaults to the real one).
+    settingsDataStoreOverride: SettingsDataStore? = null
+) : AndroidViewModel(application) {
 
-    private val settingsDataStore = (application as AppauseApp).settingsDataStore
+    private val settingsDataStore = settingsDataStoreOverride ?: (application as AppauseApp).settingsDataStore
 
     val language: StateFlow<String> = settingsDataStore.language
         .stateIn(
@@ -58,8 +65,9 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
 
     /**
      * Current onboarding step.
-     * 0 = language, 1 = preview/group, 2 = privacy/value, 3 = accessibility,
-     * 4 = usage access, 5 = battery, 6 = display-over-other-apps, 7 = finish.
+     * 0 = language, 1 = pause-screen preview, 2 = privacy/value,
+     * 3 = accessibility, 4 = usage access, 5 = battery,
+     * 6 = display-over-other-apps, 7 = optional first group.
      * Stored in the ViewModel (not in the Composable) so the position is kept
      * when the user opens the group editor and comes back — otherwise returning
      * would restart the whole guide.
@@ -67,7 +75,6 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
     var page = mutableIntStateOf(0)
         private set
 
-    fun setPage(p: Int) { page.value = p.coerceIn(0, 7) }
     fun nextPage() { page.value = (page.value + 1).coerceAtMost(7) }
     fun prevPage() { page.value = (page.value - 1).coerceAtLeast(0) }
 
@@ -117,5 +124,26 @@ class OnboardingViewModel(application: Application) : AndroidViewModel(applicati
             // one-time rationale dialog on the home screen is no longer required.
             settingsDataStore.setPermissionIntroSeen()
         }
+    }
+
+    /**
+     * Factory for the default production constructor.
+     *
+     * Compose's default `viewModel()` helper only knows how to instantiate
+     * AndroidViewModels with a single-argument `(Application)` constructor. The
+     * test seam adds a second optional parameter, so the production caller must
+     * provide this factory to wire the real SettingsDataStore explicitly.
+     */
+    companion object {
+        fun Factory(application: Application): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    if (modelClass.isAssignableFrom(OnboardingViewModel::class.java)) {
+                        return OnboardingViewModel(application) as T
+                    }
+                    throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
+                }
+            }
     }
 }
