@@ -54,6 +54,7 @@ key.properties
 
 # Agent / internal tooling (not part of the app)
 .workbuddy/
+.tools/
 
 # Cloudflare Worker (Plan B activation server)
 worker/node_modules/

@@ -151,3 +151,147 @@ to end users, and do not wire them into real product flows.
 - Do not assume AccessibilityService works identically on all OEM ROMs.
 - Do not delete working code without a clear reason.
 - Do not rewrite the entire project when encountering a single error.
+
+---
+
+## 10. AI Collaboration and Handoff Protocol
+
+The web ChatGPT/planning agent and the local Codex coding agent have different
+views of the project. The user keeps final decision-making authority.
+
+### Responsibilities
+
+- ChatGPT/planning agent: understand requirements, inspect GitHub state, analyze
+  problems, control scope, plan tasks, review Codex handoffs, and recommend the
+  next test, change, commit, push, or release decision.
+- Codex/local coding agent: inspect the real local working tree, read local code,
+  modify code when authorized, run builds/tests/ADB/emulator verification, check
+  the diff, and report local changes that have not been pushed.
+
+### State boundaries
+
+Every status report must distinguish:
+
+- **GitHub / pushed state** — commits and pushes that other agents can verify
+  from GitHub.
+- **Local working tree state** — local staged, unstaged, and untracked changes.
+- **Manual / session verification** — emulator, ADB, logcat, real-device,
+  user-confirmed results, and decisions not recorded in GitHub.
+
+These states must not be described as if they were equivalent.
+
+### Handoff requirements
+
+At the end of every Codex turn, whether or not code changed, a handoff is
+required without waiting for the user to request one. The handoff must begin
+with a one- or two-sentence Simplified Chinese summary of what was done, the
+current result, and the most important next step.
+
+The handoff must then include:
+
+- **Baseline** — branch, HEAD, GitHub tracking state, and working tree state as
+  actually checked at the start of the turn.
+- **What changed this turn** — actual work and files changed this turn,
+  separately from pre-existing modifications.
+- **Verification** — actual build, test, lint, diff, emulator, ADB, logcat, and
+  real-device checks, each marked PASS, FAIL, or NOT TESTED. Emulator results
+  must never be reported as real-device results.
+- **Current implementation semantics** — for navigation, state, persistence,
+  permissions, and background services, explain how the current code actually
+  behaves rather than only saying that it was fixed.
+- **Remaining risks / blockers** — untested paths, device or OEM risks, and
+  regression concerns.
+- **Final Git state** — a fresh `git status --short --branch` result, plus
+  whether the turn committed, pushed, merged, tagged, or released anything.
+- **Recommended next action** — one next step only. Do not begin another phase
+  without the user's explicit authorization.
+
+### Pre-existing changes and authorization
+
+If the working tree is not clean, identify existing changes before editing.
+Never overwrite, roll back, or casually rewrite them. If ownership or scope is
+unclear, report the ambiguity instead of guessing. The handoff must distinguish
+pre-existing modifications, changes made this turn, and untracked files.
+
+The following permissions are independent:
+
+- modifying code does not authorize committing;
+- committing does not authorize pushing;
+- pushing does not authorize merging, tagging, or releasing.
+
+Without explicit user authorization, do not commit, push, merge, create tags, or
+release.
+
+The handoff must be self-contained for a ChatGPT agent that can read GitHub but
+cannot see the local working tree or automatically know about local emulator,
+ADB, logcat, or real-device results. Include current local facts without
+copying the entire project history.
+
+## 11. Task ID and Handoff Protocol
+
+Use a stable Task ID to identify each ChatGPT ↔ Codex work item across copied
+prompts and separate conversations. The format is:
+
+```text
+<PROJECT>-YYYYMMDD-HHMM
+```
+
+For Appause, use the `APPAUSE` project prefix, for example:
+`APPAUSE-20260822-1705`.
+
+### Incoming ChatGPT prompt
+
+Every implementation, fix, test, or content task prepared for Codex should use
+this envelope:
+
+```text
+===== TASK <TASK-ID> | CHATGPT → CODEX =====
+
+Task ID: <TASK-ID>
+Task: <short task title>
+Direction: ChatGPT → Codex
+Action: Execute this task, then return a Handoff for ChatGPT using the same Task ID.
+
+...task instructions...
+
+===== END TASK <TASK-ID> | CHATGPT → CODEX =====
+```
+
+The envelope is metadata and does not change the technical task. Do not invent
+a replacement ID when one is supplied. A genuinely new revision or follow-up
+should normally use a new Task ID.
+
+### Codex handoff envelope
+
+Every handoff must echo the exact same Task ID and short task title:
+
+```text
+===== TASK <TASK-ID> | CODEX → CHATGPT | HANDOFF =====
+
+Task ID: <TASK-ID>
+Task: <same short task title>
+Direction: Codex → ChatGPT
+Status: completed / partial / blocked
+
+### Handoff for ChatGPT
+
+...the repository's required handoff fields...
+
+===== END TASK <TASK-ID> | CODEX → CHATGPT =====
+```
+
+Keep all fields required by Section 10, including baseline, pre-existing
+changes, verification, implementation semantics, risks, final Git state, and
+one recommended next action.
+
+### Duplicate awareness
+
+If the same Task ID has already been executed in the current Codex session,
+explicitly report that the new prompt appears to be a duplicate instead of
+silently repeating the task. The task may be rerun only after the user
+explicitly confirms it. Do not create persistent repository state solely for
+duplicate detection.
+
+The Task ID must remain unchanged across the ChatGPT prompt and Codex handoff.
+Modifying code, committing, pushing, merging, tagging, and releasing remain
+separate permissions under Section 10.

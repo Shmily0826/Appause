@@ -1,6 +1,121 @@
 # Appause — Development Progress
 
-## v0.5.38 (release candidate)
+## 2026-08-28 — Async signing serialization verification (TASK APPAUSE-20260828-2028)
+- Confirmed the previous whole-request test queue was stronger than real DO
+  handler semantics and could hide an async signing interleaving.
+- Wrapped the complete per-code mutation action in `blockConcurrencyWhile`,
+  including legacy KV bootstrap, JWT signing, redeem, and both unbind routes.
+- Replaced the outer request queue in the local harness with a non-queued
+  request model and delayed signer. The suite now passes 31/31 checks, including
+  final-slot, same-device, concurrent unbind, signing-failure, and legacy
+  bootstrap cases.
+- No deployment or production data mutation was attempted.
+
+## 2026-08-28 — Atomic Pro activation-code binding (TASK APPAUSE-20260828-2027)
+- Replaced activation-code KV read-modify-write mutations with one SQLite-backed
+  Durable Object per normalized activation code.
+- Redeem, self-unbind, admin-unbind, and newly generated codes now use the same
+  Durable Object coordination boundary. Existing KV-only records bootstrap
+  lazily into the DO without manual production migration.
+- Added concurrent new-device, final-slot, same-device, legacy bootstrap,
+  signing-failure, and unbind regression coverage. Worker tests: 30 checks plus
+  RS256 sign/verify, all passing locally under Node 24.
+- `wrangler deploy --dry-run` was not verified because the execution safety layer
+  blocked a command that may transmit bundle/config data externally. No deploy or
+  production data mutation was attempted.
+
+## 2026-08-24 — Xiaomi / HyperOS transport gate (TASK APPAUSE-20260824-1819)
+- Canonical SDK adb and one `scrcpy --mouse=sdk` session were used; no ADB server restart or reboot.
+- A 5-minute baseline poll stayed online, but the later setup/navigation session had a real serial disappearance, auto-recovery, and scrcpy disconnect. HyperOS OEM functional scenarios remain pending; do not call the gate release-ready.
+- No source changes. Detailed evidence is recorded in `TEST_REPORT.md` §10.
+
+## 2026-08-24 — Post-reboot transport gate (TASK APPAUSE-20260824-1839)
+- User-initiated reboot completed; post-reboot Debug AccessibilityService was enabled and bound, Release remained disabled, and both packages were still installed.
+- The same Xiaomi serial disappeared again during normal Debug App launch and later recovered. The post-reboot 5-minute transport gate therefore failed; HyperOS OEM functional scenarios remain untested.
+- No source changes, ADB server restart, second reboot, or secure-settings modification. Evidence is recorded in `TEST_REPORT.md` §11.
+
+## 2026-08-24 — USB cable rerun (TASK APPAUSE-20260824-1839)
+- Reran the post-reboot transport operation after the user changed the USB data cable.
+- scrcpy still disconnected and the first transport poll reported a missing serial before automatic recovery. OEM functional regression remains blocked; evidence is in `TEST_REPORT.md` §12.
+
+## 2026-08-24 — USB-port isolation (TASK APPAUSE-20260824-1852)
+- After moving the replacement cable to a different USB port, idle ADB, moderate read-only ADB load, and scrcpy all stayed stable with transport_id 73.
+- Transport isolation is Category 5 PASS on the new port. No Appause functional testing was performed; see `TEST_REPORT.md` §13.
+
+## 2026-08-23 (unreleased) — Pre-device verification completion (emulator, TASK APPAUSE-20260823-2249)
+- Closed the remaining on-device gaps that do NOT need a Xiaomi/HyperOS device, single pass.
+  **No code changes** — only emulator state (accessibility enabled via Settings UI) + UI-driven
+  verification + refreshed `output/Appause-v0.5.38-debug.apk` (gitignored, not added).
+- Re-confirmed emulator env is **API 37 / Android 17** (not "Android 14" as §7 wrongly said;
+  corrected in TEST_REPORT.md §8). Stock Android 17, still not HyperOS.
+- Verified live on emulator (debug build 0.5.38, versionCode 90):
+  - **Group Save → real persistence**: created "TestGroup2" (name + Chrome) → Save → force-stop +
+    relaunch → Home STILL shows group, no re-onboarding (disproves the earlier WAL-pull false alarm).
+  - **Group Editor Cancel & top-bar Back** both → Home (no onboarding loop); both call `onNavigateBack`.
+  - **Home → Group Editor → Home** round-trip clean (no onboarding pollution).
+  - **H1 AbandonCooldown** (mid-cooldown switch to a different real app, no Continue): overlay
+    dismissed + `Bypass cleared` + guard released; reopening the target re-intercepts (not swallowed).
+  - **H2 duplicate-while-overlay**: exactly 1 INTERCEPT, 1 overlay on duplicate launch (double-intercept
+    guard holds).
+  - **Stock Android Recents sanity** (Scenario G substitute): PASS by equivalence — decider skips
+    non-grouped/system packages, so Recents can't fabricate a phantom overlay; reopen re-intercepts.
+- Build/unit re-gate: `testDebugUnitTest` **78/0**, `assembleDebug` BUILD SUCCESSFUL (after clearing
+  dex `graph.bin` lock), `git diff --check` clean. `TEST_REPORT.md` §8 appended; §7 env error fixed.
+- **Xiaomi/HyperOS real-device gate still PENDING** (true Scenario G, 2032-over-小红书 battle,
+  电源限制 = 无限制, reboot AccessibilityService). Do NOT call this release-ready.
+
+## 2026-08-23 (unreleased) — Android Core Integration Regression (emulator gate)
+- Ran the full integration gate on the local working tree (TASK APPAUSE-20260823-2152):
+  `testDebugUnitTest` → **78/0**, `assembleDebug` → BUILD SUCCESSFUL.
+- **Fixed an emulator/device-only regression**: `OnboardingViewModel` had a 2-arg
+  test-seam constructor that broke Compose's default `viewModel()` factory
+  (`NoSuchMethodException` after `pm clear`). Added a `ViewModelProvider.Factory`
+  companion + wired it in `NavGraph.kt`; removed a duplicate `ViewModelProvider`
+  import. Onboarding now launches clean post-`pm clear` on a real process.
+- Emulator smoke (Medium_Phone AVD, API 37): onboarding 8-page order, Later/Create/
+  Back/restart/round-trip all PASS; AccessibilityService Scenarios A–F + H PASS
+  (first-open INTERCEPT + `Overlay shown type=2032`, dedup SKIP, Continue bypass,
+  Cancel+reopen, launcher/system SKIP, leave-window RESUME).
+- **Scenario G (recents-replay burst) NOT TESTED on emulator** — OEM/HyperOS-only;
+  deferred to real-device regression. BurstTracker is unit-covered (10 tests).
+- `TEST_REPORT.md` §7 documents the gate + regression matrix. No git commit/tag/release.
+- Working tree preserved; HEAD `eb29d1e` (== GitHub `main`). Recommended next:
+  Xiaomi/HyperOS real-device regression (Scenario G + 2032-over-小红书 + 电源限制).
+
+## 2026-08-22 (unreleased) — Interception testability refactor + unit tests
+- Behavior-preserving refactor of the interception core (no functional change):
+  - Extracted the `handleForegroundChange()` filter chain (steps 1–6.6) into a
+    pure decision layer `interception/InterceptionDecider.kt`
+    (`decidePreGroup` / `decidePostGroup`, sealed `PreGroupDecision` /
+    `PostGroupDecision`). The service now only executes effects (timers,
+    bypass, overlay, diagnostics); every decision order, reason string, and
+    effect is byte-for-byte the original behavior.
+  - Extracted the recents-replay burst fingerprint into
+    `interception/BurstTracker.kt` with an injected clock (replaced
+    `recordWindowEvent` / `isBurstSuppressed` and the three burst fields).
+- Added the project's first unit tests (`app/src/test`, JUnit 4, JVM-only,
+  never packaged into the APK) — 50 tests total, all passing:
+  - `LicenseVerifierTest` (12): forged/tampered/expired/misbound tokens, PEM
+    parsing, unpadded base64url.
+  - `InterceptionManagerTest` (7): bypass lifecycle.
+  - `InterceptionDeciderTest` (21): every step of the filter chain, pinning
+    the v0.5.11–v0.5.27 regression behaviors (stale cancel event, quick
+    re-open after cancel, poller dedup vs genuine re-open, abandon-cooldown,
+    burst suppression, double-intercept guard) and the exact diagnostics
+    strings.
+  - `BurstTrackerTest` (10): the v0.5.24 threshold rules (2 real apps =
+    genuine switch, 3 = replay), window pruning/boundary, suppression expiry,
+    own-package and noise exclusion.
+- `LicenseVerifier` switched `android.util.Base64` → `java.util.Base64`
+  (identical decoding, available since API 26 = minSdk) so it runs in JVM tests.
+- Gradle: added `junit` + `org.json` as `testImplementation` deps via the
+  Version Catalog, and `unitTests.isReturnDefaultValues = true`.
+- Verification: `./gradlew testDebugUnitTest` 50/50 PASS;
+  `./gradlew assembleDebug` PASS. No on-device regression testing done yet —
+  real-device smoke test of the interception flow is still recommended before
+  release.
+
+## v0.5.38 (released)
 - Release documentation and packaging audit:
   - Version bumped to 0.5.38 / 90.
   - Corrected INSTALL.md: accessibility is required; overlay permission is an optional fallback; upgrades must install over the existing app rather than uninstalling first.
@@ -14,6 +129,18 @@
   - Added a clear explanation that Appause identifies the foreground app only and does not read screen content, messages, or account information.
   - English copy updated to match the new value-first flow.
   - Debug build verified with `gradlew assembleDebug` → BUILD SUCCESSFUL.
+- Follow-up onboarding and home setup refinement:
+  - Kept the live pause-screen preview early in onboarding, but restored normal
+    Next navigation so no later permission step can be skipped.
+  - Moved optional first-group creation to the final step, after all setup
+    explanations; users can also enter Home without creating a group.
+  - Replaced the stacked red permission and battery warnings on Home with one
+    calm setup checklist that opens the next unfinished setting.
+- Onboarding follow-up (pending real-device verification):
+  - Removed the obsolete page-index setter and added a dedicated return path
+    from the final onboarding Group Editor step to Home.
+  - Simplified the first-group Chinese and English copy and the preview caption;
+    no other onboarding page copy was changed.
 - GroupEditorScreen re-remind refinement (task #50 follow-up):
   - Re-remind block already in default-collapsed CollapsibleCard (everyone).
   - "Same as first" cooldown now explicit: added a switch; slider min is 1s (no implicit 0). Data model keeps `0 = same as first`.
@@ -134,7 +261,7 @@
 - `app/build.gradle.kts`: load signing creds from `local.properties` (git-ignored),
   added `signingConfigs.create("release")`, and `release` buildType now uses it.
 - `local.properties`: added APPause_KEYSTORE_PATH / _ALIAS / _PASSWORD / _KEY_PASSWORD
-  (all git-ignored; the password is `AppauseRelease2026` — change it and back it up).
+  (all git-ignored; keep the keystore password changed from any default and backed up separately).
 - Verified: `./gradlew assembleRelease` → BUILD SUCCESSFUL; `apksigner verify` →
   signed with v2 scheme (1 signer). APK at
   `app/build/outputs/apk/release/app-release.apk` (~12 MB).
@@ -366,3 +493,48 @@
 - Phase 0 completed: documentation and project planning.
 - All foundational documents created.
 - Ready to begin Phase 1: Data Layer implementation.
+
+### 2026-08-24 (Xiaomi / HyperOS real-device gate — APPAUSE-20260824-1909)
+- Resumed on the replacement cable and the new physical USB port after the Category 5 transport gate.
+- Confirmed Xiaomi 2410DPN6CC / Android 16 / HyperOS OS3.0, Debug AccessibilityService enabled + bound, Release disabled, Debug battery set to HyperOS `No restrictions`, and the active `test` group through normal UI: 10-second cooldown, XHS and Bilibili members.
+- Real-device results: Bilibili and XHS both attached as 2032 accessibility overlays and were physically confirmed visible by the user. Background survival and lock/unlock retained the bound service. AbandonCooldown logs showed guard dismissal and bypass cleanup.
+- Continue, Cancel, Recents replay, and reboot persistence remain untested; genuine reopen/burst were only partial because the same-session leave-window/dedup state and an existing overlay prevented a clean re-armed run.
+- Only `TEST_REPORT.md` and `PROGRESS.md` were updated. No source changes, commit, push, or release.
+
+### 2026-08-24 (Remaining HyperOS interaction regression — APPAUSE-20260824-1938)
+- Read-only baseline confirmed unchanged. `InterceptionDecider.kt` is present as an untracked, non-ignored file with no Git history; it was not restored or modified.
+- Continue PASS: countdown completed, overlay dismissed, Bilibili usable, temporary bypass/session started.
+- Cancel PASS: overlay dismissed, Launcher/Home became foreground, bypass cleared, and later XHS reopen intercepted again.
+- Genuine reopen PASS: after the real 180-second leave window, Bilibili re-armed and intercepted again. HyperOS Recents replay PASS: selecting XHS from Recents produced one expected interception.
+- Rapid-switch K FAIL: Home/Chrome/Bilibili/XHS/Home did not stack duplicate overlays, but the visible XHS 2032 overlay remained over Home after the target was abandoned; the 30-second watchdog released logical guard without dismissing the visible overlay. This is a confirmed real-device user-visible bug and was not fixed.
+- Reboot persistence classified conservatively as PASS with boundary: enabled state persisted from the preceding user reboot and later functional interception succeeded without manual re-enable; uninterrupted binding continuity remains unproven.
+- Only `TEST_REPORT.md` and `PROGRESS.md` changed this turn. No source changes, staging, commit, push, or release.
+
+### 2026-08-24 (Cooldown overlay cleanup — APPAUSE-20260824-1958)
+- Implemented the minimal Home-abandonment fix in `InterceptionDecider.kt` and `AppauseAccessibilityService.kt`: confirmed launcher foreground is handled before broad system filtering, and visible cooldown cleanup is not blocked by an automatically started bypass.
+- Added two focused decision tests: confirmed Home abandons an active cooldown; unconfirmed launcher noise remains skipped.
+- Automated verification: `testDebugUnitTest` PASS (80 tests, 0 failures), `assembleDebug` PASS, `git diff --check` PASS.
+- Installed the new Debug APK on Xiaomi `6036d5b`. Real-device primary rapid Home abandonment PASS; Continue, Cancel, and genuine reopen PASS; XHS 2032 attachment PASS by window inspection. Recents became NOT TESTED because ADB disconnected immediately before that step.
+- Current-build human visual confirmation and Recents need one follow-up when the USB connection is restored. No commit, push, merge, tag, or release.
+
+### 2026-08-28 (Final HyperOS Overlay Boundary Verification — APPAUSE-20260828-1608)
+- Verification-only task; no source or test files changed.
+- Rechecked Git baseline and preserved the existing modified/untracked working tree. The post-fix Debug APK from APPAUSE-20260824-1958 remained the trusted local artifact.
+- Xiaomi `2410DPN6CC` was not available in ADB before any scenario began. ADB output indicated its daemon was not running and started it automatically; no further restart, reboot, or settings change was attempted.
+- All requested device scenarios were NOT TESTED: Bilibili/XHS human visibility, Recents, Home abandonment before/after countdown, Usage access OFF behavior, and incidental system noise.
+- No new product blocker was confirmed because no product scenario ran. The Usage access OFF boundary remains unresolved and must not be considered passed.
+
+### 2026-08-28 (Final HyperOS Overlay Boundary Verification continuation — APPAUSE-20260828-1608)
+- Xiaomi `6036d5b` reconnected. Confirmed Debug package `0.5.38-debug` / versionCode 90 and ADB heartbeat.
+- Recorded Usage access original state ON, changed it to OFF through normal HyperOS settings, then restored it to ON through the normal risk-confirmation UI; final switch was confirmed ON.
+- Usage access OFF → ordinary Bilibili interception FAIL: Bilibili remained foreground but no 2032 overlay or new Appause interception log appeared. Per stop condition, no other product scenarios were run.
+- Usage access OFF → Home abandonment remains NOT TESTED. This is now a confirmed product-requirement mismatch requiring a separate implementation investigation because Usage access is documented as optional.
+- No source/test changes, staging, commit, push, merge, tag, or release.
+
+### 2026-08-28 (Optional Usage access interception diagnosis — APPAUSE-20260828-1634)
+- Rechecked the baseline and confirmed `test` group configuration through normal Appause UI: 10-second cooldown, Bilibili and rednote members.
+- Found the earlier Usage OFF result had invalid service preconditions: release AccessibilityService was enabled while Debug was disabled. Corrected via normal Accessibility settings only: release OFF, Debug enabled + bound.
+- Usage ON control PASS: Bilibili produced one visible 2032 pause overlay; screenshot confirmed the complete UI.
+- With Usage access OFF and Debug AccessibilityService still enabled + bound, clean Chrome → Home → Bilibili interception PASS; one visible 2032 overlay appeared. No source change was required.
+- Root cause of the earlier failure is invalid Debug/release service selection and missing Accessibility event, not a UsageStats-null decider regression. Usage access original/final state restored to ON.
+- Recents, Usage OFF → Home abandonment, and incidental-system-noise scenarios were not expanded after the valid OFF control passed. No source/test changes, staging, commit, push, merge, tag, or release.
