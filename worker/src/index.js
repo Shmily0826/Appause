@@ -16,31 +16,23 @@
  *  - The RSA signing PRIVATE KEY lives only in the Cloudflare secret
  *    APPAUSE_PRIVATE_KEY. The app ships only the matching PUBLIC key, so a fork
  *    of the open-source repo can verify tokens but cannot mint them.
- *  - Activation codes and their device bindings are stored in a KV namespace
- *    (APPAUSE_CODES). The server never sees the user's apps, usage, or identity.
+ *  - A SQLite-backed Durable Object is the authoritative store for each
+ *    activation code. APPAUSE_CODES bootstraps legacy records only.
+ *    The server never sees the user's apps, usage, or identity.
  *
  * See worker/README.md for deploy + key-setup instructions.
  */
 
-import { signJwt, importPrivateKeyPem } from "./jwt.mjs";
+import { ActivationCodeDurableObject } from "./activation-code-do.js";
+
+export { ActivationCodeDurableObject };
 
 // Bindings (configured in wrangler.toml / via `wrangler secret put`):
-//   env.APPAUSE_CODES    — KV namespace
+//   env.APPAUSE_CODES    — legacy KV namespace and unrelated Worker data
+//   env.ACTIVATION_CODES — one SQLite-backed Durable Object per activation code
 //   env.APPAUSE_PRIVATE_KEY — PKCS#8 PEM RSA private key (secret)
 //   env.ADMIN_KEY        — shared secret for the /admin/* endpoints (secret)
 //   env.DOWNLOAD_TOKEN   — shared token gating /api/download increments (secret)
-
-let privateKeyPromise = null;
-function getPrivateKey(env) {
-  if (env.APPAUSE_PRIVATE_KEY == null) {
-    // Surfaced as a clear error instead of an opaque Cloudflare 1101.
-    return Promise.reject(new Error("APPAUSE_PRIVATE_KEY secret is not set"));
-  }
-  if (!privateKeyPromise) {
-    privateKeyPromise = importPrivateKeyPem(env.APPAUSE_PRIVATE_KEY);
-  }
-  return privateKeyPromise;
-}
 
 const DEFAULT_MAX_DEVICES = 3;
 // Activation-code alphabet: no ambiguous characters (0/O, 1/I, etc.).
@@ -85,41 +77,7 @@ async function handleRedeem(req, env) {
     return json({ error: "bad_request" }, 400);
   }
 
-  const record = await env.APPAUSE_CODES.get(code, { type: "json" });
-  if (!record) {
-    return json({ error: "invalid_code" }, 404);
-  }
-  const devices = Array.isArray(record.devices) ? record.devices : [];
-  const maxDevices = record.maxDevices || DEFAULT_MAX_DEVICES;
-
-  if (!devices.includes(device)) {
-    if (devices.length >= maxDevices) {
-      return json({ error: "device_limit_reached" }, 403);
-    }
-    devices.push(device);
-  }
-
-  const nowSec = Math.floor(Date.now() / 1000);
-  const payload = { tier: "pro", iat: nowSec, jti: code, device };
-  if (record.expiresInDays) {
-    payload.exp = nowSec + record.expiresInDays * 86400;
-  }
-
-  let token;
-  try {
-    const privateKey = await getPrivateKey(env);
-    token = await signJwt(payload, privateKey);
-  } catch (e) {
-    // Never leak the raw secret, but return enough to diagnose (missing /
-    // malformed key) instead of Cloudflare's opaque error code 1101.
-    return json({ error: "signing_failed", detail: String((e && e.message) || e) }, 500);
-  }
-
-  record.devices = devices;
-  record.status = "active";
-  await env.APPAUSE_CODES.put(code, JSON.stringify(record));
-
-  return json({ token });
+  return dispatchCodeOperation(env, code, { action: "redeem", code, device });
 }
 
 /**
@@ -134,18 +92,20 @@ async function handleUnbind(req, env) {
   if (!code || !device) {
     return json({ error: "bad_request" }, 400);
   }
-  const record = await env.APPAUSE_CODES.get(code, { type: "json" });
-  if (!record) {
-    return json({ error: "invalid_code" }, 404);
-  }
-  const devices = Array.isArray(record.devices) ? record.devices : [];
-  if (!devices.includes(device)) {
-    return json({ error: "device_not_bound" }, 404);
-  }
-  record.devices = devices.filter((d) => d !== device);
-  if (record.devices.length === 0) record.status = "unused";
-  await env.APPAUSE_CODES.put(code, JSON.stringify(record));
-  return json({ ok: true });
+  return dispatchCodeOperation(env, code, { action: "unbind", code, device });
+}
+
+function getCodeObject(env, code) {
+  const id = env.ACTIVATION_CODES.idFromName(code);
+  return env.ACTIVATION_CODES.get(id);
+}
+
+async function dispatchCodeOperation(env, code, body) {
+  return getCodeObject(env, code).fetch("https://activation-code.internal/", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
 }
 
 /** Admin: mint a new activation code. Requires x-admin-key header. */
@@ -163,7 +123,7 @@ async function handleGenCode(req, env) {
     createdAt: Date.now(),
     notes: body.notes || "",
   };
-  await env.APPAUSE_CODES.put(code, JSON.stringify(record));
+  await dispatchCodeOperation(env, code, { action: "initialize", code, record });
   return json({ code });
 }
 
@@ -174,13 +134,7 @@ async function handleAdminUnbind(req, env) {
   const code = (body.code || "").toString().trim().toUpperCase();
   const device = (body.device || "").toString().trim();
   if (!code || !device) return json({ error: "bad_request" }, 400);
-  const record = await env.APPAUSE_CODES.get(code, { type: "json" });
-  if (!record) return json({ error: "invalid_code" }, 404);
-  const devices = Array.isArray(record.devices) ? record.devices : [];
-  record.devices = devices.filter((d) => d !== device);
-  if (record.devices.length === 0) record.status = "unused";
-  await env.APPAUSE_CODES.put(code, JSON.stringify(record));
-  return json({ ok: true });
+  return dispatchCodeOperation(env, code, { action: "unbind", code, device });
 }
 
 /**

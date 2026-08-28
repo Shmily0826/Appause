@@ -8,7 +8,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "genkeys": "node scripts/genkeys.mjs",
-    "test": "node test/sign-verify.mjs"
+    "test": "node test/sign-verify.mjs && node test/redeem-failure-modes.mjs"
   },
   "devDependencies": {
     "wrangler": "^3.78.0"
