@@ -8,6 +8,12 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// Tell Room's KSP processor where to write the schema JSON files
+// (app/schemas/...) used by the official migration test framework.
+ksp {
+    arg("room.schemaLocation", layout.projectDirectory.dir("schemas").asFile.absolutePath)
+}
+
 // Load signing credentials from local.properties (never committed).
 val localProps = Properties().apply {
     val localFile = rootProject.file("local.properties")
@@ -97,6 +103,16 @@ android {
         compose = true
         buildConfig = true
     }
+
+    testOptions {
+        // Plain JVM unit tests can't call real android.* framework classes.
+        // Return-default-values keeps android.util.Log calls (AppLogger) from
+        // crashing in tests instead of throwing "not mocked".
+        unitTests.isReturnDefaultValues = true
+        // Robolectric needs the real Android resources (manifests, strings,
+        // drawables) on the JVM classpath to instantiate a working Context.
+        unitTests.isIncludeAndroidResources = true
+    }
 }
 
 dependencies {
@@ -129,4 +145,20 @@ dependencies {
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
+
+    // Unit tests (app/src/test) — compiled and run only on the dev machine,
+    // never included in debug or release APKs.
+    testImplementation(libs.junit)
+    testImplementation(libs.json)
+
+    // Robolectric: runs Android-framework-dependent code (Context, DataStore,
+    // Room) on the JVM so migration + ViewModel + ProState tests need no device.
+    testImplementation(libs.robolectric)
+    // AndroidX Test core — ApplicationProvider / InstrumentationRegistry for the
+    // Robolectric-backed tests (not a transitive dep of Robolectric).
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.room.testing)
+    // kotlinx-coroutines-test: deterministic coroutine testing for ViewModels
+    // and the suspend ProState.redeemCode flow.
+    testImplementation(libs.kotlinx.coroutines.test)
 }

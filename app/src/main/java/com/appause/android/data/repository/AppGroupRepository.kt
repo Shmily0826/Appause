@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.combine
  * 2. AppLaunchDao — interception records (Room)
  * 3. SettingsDataStore — simple settings (DataStore)
  */
-class AppGroupRepository(
+open class AppGroupRepository(
     private val groupDao: AppGroupDao,
     private val launchDao: AppLaunchDao,
     private val settings: SettingsDataStore
@@ -227,18 +227,18 @@ class AppGroupRepository(
     // ── Statistics ──
 
     /** Observe daily interception stats (proceeded vs cancelled per day). */
-    fun observeDailyStats(since: Long): Flow<List<DailyStats>> =
+    open fun observeDailyStats(since: Long): Flow<List<DailyStats>> =
         launchDao.observeDailyStats(since)
 
     /** Observe top 5 most-intercepted apps. */
-    fun observeTopApps(since: Long): Flow<List<AppInterceptionCount>> =
+    open fun observeTopApps(since: Long): Flow<List<AppInterceptionCount>> =
         launchDao.observeTopApps(since)
 
     /** Observe total proceeded vs cancelled ratio. */
-    fun observeTotalRatio(since: Long): Flow<TotalRatio> =
+    open fun observeTotalRatio(since: Long): Flow<TotalRatio> =
         launchDao.observeTotalRatio(since)
 
     /** Observe proceeded-event counts grouped by the selected reason (reason breakdown). */
-    fun observeReasonCounts(since: Long): Flow<List<ReasonCount>> =
+    open fun observeReasonCounts(since: Long): Flow<List<ReasonCount>> =
         launchDao.observeReasonCounts(since)
 }

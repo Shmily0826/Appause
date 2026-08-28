@@ -24,6 +24,16 @@ datastore = "1.1.2"
 # Coroutines
 coroutines = "1.9.0"
 
+# Robolectric (JVM tests that need a real Android framework context)
+robolectric = "4.12.2"
+# AndroidX Test core — provides ApplicationProvider / InstrumentationRegistry used
+# by the Robolectric-backed JUnit tests. Not a transitive dep of Robolectric.
+androidxTestCore = "1.6.1"
+
+# Testing (unit tests only; never packaged into the APK)
+junit = "4.13.2"
+json = "20240303"
+
 [libraries]
 # AndroidX Core
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,12 +58,25 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 
 # DataStore
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 
 # Coroutines
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
+
+# Robolectric
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
+# AndroidX Test core — ApplicationProvider / InstrumentationRegistry for Robolectric tests
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "androidxTestCore" }
+
+# Testing
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+# org.json lives in android.jar on devices but not in a desktop JVM;
+# this gives unit tests the same implementation. Test-only, not in the APK.
+json = { group = "org.json", name = "json", version.ref = "json" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

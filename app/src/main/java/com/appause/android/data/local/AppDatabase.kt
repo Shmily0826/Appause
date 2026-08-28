@@ -33,7 +33,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         AppLaunchRecord::class
     ],
     version = 6,
-    exportSchema = false  // Simplified for v1; enable for production migration tracking
+    // Exports the schema JSON (app/schemas/...) so the official Room migration
+    // test framework (MigrationTestHelper) can validate v1→v6 upgrades.
+    exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
