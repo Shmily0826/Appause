@@ -1,6 +1,5 @@
 package com.appause.android.data.pro
 
-import android.util.Base64
 import org.json.JSONObject
 import java.security.KeyFactory
 import java.security.PublicKey
@@ -46,17 +45,18 @@ object LicenseVerifier {
             .replace("-----BEGIN PUBLIC KEY-----", "")
             .replace("-----END PUBLIC KEY-----", "")
             .replace("\\s".toRegex(), "")
-        val bytes = Base64.decode(clean, Base64.DEFAULT)
+        // java.util.Base64 (not android.util.Base64) so this class runs in
+        // plain JVM unit tests too; available since API 26 = our minSdk.
+        val bytes = java.util.Base64.getDecoder().decode(clean)
         val spec = X509EncodedKeySpec(bytes)
         return KeyFactory.getInstance("RSA").generatePublic(spec)
     }
 
     /** Decode a base64url string, tolerating missing padding. */
     fun base64UrlDecode(input: String): ByteArray {
-        var text = input.replace('-', '+').replace('_', '/')
-        val missing = (4 - text.length % 4) % 4
-        repeat(missing) { text += "=" }
-        return Base64.decode(text, Base64.DEFAULT)
+        // The URL decoder accepts base64url characters and missing padding,
+        // which is exactly what JWT segments use.
+        return java.util.Base64.getUrlDecoder().decode(input)
     }
 
     private fun decodeJsonSegment(segment: String): JSONObject {
