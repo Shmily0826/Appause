@@ -15,7 +15,11 @@ import android.view.accessibility.AccessibilityEvent
 import androidx.core.app.NotificationCompat
 import com.appause.android.AppauseApp
 import com.appause.android.R
+import com.appause.android.interception.BurstTracker
+import com.appause.android.interception.InterceptionDecider
 import com.appause.android.interception.InterceptionManager
+import com.appause.android.interception.PostGroupDecision
+import com.appause.android.interception.PreGroupDecision
 import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -315,39 +319,12 @@ class AppauseAccessibilityService : AccessibilityService() {
     private var homePackages: Set<String> = emptySet()
 
     /**
-     * Recent TYPE_WINDOW_STATE_CHANGED events, used to detect the OEM
-     * "app-switch replay" burst (see isBurstSuppressed). Each entry is
-     * (event time, package). Pruned to BURST_WINDOW_MS so only a tight cluster
-     * of packages counts as a burst. The burst fingerprint counts only REAL
-     * (non-system, non-launcher) packages — a genuine launch is just the target
-     * app (1 real package) alongside the launcher + always-on system components
-     * (quick-search box, SystemUI plugin), whereas the HyperOS/MIUI recents
-     * replay fires a SECOND real app (e.g. personalassistant) inside the same
-     * few ms. So >=2 real apps in the window is the reliable fingerprint.
+     * Burst fingerprint for Recents-replay detection (OEM "phantom pause
+     * screen" guard). Pure logic with an injected clock — see BurstTracker
+     * for why the fingerprint counts only REAL (non-system, non-launcher)
+     * packages and why the threshold is 3.
      */
-    private val recentWindowPackages = mutableListOf<Pair<Long, String>>()
-
-    /**
-     * While `System.currentTimeMillis() < burstSuppressUntil`, the most recent
-     * event cluster looked like an OEM app-switch replay (many packages in a
-     * few ms). Any interception inside this window is a phantom, so we skip it
-     * — even on ROMs where the usage-event log is unavailable (no Usage access
-     * granted). This is the layer that stops false pause screens when Usage
-     * access is off, which the usage-event check alone cannot do.
-     */
-    private val burstSuppressUntil = java.util.concurrent.atomic.AtomicLong(0L)
-
-    /**
-     * The REAL (non-noise) packages that made up the burst recorded above.
-     *
-     * We keep the actual packages — not just a flag — so the suppression can be
-     * evaluated RELATIVE to the app we are about to intercept. A cluster only
-     * proves a phantom app-switch if it contains a real app OTHER than the
-     * candidate; a cluster consisting solely of the candidate is just a normal
-     * launch. Without this, a target app that happens to ship in the system
-     * image (OEM bloatware) could suppress its own interception.
-     */
-    private val burstRealPackages = java.util.Collections.synchronizedSet(mutableSetOf<String>())
+    private val burstTracker = BurstTracker()
 
     /**
      * Cache of "is this package part of the system image?" lookups.
@@ -356,33 +333,6 @@ class AppauseAccessibilityService : AccessibilityService() {
      * accessibility event, and the answer never changes while we are running.
      */
     private val systemImageCache = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
-
-    /** A window-state event cluster within this many ms counts as one burst. */
-    private val BURST_WINDOW_MS = 120L
-
-    /**
-     * Distinct REAL (user-installed, non-launcher) packages seen inside
-     * BURST_WINDOW_MS that trigger burst mode (recents-replay suppression).
-     *
-     * v0.5.24: raised from 2 to 3. A GENUINE single-app open fires exactly ONE
-     * real app (the target); if the user switches directly from another grouped
-     * app, at most TWO real apps appear in the window. A true HyperOS "recents
-     * replay" fires a BURST of window events for EVERY cached task — many real
-     * apps in the same 2–3 ms — so >=3 cleanly separates the two. With the
-     * threshold at 2, opening xhs while bilibili is ALSO in a group made the
-     * buffer show 2 real apps and wrongly SKIPped a genuine launch (this was
-     * the v0.5.11–v0.5.22 regression). The burst guard is now the ONLY gate
-     * (v0.5.24 trusts the accessibility event directly and does not consult
-     * the unreliable usage-event log), so it must be permissive enough to never
-     * suppress a real open.
-     *
-     * See isBurstNoisePackage for how "real" is decided — deliberately NOT a
-     * hardcoded list of OEM component names.
-     */
-    private val BURST_MIN_DISTINCT = 3
-
-    /** How long to keep suppressing interception after a burst is detected. */
-    private val BURST_SUPPRESS_MS = 1500L
 
     /**
      * Scheduled re-remind timers (in-app periodic nudge), keyed by package.
@@ -474,51 +424,6 @@ class AppauseAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Record a window-state event and update the burst-suppression flag.
-     *
-     * Called for every event in onAccessibilityEvent, so the burst is detected
-     * the instant the 2nd REAL app arrives — well before handleForegroundChange
-     * reaches its interception decision.
-     *
-     * WHY THIS EXISTS: the HyperOS "phantom pause screen" bug. On MIUI/HyperOS,
-     * opening Recents or swiping the gesture bar replays a TYPE_WINDOW_STATE_CHANGED
-     * event for every cached task inside the same ~3 ms:
-     *
-     *     12:52:52.705  com.xingin.xhs
-     *     12:52:52.708  com.miui.home
-     *     12:52:52.708  com.miui.personalassistant
-     *
-     * A genuine launch also fires several packages in the same few ms, but on
-     * HyperOS those are the target app + the launcher + always-on system
-     * components (quick-search box, SystemUI plugin) — i.e. only ONE real app.
-     * So we count only NON-system, NON-launcher packages: ">= 2 real apps within
-     * BURST_WINDOW_MS" is a reliable, OEM-agnostic fingerprint of the phantom
-     * burst — and it does NOT require Usage access — the burst guard alone is
-     * enough to stop phantom recents replays without it.
-     */
-    private fun recordWindowEvent(packageName: String) {
-        val now = System.currentTimeMillis()
-        synchronized(recentWindowPackages) {
-            recentWindowPackages.add(now to packageName)
-            // Drop entries older than the burst window so only a tight cluster counts.
-            recentWindowPackages.removeAll { now - it.first > BURST_WINDOW_MS }
-            // Only REAL apps count toward the burst fingerprint — see
-            // BURST_MIN_DISTINCT and isBurstNoisePackage for why. A genuine
-            // launch on HyperOS fires the target + launcher + assorted system
-            // components in the same few ms; those must not inflate the count.
-            val realDistinct = recentWindowPackages
-                .map { it.second }
-                .filter { !isBurstNoisePackage(it) && it != applicationContext.packageName }
-                .toSet()
-            if (realDistinct.size >= BURST_MIN_DISTINCT) {
-                burstSuppressUntil.set(now + BURST_SUPPRESS_MS)
-                burstRealPackages.clear()
-                burstRealPackages.addAll(realDistinct)
-            }
-        }
-    }
-
-    /**
      * Is this package background noise for burst detection?
      *
      * Enumerating OEM component names one by one turned out to be whack-a-mole:
@@ -536,8 +441,8 @@ class AppauseAccessibilityService : AccessibilityService() {
      * Deliberately NOT used by the main event filter (step 3): the user must
      * still be able to block preinstalled apps such as the OEM browser. And
      * because suppression is evaluated relative to the candidate (see
-     * isBurstSuppressed), a preinstalled app can never suppress its own
-     * interception either.
+     * BurstTracker.isSuppressed), a preinstalled app can never suppress its
+     * own interception either.
      */
     private fun isBurstNoisePackage(packageName: String): Boolean {
         // Launcher + the few components we know for certain.
@@ -551,22 +456,6 @@ class AppauseAccessibilityService : AccessibilityService() {
                 // about phantom bursts rather than silently ignoring one.
                 false
             }
-        }
-    }
-
-    /**
-     * True if [candidate] is being reported as foreground only because of a
-     * recent OEM app-switch replay.
-     *
-     * The cluster must contain a real app OTHER than the candidate. A burst
-     * made up solely of the candidate is an ordinary launch, not a replay —
-     * without this check a target app that ships in the system image could
-     * suppress its own interception.
-     */
-    private fun isBurstSuppressed(candidate: String): Boolean {
-        if (System.currentTimeMillis() >= burstSuppressUntil.get()) return false
-        return synchronized(burstRealPackages) {
-            burstRealPackages.any { it != candidate }
         }
     }
 
@@ -735,8 +624,10 @@ class AppauseAccessibilityService : AccessibilityService() {
         // Record the burst fingerprint for Recents-replay detection (step 6.5
         // uses it as one of three signals confirming a genuine open). Must run
         // synchronously here (not inside the coroutine) so events are clustered
-        // in arrival order within BURST_WINDOW_MS.
-        recordWindowEvent(packageName)
+        // in arrival order within the burst window.
+        burstTracker.record(System.currentTimeMillis(), packageName, applicationContext.packageName) {
+            isBurstNoisePackage(it)
+        }
 
         // Use a coroutine because we need to suspend for Repository queries.
         serviceScope.launch {
@@ -751,14 +642,23 @@ class AppauseAccessibilityService : AccessibilityService() {
     /**
      * Core interception logic. Called for every foreground app change.
      *
-     * Decision flow:
+     * Since the interception testability refactor, this method is a thin
+     * orchestrator: the WHAT (the filter chain, steps 1–6.6) lives in the pure
+     * [InterceptionDecider], and this method executes the HOW (the side
+     * effects the original inline code performed — timers, bypass changes,
+     * overlay calls, diagnostics writes, and the lastForegroundPackage /
+     * justCancelledPackage bookkeeping). The decision order, the exact reason
+     * strings, and every effect are byte-for-byte the original behavior.
+     *
+     * Decision flow (unchanged):
      * 1. Is Appause disabled? → skip
      * 2. Is it Appause itself? → skip
-     * 3. Is it a system package (launcher, system UI)? → skip
-     * 4. Is it currently bypassed? → skip (user already completed cooldown)
-     * 5. Is it the same as last foreground? → skip (Activity switch, not app switch)
-     * 6. Does it belong to a configured group? → if yes, INTERCEPT
-     * 7. Otherwise → skip (not a target app)
+     * 3. Is it a confirmed Home transition with a cooldown active? → abandon
+     * 4. Is it a system package (launcher, system UI)? → skip
+     * 5. Is it currently bypassed? → skip (user already completed cooldown)
+     * 6. Is it the same as last foreground? → skip (Activity switch, not app switch)
+     * 7. Does it belong to a configured group? → if yes, INTERCEPT
+     * 8. Otherwise → skip (not a target app)
      */
     private suspend fun handleForegroundChange(packageName: String) {
         // Capture the package from the PREVIOUS call before overwriting, so the
@@ -770,177 +670,169 @@ class AppauseAccessibilityService : AccessibilityService() {
         val app = applicationContext as AppauseApp
         val repository = app.repository
 
-        // 1. Check if Appause is enabled
-        val isEnabled = repository.isEnabled.first()
-        if (!isEnabled) {
-            decide("SKIP: Appause is disabled")
-            return
-        }
+        // Capture the pause target once, like the original `val target = ...`
+        // read inside the old step 4.5 (a volatile field must not be read twice
+        // where the original read it once).
+        val currentPauseTarget = pauseTargetPackage
 
-        // 2. Skip Appause itself
-        if (packageName == applicationContext.packageName) {
-            decide("SKIP: Appause itself")
-            lastForegroundPackage = packageName
-            return
-        }
+        // Steps 1–5: pure decision (suspends only for the enabled check, as before).
+        val decision = InterceptionDecider.decidePreGroup(
+            InterceptionDecider.PreGroupInput(
+                packageName = packageName,
+                previousEventPackage = prevForeground,
+                lastForegroundPackage = lastForegroundPackage,
+                justCancelledPackage = justCancelledPackage,
+                isEnabled = repository.isEnabled.first(),
+                isOwnPackage = packageName == applicationContext.packageName,
+                isSystemPackage = isSystemPackage(packageName),
+                isHomePackage = homePackages.contains(packageName),
+                isHomeForegroundConfirmed = homePackages.contains(packageName) &&
+                    ForegroundChecker.getForegroundPackage(applicationContext) == packageName,
+                isBypassed = InterceptionManager.isBypassed(packageName),
+                // Passed as a function so the guard's staleness watchdog runs
+                // at exactly the same read points as the original inline code.
+                pauseShown = { pauseShown },
+                pauseTargetPackage = currentPauseTarget,
+                isPauseTargetBypassed = currentPauseTarget != null &&
+                    InterceptionManager.isBypassed(currentPauseTarget)
+            )
+        )
 
-        // 2.5. Suppress the stale event that fires for the app the user just
-        //      cancelled out of (see justCancelledPackage docs). Without this,
-        //      the overlay re-appears on the home screen right after Cancel.
-        //      Only skip while we haven't yet confirmed the app actually left
-        //      the foreground (lastForegroundPackage still == justCancelled).
-        //      The moment the foreground moves to another app/launcher (step 3
-        //      below), justCancelledPackage is cleared, so a genuine quick
-        //      re-open re-triggers the cooldown normally.
-        if (justCancelledPackage != null && packageName == justCancelledPackage
-            && lastForegroundPackage == justCancelledPackage) {
-            decide("SKIP: stale event for just-cancelled app ($packageName)")
-            return
-        }
-
-        // 2.6. Dedup for the foreground poller / duplicate events.
-        //      Only skip when the foreground package hasn't changed AND the
-        //      immediately-preceding event was ALSO this same app AND no pause
-        //      is on screen. The "previous event same app" test distinguishes a
-        //      genuine re-open (user left → came back; previous event differs
-        //      so we MUST re-evaluate and re-intercept) from an in-app Activity
-        //      switch (feed → note; previous event is the same app → skip).
-        //      This fixes the "first open after a fresh state isn't intercepted"
-        //      regression: a stale lastForegroundPackage used to silently
-        //      swallow the re-open even though the user had genuinely left.
-        if (packageName == lastForegroundPackage && !pauseShown && packageName == prevForeground) {
-            AppLogger.d(TAG, "2.6 dedup skip: $packageName (lastFg=$lastForegroundPackage, prevEvent=$prevForeground)")
-            return
-        }
-
-        // 3. Skip common system packages (launcher, settings, recents, etc.)
-        if (isSystemPackage(packageName)) {
-            decide("SKIP: system package ($packageName)")
-            // The user left the previous app (via Home, Recents, etc.).
-            // Start its 3-min away cooldown instead of clearing the bypass
-            // immediately. This is the core fix for the in-app transient-switch
-            // bug: opening a gallery/chooser/player used to clear the bypass and
-            // re-pop the cooldown. Now the session survives short detours.
-            maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
-            // If the app we just left is the one the user cancelled out of,
-            // confirm it has genuinely left the foreground: clear the cancel
-            // suppression so an immediate re-open re-triggers the cooldown.
-            if (justCancelledPackage != null && lastForegroundPackage == justCancelledPackage) {
-                justCancelledPackage = null
-            }
-            lastForegroundPackage = packageName
-            return
-        }
-
-        // 3.5. A real (non-system) app came to the foreground.
-        //      Clear the cancel suppression — the user has moved on.
-        if (justCancelledPackage != null) {
+        // 3.5. A real (non-system) app came to the foreground → clear the cancel
+        //      suppression (the user has moved on). Only for decisions that
+        //      passed the system gate, exactly like the original step 3.5.
+        if (decision.passedSystemGate && justCancelledPackage != null) {
             justCancelledPackage = null
         }
 
-        // 4. RESUME: if this app still has an active session, the user returned
-        //    to it (possibly after a short detour). Cancel its away cooldown and
-        //    let them continue without re-interception.
-        if (InterceptionManager.isBypassed(packageName)) {
-            cancelLeaveTimer(packageName)
-            decide("RESUME: $packageName (returned within leave window)")
-            lastForegroundPackage = packageName
-            return
-        }
+        when (decision) {
+            is PreGroupDecision.SkipDisabled -> decide(decision.diagnosticsReason)
 
-        // 4.5. Skip if cooldown overlay is currently showing
-        if (pauseShown) {
-            // Mid-cooldown switch-away: if a DIFFERENT real app just became
-            // foreground while the pause screen is up and the user never tapped
-            // Continue, they abandoned it (swiped to recents / another app).
-            // On HyperOS the accessibility overlay can be hidden-but-not-removed,
-            // leaving overlayAttached=true and the guard stuck forever (the
-            // watchdog can't release an attached window). Dismiss it now so the
-            // guard is released and the next genuine open re-cools instead of
-            // being silently skipped forever.
-            val target = AppauseAccessibilityService.pauseTargetPackage
-            if (target != null && packageName != target &&
-                !InterceptionManager.isBypassed(target)) {
-                AppLogger.w(TAG, "Cooldown abandoned (user left to $packageName before continuing) — dismissing overlay to release guard")
-                overlayManager.dismiss()
-                InterceptionManager.clearBypass(target)
-                AppauseAccessibilityService.noteCancelled(target)
-                AppauseAccessibilityService.pauseTargetPackage = null
+            is PreGroupDecision.SkipSelf -> {
+                decide(decision.diagnosticsReason)
                 lastForegroundPackage = packageName
-                return
             }
-            decide("SKIP: cooldown overlay is showing ($packageName)")
-            // A previously bypassed app is now in the background — start its
-            // away cooldown (e.g. user opened app B while the cooldown for app
-            // A is on screen). If the user returns within 3 min it resumes.
-            maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
-            return
+
+            is PreGroupDecision.SkipStaleCancelled -> decide(decision.diagnosticsReason)
+
+            is PreGroupDecision.SkipDedup ->
+                // The original step 2.6 logged WITHOUT writing lastDecision.
+                AppLogger.d(TAG, decision.logLine)
+
+            is PreGroupDecision.SkipSystem -> {
+                decide(decision.diagnosticsReason)
+                // The user left the previous app (via Home, Recents, etc.).
+                // Start its 3-min away cooldown instead of clearing the bypass
+                // immediately. This is the core fix for the in-app transient-switch
+                // bug: opening a gallery/chooser/player used to clear the bypass and
+                // re-pop the cooldown. Now the session survives short detours.
+                maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
+                // If the app we just left is the one the user cancelled out of,
+                // confirm it has genuinely left the foreground: clear the cancel
+                // suppression so an immediate re-open re-triggers the cooldown.
+                if (justCancelledPackage != null && lastForegroundPackage == justCancelledPackage) {
+                    justCancelledPackage = null
+                }
+                lastForegroundPackage = packageName
+            }
+
+            is PreGroupDecision.Resume -> {
+                // The user returned to this app within the leave window — cancel
+                // its away cooldown and let them continue without re-interception.
+                cancelLeaveTimer(packageName)
+                decide(decision.diagnosticsReason)
+                lastForegroundPackage = packageName
+            }
+
+            is PreGroupDecision.AbandonCooldown -> {
+                // Mid-cooldown switch-away: a DIFFERENT real app just became
+                // foreground while the pause screen was up and the user never
+                // tapped Continue. On HyperOS the accessibility overlay can be
+                // hidden-but-not-removed, leaving overlayAttached=true and the
+                // guard stuck forever (the watchdog can't release an attached
+                // window). Dismiss it now so the guard is released and the next
+                // genuine open re-cools instead of being silently skipped forever.
+                AppLogger.w(TAG, decision.warnLine)
+                overlayManager.dismiss()
+                InterceptionManager.clearBypass(decision.targetPackage)
+                noteCancelled(decision.targetPackage)
+                pauseTargetPackage = null
+                lastForegroundPackage = packageName
+            }
+
+            is PreGroupDecision.SkipPauseShown -> {
+                decide(decision.diagnosticsReason)
+                // A previously bypassed app is now in the background — start its
+                // away cooldown (e.g. user opened app B while the cooldown for app
+                // A is on screen). If the user returns within 3 min it resumes.
+                maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
+            }
+
+            is PreGroupDecision.SkipDuplicate -> decide(decision.diagnosticsReason)
+
+            is PreGroupDecision.ProceedToGroupLookup -> {
+                // The foreground changed to a non-bypassed, non-system app.
+                // If the previous app WAS bypassed, the user left it → start its
+                // 3-min away cooldown (re-arm only if they stay away past the window).
+                maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
+                lastForegroundPackage = packageName
+
+                // 6. Check if this app belongs to any configured group
+                //    (this suspension is why the decision runs in two stages —
+                //    the guard/bypass state is re-read afterwards, as before).
+                val group = repository.findGroupForPackage(packageName)
+
+                // 6.5. v0.5.24: TRUST THE ACCESSIBILITY EVENT — intercept
+                //      immediately. The only suppressor is the recents-replay
+                //      burst guard (see BurstTracker for the full history).
+                val burstSuppressed = burstTracker.isSuppressed(System.currentTimeMillis(), packageName)
+
+                val postDecision = InterceptionDecider.decidePostGroup(
+                    InterceptionDecider.PostGroupInput(
+                        packageName = packageName,
+                        group = group,
+                        burstSuppressed = burstSuppressed,
+                        burstRealPackages = burstTracker.realPackagesSnapshot(),
+                        pauseShown = { pauseShown },
+                        isBypassed = InterceptionManager.isBypassed(packageName)
+                    )
+                )
+
+                if (postDecision !is PostGroupDecision.SkipNoGroup) {
+                    AppLogger.d(
+                        TAG,
+                        "6.5 event=$packageName burstSuppress=$burstSuppressed burstReal=${burstTracker.realPackagesSnapshot()}"
+                    )
+                }
+
+                when (postDecision) {
+                    is PostGroupDecision.SkipNoGroup -> decide(postDecision.diagnosticsReason)
+
+                    is PostGroupDecision.SkipBurstReplay ->
+                        decideTarget(packageName, postDecision.diagnosticsReason)
+
+                    is PostGroupDecision.SkipStateChanged ->
+                        decideTarget(packageName, postDecision.diagnosticsReason)
+
+                    is PostGroupDecision.Intercept -> {
+                        // 7. Intercept! Show the cooldown overlay.
+                        decideTarget(packageName, postDecision.diagnosticsReason)
+                        // The decider only returns Intercept when the group
+                        // lookup succeeded, so this null check never fires.
+                        val targetGroup = group ?: return
+                        showCooldownOverlay(
+                            packageName,
+                            targetGroup.id,
+                            targetGroup.cooldownSeconds,
+                            targetGroup.reRemindMinutes,
+                            targetGroup.reRemindCooldownSeconds,
+                            reRemindRepeat = targetGroup.reRemindRepeat,
+                            reRemindEscalate = targetGroup.reRemindEscalate
+                        )
+                    }
+                }
+            }
         }
-
-        // The foreground changed to a non-bypassed, non-system app.
-        // If the previous app WAS bypassed, the user left it → start its
-        // 3-min away cooldown (re-arm only if they stay away past the window).
-        maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
-
-        // 5. Skip duplicate events (same app, different Activity). Only when the
-        //    previous event was ALSO this app — a genuine re-open after leaving
-        //    (previous event differs) must fall through to re-intercept.
-        if (packageName == lastForegroundPackage && packageName == prevForeground) {
-            decide("SKIP: duplicate event ($packageName)")
-            return
-        }
-
-        lastForegroundPackage = packageName
-
-        // 6. Check if this app belongs to any configured group
-        val group = repository.findGroupForPackage(packageName)
-        if (group == null) {
-            decide("SKIP: not in any group ($packageName)")
-            return
-        }
-
-        // 6.5. v0.5.24: TRUST THE ACCESSIBILITY EVENT — intercept immediately.
-        //      v0.5.23 diagnostics proved the system usage-event log is UNRELIABLE
-        //      for the target apps on this device: opening xhs fires
-        //      event=com.xingin.xhs, yet getForegroundPackage() returns
-        //      "com.appause.android.debug" (Appause!) and wasResumedRecently(xhs)
-        //      is false → both confirmation signals fail → xhs was SKIPped. The
-        //      accessibility event package IS the genuine foreground in every real
-        //      case; the only time it lies is the HyperOS "recents replay" — a
-        //      tight BURST of window events for EVERY cached task (many real apps
-        //      in 2–3 ms). So we intercept on the event at once, and only
-        //      suppress when a recents-replay burst is detected
-        //      (≥BURST_MIN_DISTINCT=3 real apps in BURST_WINDOW_MS, see
-        //      isBurstSuppressed). A genuine open fires exactly one/two apps, so
-        //      it never trips the guard → the pause screen lands WHILE the target
-        //      app is still on screen (fixes "only intercepts after returning to
-        //      Appause"). No 600 ms usage-log delay, no pendingConfirm race.
-        val burst = isBurstSuppressed(packageName)
-        AppLogger.d(TAG, "6.5 event=$packageName burstSuppress=$burst burstReal=$burstRealPackages")
-        if (burst) {
-            decideTarget(packageName, "SKIP: recents replay (burst=$burstRealPackages)")
-            return
-        }
-        // Genuine single-app open → intercept immediately (no usage-log gate).
-
-        // 6.6. Final guard: if the pause is already showing, or the session was
-        //      just bypassed while we were confirming, don't double-intercept.
-        if (pauseShown || InterceptionManager.isBypassed(packageName)) {
-            decideTarget(packageName, "SKIP: state changed while intercepting ($packageName)")
-            return
-        }
-
-        // 7. Intercept! Show the cooldown overlay.
-        decideTarget(packageName, "INTERCEPT: $packageName → group=${group.name}, cooldown=${group.cooldownSeconds}s")
-        showCooldownOverlay(
-            packageName,
-            group.id,
-            group.cooldownSeconds,
-            group.reRemindMinutes,
-            group.reRemindCooldownSeconds,
-            reRemindRepeat = group.reRemindRepeat,
-            reRemindEscalate = group.reRemindEscalate
-        )
     }
 
     // v0.5.15/v0.5.16/v0.5.17/v0.5.18 interception history:
