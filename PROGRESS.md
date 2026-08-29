@@ -538,3 +538,16 @@
 - With Usage access OFF and Debug AccessibilityService still enabled + bound, clean Chrome → Home → Bilibili interception PASS; one visible 2032 overlay appeared. No source change was required.
 - Root cause of the earlier failure is invalid Debug/release service selection and missing Accessibility event, not a UsageStats-null decider regression. Usage access original/final state restored to ON.
 - Recents, Usage OFF → Home abandonment, and incidental-system-noise scenarios were not expanded after the valid OFF control passed. No source/test changes, staging, commit, push, merge, tag, or release.
+### 2026-08-29 (Worker pre-deploy runtime validation — APPAUSE-20260828-2307)
+- Wrangler 3.114.17 `deploy --dry-run --outdir` PASS; bundle, `ACTIVATION_CODES` DO class, `new_sqlite_classes` migration, and local KV binding parsed successfully.
+- Actual local Miniflare/workerd runtime PASS on `127.0.0.1:8788` with isolated simulated KV/DO persistence and ephemeral RSA/admin/download values; no remote mode or production resource was used.
+- Real local HTTP smoke and concurrency PASS: gencode/redeem/idempotent repeat/self-unbind/admin-unbind, capacity, final-slot contention, same-device race, and redeem/unbind overlap.
+- Legacy KV bootstrap PASS with preserved existing device, `maxDevices=2`, and `expiresInDays=14`; post-bootstrap DO behavior PASS. Same persistence directory restart smoke PASS.
+- Worker suite PASS (31/31), all three Node syntax checks PASS, and `git diff --check` PASS. No production source/config changes; only this progress record and `TEST_REPORT.md` were updated, with no stage/commit/push/deploy.
+
+### 2026-08-29 (External Worker runtime persistence verification — TASK APPAUSE-20260829-1358)
+- Manual/session verification in ordinary Windows PowerShell: locked local Wrangler 3.114.17 on Node v24.15.0 started `wrangler dev --local --port 8788 --persist-to .wrangler\external-runtime` and reported `Ready on http://127.0.0.1:8788`.
+- Local Miniflare bindings were simulated: `ACTIVATION_CODES` Durable Object and `APPAUSE_CODES` KV. `GET /` returned 404 `{"error":"not_found"}`; synthetic nonexistent redeem returned 404 `{"error":"invalid_code"}`.
+- With a local dummy admin key, `/admin/gencode` created synthetic code `APPAUSE-ZKVL-E3PW`. `/admin/unbind` for an unbound synthetic device returned `{"error":"device_not_bound"}` before and after stopping/restarting Wrangler with the identical persistence path, proving local SQLite-backed DO record persistence.
+- This was external manual/session evidence, not Bridge, CI, production, or remote Cloudflare verification. No production secrets/resources or real activation codes were used; JWT signing was NOT TESTED because no private key was supplied.
+- The same locked Worker/dependencies succeeding outside Bridge isolates the earlier Bridge-only `std::terminate` to the Bridge/Codex execution environment or its Wrangler→workerd process interaction. No source/config change, stage, commit, push, or deploy occurred.

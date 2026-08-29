@@ -767,3 +767,73 @@ final-slot tests, concurrent same-device redeem, concurrent self/admin unbind,
 signing-failure no-slot-consumption, and concurrent legacy bootstrap. It is a
 faithful mock of the request-guard behavior, not a workerd/Cloudflare deployed
 runtime.
+## 21. Worker local runtime pre-deploy validation (2026-08-29)
+
+Task `APPAUSE-20260828-2307` ran the Worker through Wrangler 3.114.17 without
+deployment. `wrangler deploy --dry-run --outdir` passed and recognized the
+Durable Object binding/class, SQLite migration, and KV binding. An actual
+local Miniflare/workerd runtime started on `127.0.0.1:8788` using a fresh
+local persistence directory and ephemeral test credentials.
+
+Real local HTTP checks passed for admin code generation, redeem, same-device
+idempotency, self-unbind, admin-unbind, two-device capacity, final-slot
+contention, concurrent same-device redeem, and redeem/unbind overlap. A
+synthetic legacy KV record bootstrapped into the DO while preserving its
+existing device, `maxDevices=2`, and `expiresInDays=14`; subsequent DO
+operations passed. Reusing the same local persistence directory after a
+normal runtime restart preserved the bound device and capacity behavior.
+
+The Worker suite remained **31 passed, 0 failed**; all requested Node syntax
+checks and `git diff --check` passed. This is local runtime evidence only and
+does not prove production Cloudflare behavior. Production deployment, remote
+Wrangler mode, production KV/DO, production secrets, and real activation
+codes were not used.
+
+## 22. External local Worker runtime and persistence verification (2026-08-29)
+
+### 22.1 Evidence boundary
+
+This section records a manual/session verification performed outside Codex
+Bridge in ordinary Windows PowerShell. It is not Codex execution, CI,
+production Cloudflare verification, or remote Wrangler verification.
+
+- Node: `v24.15.0`
+- Locked local Wrangler: `3.114.17`
+- Local command: `wrangler dev --local --port 8788 --persist-to .wrangler\external-runtime`
+- Startup output: `Ready on http://127.0.0.1:8788`
+- Simulated local bindings: Durable Object `ACTIVATION_CODES` and KV
+  `APPAUSE_CODES`
+- No production secrets, Cloudflare resources, remote mode, or real activation
+  codes were used.
+
+### 22.2 HTTP and persistence checks
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Local Worker startup | PASS | Wrangler served on `127.0.0.1:8788` |
+| `GET /` | PASS | HTTP 404, `{"error":"not_found"}`; proves runtime/routing response |
+| Synthetic nonexistent `POST /api/redeem` | PASS | `APPAUSE-TEST-TEST` + `external-review-device` returned HTTP 404, `{"error":"invalid_code"}` |
+| `/admin/gencode` | PASS | Local dummy `ADMIN_KEY` generated synthetic code `APPAUSE-ZKVL-E3PW` |
+| Pre-restart `/admin/unbind` | PASS | Synthetic unbound device returned `{"error":"device_not_bound"}`, proving the DO record existed |
+| Restart persistence | PASS | Wrangler stopped and restarted with the same `.wrangler\external-runtime` path and dummy admin key; identical lookup again returned `device_not_bound` |
+
+`/admin/gencode` initializes the new record directly in the per-code SQLite
+Durable Object. It does not write the new code to legacy KV. Consequently,
+after restart, `device_not_bound` demonstrates that the DO record survived;
+a fresh runtime without that persisted record would fall through to legacy KV
+and return `invalid_code`.
+
+This test proves local DO record persistence only. It does not exercise
+successful JWT signing because no `APPAUSE_PRIVATE_KEY` was supplied. The
+successful JWT signing path, production/remote Cloudflare resources, and
+production secrets remain **NOT TESTED** in this session.
+
+### 22.3 Bridge diagnostic conclusion
+
+The same locked Worker and dependencies started normally in ordinary Windows
+PowerShell, while the earlier Codex/Local Codex Bridge environment reproduced
+`std::terminate` even for a minimal Worker with no bindings, Durable Object,
+SQLite migration, or secrets. This strongly isolates that failure to the
+Bridge/Codex execution environment or its Wrangler-to-workerd process
+interaction, rather than a general Appause Worker, Node, or Wrangler failure
+on the host.
