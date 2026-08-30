@@ -112,6 +112,7 @@ class OverlayManager {
      * @param isReRemind True when this overlay is a re-remind pop (re-bypass only,
      *                   no new session/loop).
      */
+    @Synchronized
     fun show(
         service: AppauseAccessibilityService,
         targetPackage: String,
