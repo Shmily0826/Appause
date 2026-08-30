@@ -64,11 +64,21 @@ object LicenseVerifier {
     }
 
     /**
-     * Verify a license token.
-     * @return the parsed [LicenseClaims] if the token is valid AND bound to this
-     *   device (or unbound), or null if anything fails.
+     * Verifies a license token and applies the requested device-binding policy.
+     * When [requireDeviceBinding] is false, the device claim is optional for
+     * development/test tokens, but a present nonblank claim must still match
+     * [deviceFingerprint]. When it is true, the token must contain a nonblank
+     * device claim that matches [deviceFingerprint].
+     *
+     * @return the parsed [LicenseClaims] when the token and binding policy are
+     *   valid, or null if any verification step fails.
      */
-    fun verify(token: String, serverPublicKey: PublicKey, deviceFingerprint: String): LicenseClaims? {
+    fun verify(
+        token: String,
+        serverPublicKey: PublicKey,
+        deviceFingerprint: String,
+        requireDeviceBinding: Boolean = false
+    ): LicenseClaims? {
         val parts = token.trim().split(".")
         if (parts.size != 3) return null
 
@@ -93,6 +103,7 @@ object LicenseVerifier {
         if (exp != null && System.currentTimeMillis() / 1000L > exp) return null
 
         val device = if (payload.has("device")) payload.getString("device") else null
+        if (requireDeviceBinding && device.isNullOrBlank()) return null
         if (!device.isNullOrBlank() && device != deviceFingerprint) return null
 
         val iat = if (payload.has("iat")) payload.getLong("iat") else null

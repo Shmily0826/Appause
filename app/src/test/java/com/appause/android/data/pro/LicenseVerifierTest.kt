@@ -64,11 +64,16 @@ class LicenseVerifierTest {
         return payload
     }
 
-    private fun verifyToken(token: String, fingerprint: String = deviceFingerprint): LicenseClaims? {
+    private fun verifyToken(
+        token: String,
+        fingerprint: String = deviceFingerprint,
+        requireDeviceBinding: Boolean = false
+    ): LicenseClaims? {
         return LicenseVerifier.verify(
             token = token,
             serverPublicKey = LicenseVerifier.parsePublicKey(serverPublicKeyPem),
-            deviceFingerprint = fingerprint
+            deviceFingerprint = fingerprint,
+            requireDeviceBinding = requireDeviceBinding
         )
     }
 
@@ -149,6 +154,20 @@ class LicenseVerifierTest {
         val claims = verifyToken(token, fingerprint = "a-completely-different-device")
         assertNotNull(claims)
         assertEquals("pro", claims!!.tier)
+    }
+
+    @Test
+    fun `production verification rejects token without device claim`() {
+        val token = mintToken(proPayload(device = null))
+        assertNull(verifyToken(token, requireDeviceBinding = true))
+    }
+
+    @Test
+    fun `production verification accepts token with matching device claim`() {
+        val token = mintToken(proPayload(device = deviceFingerprint))
+        val claims = verifyToken(token, requireDeviceBinding = true)
+        assertNotNull(claims)
+        assertEquals(deviceFingerprint, claims!!.device)
     }
 
     // ---------- Happy path ----------

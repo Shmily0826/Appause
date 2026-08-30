@@ -117,7 +117,8 @@ class ProState(
         LicenseVerifier.verify(
             token,
             LicenseVerifier.parsePublicKey(ServerKeys.SERVER_PUBLIC_KEY_PEM),
-            fp
+            fp,
+            requireDeviceBinding = ServerKeys.IS_PRODUCTION_KEY
         )
     }
     private val defaultFingerprint: () -> String = {
@@ -162,7 +163,12 @@ class ProState(
         runCatching {
             val fingerprint = DeviceKeyStore.getDeviceFingerprint(context)
             val publicKey = LicenseVerifier.parsePublicKey(ServerKeys.SERVER_PUBLIC_KEY_PEM)
-            LicenseVerifier.verify(token, publicKey, fingerprint) != null
+            LicenseVerifier.verify(
+                token,
+                publicKey,
+                fingerprint,
+                requireDeviceBinding = ServerKeys.IS_PRODUCTION_KEY
+            ) != null
         }.getOrDefault(false)
     }
 
