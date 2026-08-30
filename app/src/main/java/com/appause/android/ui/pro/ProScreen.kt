@@ -52,7 +52,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.appause.android.BuildConfig
 import com.appause.android.R
 import com.appause.android.data.pro.ProState
 import com.appause.android.data.pro.RedeemResult
@@ -81,22 +80,19 @@ fun ProScreen(
 
     // Show transient messages as a toast, then clear them.
     LaunchedEffect(message) {
-        if (message != null) {
-            val resId = when (message) {
-                "pro_debug_unlocked" -> R.string.pro_debug_unlocked
-                "pro_debug_relocked" -> R.string.pro_debug_relocked
-                "pro_imported" -> R.string.pro_imported
-                "pro_import_failed" -> R.string.pro_import_failed
-                "pro_redeem_limit" -> R.string.pro_redeem_limit
-                "pro_redeem_invalid" -> R.string.pro_redeem_invalid
-                "pro_redeem_not_configured" -> R.string.pro_redeem_not_configured
-                "pro_redeem_verify_failed" -> R.string.pro_redeem_verify_failed
-                "pro_redeem_failed" -> R.string.pro_redeem_failed
-                else -> null
-            }
-            resId?.let { Toast.makeText(context, context.getString(it), Toast.LENGTH_SHORT).show() }
-            viewModel.clearMessage()
+        val currentMessage = message ?: return@LaunchedEffect
+        val resId = when (currentMessage) {
+            "pro_imported" -> R.string.pro_imported
+            "pro_import_failed" -> R.string.pro_import_failed
+            "pro_redeem_limit" -> R.string.pro_redeem_limit
+            "pro_redeem_invalid" -> R.string.pro_redeem_invalid
+            "pro_redeem_not_configured" -> R.string.pro_redeem_not_configured
+            "pro_redeem_verify_failed" -> R.string.pro_redeem_verify_failed
+            "pro_redeem_failed" -> R.string.pro_redeem_failed
+            else -> proDebugMessageResId(currentMessage)
         }
+        resId?.let { Toast.makeText(context, context.getString(it), Toast.LENGTH_SHORT).show() }
+        viewModel.clearMessage()
     }
 
     Scaffold(
@@ -292,33 +288,7 @@ fun ProScreen(
                 }
             }
 
-            // ── Debug tools (debug builds only) ──
-            if (BuildConfig.DEBUG) {
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            stringResource(R.string.pro_debug_tools_title),
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        if (!isPro) {
-                            OutlinedButton(
-                                onClick = viewModel::unlockProDebug,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.pro_debug_unlock))
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = viewModel::relockProDebug,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.pro_debug_relock))
-                            }
-                        }
-                    }
-                }
-            }
+            ProDebugTools(viewModel = viewModel, isPro = isPro)
         }
     }
 

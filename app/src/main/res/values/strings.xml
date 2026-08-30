@@ -357,10 +357,6 @@
     <string name="pro_redeem_network_hint">If it keeps failing, your network may be unable to reach the activation server domain (*.workers.dev can be blocked on some networks). Switch networks or try later.</string>
     <string name="pro_dialog_ok">OK</string>
     <string name="pro_token_note">For switching phones or after reinstalling: paste a previously exported license token to restore Pro without re-redeeming.</string>
-    <string name="pro_debug_unlock">Unlock (debug)</string>
-    <string name="pro_debug_relock">Relock (debug)</string>
-    <string name="pro_debug_relocked">Relocked (debug)</string>
-    <string name="pro_debug_tools_title">Debug tools (debug build only)</string>
     <string name="pro_license_title">License</string>
     <string name="pro_license_desc">Export your license before a factory reset or device switch, then import it to restore Pro offline.</string>
     <string name="pro_export">Export license</string>
@@ -368,7 +364,6 @@
     <string name="pro_exported_desc">Copy and save this code. Import it after a reset to restore Pro without buying again.</string>
     <string name="pro_copy">Copy</string>
     <string name="pro_copied">Copied</string>
-    <string name="pro_debug_unlocked">Pro unlocked (debug)</string>
     <string name="pro_imported">License imported</string>
     <string name="pro_import_failed">License invalid</string>
     <string name="pro_settings_desc">Unlock extra groups and features</string>
@@ -421,9 +416,4 @@
     <string name="onboarding_preview_app_name">Sample App</string>
     <string name="onboarding_preview_caption">Before these apps open, Appause gives you a few seconds to pause.</string>
 
-    <!-- Diagnostics screen (debug build only) -->
-    <string name="diagnostics_title">Run Diagnostics</string>
-    <string name="diagnostics_card_title">Run Diagnostics (Debug)</string>
-    <string name="diagnostics_card_subtitle">View interception status and live logs; share with one tap.</string>
-    <string name="cd_refresh">Refresh</string>
 </resources>

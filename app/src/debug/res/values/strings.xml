@@ -6,4 +6,13 @@
 -->
 <resources>
     <string name="app_name">Appause Debug</string>
+    <string name="pro_debug_unlock">Unlock (debug)</string>
+    <string name="pro_debug_relock">Relock (debug)</string>
+    <string name="pro_debug_relocked">Relocked (debug)</string>
+    <string name="pro_debug_tools_title">Debug tools (debug build only)</string>
+    <string name="pro_debug_unlocked">Pro unlocked (debug)</string>
+    <string name="diagnostics_title">Run Diagnostics</string>
+    <string name="diagnostics_card_title">Run Diagnostics (Debug)</string>
+    <string name="diagnostics_card_subtitle">View interception status and live logs; share with one tap.</string>
+    <string name="cd_refresh">Refresh</string>
 </resources>

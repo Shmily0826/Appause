@@ -352,10 +352,6 @@
     <string name="pro_redeem_network_hint">若多次失败，可能是当前网络无法访问激活服务器域名（*.workers.dev 在部分网络会被屏蔽）。可切换网络或稍后再试。</string>
     <string name="pro_dialog_ok">好</string>
     <string name="pro_token_note">换新手机或重装 App 后，粘贴之前导出的许可证令牌即可恢复 Pro，无需重新兑换。</string>
-    <string name="pro_debug_unlock">解锁（调试）</string>
-    <string name="pro_debug_relock">重新上锁（调试）</string>
-    <string name="pro_debug_relocked">已重新上锁（调试）</string>
-    <string name="pro_debug_tools_title">调试工具（仅调试版）</string>
     <string name="pro_license_title">许可证</string>
     <string name="pro_license_desc">恢复出厂或更换设备前导出许可证，之后导入即可离线恢复 Pro。</string>
     <string name="pro_export">导出许可证</string>
@@ -363,7 +359,6 @@
     <string name="pro_exported_desc">复制并保存此码。重置后导入即可恢复 Pro，无需再次购买。</string>
     <string name="pro_copy">复制</string>
     <string name="pro_copied">已复制</string>
-    <string name="pro_debug_unlocked">已解锁 Pro（调试）</string>
     <string name="pro_imported">许可证已导入</string>
     <string name="pro_import_failed">许可证无效</string>
     <string name="pro_settings_desc">解锁更多分组与功能</string>
@@ -416,9 +411,4 @@
     <string name="onboarding_preview_app_name">示例应用</string>
     <string name="onboarding_preview_caption">下次打开这些应用，会先等几秒。</string>
 
-    <!-- 运行诊断（仅 Debug 版本） -->
-    <string name="diagnostics_title">运行诊断</string>
-    <string name="diagnostics_card_title">运行诊断（Debug）</string>
-    <string name="diagnostics_card_subtitle">查看拦截状态与实时日志，可一键分享。</string>
-    <string name="cd_refresh">刷新</string>
 </resources>
