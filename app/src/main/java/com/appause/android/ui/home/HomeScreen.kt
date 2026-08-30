@@ -497,10 +497,30 @@ private fun SetupChecklistCard(
     onOpenBatterySettings: () -> Unit,
     onShowWhy: () -> Unit
 ) {
+    // Accessibility is the only missing state that prevents Appause from
+    // observing foreground apps. Usage access and battery optimization are
+    // preparation steps, so keep those states in the softer warning palette.
+    val isBlocking = !isServiceRunning
+    val containerColor = if (isBlocking) {
+        MaterialTheme.colorScheme.errorContainer
+    } else {
+        MaterialTheme.colorScheme.tertiaryContainer
+    }
+    val contentColor = if (isBlocking) {
+        MaterialTheme.colorScheme.onErrorContainer
+    } else {
+        MaterialTheme.colorScheme.onTertiaryContainer
+    }
+    val accentColor = if (isBlocking) {
+        MaterialTheme.colorScheme.error
+    } else {
+        MaterialTheme.colorScheme.tertiary
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
+            containerColor = containerColor
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -508,14 +528,14 @@ private fun SetupChecklistCard(
                 Icon(
                     imageVector = Icons.Default.Warning,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = accentColor,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = stringResource(R.string.setup_checklist_title),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = contentColor
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 WhyButton(onClick = onShowWhy)
@@ -524,7 +544,7 @@ private fun SetupChecklistCard(
             Text(
                 text = stringResource(R.string.setup_checklist_desc),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
+                color = contentColor
             )
             Spacer(modifier = Modifier.height(8.dp))
             if (!isServiceRunning) {
@@ -532,13 +552,13 @@ private fun SetupChecklistCard(
                     Text(
                         text = "•",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = contentColor
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.required_permissions_accessibility),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = contentColor
                     )
                 }
             }
@@ -547,13 +567,13 @@ private fun SetupChecklistCard(
                     Text(
                         text = "•",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = contentColor
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.required_permissions_usage),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = contentColor
                     )
                 }
             }
@@ -562,13 +582,13 @@ private fun SetupChecklistCard(
                     Text(
                         text = "•",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = contentColor
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.setup_checklist_battery),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        color = contentColor
                     )
                 }
             }
