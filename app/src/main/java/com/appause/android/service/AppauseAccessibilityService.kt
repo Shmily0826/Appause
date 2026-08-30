@@ -308,6 +308,19 @@ class AppauseAccessibilityService : AccessibilityService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     /**
+     * UsageStats can lag behind a launcher window-state event on HyperOS. Keep
+     * a short, event-based confirmation window so a real Home/Recents
+     * transition can release an overlay even when the first UsageStats read
+     * still names the app that was just left.
+     */
+    private val homeTransitionHandler = Handler(Looper.getMainLooper())
+    private var pendingHomeTransition: Runnable? = null
+    @Volatile
+    private var lastObservedNavigationPackage: String? = null
+
+    private val HOME_TRANSITION_SETTLE_MS = 350L
+
+    /**
      * The overlay manager that shows the cooldown screen.
      * Uses TYPE_ACCESSIBILITY_OVERLAY to draw above all apps —
      * this works reliably on every OEM ROM (MIUI, ColorOS, etc.)
@@ -619,6 +632,21 @@ class AppauseAccessibilityService : AccessibilityService() {
         lastEventPackage = packageName
         lastEventAt = System.currentTimeMillis()
 
+        // A launcher event is the system's navigation signal. Do not dismiss
+        // immediately: Recents can emit launcher/system windows while its
+        // animation is settling. Wait briefly, and only proceed if no real app
+        // event replaces the launcher as the observed destination.
+        if (homePackages.contains(packageName)) {
+            lastObservedNavigationPackage = packageName
+            scheduleHomeTransitionConfirmation(packageName)
+        } else if (packageName != applicationContext.packageName && !isSystemPackage(packageName)) {
+            // A real app event means the pending launcher transition was not
+            // the final destination. Its normal foreground handling below is
+            // still responsible for dismissing an active cooldown if needed.
+            lastObservedNavigationPackage = packageName
+            cancelPendingHomeTransition()
+        }
+
         AppLogger.d(TAG, "Event received: package=$packageName, class=${event.className}")
 
         // Record the burst fingerprint for Recents-replay detection (step 6.5
@@ -637,6 +665,38 @@ class AppauseAccessibilityService : AccessibilityService() {
                 AppLogger.e(TAG, "Error in handleForegroundChange for $packageName", e)
             }
         }
+    }
+
+    private fun scheduleHomeTransitionConfirmation(homePackage: String) {
+        cancelPendingHomeTransition()
+        val confirmation = Runnable {
+            pendingHomeTransition = null
+            if (lastObservedNavigationPackage != homePackage || !pauseShown || pauseTargetPackage == null) {
+                return@Runnable
+            }
+            serviceScope.launch {
+                try {
+                    if (lastObservedNavigationPackage != homePackage ||
+                        !pauseShown || pauseTargetPackage == null
+                    ) {
+                        return@launch
+                    }
+                    // The launcher remained the last observed user destination
+                    // through the settle window. This event-based confirmation
+                    // is the fallback when UsageStats is still stale.
+                    handleForegroundChange(homePackage, homeEventConfirmed = true)
+                } catch (e: Exception) {
+                    AppLogger.e(TAG, "Error confirming Home transition", e)
+                }
+            }
+        }
+        pendingHomeTransition = confirmation
+        homeTransitionHandler.postDelayed(confirmation, HOME_TRANSITION_SETTLE_MS)
+    }
+
+    private fun cancelPendingHomeTransition() {
+        pendingHomeTransition?.let(homeTransitionHandler::removeCallbacks)
+        pendingHomeTransition = null
     }
 
     /**
@@ -660,7 +720,10 @@ class AppauseAccessibilityService : AccessibilityService() {
      * 7. Does it belong to a configured group? → if yes, INTERCEPT
      * 8. Otherwise → skip (not a target app)
      */
-    private suspend fun handleForegroundChange(packageName: String) {
+    private suspend fun handleForegroundChange(
+        packageName: String,
+        homeEventConfirmed: Boolean = false
+    ) {
         // Capture the package from the PREVIOUS call before overwriting, so the
         // dedup guards below can distinguish a genuine re-open from an in-app
         // Activity switch.
@@ -686,8 +749,9 @@ class AppauseAccessibilityService : AccessibilityService() {
                 isOwnPackage = packageName == applicationContext.packageName,
                 isSystemPackage = isSystemPackage(packageName),
                 isHomePackage = homePackages.contains(packageName),
-                isHomeForegroundConfirmed = homePackages.contains(packageName) &&
-                    ForegroundChecker.getForegroundPackage(applicationContext) == packageName,
+                isHomeForegroundConfirmed = homeEventConfirmed ||
+                    (homePackages.contains(packageName) &&
+                        ForegroundChecker.getForegroundPackage(applicationContext) == packageName),
                 isBypassed = InterceptionManager.isBypassed(packageName),
                 // Passed as a function so the guard's staleness watchdog runs
                 // at exactly the same read points as the original inline code.
@@ -1226,6 +1290,9 @@ class AppauseAccessibilityService : AccessibilityService() {
         // Stop the foreground poller
         pollJob?.cancel()
         pollJob = null
+
+        cancelPendingHomeTransition()
+        homeTransitionHandler.removeCallbacksAndMessages(null)
 
         // Cancel all pending re-remind timers
         reRemindJobs.values.forEach { it.cancel() }
