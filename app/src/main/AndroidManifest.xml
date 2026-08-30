@@ -97,21 +97,6 @@
             android:exported="false" />
 
         <!--
-            FileProvider: used ONLY by the debug Diagnostics screen to share the
-            log report as a file attachment. Exposes just cache/logs/ (see
-            res/xml/file_paths.xml) and is not exported.
-        -->
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths" />
-        </provider>
-
-        <!--
             AccessibilityService: detects foreground app changes.
             Must be manually enabled by the user in system settings.
             Permission BIND_ACCESSIBILITY_SERVICE is required by the system.

@@ -3,8 +3,6 @@ package com.appause.android.ui.feedback
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.appause.android.ui.diagnostics.DiagnosticsState
-import com.appause.android.ui.diagnostics.collectDiagnostics
 import com.appause.android.util.LogBuffer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

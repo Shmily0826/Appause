@@ -42,7 +42,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.BuildConfig
 import com.appause.android.R
-import com.appause.android.ui.diagnostics.DiagnosticsState
 import java.net.URLEncoder
 import java.util.Locale
 

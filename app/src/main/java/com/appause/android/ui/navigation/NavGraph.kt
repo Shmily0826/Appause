@@ -20,7 +20,6 @@ import androidx.navigation.navArgument
 import com.appause.android.AppauseApp
 import kotlinx.coroutines.flow.first
 import com.appause.android.ui.appselect.AppSelectScreen
-import com.appause.android.ui.diagnostics.DiagnosticsScreen
 import com.appause.android.ui.feedback.FeedbackScreen
 import com.appause.android.ui.groupeditor.GroupEditorScreen
 import com.appause.android.ui.home.HomeScreen
@@ -207,13 +206,10 @@ fun AppNavGraph() {
             )
         }
 
-        // ── Diagnostics (debug builds only — Settings hides the entry otherwise) ──
-        composable(Routes.DIAGNOSTICS) {
-            DiagnosticsScreen(
-                onNavigateBack = safePopBackStack,
-                onNavigateToOnboarding = { navController.navigate(Routes.ONBOARDING) }
-            )
-        }
+        addDiagnosticsDestination(
+            onNavigateBack = safePopBackStack,
+            onNavigateToOnboarding = { navController.navigate(Routes.ONBOARDING) }
+        )
 
         // Restart the app (used after a language switch so attachBaseContext
         // re-reads the new locale). Defined inside the route's composable

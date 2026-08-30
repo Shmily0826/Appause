@@ -1,4 +1,4 @@
-package com.appause.android.ui.diagnostics
+package com.appause.android.ui.feedback
 
 import android.content.Context
 import android.os.PowerManager
@@ -10,6 +10,54 @@ import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+
+/** One configured group, flattened for user-visible feedback status. */
+data class GroupDiag(
+    val name: String,
+    val type: String,
+    val cooldownSeconds: Int,
+    val packages: List<String>
+) {
+    val intercepts: Boolean get() = type != com.appause.android.data.local.AppGroup.TYPE_LEARNING
+}
+
+/** Structured status included only when the user chooses to send feedback. */
+data class DiagnosticsState(
+    val accessibilityEnabledInSettings: Boolean = false,
+    val serviceAlive: Boolean = false,
+    val connectedAt: Long = 0L,
+    val masterEnabled: Boolean = true,
+    val usageAccessGranted: Boolean = false,
+    val overlayPermissionGranted: Boolean = false,
+    val batteryExempted: Boolean = false,
+    val otherAppauseBuilds: List<String> = emptyList(),
+    val eventCount: Long = 0L,
+    val lastEventPackage: String? = null,
+    val lastEventAt: Long = 0L,
+    val lastDecision: String? = null,
+    val lastTargetDecision: String? = null,
+    val overlayResult: String? = null,
+    val foregroundPackage: String? = null,
+    val bypassed: Set<String> = emptySet(),
+    val groups: List<GroupDiag> = emptyList(),
+    val persistentLog: String = "",
+    val crashLog: String = "",
+    val forceStartResult: String? = null
+) {
+    val activeGroups: List<GroupDiag> get() = groups.filter { it.intercepts && it.packages.isNotEmpty() }
+
+    val verdict: Verdict
+        get() = when {
+            !accessibilityEnabledInSettings -> Verdict.NO_PERMISSION
+            !serviceAlive -> Verdict.SERVICE_DEAD
+            !masterEnabled -> Verdict.MASTER_OFF
+            activeGroups.isEmpty() -> Verdict.NO_GROUPS
+            eventCount == 0L -> Verdict.NO_EVENTS
+            else -> Verdict.OK
+        }
+
+    enum class Verdict { NO_PERMISSION, SERVICE_DEAD, MASTER_OFF, NO_GROUPS, NO_EVENTS, OK }
+}
 
 /**
  * Collects the full on-device diagnostic snapshot used by both the Diagnostics

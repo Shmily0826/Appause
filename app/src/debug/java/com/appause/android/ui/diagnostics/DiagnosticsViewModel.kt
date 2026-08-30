@@ -9,6 +9,8 @@ import com.appause.android.data.local.AppGroup
 import com.appause.android.service.AppauseAccessibilityService
 import com.appause.android.util.PersistentLog
 import com.appause.android.util.CrashLog
+import com.appause.android.ui.feedback.DiagnosticsState
+import com.appause.android.ui.feedback.collectDiagnostics
 import android.content.ComponentName
 import android.content.Intent
 import kotlinx.coroutines.Dispatchers
@@ -18,72 +20,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-/** One configured group, flattened for display on the Diagnostics screen. */
-data class GroupDiag(
-    val name: String,
-    val type: String,
-    val cooldownSeconds: Int,
-    val packages: List<String>
-) {
-    /** Learning groups are recommendations — they never trigger a cooldown. */
-    val intercepts: Boolean get() = type != AppGroup.TYPE_LEARNING
-}
-
-/** Everything the Diagnostics screen needs, refreshed on a timer. */
-data class DiagnosticsState(
-    val accessibilityEnabledInSettings: Boolean = false,
-    val serviceAlive: Boolean = false,
-    val connectedAt: Long = 0L,
-    val masterEnabled: Boolean = true,
-    val usageAccessGranted: Boolean = false,
-    val overlayPermissionGranted: Boolean = false,
-    /**
-     * Whether the app is exempt from battery optimization ("无限制"). When
-     * false on HyperOS/MIUI, the AccessibilityService is killed in the
-     * background with no auto-restart — the #1 cause of "first open isn't
-     * intercepted". Surfaced here so the tester can confirm it at a glance.
-     */
-    val batteryExempted: Boolean = false,
-    /**
-     * Other Appause builds (e.g. the release build alongside this debug one)
-     * whose accessibility service is ALSO enabled. Non-empty means two copies
-     * are intercepting the same apps and each pops its own pause screen.
-     */
-    val otherAppauseBuilds: List<String> = emptyList(),
-    val eventCount: Long = 0L,
-    val lastEventPackage: String? = null,
-    val lastEventAt: Long = 0L,
-    val lastDecision: String? = null,
-    /** Last decision for a controlled (grouped) app — survives launcher/Recents noise. */
-    val lastTargetDecision: String? = null,
-    val overlayResult: String? = null,
-    val foregroundPackage: String? = null,
-    val bypassed: Set<String> = emptySet(),
-    val groups: List<GroupDiag> = emptyList(),
-    val persistentLog: String = "",
-    val crashLog: String = "",
-    val forceStartResult: String? = null
-) {
-    /** Groups that can actually intercept something (pause type, at least 1 app). */
-    val activeGroups: List<GroupDiag> get() = groups.filter { it.intercepts && it.packages.isNotEmpty() }
-
-    /**
-     * The single most likely reason interception is not happening, evaluated in
-     * the same order the service itself checks them. Null = everything looks OK.
-     */
-    val verdict: Verdict
-        get() = when {
-            !accessibilityEnabledInSettings -> Verdict.NO_PERMISSION
-            !serviceAlive -> Verdict.SERVICE_DEAD
-            !masterEnabled -> Verdict.MASTER_OFF
-            activeGroups.isEmpty() -> Verdict.NO_GROUPS
-            eventCount == 0L -> Verdict.NO_EVENTS
-            else -> Verdict.OK
-        }
-
-    enum class Verdict { NO_PERMISSION, SERVICE_DEAD, MASTER_OFF, NO_GROUPS, NO_EVENTS, OK }
-}
 
 /**
  * ViewModel for the debug-only Diagnostics screen.

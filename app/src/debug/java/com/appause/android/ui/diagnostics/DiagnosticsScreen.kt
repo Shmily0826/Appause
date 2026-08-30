@@ -63,6 +63,7 @@ import com.appause.android.R
 import com.appause.android.data.local.AppGroup
 import com.appause.android.util.CrashLog
 import com.appause.android.util.LogBuffer
+import com.appause.android.ui.feedback.DiagnosticsState
 import kotlinx.coroutines.delay
 import java.io.File
 import java.text.SimpleDateFormat
