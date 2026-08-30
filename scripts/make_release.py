@@ -1,42 +1,46 @@
-import os, json, sys, urllib.request
+#!/usr/bin/env python3
+"""Package the already-built Release APK using the version in app/build.gradle.kts.
 
-PAT = os.environ["GHPAT"]
-REPO = "Shmily0826/Appause"
-TAG = "v0.4.6"
-APK = r"D:\CODE\project\Appause\output\Appause-v0.4.6.apk"
+This script is intentionally local-only: it neither creates GitHub releases nor
+uses credentials. Run `./gradlew assembleRelease` first, then run this script.
+"""
 
-# Read release notes, strip the leading instruction block (lines 1..5)
-with open(r"D:\CODE\project\Appause\RELEASE_NOTES.md", encoding="utf-8") as f:
-    lines = f.read().split("\n")
-# keep from the first "## " section onward
-start = next(i for i, l in enumerate(lines) if l.startswith("## "))
-body = "\n".join(lines[start:]).strip()
+from __future__ import annotations
 
-def api(method, url, data=None, headers=None, binary=None):
-    h = {"Authorization": f"Bearer {PAT}", "Accept": "application/vnd.github+json"}
-    if headers: h.update(headers)
-    if data is not None:
-        data = data.encode("utf-8")
-        h["Content-Type"] = "application/json"
-    elif binary is not None:
-        h["Content-Type"] = "application/vnd.android.package-archive"
-    req = urllib.request.Request(url, data=data if (data is not None or binary is not None) else None, headers=h, method=method)
-    with urllib.request.urlopen(req) as r:
-        return r.status, r.read().decode("utf-8", "replace")
+import re
+import shutil
+import sys
+from pathlib import Path
 
-# 1) create release
-payload = json.dumps({"tag_name": TAG, "name": TAG, "body": body, "draft": False, "prerelease": False})
-status, resp = api("POST", f"https://api.github.com/repos/{REPO}/releases", data=payload)
-print("create release:", status)
-rel = json.loads(resp)
-rid = rel["id"]
-print("release id:", rid)
 
-# 2) upload asset
-with open(APK, "rb") as f:
-    blob = f.read()
-status, resp = api("POST",
-    f"https://uploads.github.com/repos/{REPO}/releases/{rid}/assets?name=Appause-v0.4.6.apk",
-    binary=blob)
-print("upload asset:", status)
-print(resp[:200])
+ROOT = Path(__file__).resolve().parents[1]
+BUILD_FILE = ROOT / "app" / "build.gradle.kts"
+APK = ROOT / "app" / "build" / "outputs" / "apk" / "release" / "app-release.apk"
+OUTPUT_DIR = ROOT / "output"
+
+
+def read_version() -> tuple[str, str]:
+    text = BUILD_FILE.read_text(encoding="utf-8")
+    name = re.search(r'versionName\s*=\s*"([^"]+)"', text)
+    code = re.search(r"versionCode\s*=\s*(\d+)", text)
+    if name is None or code is None:
+        raise RuntimeError("Could not read versionName/versionCode from app/build.gradle.kts")
+    return name.group(1), code.group(1)
+
+
+def main() -> int:
+    version_name, version_code = read_version()
+    destination = OUTPUT_DIR / f"Appause-v{version_name}-code{version_code}.apk"
+    if not APK.is_file():
+        print(f"Missing Release APK: {APK}", file=sys.stderr)
+        print("Run ./gradlew assembleRelease first.", file=sys.stderr)
+        return 1
+
+    OUTPUT_DIR.mkdir(exist_ok=True)
+    shutil.copy2(APK, destination)
+    print(f"Packaged {destination.relative_to(ROOT)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

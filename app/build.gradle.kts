@@ -30,8 +30,8 @@ android {
         applicationId = "com.appause.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 90
-        versionName = "0.5.38"
+        versionCode = 91
+        versionName = "0.5.39"
         // Baked at build time; lets a shared diagnostics report prove exactly
         // which APK is installed (used by the Diagnostics "build time" row).
         buildConfigField(
