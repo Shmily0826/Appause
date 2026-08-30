@@ -87,7 +87,8 @@ Appause shows a brief pause screen when a distracting app launches, giving you a
 - Centered layout: Appause logo/text, target app icon + name, prompt text, countdown number
 - Cancel button: always visible
 - Continue button: disabled during countdown, enabled when timer reaches 0
-- No back button behavior — pressing back should act as Cancel
+- Android Back and Recents remain system navigation while the pause overlay is
+  visible; only the explicit visible Cancel button cancels the pause.
 
 ### 3.5 Settings Screen
 - Switch: Appause master toggle

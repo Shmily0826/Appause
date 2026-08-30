@@ -196,7 +196,9 @@ class OverlayManager {
         // - FLAG_LAYOUT_IN_SCREEN: positions the window across the full screen
         // - FLAG_LAYOUT_NO_LIMITS: extends the window behind status bar and
         //   navigation bar, eliminating the white gap at the top of the screen
-        // - FLAG_NOT_FOCUSABLE: allows the window to receive touch events
+        // - FLAG_NOT_FOCUSABLE: keeps system navigation such as Back and Recents
+        //   available while the explicit Cancel button remains the only way to
+        //   cancel the pause.
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
