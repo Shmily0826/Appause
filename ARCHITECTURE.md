@@ -12,7 +12,7 @@
 | Preferences | DataStore | Replaces SharedPreferences, coroutine-based |
 | Navigation | Navigation Compose | Type-safe routing in Compose |
 | Async | Coroutines + Flow | Non-blocking, lifecycle-aware |
-| Detection | AccessibilityService | No overlay permission needed, works on most devices |
+| Detection | AccessibilityService | Reads only foreground package names; required for core detection |
 | App Query | PackageManager | System API to list launchable apps |
 | Build | Gradle Kotlin DSL | Type-safe build scripts |
 | Dependencies | Version Catalog | Centralized, shareable dependency versions |
@@ -35,13 +35,10 @@
 
 - Bubble API (API 29) — not needed for v1
 
-> **Superseded (v0.5.0).** This list originally also claimed we needed neither
-> `UsageStatsManager` nor `SYSTEM_ALERT_WINDOW`. Both turned out to be
-> necessary in practice: usage access confirms the real foreground app (so a
-> media notification cannot trigger a false pause), and the overlay permission
-> is what lets the pause screen appear at all — an accessibility overlay is
-> refused by the window manager on Android 12+/HyperOS, and a plain Activity
-> can be pushed back behind apps that re-front themselves. See §6.4.
+> **Current behavior.** Usage access is optional but recommended: it confirms the
+> genuinely foreground app locally and reduces notification false positives.
+> `SYSTEM_ALERT_WINDOW` is also optional: the app first tries its accessibility
+> overlay and uses an application-overlay fallback only when needed. See §6.4.
 
 **Decision: minSdk = 26, compileSdk = 35, targetSdk = 35.**
 
@@ -413,19 +410,19 @@ away window) re-arms the limit. See `OverlayManager` and `scheduleReRemind`.
 - App selection screen with search + multi-select
 - Save/delete group via repository
 
-### Phase 6: AccessibilityService
+### Phase 6: AccessibilityService (implemented)
 - Service implementation
 - Manifest registration
 - Event filtering logic
 - InterceptionManager singleton
 
-### Phase 7: Pause Screen
+### Phase 7: Pause Screen (implemented)
 - PauseActivity with Compose UI
 - Countdown timer (coroutine-based)
 - Cancel and Continue actions
 - Integration with InterceptionManager
 
-### Phase 8: Settings + Polish
+### Phase 8: Settings + Polish (implemented)
 - Settings screen with DataStore
 - Debug info
 - Edge case handling
@@ -450,12 +447,15 @@ away window) re-arms the limit. See `OverlayManager` and `scheduleReRemind`.
 
 ## 10. Testing Checklist (per phase)
 
-- [ ] Phase 0: Project opens in Android Studio, Gradle sync succeeds, empty Activity runs
-- [ ] Phase 1: Room database creates, DAOs insert/query work (verified via logcat or unit test)
-- [ ] Phase 2: Installed apps list shows correctly, search works
-- [ ] Phase 3: Navigation between screens works, theme applies
-- [ ] Phase 4: Home screen shows groups, service status accurate
-- [ ] Phase 5: Can create/edit/delete groups with apps
-- [ ] Phase 6: AccessibilityService detects app launches (verified via logcat)
-- [ ] Phase 7: Pause screen shows countdown, cancel/continue work
-- [ ] Phase 8: Settings persist, debug info accurate
+- [x] Phase 0: Project opens in Android Studio, Gradle sync succeeds, empty Activity runs
+- [x] Phase 1: Room database creates, DAOs insert/query work (verified by unit tests)
+- [x] Phase 2: Installed apps list shows correctly, search works
+- [x] Phase 3: Navigation between screens works, theme applies
+- [x] Phase 4: Home screen shows groups, service status accurate
+- [x] Phase 5: Can create/edit/delete groups with apps
+- [x] Phase 6: AccessibilityService detects app launches (verified by tests and device evidence)
+- [x] Phase 7: Pause screen shows countdown, cancel/continue work (RC device evidence)
+- [x] Phase 8: Settings persist, debug info accurate
+
+The checklist records implementation status; current build and device evidence,
+including its remaining manual gap, is maintained in `TEST_REPORT.md`.

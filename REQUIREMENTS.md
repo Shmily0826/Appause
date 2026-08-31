@@ -175,8 +175,11 @@ Some "out of scope for v1" items have since been added. This section records how
 the shipped app differs from the original v1 spec so the document stays honest.
 
 - **Appause Pro (Plan B) — paid activation.** A Cloudflare Worker (`worker/`)
-  issues device-bound RS256 license JWTs. The app verifies the token **on
-  device** (embedded server public key) and works offline afterwards. Free tier:
+  issues signed, device-bound RS256 license JWTs. An activation code may carry
+  expiry metadata; the app verifies the token **on device** (embedded server
+  public key), accepts a missing `exp` claim, and performs no automatic network
+  license checks. If a stored token expires, the user may need to manually
+  redeem the code again or import another valid token. Free tier:
   1 group. Everyone gets a 60s cooldown cap and 365-day stats history. Pro unlocks
   unlimited groups, re-remind, a custom pause prompt, and custom open reasons.
   *This is a paid license, not a backend/sync account — no user data is uploaded.*

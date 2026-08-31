@@ -1,11 +1,25 @@
-# Appause v0.5.38 — 发布说明 (Release Notes)
+# Appause v0.5.39 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.38/Appause-v0.5.38.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.39/Appause-v0.5.39.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.5.39) — 发布隔离与拦截可靠性
+- **发布包更新**：版本为 `0.5.39`，Android versionCode 为 `91`；公开 APK 使用 `Appause-v0.5.39.apk`，不把内部 versionCode 放入文件名。
+- **拦截可靠性**：同步暂停页显示请求，并在启动器事件切换时增加短暂稳定窗口，减少离开目标应用后残留暂停页或错误重触发。
+- **Pro 生产安全**：生产许可证继续使用设备绑定校验；公开 Release 不包含调试许可证工具或调试诊断资源。
+- **Release 隔离**：Release 包不可调试；Diagnostics、调试诊断收集器、调试 FileProvider 及相关 Pro 测试控件仅存在于 Debug 包。
+- **发布验证**：完成 Android/Worker 自动化验证、Release 打包与签名检查，以及真实 Android 设备上的安装和运行状态冒烟验证。预发布 RC 曾验证暂停页、继续、取消和系统导航；发布 APK 的专项目标拦截复测仍留有人工缺口。
+
+### 本次更新 (v0.5.39) — English summary
+- Public APK: `Appause-v0.5.39.apk`, package `com.appause.android`, versionCode `91`.
+- Synchronized pause-overlay show requests and added a short launcher-event settle window to improve abandonment cleanup and avoid incorrect re-triggering.
+- Production Pro licenses remain device-bound and locally verified after activation.
+- Diagnostics, debug collectors, debug FileProvider resources, and Pro debug controls are isolated from the non-debuggable Release APK.
+- Automated, packaging, signing, and physical-device install/runtime smoke checks passed. A dedicated post-release interception run against an already-configured target app remains a manual gap; earlier RC evidence is recorded separately.
 
 ### 本次更新 (v0.5.38) — 先体验再授权 + 发布说明校正
 - **首次引导改为价值优先**：语言选择后先展示真实暂停页预览，再说明产品作用和隐私边界，之后才进入权限设置，减少第一次使用时连续授权带来的压力。

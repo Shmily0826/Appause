@@ -17,8 +17,11 @@ which never leaves Cloudflare.
 
 A fork of the open-source app gets the *verifier*, not the *printer*. Device
 binding (`device` claim = SHA-256 of the device's Android Keystore public key)
-stops a user from copying one token across phones. Daily app use stays fully
-offline — the network is touched only for the one-time activation handshake.
+stops a user from copying one token across phones. The app verifies the token
+locally and does not perform automatic license checks. The activation record
+may include an expiry; the app accepts a token without `exp` and checks the
+claim locally when present. If a token expires, the user must explicitly redeem
+the code again or import another valid token.
 
 ### Why a Durable Object owns activation state
 
@@ -127,8 +130,11 @@ curl -X POST https://<your-worker>/admin/gencode \
   public release — the repo's `dev_token.txt` would then unlock Pro for anyone.
 - The server stores only `(code → device fingerprints)`. It never sees the user's
   apps, usage, or identity. Keep it that way.
-- Replace the DEV key pair (kept outside this repo in a secure local location)
-  with a fresh production pair before any public release.
+
+The v0.5.39 public Release is built with the production verification-key path;
+debug-only Pro controls are isolated from Release. Any future release must
+repeat that check before publishing. Keep all key material and deployment
+configuration outside Git.
 
 ## Payment / storefront (out of scope here)
 

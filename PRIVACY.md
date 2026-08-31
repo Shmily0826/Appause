@@ -28,11 +28,15 @@ and never leave your device.
 - There is no account, no login, and no registration.
 - The app makes **no network requests during normal use** — no analytics, no
   crash reporters, no advertisements, and no third-party SDKs.
-- The only network use is a **one-time** license redeem when you activate
-  Appause Pro. It sends a redemption code and a non-identifying device
-  fingerprint (a SHA-256 hash of an on-device key) to the activation server,
-  which returns a signed license token that is **verified on your device** and
-  works offline afterwards. No browsing history, messages, or app usage is sent.
+- Pro uses the network only when you explicitly redeem an activation code. The
+  app sends the code and a non-identifying device fingerprint (a SHA-256 hash
+  of an on-device key) to the activation server, which returns a signed token.
+  The token is **verified on your device** and stored locally. An activation
+  code may configure an expiry; Appause accepts tokens without an `exp` claim
+  and checks expiry locally when that claim is present. Appause does not
+  auto-refresh or perform background license checks, so a token that expires
+  may require another user-initiated redeem or import. No browsing history,
+  messages, or app usage is sent.
 - Feedback is sent **only when you choose to** (Settings → Feedback). The app
   never sends anything automatically. Before sending, it shows the message,
   optional contact detail, device/app metadata, and a diagnostic snapshot. The
@@ -76,7 +80,7 @@ security tool.
 | Display over other apps (`SYSTEM_ALERT_WINDOW`) | Optional compatibility fallback. Appause normally uses an accessibility overlay that does not require this permission. If the pause screen does not appear on a device, enabling this permission allows the application-overlay fallback. It never reads or records what is underneath. |
 | Foreground Service | To keep foreground-app detection running while the device is in use. |
 | POST_NOTIFICATIONS (Android 13+) | To show the persistent "detection active" notification. |
-| INTERNET | Only for the **one-time** Appause Pro license redeem and for feedback you choose to send via "Send via Appause". Not used during normal use, and the app works fully offline otherwise. |
+| INTERNET | Only for Pro redeem actions and feedback you choose to send via "Send via Appause". Appause performs no automatic network license checks; token verification is local. |
 | Usage Access (`PACKAGE_USAGE_STATS`) | To confirm which app is genuinely on screen before showing the pause screen — this is what stops a media app's notification (e.g. a video playing in the shade) from triggering the pause by mistake. The query is local; no usage data ever leaves your device. |
 
 ### Your control over data
@@ -112,10 +116,11 @@ or email [rng2018520@gmail.com](mailto:rng2018520@gmail.com).
 - 没有账号、没有登录、没有注册。
 - 应用**在日常使用中不进行任何网络请求**——没有分析统计、没有崩溃上报、
   没有广告，也没有任何第三方 SDK。
-- 唯一的联网场景是激活 **Appause Pro 时的一次性兑换**：会发送兑换码和一个
-  不带个人身份的「设备指纹」（本机密钥的 SHA-256 哈希）到激活服务器，服务器
-  返回一张经过签名的许可证令牌，令牌在你的设备上**本地校验**，之后完全离线
-  可用。不会上传任何浏览记录、消息或使用行为。
+- Pro 只会在你主动兑换激活码时联网：会发送兑换码和一个不带个人身份的「设备指纹」
+  （本机密钥的 SHA-256 哈希）到激活服务器，服务器返回经过签名的令牌。激活码可以
+  配置有效期；Appause 接受没有 `exp` 字段的令牌，并只在存在该字段时于本地检查过期。
+  应用不会自动刷新或后台联网校验，令牌过期后可能需要你再次主动兑换，或导入另一张
+  仍有效的令牌。不会上传任何浏览记录、消息或使用行为。
 - 反馈**只有你主动选择时才会发送**（设置 → 反馈），应用不会自动上传任何内容。发送前，页面会展示留言、可选联系方式、设备/版本信息和诊断快照。诊断可能包含服务与权限状态、最近的前台应用和拦截状态、已配置的分组名称及其中的应用包名；不包含屏幕内容、聊天记录、账号信息或按时间排列的使用历史。「通过 Appause 发送」会把页面中展示的内容发到 Cloudflare Worker；邮件与 GitHub 方式会通过你选择的应用发送同一份报告。
 - 我们在服务器（同一个 Cloudflare Worker）上维护一个**纯聚合的下载计数器**，用来统计 Appause 通过各个渠道（GitHub Release 及镜像）被安装的总次数。它**只记录一个数字**——不会保存任何 IP 地址、设备标识或个人数据。这是聚合统计，不是用户追踪。由于计数器运行在我们自己的服务器上，它是一个自报、近似的数字，请将其视为粗略下限而非经审计的精确值；权威的安装数据来自各分发平台本身（如 GitHub Release 下载量、酷安下载量）。
 - 你的所有配置（应用分组、冷却时间、使用统计）都**仅保存在本机**的数据库
@@ -141,7 +146,7 @@ Appause 使用系统的 AccessibilityService，**仅用于**检测当前前台�
 | 显示悬浮窗 / 在其他应用上层显示（`SYSTEM_ALERT_WINDOW`） | 可选的兼容性备用权限。Appause 通常使用不需要该权限的无障碍覆盖层；如果某台设备不显示暂停页，开启后可以使用普通应用覆盖层作为备用。它不会读取或记录下层内容。 |
 | 前台服务 (Foreground Service) | 在设备使用期间保持前台应用检测持续运行。 |
 | POST_NOTIFICATIONS（Android 13+） | 显示常驻的"检测中"通知。 |
-| INTERNET（联网） | 仅用于激活 **Appause Pro 时的一次性许可证兑换**，以及你主动选择的「通过 Appause 发送」反馈。日常使用不会联网，其余功能完全离线。 |
+| INTERNET（联网） | 仅用于你主动进行的 Pro 兑换，以及你主动选择的「通过 Appause 发送」反馈。不会自动联网校验许可证；令牌校验在本地完成。 |
 | 使用情况访问（`PACKAGE_USAGE_STATS`） | 用于在弹暂停前确认真正在前台的 App，避免媒体通知（例如通知栏里正在播放的视频）误触发暂停。该查询完全在本地进行，使用记录不会上传。 |
 
 ### 你对数据的控制权

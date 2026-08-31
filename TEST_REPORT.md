@@ -837,3 +837,28 @@ SQLite migration, or secrets. This strongly isolates that failure to the
 Bridge/Codex execution environment or its Wrangler-to-workerd process
 interaction, rather than a general Appause Worker, Node, or Wrangler failure
 on the host.
+
+## 24. v0.5.39 post-release curated validation summary
+
+### Automated and local validation
+
+- Android debug unit tests: 80/80 PASS. Worker tests: 31/31 PASS.
+- The v0.5.39 release candidate passed `:app:testDebugUnitTest`, `:app:assembleDebug`, `:app:lintRelease`, `:app:assembleRelease`, `:app:bundleRelease`, `git diff --check`, and release packaging/signing verification.
+- Release output is non-debuggable. Diagnostics UI, its ViewModel/collector, debug-only provider/resources, and test controls are isolated from Release. Feedback remains available in Release and uses a structured local status report plus user-invoked system sharing.
+
+### Worker and Pro findings
+
+- Synthetic production Pro E2E passed first/same-device redeem, capacity enforcement, unbind/reuse, and Durable Object state consistency without using real user or payment data.
+- Tracked source confirms `expiresInDays` is optional. The Worker adds JWT `exp` only for records with that value; Android `LicenseVerifier` accepts a missing `exp` and validates an `exp` claim when present. There is no automatic refresh or renewal UI. After expiry, user-initiated redeem or import of another valid token may be needed.
+- The observed 86400-second lifetime belonged to a deliberately synthetic one-day activation record and must not be read as a universal production TTL.
+
+### Physical-device and release evidence
+
+- On a physical Xiaomi/Android 16 device, post-release smoke passed data-preserving install, package/version checks, installed-artifact identity, launch/process checks, Accessibility service state, relevant app-op checks, and app-specific crash/ANR scanning.
+- The final configured-target interception path was not newly exercised because the device was at lockscreen/AOD and the target could not be safely inferred without changing private configuration. Earlier RC evidence remains historical and is not presented as a new post-release interception pass.
+- The GitHub Release asset now uses the public name `Appause-v0.5.39.apk`; size and SHA-256 remain unchanged.
+
+### Follow-up risks
+
+- Public naming convention is `Appause-v<version>.apk`, while `scripts/make_release.py` still emits a code-suffixed internal artifact. Resolve that mismatch in a future source/script task.
+- Continue to distinguish automated/build evidence, inherited RC evidence, and physical-device smoke. The final interception manual gap remains open.

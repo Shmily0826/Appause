@@ -9,8 +9,8 @@ Appause 通过本页面或网盘链接**直接分发 APK**（未上架传统应�
 
 ## 第一步：下载 APK
 
-从 [GitHub Releases] 或国内镜像（如蓝奏云）下载最新版本的
-`appause-vX.X.X-release.apk`。
+从 [GitHub Releases] 下载最新的公开 APK。当前版本文件名为
+`Appause-v0.5.39.apk`；后续版本遵循 `Appause-v<version>.apk`。
 
 ## 第二步：允许"安装未知应用"
 
@@ -66,7 +66,8 @@ Appause 通过本页面或网盘链接**直接分发 APK**（未上架传统应�
 
 ## How to install (English)
 
-1. Download the latest `appause-*-release.apk` from [GitHub Releases].
+1. Download `Appause-v0.5.39.apk` from the [latest GitHub Release]. Future
+   public APKs use the `Appause-v<version>.apk` naming convention.
 2. Tap the APK, then allow **"Install unknown apps"** for the app you opened it with.
 3. If Play Protect or your device maker shows a *"harmful app"* warning,
    choose **"Install anyway"** — this is a generic warning for all non-store APKs,
@@ -81,3 +82,4 @@ Appause 通过本页面或网盘链接**直接分发 APK**（未上架传统应�
    because uninstalling removes local configuration.
 
 [GitHub Releases]: https://github.com/Shmily0826/Appause/releases
+[latest GitHub Release]: https://github.com/Shmily0826/Appause/releases/latest
