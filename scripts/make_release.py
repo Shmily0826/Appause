@@ -30,7 +30,7 @@ def read_version() -> tuple[str, str]:
 
 def main() -> int:
     version_name, version_code = read_version()
-    destination = OUTPUT_DIR / f"Appause-v{version_name}-code{version_code}.apk"
+    destination = OUTPUT_DIR / f"Appause-v{version_name}.apk"
     if not APK.is_file():
         print(f"Missing Release APK: {APK}", file=sys.stderr)
         print("Run ./gradlew assembleRelease first.", file=sys.stderr)
