@@ -280,39 +280,45 @@ class OverlayManager {
         // Persist the intentional, bounded exception before dismissing the
         // overlay. This keeps the same action available for initial and
         // re-remind cooldowns without changing the saved group settings.
-        val temporaryPassAction: (Int) -> Unit = { minutes ->
+        val temporaryPassAction: (Int, () -> Unit) -> Unit = { minutes, onSelectionFinished ->
             CoroutineScope(Dispatchers.IO).launch {
-                val granted = repository.grantTemporaryPass(
-                    packageName = targetPackage,
-                    minutes = minutes,
-                    now = System.currentTimeMillis()
-                )
-                if (granted != null) {
-                    repository.logLaunch(targetPackage, groupId, "proceeded")
-                    withContext(Dispatchers.Main) {
-                        if (isReRemind) {
-                            InterceptionManager.startBypass(targetPackage)
-                            service.completeReRemindContinue(targetPackage)
-                        } else {
-                            service.completeInitialContinue(targetPackage)
-                            service.onSessionStart(
-                                targetPackage,
-                                groupId,
-                                cooldownSeconds,
-                                reRemindMinutes,
-                                reRemindCooldownSeconds,
-                                reRemindRepeat,
-                                reRemindEscalate,
-                                preserveForegroundSession = false
-                            )
+                try {
+                    val granted = repository.grantTemporaryPass(
+                        packageName = targetPackage,
+                        minutes = minutes,
+                        now = System.currentTimeMillis()
+                    )
+                    if (granted != null) {
+                        repository.logLaunch(targetPackage, groupId, "proceeded")
+                        withContext(Dispatchers.Main) {
+                            if (isReRemind) {
+                                InterceptionManager.startBypass(targetPackage)
+                                service.completeReRemindContinue(targetPackage)
+                            } else {
+                                service.completeInitialContinue(targetPackage)
+                                service.onSessionStart(
+                                    targetPackage,
+                                    groupId,
+                                    cooldownSeconds,
+                                    reRemindMinutes,
+                                    reRemindCooldownSeconds,
+                                    reRemindRepeat,
+                                    reRemindEscalate,
+                                    preserveForegroundSession = false
+                                )
+                            }
+                            // The persisted pass is authoritative for this bounded
+                            // session. Clear any bypass left by the cooldown or an
+                            // earlier Continue so expiry cannot leave a stale
+                            // runtime exception behind.
+                            InterceptionManager.clearBypass(targetPackage)
+                            dismiss()
                         }
-                        // The persisted pass is authoritative for this bounded
-                        // session. Clear any bypass left by the cooldown or an
-                        // earlier Continue so expiry cannot leave a stale
-                        // runtime exception behind.
-                        InterceptionManager.clearBypass(targetPackage)
-                        dismiss()
                     }
+                } catch (e: Exception) {
+                    AppLogger.e(TAG, "Temporary pass selection failed", e)
+                } finally {
+                    withContext(Dispatchers.Main) { onSelectionFinished() }
                 }
             }
         }

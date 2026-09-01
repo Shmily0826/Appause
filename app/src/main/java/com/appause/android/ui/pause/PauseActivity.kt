@@ -72,6 +72,7 @@ import com.appause.android.interception.InterceptionManager
 import com.appause.android.service.AppauseAccessibilityService
 import com.appause.android.ui.theme.AppauseTheme
 import com.appause.android.ui.theme.appauseDarkTheme
+import com.appause.android.util.AppLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -99,6 +100,10 @@ import java.util.Locale
  * - This prevents the user from being stuck on this screen.
  */
 class PauseActivity : ComponentActivity() {
+
+    companion object {
+        private const val TAG = "PauseActivity"
+    }
 
     private val targetPackage: String get() = intent.getStringExtra("target_package") ?: ""
     private val groupId: Long get() = intent.getLongExtra("group_id", -1L)
@@ -235,14 +240,14 @@ class PauseActivity : ComponentActivity() {
                         isFinished = countdown.isFinished,
                         onCancel = { handleCancel() },
                         onContinueWithReason = { reason -> handleContinueWithReason(reason) },
-                        onTemporaryPassSelected = { minutes -> handleTemporaryPass(minutes) },
+                        onTemporaryPassSelected = { minutes, onFinished ->
+                            handleTemporaryPass(minutes, onFinished)
+                        },
                         reasons = reasons,
                         recommendedApps = recommendedApps,
                         onOpenRecommendedApp = { pkg -> openRecommendedApp(pkg) }
                     )
 
-                    // Back button acts as Cancel
-                    BackHandler { handleCancel() }
                 }
             }
         }
@@ -333,26 +338,32 @@ class PauseActivity : ComponentActivity() {
     }
 
     /** Persist the bounded exception before revealing the target app. */
-    private fun handleTemporaryPass(minutes: Int) {
-        userProceeded = true
+    private fun handleTemporaryPass(minutes: Int, onSelectionFinished: () -> Unit) {
         val repository = (application as AppauseApp).repository
         CoroutineScope(Dispatchers.IO).launch {
-            val granted = repository.grantTemporaryPass(
-                packageName = targetPackage,
-                minutes = minutes,
-                now = System.currentTimeMillis()
-            )
-            if (granted != null) {
-                repository.logLaunch(targetPackage, groupId, "proceeded")
-                withContext(Dispatchers.Main) {
-                    startSessionAfterProceed(preserveForegroundSession = false)
-                    // The persisted pass is authoritative for this bounded
-                    // session. Clear any bypass left by the cooldown or an
-                    // earlier Continue so expiry cannot leave a stale
-                    // runtime exception behind.
-                    InterceptionManager.clearBypass(targetPackage)
-                    finish()
+            try {
+                val granted = repository.grantTemporaryPass(
+                    packageName = targetPackage,
+                    minutes = minutes,
+                    now = System.currentTimeMillis()
+                )
+                if (granted != null) {
+                    repository.logLaunch(targetPackage, groupId, "proceeded")
+                    withContext(Dispatchers.Main) {
+                        userProceeded = true
+                        startSessionAfterProceed(preserveForegroundSession = false)
+                        // The persisted pass is authoritative for this bounded
+                        // session. Clear any bypass left by the cooldown or an
+                        // earlier Continue so expiry cannot leave a stale
+                        // runtime exception behind.
+                        InterceptionManager.clearBypass(targetPackage)
+                        finish()
+                    }
                 }
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Temporary pass selection failed", e)
+            } finally {
+                withContext(Dispatchers.Main) { onSelectionFinished() }
             }
         }
     }
@@ -409,6 +420,40 @@ class PauseActivity : ComponentActivity() {
  * @param isFinished true when countdown reaches zero.
  * @param onContinueWithReason Called with the selected reason when the user taps Continue.
  */
+internal const val TEMPORARY_PASS_MIN_TOUCH_TARGET_DP = 48
+
+internal enum class TemporaryPassBackAction {
+    DISMISS_CHOOSER,
+    CANCEL_PAUSE
+}
+
+internal data class TemporaryPassChooserState(
+    val isOpen: Boolean = false,
+    val selectionInFlight: Boolean = false
+) {
+    fun open(): TemporaryPassChooserState = copy(isOpen = true)
+
+    fun dismiss(): TemporaryPassChooserState = copy(isOpen = false)
+
+    fun backAction(): TemporaryPassBackAction = if (isOpen) {
+        TemporaryPassBackAction.DISMISS_CHOOSER
+    } else {
+        TemporaryPassBackAction.CANCEL_PAUSE
+    }
+
+    fun tryStartSelection(): TemporaryPassChooserState? {
+        if (!isOpen || selectionInFlight) return null
+        return copy(isOpen = false, selectionInFlight = true)
+    }
+
+    fun completeSelection(): TemporaryPassChooserState = copy(selectionInFlight = false)
+}
+
+internal fun temporaryPassChooserStateAfterOpen(
+    state: TemporaryPassChooserState,
+    isFinished: Boolean
+): TemporaryPassChooserState = if (isFinished && !state.selectionInFlight) state.open() else state
+
 @Composable
 internal fun PauseScreenContent(
     appName: String,
@@ -420,7 +465,7 @@ internal fun PauseScreenContent(
     isFinished: Boolean,
     onCancel: () -> Unit,
     onContinueWithReason: (String) -> Unit,
-    onTemporaryPassSelected: (Int) -> Unit = {},
+    onTemporaryPassSelected: (Int, () -> Unit) -> Unit = { _, onFinished -> onFinished() },
     useInlineTemporaryPassChooser: Boolean = false,
     reasons: List<Pair<String, String>> = emptyList(),
     recommendedApps: List<AppInfo> = emptyList(),
@@ -431,7 +476,28 @@ internal fun PauseScreenContent(
     // wait for the countdown to finish. This lets them answer early while
     // the cooldown runs, without being able to skip the cooldown.
     var selectedReason by remember { mutableStateOf<String?>(null) }
-    var showTemporaryPassChooser by remember { mutableStateOf(false) }
+    var temporaryPassChooserState by remember { mutableStateOf(TemporaryPassChooserState()) }
+    val showTemporaryPassChooser = temporaryPassChooserState.isOpen
+    val temporaryPassSelectionInFlight = temporaryPassChooserState.selectionInFlight
+
+    // Back dismisses the nested chooser before following the outer Cancel flow.
+    BackHandler {
+        when (temporaryPassChooserState.backAction()) {
+            TemporaryPassBackAction.DISMISS_CHOOSER -> {
+                temporaryPassChooserState = temporaryPassChooserState.dismiss()
+            }
+            TemporaryPassBackAction.CANCEL_PAUSE -> onCancel()
+        }
+    }
+
+    // A selection is one-shot so rapid taps cannot grant duplicate passes.
+    val selectTemporaryPass: (Int) -> Unit = selection@{ minutes ->
+        val nextState = temporaryPassChooserState.tryStartSelection() ?: return@selection
+        temporaryPassChooserState = nextState
+        onTemporaryPassSelected(minutes) {
+            temporaryPassChooserState = temporaryPassChooserState.completeSelection()
+        }
+    }
 
     // The pause screen must work in any orientation. A full-screen overlay
     // follows the device rotation, and in landscape the screen is short — a
@@ -604,8 +670,13 @@ internal fun PauseScreenContent(
 
             // Temporary Pass is another way to proceed, so it has the same
             // mindful cooldown barrier as the normal Continue action.
-            if (isFinished) {
-                TextButton(onClick = { showTemporaryPassChooser = true }) {
+            if (isFinished && !temporaryPassSelectionInFlight) {
+                TextButton(onClick = {
+                    temporaryPassChooserState = temporaryPassChooserStateAfterOpen(
+                        temporaryPassChooserState,
+                        isFinished
+                    )
+                }) {
                     Text(stringResource(R.string.pause_temporary_pass))
                 }
             }
@@ -636,29 +707,19 @@ internal fun PauseScreenContent(
                         )
                         Text(stringResource(R.string.pause_temporary_pass_desc))
                         TemporaryPassPolicy.supportedMinutes.forEach { minutes ->
-                            if (minutes == TemporaryPassPolicy.FIFTEEN_MINUTES) {
-                                Button(
-                                    onClick = {
-                                        showTemporaryPassChooser = false
-                                        onTemporaryPassSelected(minutes)
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(stringResource(R.string.pause_temporary_pass_option, minutes))
-                                }
-                            } else {
-                                OutlinedButton(
-                                    onClick = {
-                                        showTemporaryPassChooser = false
-                                        onTemporaryPassSelected(minutes)
-                                    },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Text(stringResource(R.string.pause_temporary_pass_option, minutes))
-                                }
+                            OutlinedButton(
+                                onClick = { selectTemporaryPass(minutes) },
+                                enabled = !temporaryPassSelectionInFlight,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = TEMPORARY_PASS_MIN_TOUCH_TARGET_DP.dp)
+                            ) {
+                                Text(stringResource(R.string.pause_temporary_pass_option, minutes))
                             }
                         }
-                        TextButton(onClick = { showTemporaryPassChooser = false }) {
+                        TextButton(onClick = {
+                            temporaryPassChooserState = temporaryPassChooserState.dismiss()
+                        }) {
                             Text(stringResource(R.string.action_cancel))
                         }
                     }
@@ -669,38 +730,30 @@ internal fun PauseScreenContent(
 
     if (showTemporaryPassChooser && !useInlineTemporaryPassChooser) {
         AlertDialog(
-            onDismissRequest = { showTemporaryPassChooser = false },
+            onDismissRequest = {
+                temporaryPassChooserState = temporaryPassChooserState.dismiss()
+            },
             title = { Text(stringResource(R.string.pause_temporary_pass_title)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.pause_temporary_pass_desc))
                     TemporaryPassPolicy.supportedMinutes.forEach { minutes ->
-                        if (minutes == TemporaryPassPolicy.FIFTEEN_MINUTES) {
-                            Button(
-                                onClick = {
-                                    showTemporaryPassChooser = false
-                                    onTemporaryPassSelected(minutes)
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.pause_temporary_pass_option, minutes))
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = {
-                                    showTemporaryPassChooser = false
-                                    onTemporaryPassSelected(minutes)
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.pause_temporary_pass_option, minutes))
-                            }
+                        OutlinedButton(
+                            onClick = { selectTemporaryPass(minutes) },
+                            enabled = !temporaryPassSelectionInFlight,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = TEMPORARY_PASS_MIN_TOUCH_TARGET_DP.dp)
+                        ) {
+                            Text(stringResource(R.string.pause_temporary_pass_option, minutes))
                         }
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showTemporaryPassChooser = false }) {
+                TextButton(onClick = {
+                    temporaryPassChooserState = temporaryPassChooserState.dismiss()
+                }) {
                     Text(stringResource(R.string.action_cancel))
                 }
             }
