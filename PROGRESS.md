@@ -560,3 +560,15 @@
 - v0.5.39 release-candidate validation passed the Android unit/build/lint/package/bundle gates, release signing checks, and debug-only diagnostics isolation. Feedback remains a release feature using a structured local status report; the Diagnostics screen and test controls remain debug-only.
 - Post-release smoke on a physical Xiaomi/Android 16 device passed data-preserving installation, package/version and artifact identity, launch/process checks, Accessibility service state, relevant app-op checks, and app-specific crash/ANR scanning. The final interception path for an already-configured blocked target was not newly exercised because the device remained at lockscreen/AOD.
 - Public APK naming is `Appause-v<version>.apk`. `scripts/make_release.py` still emits a code-suffixed internal convenience artifact; this docs-only task leaves that mismatch for follow-up.
+
+## 2026-08-31 — Temporary Pass v1 correctness follow-up — APPAUSE-20260831-1445
+- Added the bounded per-package Temporary Pass flow with absolute expiry persistence, 5/15/30-minute presets, cooldown gating, and decision-time expiry checks.
+- Corrected the post-selection edge in both OverlayManager and PauseActivity: after the persisted pass is granted and the existing session/re-remind signal is notified, any stale runtime bypass for that package is cleared so expiry restores normal interception.
+- Countdown completion remains bypass-only; it does not call `completeInitialContinue` or `onSessionStart`. Full debug unit tests and `assembleDebug` passed using the non-destructive KSP/Kotlin incremental-off workaround after a corrupted incremental snapshot was observed.
+- Landing V2 remains frozen and was not inspected, modified, or staged in this follow-up.
+
+## 2026-08-31 — Baseline interception presentation diagnosis — APPAUSE-20260831-1859
+- Same-package signed Release diagnosis proved the configured Bilibili event arrived as `TYPE_WINDOW_STATE_CHANGED`; no-pass pre-decision proceeded, group lookup succeeded, post-decision returned `Intercept`, and the 2032 accessibility overlay returned `overlay_ok`.
+- WindowManager and SurfaceFlinger reported the Appause overlay surface ready, visible, and shown, while a device screenshot still contained only Bilibili pixels. This isolates the physical failure to post-attach overlay rendering/compositing on the tested HyperOS device; no Temporary Pass or foreground-decision regression was proven.
+- Temporary `AppauseDiag` logging was removed after diagnosis. Clean `assembleDebug` and `assembleRelease` passed, and the clean signed Release was restored with data-preserving `adb install -r`; Accessibility remained enabled/bound/live.
+- Temporary Pass physical lifecycle validation remains blocked until the device can visibly render the existing 2032 cooldown surface. No product fix, staging, commit, push, tag, release, or deploy was performed.

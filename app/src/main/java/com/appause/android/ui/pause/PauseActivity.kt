@@ -36,6 +36,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -66,6 +67,7 @@ import com.appause.android.AppauseApp
 import com.appause.android.R
 import com.appause.android.data.query.AppInfo
 import com.appause.android.data.query.AppQueryService
+import com.appause.android.data.settings.TemporaryPassPolicy
 import com.appause.android.interception.InterceptionManager
 import com.appause.android.service.AppauseAccessibilityService
 import com.appause.android.ui.theme.AppauseTheme
@@ -101,6 +103,10 @@ class PauseActivity : ComponentActivity() {
     private val targetPackage: String get() = intent.getStringExtra("target_package") ?: ""
     private val groupId: Long get() = intent.getLongExtra("group_id", -1L)
     private val cooldownSeconds: Int get() = intent.getIntExtra("cooldown_seconds", 10)
+    private val reRemindMinutes: Int get() = intent.getIntExtra("re_remind_minutes", 0)
+    private val reRemindCooldownSeconds: Int get() = intent.getIntExtra("re_remind_cooldown_seconds", 0)
+    private val reRemindRepeat: Boolean get() = intent.getBooleanExtra("re_remind_repeat", true)
+    private val reRemindEscalate: Boolean get() = intent.getBooleanExtra("re_remind_escalate", false)
 
     /** Tracks whether the user tapped Continue (vs Cancel or back press). */
     private var userProceeded = false
@@ -229,6 +235,7 @@ class PauseActivity : ComponentActivity() {
                         isFinished = countdown.isFinished,
                         onCancel = { handleCancel() },
                         onContinueWithReason = { reason -> handleContinueWithReason(reason) },
+                        onTemporaryPassSelected = { minutes -> handleTemporaryPass(minutes) },
                         reasons = reasons,
                         recommendedApps = recommendedApps,
                         onOpenRecommendedApp = { pkg -> openRecommendedApp(pkg) }
@@ -303,7 +310,51 @@ class PauseActivity : ComponentActivity() {
             repository.logLaunch(targetPackage, groupId, "proceeded", reason)
         }
 
+        startSessionAfterProceed()
         finish()
+    }
+
+    /** Enter the app while retaining the existing re-remind/session semantics. */
+    private fun startSessionAfterProceed(preserveForegroundSession: Boolean = true) {
+        InterceptionManager.startBypass(targetPackage)
+        AppauseAccessibilityService.instance?.let { service ->
+            service.completeInitialContinue(targetPackage)
+            service.onSessionStart(
+                targetPackage = targetPackage,
+                groupId = groupId,
+                cooldownSeconds = cooldownSeconds,
+                reRemindMinutes = reRemindMinutes,
+                reRemindCooldownSeconds = reRemindCooldownSeconds,
+                reRemindRepeat = reRemindRepeat,
+                reRemindEscalate = reRemindEscalate,
+                preserveForegroundSession = preserveForegroundSession
+            )
+        }
+    }
+
+    /** Persist the bounded exception before revealing the target app. */
+    private fun handleTemporaryPass(minutes: Int) {
+        userProceeded = true
+        val repository = (application as AppauseApp).repository
+        CoroutineScope(Dispatchers.IO).launch {
+            val granted = repository.grantTemporaryPass(
+                packageName = targetPackage,
+                minutes = minutes,
+                now = System.currentTimeMillis()
+            )
+            if (granted != null) {
+                repository.logLaunch(targetPackage, groupId, "proceeded")
+                withContext(Dispatchers.Main) {
+                    startSessionAfterProceed(preserveForegroundSession = false)
+                    // The persisted pass is authoritative for this bounded
+                    // session. Clear any bypass left by the cooldown or an
+                    // earlier Continue so expiry cannot leave a stale
+                    // runtime exception behind.
+                    InterceptionManager.clearBypass(targetPackage)
+                    finish()
+                }
+            }
+        }
     }
 
     override fun onStart() {
@@ -369,6 +420,8 @@ internal fun PauseScreenContent(
     isFinished: Boolean,
     onCancel: () -> Unit,
     onContinueWithReason: (String) -> Unit,
+    onTemporaryPassSelected: (Int) -> Unit = {},
+    useInlineTemporaryPassChooser: Boolean = false,
     reasons: List<Pair<String, String>> = emptyList(),
     recommendedApps: List<AppInfo> = emptyList(),
     onOpenRecommendedApp: ((String) -> Unit)? = null
@@ -378,6 +431,7 @@ internal fun PauseScreenContent(
     // wait for the countdown to finish. This lets them answer early while
     // the cooldown runs, without being able to skip the cooldown.
     var selectedReason by remember { mutableStateOf<String?>(null) }
+    var showTemporaryPassChooser by remember { mutableStateOf(false) }
 
     // The pause screen must work in any orientation. A full-screen overlay
     // follows the device rotation, and in landscape the screen is short — a
@@ -385,7 +439,8 @@ internal fun PauseScreenContent(
     // buttons. So we make the whole thing scrollable and cap its width so it
     // never stretches awkwardly on wide screens. TopCenter keeps the top
     // reachable when content is taller than the screen.
-    Box(
+    if (!showTemporaryPassChooser || !useInlineTemporaryPassChooser) {
+        Box(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
@@ -546,7 +601,110 @@ internal fun PauseScreenContent(
                     style = MaterialTheme.typography.labelLarge
                 )
             }
+
+            // Temporary Pass is another way to proceed, so it has the same
+            // mindful cooldown barrier as the normal Continue action.
+            if (isFinished) {
+                TextButton(onClick = { showTemporaryPassChooser = true }) {
+                    Text(stringResource(R.string.pause_temporary_pass))
+                }
+            }
+            }
         }
+    }
+
+    if (showTemporaryPassChooser && useInlineTemporaryPassChooser) {
+        Surface(
+            modifier = Modifier
+                .fillMaxSize(),
+            color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.32f)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.pause_temporary_pass_title),
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Text(stringResource(R.string.pause_temporary_pass_desc))
+                        TemporaryPassPolicy.supportedMinutes.forEach { minutes ->
+                            if (minutes == TemporaryPassPolicy.FIFTEEN_MINUTES) {
+                                Button(
+                                    onClick = {
+                                        showTemporaryPassChooser = false
+                                        onTemporaryPassSelected(minutes)
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(stringResource(R.string.pause_temporary_pass_option, minutes))
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = {
+                                        showTemporaryPassChooser = false
+                                        onTemporaryPassSelected(minutes)
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(stringResource(R.string.pause_temporary_pass_option, minutes))
+                                }
+                            }
+                        }
+                        TextButton(onClick = { showTemporaryPassChooser = false }) {
+                            Text(stringResource(R.string.action_cancel))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showTemporaryPassChooser && !useInlineTemporaryPassChooser) {
+        AlertDialog(
+            onDismissRequest = { showTemporaryPassChooser = false },
+            title = { Text(stringResource(R.string.pause_temporary_pass_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.pause_temporary_pass_desc))
+                    TemporaryPassPolicy.supportedMinutes.forEach { minutes ->
+                        if (minutes == TemporaryPassPolicy.FIFTEEN_MINUTES) {
+                            Button(
+                                onClick = {
+                                    showTemporaryPassChooser = false
+                                    onTemporaryPassSelected(minutes)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.pause_temporary_pass_option, minutes))
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = {
+                                    showTemporaryPassChooser = false
+                                    onTemporaryPassSelected(minutes)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.pause_temporary_pass_option, minutes))
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showTemporaryPassChooser = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
     }
 }
 

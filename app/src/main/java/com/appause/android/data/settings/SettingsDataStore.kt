@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
@@ -51,6 +52,7 @@ open class SettingsDataStore(private val context: Context) {
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         val RECOMMENDED_APPS_KEY = stringSetPreferencesKey("recommended_apps")
         val SHOW_NOTIFICATION_KEY = booleanPreferencesKey("show_notification")
+        val TEMPORARY_PASSES_KEY = stringSetPreferencesKey("temporary_passes")
 
         // ── Custom open-reason labels (Pro) ──
         // The 4 "why are you opening this app?" options on the Pause Screen.
@@ -143,6 +145,11 @@ open class SettingsDataStore(private val context: Context) {
      */
     val recommendedApps: Flow<Set<String>> = context.dataStore.data.map { preferences ->
         preferences[RECOMMENDED_APPS_KEY] ?: emptySet()
+    }
+
+    /** Persisted package-scoped temporary passes, represented by absolute expiry timestamps. */
+    val temporaryPasses: Flow<Map<String, Long>> = context.dataStore.data.map { preferences ->
+        TemporaryPassPolicy.parseAll(preferences[TEMPORARY_PASSES_KEY] ?: emptySet())
     }
 
     /** Custom label for the "work" open-reason option (blank = use default). */
@@ -247,6 +254,32 @@ open class SettingsDataStore(private val context: Context) {
             preferences[RECOMMENDED_APPS_KEY] = packages
         }
     }
+
+    /**
+     * Grant one supported temporary pass. The caller supplies wall-clock time so
+     * expiry behavior stays explicit and deterministic in unit tests.
+     */
+    suspend fun grantTemporaryPass(packageName: String, minutes: Int, now: Long): Long? {
+        val expiresAt = TemporaryPassPolicy.expiresAt(now, minutes) ?: return null
+        val encoded = TemporaryPassPolicy.encode(TemporaryPass(packageName, expiresAt)) ?: return null
+        context.dataStore.edit { preferences ->
+            val current = preferences[TEMPORARY_PASSES_KEY] ?: emptySet()
+            val updated = current.mapNotNull { TemporaryPassPolicy.parse(it) }
+                .filterNot { it.packageName == packageName }
+                .mapNotNull { TemporaryPassPolicy.encode(it) }
+                .toMutableSet()
+            updated.add(encoded)
+            preferences[TEMPORARY_PASSES_KEY] = updated
+        }
+        return expiresAt
+    }
+
+    /** Return an unexpired pass expiry, or null for missing, malformed, or expired data. */
+    suspend fun temporaryPassExpiresAt(packageName: String, now: Long): Long? =
+        temporaryPasses.first()[packageName]?.takeIf { TemporaryPassPolicy.isActive(it, now) }
+
+    suspend fun isTemporaryPassActive(packageName: String, now: Long): Boolean =
+        temporaryPassExpiresAt(packageName, now) != null
 
     /** Update the custom label for the "work" open-reason option. */
     suspend fun setReasonWork(value: String) {

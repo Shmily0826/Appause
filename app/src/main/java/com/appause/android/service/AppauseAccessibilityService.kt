@@ -389,7 +389,7 @@ class AppauseAccessibilityService : AccessibilityService() {
      * begin the session, but only the first must win — otherwise the loop is
      * cancelled and re-scheduled (resetting the clock to the later event).
      */
-    private val sessionActive = mutableSetOf<String>()
+    private val sessionState = SessionState()
 
     /** How long a user can be away before the session is re-armed. */
     private val LEAVE_COOLDOWN_MS = 3 * 60 * 1000L
@@ -627,6 +627,7 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         val packageName = event.packageName?.toString() ?: return
 
+
         // Diagnostics: proves the service is genuinely receiving events.
         eventCount++
         lastEventPackage = packageName
@@ -753,6 +754,11 @@ class AppauseAccessibilityService : AccessibilityService() {
                     (homePackages.contains(packageName) &&
                         ForegroundChecker.getForegroundPackage(applicationContext) == packageName),
                 isBypassed = InterceptionManager.isBypassed(packageName),
+                isSessionActive = sessionState.isForegroundActive(packageName),
+                isTemporaryPassActive = repository.isTemporaryPassActive(
+                    packageName,
+                    System.currentTimeMillis()
+                ),
                 // Passed as a function so the guard's staleness watchdog runs
                 // at exactly the same read points as the original inline code.
                 pauseShown = { pauseShown },
@@ -808,6 +814,14 @@ class AppauseAccessibilityService : AccessibilityService() {
                 lastForegroundPackage = packageName
             }
 
+            is PreGroupDecision.SkipTemporaryPass -> {
+                decide(decision.diagnosticsReason)
+                // Keep normal leave/re-arm behavior for any previous bypass;
+                // the persisted pass itself remains independent.
+                maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
+                lastForegroundPackage = packageName
+            }
+
             is PreGroupDecision.AbandonCooldown -> {
                 // Mid-cooldown switch-away: a DIFFERENT real app just became
                 // foreground while the pause screen was up and the user never
@@ -858,7 +872,11 @@ class AppauseAccessibilityService : AccessibilityService() {
                         burstSuppressed = burstSuppressed,
                         burstRealPackages = burstTracker.realPackagesSnapshot(),
                         pauseShown = { pauseShown },
-                        isBypassed = InterceptionManager.isBypassed(packageName)
+                        isBypassed = InterceptionManager.isBypassed(packageName),
+                        isTemporaryPassActive = repository.isTemporaryPassActive(
+                            packageName,
+                            System.currentTimeMillis()
+                        )
                     )
                 )
 
@@ -871,6 +889,9 @@ class AppauseAccessibilityService : AccessibilityService() {
 
                 when (postDecision) {
                     is PostGroupDecision.SkipNoGroup -> decide(postDecision.diagnosticsReason)
+
+                    is PostGroupDecision.SkipTemporaryPass ->
+                        decideTarget(packageName, postDecision.diagnosticsReason)
 
                     is PostGroupDecision.SkipBurstReplay ->
                         decideTarget(packageName, postDecision.diagnosticsReason)
@@ -1052,11 +1073,13 @@ class AppauseAccessibilityService : AccessibilityService() {
         val initialSignal = initialContinueSignal[targetPackage]
             ?: CompletableDeferred<Unit>().also { initialContinueSignal[targetPackage] = it }
 
-        // Cancel any existing loop for this package (e.g., from a previous session)
-        cancelReRemind(targetPackage)
+        // Replacing a loop must not end the active foreground session; reArm()
+        // is the path that deliberately clears that session marker.
+        cancelReRemind(targetPackage, endSession = false)
 
         AppLogger.d(TAG, "Scheduling re-remind loop for $targetPackage every $minutes min (repeat=$repeat, escalate=$escalate)")
 
+        val repository = (applicationContext as AppauseApp).repository
         val job = serviceScope.launch {
             // Counts how many re-reminds have actually popped, so escalation
             // (base × N) and the "fire once" mode know where they are.
@@ -1073,6 +1096,19 @@ class AppauseAccessibilityService : AccessibilityService() {
             var lastContinueAt = System.currentTimeMillis()
             AppLogger.d(TAG, "Re-remind CLOCK START (initial continue) @ $lastContinueAt for $targetPackage")
             while (true) {
+                // A temporary pass pauses the existing re-remind clock without
+                // changing the saved group rule. Once it expires, the normal
+                // schedule is evaluated again at this decision point.
+                val temporaryPassExpiresAt = repository.temporaryPassExpiresAt(
+                    targetPackage,
+                    System.currentTimeMillis()
+                )
+                if (temporaryPassExpiresAt != null) {
+                    val waitMs = (temporaryPassExpiresAt - System.currentTimeMillis())
+                        .coerceAtLeast(100L)
+                    delay(waitMs)
+                    continue
+                }
                 // Cooldown the NEXT pop will use, so we can subtract it and land the
                 // next "Continue" exactly `minutes` after the previous one.
                 val base = reRemindCooldownSeconds.takeIf { it > 0 } ?: cooldownSeconds
@@ -1145,15 +1181,17 @@ class AppauseAccessibilityService : AccessibilityService() {
      * Cancel a pending re-remind timer for the given package.
      * Called when the user leaves the app (bypass cleanup) or the service is destroyed.
      */
-    internal fun cancelReRemind(packageName: String) {
+    internal fun cancelReRemind(packageName: String, endSession: Boolean = true) {
         reRemindJobs.remove(packageName)?.cancel()
         // Cancel any pending "user continued" signal so the loop's await() ends.
         reRemindContinue.remove(packageName)?.cancel()
         // Also cancel the initial-cooldown wait (e.g. user cancelled the first
         // cooldown before tapping Continue) so the loop doesn't hang forever.
         initialContinueSignal.remove(packageName)?.cancel()
-        // Session is over → allow a fresh one to start on next entry.
-        sessionActive.remove(packageName)
+        if (endSession) {
+            // Session is over → allow a fresh one to start on next entry.
+            sessionState.end(packageName)
+        }
     }
 
     /**
@@ -1190,14 +1228,15 @@ class AppauseAccessibilityService : AccessibilityService() {
         reRemindMinutes: Int,
         reRemindCooldownSeconds: Int = 0,
         reRemindRepeat: Boolean = true,
-        reRemindEscalate: Boolean = false
+        reRemindEscalate: Boolean = false,
+        preserveForegroundSession: Boolean = true
     ) {
         // Only the first trigger (Continue tap OR countdown-finish) starts the
         // session; the other must be ignored so the loop isn't re-scheduled and
         // its clock reset. Tapping Continue must be the one that wins, because
         // the user explicitly asked to proceed — that's the moment the re-remind
         // interval should be anchored to ("计时从点继续开始").
-        if (!sessionActive.add(targetPackage)) {
+        if (!sessionState.begin(targetPackage, preserveForegroundSession)) {
             AppLogger.d(TAG, "Session start ignored (already active): $targetPackage")
             return
         }
@@ -1209,11 +1248,33 @@ class AppauseAccessibilityService : AccessibilityService() {
             // Re-remind is a Pro feature. Even if a (legacy) free user has a
             // stored reRemindMinutes > 0, only fire it when Pro is unlocked.
             serviceScope.launch {
-                val isProUser = runCatching {
+                val proStatus = runCatching {
                     (applicationContext as AppauseApp).proState.isPro.first()
-                }.getOrDefault(false)
-                if (isProUser) {
-                    scheduleReRemind(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, reRemindRepeat, reRemindEscalate)
+                }.fold(
+                    onSuccess = { isPro ->
+                        if (isPro) ReRemindProStatus.UNLOCKED else ReRemindProStatus.LOCKED
+                    },
+                    onFailure = { ReRemindProStatus.UNKNOWN }
+                )
+                ReRemindSchedulePolicy.request(
+                    targetPackage = targetPackage,
+                    groupId = groupId,
+                    cooldownSeconds = cooldownSeconds,
+                    minutes = reRemindMinutes,
+                    reRemindCooldownSeconds = reRemindCooldownSeconds,
+                    repeat = reRemindRepeat,
+                    escalate = reRemindEscalate,
+                    proStatus = proStatus
+                )?.let { request ->
+                    scheduleReRemind(
+                        targetPackage = request.targetPackage,
+                        groupId = request.groupId,
+                        cooldownSeconds = request.cooldownSeconds,
+                        minutes = request.minutes,
+                        reRemindCooldownSeconds = request.reRemindCooldownSeconds,
+                        repeat = request.repeat,
+                        escalate = request.escalate
+                    )
                 }
             }
         }

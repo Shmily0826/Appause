@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.Build
+import android.provider.Settings
 import java.util.Locale
 import com.appause.android.util.AppLogger
 import com.appause.android.util.PersistentLog
@@ -161,14 +162,21 @@ class OverlayManager {
         val repository = (context.applicationContext as AppauseApp).repository
         val defaultPromptText = context.resources.getString(R.string.default_prompt)
 
-        // Create WindowManager from the RAW AccessibilityService context (not the
-        // locale-wrapped one). TYPE_ACCESSIBILITY_OVERLAY needs the service's own
-        // window token to addView successfully; createConfigurationContext can
+        // The ComposeView uses the locale-wrapped context for correct strings.
+        // The WindowManager is selected below after the presentation policy is
+        // known: 2032 needs the raw service token, while HyperOS 2038 uses the
+        // application context for interactive input routing.
+        // The wrapped view context and WindowManager context intentionally differ.
+        // The 2032 path uses the AccessibilityService-owned window token.
         // drop that token → BadTokenException. The ComposeView below still uses
         // the locale-wrapped `context` for correct string resources — the view's
         // context and the WindowManager's context are allowed to differ.
-        val windowManager = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-
+        // The 2038 path uses the application WindowManager for interactive input.
+        // Reusing the AccessibilityService WindowManager for 2038 can attach
+        // the view to the service's 2032 token even when the layout
+        // params say 2038; input can then be routed away from Compose controls.
+        // Keep the raw service manager only for the 2032 path,
+        // which still needs the AccessibilityService-owned token.
         // Create the Compose view that will host our UI.
         // fitsSystemWindows = false prevents the view from adding padding
         // for system bars (status bar, nav bar). Without this, Compose's
@@ -180,33 +188,53 @@ class OverlayManager {
         // Set up window layout parameters.
         // Window type selection is critical and ROM-dependent.
         //
-        // v0.5.27 (ROOT-CAUSE FIX): ALWAYS prefer TYPE_ACCESSIBILITY_OVERLAY
-        // (2032). 小红书 (and other anti-tamper apps) call setHideOverlayWindows
-        // on HyperOS, which HIDES every TYPE_APPLICATION_OVERLAY (2038) window
-        // of other packages — even ones that addView() succeeded on. That is
-        // exactly why 0.5.25/0.5.26 added the pause screen yet it was invisible
-        // (user saw nothing, and the guard stuck on "already showing").
-        // TYPE_ACCESSIBILITY_OVERLAY is immune to that hide call, which is why
-        // the daily-working release (base.apk / v0.5.1) draws over 小红书. We
-        // only fall back to 2038 if 2032 is rejected (BadTokenException) on a
-        // given ROM. WindowManager MUST come from the RAW service context (set
-        // above) — TYPE_ACCESSIBILITY_OVERLAY needs the service's window token,
-        // and a locale-wrapped context can drop it and trigger BadTokenException.
-        val preferredType = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+        // v0.5.27 (ROOT-CAUSE FIX): prefer TYPE_ACCESSIBILITY_OVERLAY (2032)
+        // because HyperOS target apps can hide TYPE_APPLICATION_OVERLAY (2038),
+        // even when addView() succeeds. On Xiaomi Android 16, however, direct
+        // user testing proved that a 2032 surface can be visible yet route its
+        // controls' touches to the covered app. Use 2038 first only when the
+        // runtime overlay permission is actually granted. If it is absent, or
+        // if 2038 is rejected, use the existing Activity/Alarm fallback rather
+        // than retrying the known non-interactive 2032 surface.
+        // WindowManager selection is completed below after the device policy is known.
+        val isXiaomiApi36OrLater = Build.VERSION.SDK_INT >= 36 &&
+            Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true)
+        val presentationPath = OverlayPresentationPolicy.initialPath(
+            isXiaomiApi36OrLater = isXiaomiApi36OrLater,
+            canDrawOverlays = Settings.canDrawOverlays(service)
+        )
+        // 2032 uses the AccessibilityService token; 2038 uses the application
+        // WindowManager so its Compose controls retain interactive input.
+        val windowManagerContext = if (
+            presentationPath == OverlayPresentationPolicy.Path.APPLICATION_OVERLAY
+        ) {
+            service.applicationContext
+        } else {
+            service
+        }
+        val windowManager = windowManagerContext.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val preferredType = if (presentationPath == OverlayPresentationPolicy.Path.APPLICATION_OVERLAY) {
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        } else {
+            WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+        }
         // - MATCH_PARENT: covers the entire screen
         // - FLAG_LAYOUT_IN_SCREEN: positions the window across the full screen
         // - FLAG_LAYOUT_NO_LIMITS: extends the window behind status bar and
         //   navigation bar, eliminating the white gap at the top of the screen
         // - FLAG_NOT_FOCUSABLE: keeps system navigation such as Back and Recents
         //   available while the explicit Cancel button remains the only way to
-        //   cancel the pause.
+        //   cancel the pause. On Xiaomi Android 16 the interactive 2038 path
+        //   must be focusable so its Compose controls receive user touches.
+        val keepOverlayNonFocusable = presentationPath != OverlayPresentationPolicy.Path.APPLICATION_OVERLAY
+        val overlayFlags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+            if (keepOverlayNonFocusable) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
             preferredType,
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            overlayFlags,
             android.graphics.PixelFormat.TRANSLUCENT
         )
 
@@ -247,6 +275,46 @@ class OverlayManager {
                 service.onSessionStart(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, reRemindRepeat, reRemindEscalate)
             }
             dismiss()
+        }
+
+        // Persist the intentional, bounded exception before dismissing the
+        // overlay. This keeps the same action available for initial and
+        // re-remind cooldowns without changing the saved group settings.
+        val temporaryPassAction: (Int) -> Unit = { minutes ->
+            CoroutineScope(Dispatchers.IO).launch {
+                val granted = repository.grantTemporaryPass(
+                    packageName = targetPackage,
+                    minutes = minutes,
+                    now = System.currentTimeMillis()
+                )
+                if (granted != null) {
+                    repository.logLaunch(targetPackage, groupId, "proceeded")
+                    withContext(Dispatchers.Main) {
+                        if (isReRemind) {
+                            InterceptionManager.startBypass(targetPackage)
+                            service.completeReRemindContinue(targetPackage)
+                        } else {
+                            service.completeInitialContinue(targetPackage)
+                            service.onSessionStart(
+                                targetPackage,
+                                groupId,
+                                cooldownSeconds,
+                                reRemindMinutes,
+                                reRemindCooldownSeconds,
+                                reRemindRepeat,
+                                reRemindEscalate,
+                                preserveForegroundSession = false
+                            )
+                        }
+                        // The persisted pass is authoritative for this bounded
+                        // session. Clear any bypass left by the cooldown or an
+                        // earlier Continue so expiry cannot leave a stale
+                        // runtime exception behind.
+                        InterceptionManager.clearBypass(targetPackage)
+                        dismiss()
+                    }
+                }
+            }
         }
 
         composeView.setContent {
@@ -299,19 +367,11 @@ class OverlayManager {
                     // Countdown state — shared helper provides smooth progress (~60fps)
                     val countdown = rememberCountdownState(cooldownSeconds) {
                         // Timer finished → enter the app.
-                        // Initial entry records the session + starts the re-remind
-                        // loop; a re-remind pop just re-bypasses (the loop is already
-                        // running and will re-fire on its own).
-                        if (isReRemind) {
-                            InterceptionManager.startBypass(targetPackage)
-                        } else {
-                            // User let the initial cooldown finish without tapping
-                            // Continue — that still counts as "proceeded", so complete
-                            // the initial-continue signal (otherwise the re-remind loop
-                            // started below would await it forever) and start the session.
-                            service.completeInitialContinue(targetPackage)
-                            service.onSessionStart(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, reRemindRepeat, reRemindEscalate)
-                        }
+                        // The initial session clock is anchored only when the
+                        // user taps Continue (or chooses Temporary Pass). A
+                        // countdown ending merely creates the existing runtime
+                        // bypass; it must not start re-remind by itself.
+                        InterceptionManager.startBypass(targetPackage)
                     }
 
                     // DEBUG-ONLY auto-continue action is defined at show() scope (see
@@ -355,6 +415,9 @@ class OverlayManager {
                             }
                         },
                         onContinueWithReason = continueAction,
+                        onTemporaryPassSelected = temporaryPassAction,
+                        useInlineTemporaryPassChooser =
+                            presentationPath == OverlayPresentationPolicy.Path.APPLICATION_OVERLAY,
                         recommendedApps = recommendedApps,
                         onOpenRecommendedApp = { pkg ->
                             // Open the recommended (learning) app instead of the target.
@@ -388,37 +451,47 @@ class OverlayManager {
 
         var overlayAdded = false
         var usedType = preferredType
-        try {
-            windowManager.addView(composeView, params)
-            overlayView = composeView
-            overlayWindowManager = windowManager
-            overlayAttached = true
-            overlayAdded = true
-            AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
-            AppLogger.d(TAG, "Overlay shown for $targetPackage (type=$usedType)")
-            PersistentLog.log(context, "Overlay", "Overlay shown for $targetPackage type=$usedType")
-        } catch (e: Exception) {
-            AppLogger.w(TAG, "addView failed with type $usedType: ${e.javaClass.simpleName}: ${e.message}")
-            PersistentLog.log(context, "Overlay", "addView FAILED ($usedType): ${e.javaClass.simpleName}: ${e.message}")
-            // Try the alternate overlay type before giving up to an Activity.
-            val altType = if (preferredType == WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY)
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-            else
-                WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+        if (presentationPath != OverlayPresentationPolicy.Path.ACTIVITY) {
             try {
-                params.type = altType
-                usedType = altType
                 windowManager.addView(composeView, params)
                 overlayView = composeView
                 overlayWindowManager = windowManager
                 overlayAttached = true
                 overlayAdded = true
-                AppLogger.d(TAG, "Overlay added with alternate type $altType")
-                PersistentLog.log(context, "Overlay", "addView OK with alternate type $altType")
                 AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
-            } catch (e2: Exception) {
-                AppLogger.w(TAG, "addView also failed with alternate type $altType: ${e2.javaClass.simpleName}: ${e2.message}")
-                PersistentLog.log(context, "Overlay", "addView FAILED ($altType): ${e2.javaClass.simpleName}: ${e2.message}")
+                AppLogger.d(TAG, "Overlay shown for $targetPackage (type=$usedType)")
+                PersistentLog.log(context, "Overlay", "Overlay shown for $targetPackage type=$usedType")
+            } catch (e: Exception) {
+                AppLogger.w(TAG, "addView failed with type $usedType: ${e.javaClass.simpleName}: ${e.message}")
+                PersistentLog.log(context, "Overlay", "addView FAILED ($usedType): ${e.javaClass.simpleName}: ${e.message}")
+                val alternatePath = OverlayPresentationPolicy.alternatePathAfterFailure(
+                    isXiaomiApi36OrLater,
+                    presentationPath
+                )
+                if (alternatePath != null) {
+                    val altType = if (alternatePath == OverlayPresentationPolicy.Path.ACCESSIBILITY_OVERLAY) {
+                        WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
+                    } else {
+                        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+                    }
+                    try {
+                        params.type = altType
+                        usedType = altType
+                        windowManager.addView(composeView, params)
+                        overlayView = composeView
+                        overlayWindowManager = windowManager
+                        overlayAttached = true
+                        overlayAdded = true
+                        AppLogger.d(TAG, "Overlay added with alternate type $altType")
+                        PersistentLog.log(context, "Overlay", "addView OK with alternate type $altType")
+                        AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
+                    } catch (e2: Exception) {
+                        AppLogger.w(TAG, "addView also failed with alternate type $altType: ${e2.javaClass.simpleName}: ${e2.message}")
+                        PersistentLog.log(context, "Overlay", "addView FAILED ($altType): ${e2.javaClass.simpleName}: ${e2.message}")
+                    }
+                } else {
+                    PersistentLog.log(context, "Overlay", "No interactive overlay fallback for $usedType")
+                }
             }
         }
 
@@ -435,6 +508,10 @@ class OverlayManager {
                 putExtra("target_package", targetPackage)
                 putExtra("group_id", groupId)
                 putExtra("cooldown_seconds", cooldownSeconds)
+                putExtra("re_remind_minutes", reRemindMinutes)
+                putExtra("re_remind_cooldown_seconds", reRemindCooldownSeconds)
+                putExtra("re_remind_repeat", reRemindRepeat)
+                putExtra("re_remind_escalate", reRemindEscalate)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
             try {
@@ -443,7 +520,16 @@ class OverlayManager {
             } catch (e2: Exception) {
                 AppLogger.w(TAG, "Direct PauseActivity launch failed (AlarmManager backup): ${e2.message}")
             }
-            schedulePauseViaAlarm(context, targetPackage, groupId, cooldownSeconds)
+            schedulePauseViaAlarm(
+                context,
+                targetPackage,
+                groupId,
+                cooldownSeconds,
+                reRemindMinutes,
+                reRemindCooldownSeconds,
+                reRemindRepeat,
+                reRemindEscalate
+            )
         }
     }
 
@@ -460,7 +546,11 @@ class OverlayManager {
         context: Context,
         targetPackage: String,
         groupId: Long,
-        cooldownSeconds: Int
+        cooldownSeconds: Int,
+        reRemindMinutes: Int,
+        reRemindCooldownSeconds: Int,
+        reRemindRepeat: Boolean,
+        reRemindEscalate: Boolean
     ) {
         try {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -468,6 +558,10 @@ class OverlayManager {
                 putExtra("target_package", targetPackage)
                 putExtra("group_id", groupId)
                 putExtra("cooldown_seconds", cooldownSeconds)
+                putExtra("re_remind_minutes", reRemindMinutes)
+                putExtra("re_remind_cooldown_seconds", reRemindCooldownSeconds)
+                putExtra("re_remind_repeat", reRemindRepeat)
+                putExtra("re_remind_escalate", reRemindEscalate)
             }
             val pi = PendingIntent.getBroadcast(
                 context,
@@ -494,9 +588,13 @@ class OverlayManager {
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                     val retry = Intent(context, com.appause.android.ui.pause.PauseActivity::class.java).apply {
                         putExtra("target_package", targetPackage)
-                        putExtra("group_id", groupId)
-                        putExtra("cooldown_seconds", cooldownSeconds)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("group_id", groupId)
+                putExtra("cooldown_seconds", cooldownSeconds)
+                putExtra("re_remind_minutes", reRemindMinutes)
+                putExtra("re_remind_cooldown_seconds", reRemindCooldownSeconds)
+                putExtra("re_remind_repeat", reRemindRepeat)
+                putExtra("re_remind_escalate", reRemindEscalate)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                     }
                     context.startActivity(retry)
                     PersistentLog.log(context, "Overlay", "PauseActivity Handler backup fired for $targetPackage")

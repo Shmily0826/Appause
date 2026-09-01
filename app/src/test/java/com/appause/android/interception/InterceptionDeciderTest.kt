@@ -33,6 +33,8 @@ class InterceptionDeciderTest {
         isHomePackage: Boolean = false,
         isHomeForegroundConfirmed: Boolean = false,
         isBypassed: Boolean = false,
+        isSessionActive: Boolean = false,
+        isTemporaryPassActive: Boolean = false,
         pauseShown: Boolean = false,
         pauseTargetPackage: String? = null,
         isPauseTargetBypassed: Boolean = false
@@ -47,6 +49,8 @@ class InterceptionDeciderTest {
         isHomePackage = isHomePackage,
         isHomeForegroundConfirmed = isHomeForegroundConfirmed,
         isBypassed = isBypassed,
+        isSessionActive = isSessionActive,
+        isTemporaryPassActive = isTemporaryPassActive,
         pauseShown = { pauseShown },
         pauseTargetPackage = pauseTargetPackage,
         isPauseTargetBypassed = isPauseTargetBypassed
@@ -58,14 +62,16 @@ class InterceptionDeciderTest {
         burstSuppressed: Boolean = false,
         burstRealPackages: Set<String> = emptySet(),
         pauseShown: Boolean = false,
-        isBypassed: Boolean = false
+        isBypassed: Boolean = false,
+        isTemporaryPassActive: Boolean = false
     ): InterceptionDecider.PostGroupInput = InterceptionDecider.PostGroupInput(
         packageName = packageName,
         group = group,
         burstSuppressed = burstSuppressed,
         burstRealPackages = burstRealPackages,
         pauseShown = { pauseShown },
-        isBypassed = isBypassed
+        isBypassed = isBypassed,
+        isTemporaryPassActive = isTemporaryPassActive
     )
 
     private fun decidePre(vararg tweaks: (InterceptionDecider.PreGroupInput) -> InterceptionDecider.PreGroupInput): PreGroupDecision {
@@ -220,6 +226,36 @@ class InterceptionDeciderTest {
         assertTrue(decision.passedSystemGate)
     }
 
+    @Test
+    fun `active temporary pass skips before checking bypass or group`() {
+        val decision = decidePre({ it.copy(isTemporaryPassActive = true) })
+        assertTrue(decision is PreGroupDecision.SkipTemporaryPass)
+        assertEquals("SKIP: temporary pass active ($target)", decision.diagnosticsReason)
+        assertTrue(decision.passedSystemGate)
+    }
+
+    @Test
+    fun `active Continue session suppresses same-package navigation if bypass is transiently absent`() {
+        val decision = decidePre({ it.copy(
+            previousEventPackage = target,
+            lastForegroundPackage = target,
+            isBypassed = false,
+            isSessionActive = true
+        ) })
+
+        assertTrue(decision is PreGroupDecision.Resume)
+        assertEquals("RESUME: $target (returned within leave window)", decision.diagnosticsReason)
+    }
+
+    @Test
+    fun `Temporary Pass takes precedence and expiry is not shadowed by session state`() {
+        val whileActive = decidePre({ it.copy(isSessionActive = true, isTemporaryPassActive = true) })
+        assertTrue(whileActive is PreGroupDecision.SkipTemporaryPass)
+
+        val afterExpiry = decidePre({ it.copy(isSessionActive = false, isTemporaryPassActive = false) })
+        assertTrue(afterExpiry is PreGroupDecision.ProceedToGroupLookup)
+    }
+
     // ── Step 4.5: cooldown on screen ──
 
     @Test
@@ -333,6 +369,13 @@ class InterceptionDeciderTest {
     fun `bypass granted during group lookup prevents double intercept`() {
         val decision = decidePost({ it.copy(isBypassed = true) })
         assertTrue(decision is PostGroupDecision.SkipStateChanged)
+    }
+
+    @Test
+    fun `temporary pass created during group lookup prevents intercept`() {
+        val decision = decidePost({ it.copy(isTemporaryPassActive = true) })
+        assertTrue(decision is PostGroupDecision.SkipTemporaryPass)
+        assertEquals("SKIP: temporary pass active ($target)", decision.diagnosticsReason)
     }
 
     // ── Step 7: intercept ──

@@ -83,6 +83,12 @@ sealed class PreGroupDecision {
         override val passedSystemGate = true
     }
 
+    /** The user deliberately granted this package a bounded temporary pass. */
+    data class SkipTemporaryPass(val packageName: String) : PreGroupDecision() {
+        override val diagnosticsReason = "SKIP: temporary pass active ($packageName)"
+        override val passedSystemGate = true
+    }
+
     /**
      * A different real app became foreground while the cooldown was showing
      * and the user never tapped Continue — the cooldown was abandoned. The
@@ -122,6 +128,11 @@ sealed class PostGroupDecision {
     /** The app is not in any configured group. */
     data class SkipNoGroup(val packageName: String) : PostGroupDecision() {
         override val diagnosticsReason = "SKIP: not in any group ($packageName)"
+    }
+
+    /** A temporary pass became active while the group lookup was suspended. */
+    data class SkipTemporaryPass(val packageName: String) : PostGroupDecision() {
+        override val diagnosticsReason = "SKIP: temporary pass active ($packageName)"
     }
 
     /**
@@ -195,6 +206,10 @@ object InterceptionDecider {
         val isHomeForegroundConfirmed: Boolean,
         /** Whether the candidate is currently bypassed. */
         val isBypassed: Boolean,
+        /** Whether an explicit Continue-created session is still active. */
+        val isSessionActive: Boolean,
+        /** Whether the candidate has a persisted, unexpired temporary pass. */
+        val isTemporaryPassActive: Boolean,
         /** Read lazily at the exact points the inline code read the guard. */
         val pauseShown: () -> Boolean,
         val pauseTargetPackage: String?,
@@ -209,7 +224,8 @@ object InterceptionDecider {
         val burstSuppressed: Boolean,
         val burstRealPackages: Set<String>,
         val pauseShown: () -> Boolean,
-        val isBypassed: Boolean
+        val isBypassed: Boolean,
+        val isTemporaryPassActive: Boolean
     )
 
     /**
@@ -232,6 +248,18 @@ object InterceptionDecider {
         ) {
             return PreGroupDecision.SkipStaleCancelled(pkg)
         }
+
+        // A persisted Temporary Pass is the most specific decision. It must
+        // win even if an older ordinary Continue session marker is still in
+        // memory; once the pass expires, the caller supplies the current pass
+        // state again and normal interception can resume.
+        if (input.isTemporaryPassActive) return PreGroupDecision.SkipTemporaryPass(pkg)
+
+        // An explicit Continue keeps the current session alive across ordinary
+        // same-package Activity changes, even if the runtime bypass set was
+        // briefly lost during a window transition. Re-arm clears this marker;
+        // Temporary Pass never creates it.
+        if (input.isSessionActive) return PreGroupDecision.Resume(pkg)
 
         // 2.6. Poller/duplicate dedup — only when the foreground package has
         // not changed, the previous event was ALSO this app, and no pause is
@@ -259,7 +287,7 @@ object InterceptionDecider {
         // passedSystemGate and executed by the service.)
 
         // 4. RESUME within the leave window.
-        if (input.isBypassed) return PreGroupDecision.Resume(pkg)
+        if (input.isBypassed || input.isSessionActive) return PreGroupDecision.Resume(pkg)
 
         // 4.5. A pause is on screen: abandonment or skip.
         if (input.pauseShown()) {
@@ -285,6 +313,10 @@ object InterceptionDecider {
 
         // 6. Not in any configured group.
         val group = input.group ?: return PostGroupDecision.SkipNoGroup(pkg)
+
+        // A pass may be created by another UI callback while the Room lookup
+        // is suspended, so re-check it at the final decision point too.
+        if (input.isTemporaryPassActive) return PostGroupDecision.SkipTemporaryPass(pkg)
 
         // 6.5. Recents-replay burst suppression.
         if (input.burstSuppressed) {

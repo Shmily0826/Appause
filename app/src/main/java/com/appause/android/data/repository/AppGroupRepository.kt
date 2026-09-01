@@ -125,6 +125,18 @@ open class AppGroupRepository(
     /** Update the global recommended apps list. */
     suspend fun setRecommendedApps(packages: Set<String>) = settings.setRecommendedApps(packages)
 
+    /** Grant a package-scoped temporary pass without changing its saved group rule. */
+    suspend fun grantTemporaryPass(packageName: String, minutes: Int, now: Long): Long? =
+        settings.grantTemporaryPass(packageName, minutes, now)
+
+    /** Read the unexpired absolute expiry for a package, if one exists. */
+    suspend fun temporaryPassExpiresAt(packageName: String, now: Long): Long? =
+        settings.temporaryPassExpiresAt(packageName, now)
+
+    /** Check a package-scoped pass at the supplied wall-clock instant. */
+    suspend fun isTemporaryPassActive(packageName: String, now: Long): Boolean =
+        settings.isTemporaryPassActive(packageName, now)
+
     /**
      * Get a map of groupId -> number of apps in that group.
      * Groups with no apps are absent from the map (treat as 0 in the UI).
