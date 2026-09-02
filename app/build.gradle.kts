@@ -30,6 +30,7 @@ android {
         applicationId = "com.appause.android"
         minSdk = 26
         targetSdk = 35
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         versionCode = 91
         versionName = "0.5.39"
         // Baked at build time; lets a shared diagnostics report prove exactly
@@ -161,4 +162,14 @@ dependencies {
     // kotlinx-coroutines-test: deterministic coroutine testing for ViewModels
     // and the suspend ProState.redeemCode flow.
     testImplementation(libs.kotlinx.coroutines.test)
+
+    // Instrumentation tests exercise the real Compose chooser on an emulator.
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

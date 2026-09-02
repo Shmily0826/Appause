@@ -9,6 +9,11 @@ import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.provider.Settings
+import android.view.KeyEvent
+import android.view.View
+import android.widget.FrameLayout
+import android.window.OnBackInvokedCallback
+import android.window.OnBackInvokedDispatcher
 import java.util.Locale
 import com.appause.android.util.AppLogger
 import com.appause.android.util.PersistentLog
@@ -35,6 +40,7 @@ import com.appause.android.data.query.AppInfo
 import com.appause.android.data.query.AppQueryService
 import com.appause.android.interception.InterceptionManager
 import com.appause.android.ui.pause.PauseScreenContent
+import com.appause.android.ui.pause.StandaloneBackBridge
 import com.appause.android.ui.pause.rememberCountdownState
 import com.appause.android.ui.theme.AppauseTheme
 import kotlinx.coroutines.CoroutineScope
@@ -70,6 +76,24 @@ import kotlinx.coroutines.withContext
  * lifecycle (needed for LaunchedEffect timers and remember{} state).
  */
 @SuppressLint("ClickableViewAccessibility")
+/**
+ * Keeps legacy Back key delivery at the standalone window host boundary.
+ * Compose key modifiers do not receive every Back dispatch on newer Android
+ * ViewRoots, while this view is the direct input target of the overlay.
+ */
+private class StandaloneOverlayHost(
+    context: Context,
+    private val backBridge: StandaloneBackBridge
+) : FrameLayout(context) {
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
+            backBridge.dispatch()
+            return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
+}
+
 class OverlayManager {
 
     companion object {
@@ -88,7 +112,7 @@ class OverlayManager {
     }
 
     /** The overlay view — null when no overlay is showing. */
-    private var overlayView: ComposeView? = null
+    private var overlayView: View? = null
 
     /**
      * The WindowManager the overlay was added to. Stored so [dismiss] removes
@@ -99,6 +123,16 @@ class OverlayManager {
 
     /** Coroutine scope for the countdown timer — cancelled on dismiss. */
     private var overlayScope: CoroutineScope? = null
+
+    /** Lifecycle owner for the currently attached standalone Compose host. */
+    private var overlayLifecycleContainer: LifecycleContainer? = null
+
+    /** Identifies the currently shown overlay for late async callback guards. */
+    private var overlayGeneration: Long = 0L
+
+    /** API 33+ callback for Back dispatched to a standalone overlay window. */
+    private var overlayBackDispatcher: OnBackInvokedDispatcher? = null
+    private var overlayBackCallback: OnBackInvokedCallback? = null
 
     /**
      * Show the cooldown overlay for the given target app.
@@ -130,6 +164,7 @@ class OverlayManager {
             AppLogger.d(TAG, "Pause screen already showing, skipping")
             return
         }
+        val generation = ++overlayGeneration
 
         // Use service context (not applicationContext) for proper theme attributes.
         // AccessibilityService extends Service, which is a valid ContextWrapper
@@ -181,8 +216,19 @@ class OverlayManager {
         // fitsSystemWindows = false prevents the view from adding padding
         // for system bars (status bar, nav bar). Without this, Compose's
         // Surface adds top padding that leaves a gap behind the status bar.
-        val composeView = ComposeView(context).apply {
+        val standaloneBackBridge = StandaloneBackBridge()
+        val composeView = ComposeView(context)
+        val overlayHost = StandaloneOverlayHost(context, standaloneBackBridge).apply {
             fitsSystemWindows = false
+            isFocusable = true
+            isFocusableInTouchMode = true
+            addView(
+                composeView,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            )
         }
 
         // Set up window layout parameters.
@@ -222,11 +268,10 @@ class OverlayManager {
         // - FLAG_LAYOUT_IN_SCREEN: positions the window across the full screen
         // - FLAG_LAYOUT_NO_LIMITS: extends the window behind status bar and
         //   navigation bar, eliminating the white gap at the top of the screen
-        // - FLAG_NOT_FOCUSABLE: keeps system navigation such as Back and Recents
-        //   available while the explicit Cancel button remains the only way to
-        //   cancel the pause. On Xiaomi Android 16 the interactive 2038 path
-        //   must be focusable so its Compose controls receive user touches.
-        val keepOverlayNonFocusable = presentationPath != OverlayPresentationPolicy.Path.APPLICATION_OVERLAY
+        // Overlay-hosted Compose handles Back itself because standalone windows
+        // do not have an OnBackPressedDispatcherOwner. Keeping the window
+        // focusable lets the chooser dismiss before the outer Cancel action.
+        val keepOverlayNonFocusable = false
         val overlayFlags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
             if (keepOverlayNonFocusable) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0
@@ -238,8 +283,25 @@ class OverlayManager {
             android.graphics.PixelFormat.TRANSLUCENT
         )
 
+        fun registerStandaloneBackCallback() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                overlayHost.findOnBackInvokedDispatcher()?.let { dispatcher ->
+                    val callback = OnBackInvokedCallback { standaloneBackBridge.dispatch() }
+                    dispatcher.registerOnBackInvokedCallback(
+                        OnBackInvokedDispatcher.PRIORITY_OVERLAY,
+                        callback
+                    )
+                    overlayBackDispatcher = dispatcher
+                    overlayBackCallback = callback
+                }
+            }
+        }
+
         // Set up lifecycle for Compose (needed for LaunchedEffect timers).
         val lifecycleContainer = LifecycleContainer()
+        overlayLifecycleContainer = lifecycleContainer
+        overlayHost.setViewTreeLifecycleOwner(lifecycleContainer)
+        overlayHost.setViewTreeSavedStateRegistryOwner(lifecycleContainer)
         composeView.setViewTreeLifecycleOwner(lifecycleContainer)
         composeView.setViewTreeSavedStateRegistryOwner(lifecycleContainer)
 
@@ -287,11 +349,12 @@ class OverlayManager {
                         packageName = targetPackage,
                         minutes = minutes,
                         now = System.currentTimeMillis()
-                    )
-                    if (granted != null) {
-                        repository.logLaunch(targetPackage, groupId, "proceeded")
-                        withContext(Dispatchers.Main) {
-                            if (isReRemind) {
+                )
+                if (granted != null) {
+                    repository.logLaunch(targetPackage, groupId, "proceeded")
+                    withContext(Dispatchers.Main) {
+                        if (!isOverlayGenerationActive(generation)) return@withContext
+                        if (isReRemind) {
                                 InterceptionManager.startBypass(targetPackage)
                                 service.completeReRemindContinue(targetPackage)
                             } else {
@@ -318,7 +381,9 @@ class OverlayManager {
                 } catch (e: Exception) {
                     AppLogger.e(TAG, "Temporary pass selection failed", e)
                 } finally {
-                    withContext(Dispatchers.Main) { onSelectionFinished() }
+                    withContext(Dispatchers.Main) {
+                        if (isOverlayGenerationActive(generation)) onSelectionFinished()
+                    }
                 }
             }
         }
@@ -422,8 +487,10 @@ class OverlayManager {
                         },
                         onContinueWithReason = continueAction,
                         onTemporaryPassSelected = temporaryPassAction,
+                        useBackHandler = false,
+                        standaloneBackBridge = standaloneBackBridge,
                         useInlineTemporaryPassChooser =
-                            presentationPath == OverlayPresentationPolicy.Path.APPLICATION_OVERLAY,
+                            presentationPath != OverlayPresentationPolicy.Path.ACTIVITY,
                         recommendedApps = recommendedApps,
                         onOpenRecommendedApp = { pkg ->
                             // Open the recommended (learning) app instead of the target.
@@ -459,10 +526,12 @@ class OverlayManager {
         var usedType = preferredType
         if (presentationPath != OverlayPresentationPolicy.Path.ACTIVITY) {
             try {
-                windowManager.addView(composeView, params)
-                overlayView = composeView
+                windowManager.addView(overlayHost, params)
+                overlayView = overlayHost
                 overlayWindowManager = windowManager
                 overlayAttached = true
+                overlayHost.requestFocus()
+                registerStandaloneBackCallback()
                 overlayAdded = true
                 AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
                 AppLogger.d(TAG, "Overlay shown for $targetPackage (type=$usedType)")
@@ -483,10 +552,12 @@ class OverlayManager {
                     try {
                         params.type = altType
                         usedType = altType
-                        windowManager.addView(composeView, params)
-                        overlayView = composeView
+                        windowManager.addView(overlayHost, params)
+                        overlayView = overlayHost
                         overlayWindowManager = windowManager
                         overlayAttached = true
+                        overlayHost.requestFocus()
+                        registerStandaloneBackCallback()
                         overlayAdded = true
                         AppLogger.d(TAG, "Overlay added with alternate type $altType")
                         PersistentLog.log(context, "Overlay", "addView OK with alternate type $altType")
@@ -507,6 +578,7 @@ class OverlayManager {
             overlayView = null
             overlayWindowManager = null
             overlayAttached = false
+            destroyOverlayLifecycle()
             AppauseAccessibilityService.lastOverlayResult = "fallback_pauseactivity"
             AppLogger.w(TAG, "Overlay addView failed (type=$usedType) — falling back to PauseActivity")
             PersistentLog.log(context, "Overlay", "Overlay FAILED type=$usedType → PauseActivity fallback")
@@ -617,23 +689,37 @@ class OverlayManager {
      * Called when the user taps Cancel, Continue, or when the service
      * detects the user has left the target app.
      */
+    @Synchronized
     fun dismiss() {
-        val view = overlayView ?: return
+        val view = overlayView
 
-        try {
-            // Remove via the SAME WindowManager that added the view (stored in
-            // overlayWindowManager). Falling back to the view's own context is a
-            // safety net, but normally they must match or removeView can throw.
-            val wm = overlayWindowManager
-                ?: view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-            wm.removeView(view)
-            AppLogger.d(TAG, "Overlay dismissed")
-        } catch (e: Exception) {
-            AppLogger.w(TAG, "Error removing overlay", e)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val dispatcher = overlayBackDispatcher
+            val callback = overlayBackCallback
+            if (dispatcher != null && callback != null) {
+                dispatcher.unregisterOnBackInvokedCallback(callback)
+            }
+            overlayBackDispatcher = null
+            overlayBackCallback = null
         }
 
-        // Clean up the lifecycle so Compose effects stop running
-        // (The LifecycleContainer will be garbage collected along with the view)
+        if (view != null) {
+            try {
+                // Remove via the SAME WindowManager that added the view (stored in
+                // overlayWindowManager). Falling back to the view's own context is a
+                // safety net, but normally they must match or removeView can throw.
+                val wm = overlayWindowManager
+                    ?: view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+                wm.removeView(view)
+                AppLogger.d(TAG, "Overlay dismissed")
+            } catch (e: Exception) {
+                AppLogger.w(TAG, "Error removing overlay", e)
+            }
+        }
+
+        // Clean up the lifecycle so Compose effects stop running. This is also
+        // called for failed attachment and is idempotent across teardown paths.
+        destroyOverlayLifecycle()
         overlayView = null
         overlayWindowManager = null
         overlayAttached = false
@@ -645,6 +731,16 @@ class OverlayManager {
         // Reset the guard flag so the next target app open can trigger interception
         AppauseAccessibilityService.pauseShown = false
         AppauseAccessibilityService.pauseTargetPackage = null
+    }
+
+    @Synchronized
+    private fun isOverlayGenerationActive(generation: Long): Boolean =
+        generation == overlayGeneration && overlayView != null && overlayAttached
+
+    private fun destroyOverlayLifecycle() {
+        val lifecycleContainer = overlayLifecycleContainer ?: return
+        overlayLifecycleContainer = null
+        lifecycleContainer.destroy()
     }
 
     /** Whether the overlay is currently showing. */
@@ -703,6 +799,8 @@ private class LifecycleContainer : LifecycleOwner, SavedStateRegistryOwner {
     }
 
     fun destroy() {
-        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
+        if (lifecycleRegistry.currentState != Lifecycle.State.DESTROYED) {
+            lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
+        }
     }
 }

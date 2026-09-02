@@ -27,6 +27,20 @@ class TemporaryPassChooserStateTest {
     }
 
     @Test
+    fun back_during_selection_is_ignored_until_completion_then_outer_cancel_recovers() {
+        val inFlight = TemporaryPassChooserState().open().tryStartSelection()!!
+
+        assertEquals(
+            TemporaryPassBackAction.IGNORE_SELECTION_IN_FLIGHT,
+            inFlight.backAction()
+        )
+
+        val recovered = inFlight.completeSelection()
+        assertFalse(recovered.selectionInFlight)
+        assertEquals(TemporaryPassBackAction.CANCEL_PAUSE, recovered.backAction())
+    }
+
+    @Test
     fun chooser_cannot_open_before_cooldown_finishes() {
         val initial = TemporaryPassChooserState()
 

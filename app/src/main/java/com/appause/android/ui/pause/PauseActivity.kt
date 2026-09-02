@@ -15,6 +15,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -46,6 +47,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -56,6 +58,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -350,6 +357,7 @@ class PauseActivity : ComponentActivity() {
                 if (granted != null) {
                     repository.logLaunch(targetPackage, groupId, "proceeded")
                     withContext(Dispatchers.Main) {
+                        if (isFinishing || isDestroyed) return@withContext
                         userProceeded = true
                         startSessionAfterProceed(preserveForegroundSession = false)
                         // The persisted pass is authoritative for this bounded
@@ -363,7 +371,9 @@ class PauseActivity : ComponentActivity() {
             } catch (e: Exception) {
                 AppLogger.e(TAG, "Temporary pass selection failed", e)
             } finally {
-                withContext(Dispatchers.Main) { onSelectionFinished() }
+                withContext(Dispatchers.Main) {
+                    if (!isFinishing && !isDestroyed) onSelectionFinished()
+                }
             }
         }
     }
@@ -424,7 +434,18 @@ internal const val TEMPORARY_PASS_MIN_TOUCH_TARGET_DP = 48
 
 internal enum class TemporaryPassBackAction {
     DISMISS_CHOOSER,
+    IGNORE_SELECTION_IN_FLIGHT,
     CANCEL_PAUSE
+}
+
+/** Back bridge used by standalone WindowManager overlays on Android 13+. */
+internal class StandaloneBackBridge {
+    @Volatile
+    var onBack: (() -> Unit)? = null
+
+    fun dispatch() {
+        onBack?.invoke()
+    }
 }
 
 internal data class TemporaryPassChooserState(
@@ -435,7 +456,9 @@ internal data class TemporaryPassChooserState(
 
     fun dismiss(): TemporaryPassChooserState = copy(isOpen = false)
 
-    fun backAction(): TemporaryPassBackAction = if (isOpen) {
+    fun backAction(): TemporaryPassBackAction = if (selectionInFlight) {
+        TemporaryPassBackAction.IGNORE_SELECTION_IN_FLIGHT
+    } else if (isOpen) {
         TemporaryPassBackAction.DISMISS_CHOOSER
     } else {
         TemporaryPassBackAction.CANCEL_PAUSE
@@ -466,6 +489,8 @@ internal fun PauseScreenContent(
     onCancel: () -> Unit,
     onContinueWithReason: (String) -> Unit,
     onTemporaryPassSelected: (Int, () -> Unit) -> Unit = { _, onFinished -> onFinished() },
+    useBackHandler: Boolean = true,
+    standaloneBackBridge: StandaloneBackBridge? = null,
     useInlineTemporaryPassChooser: Boolean = false,
     reasons: List<Pair<String, String>> = emptyList(),
     recommendedApps: List<AppInfo> = emptyList(),
@@ -479,15 +504,45 @@ internal fun PauseScreenContent(
     var temporaryPassChooserState by remember { mutableStateOf(TemporaryPassChooserState()) }
     val showTemporaryPassChooser = temporaryPassChooserState.isOpen
     val temporaryPassSelectionInFlight = temporaryPassChooserState.selectionInFlight
+    val outerActionsEnabled = !temporaryPassSelectionInFlight
 
-    // Back dismisses the nested chooser before following the outer Cancel flow.
-    BackHandler {
+    val handleBack: () -> Unit = {
         when (temporaryPassChooserState.backAction()) {
             TemporaryPassBackAction.DISMISS_CHOOSER -> {
                 temporaryPassChooserState = temporaryPassChooserState.dismiss()
             }
+            TemporaryPassBackAction.IGNORE_SELECTION_IN_FLIGHT -> Unit
             TemporaryPassBackAction.CANCEL_PAUSE -> onCancel()
         }
+    }
+
+    // Standalone WindowManager overlays do not have an OnBackPressedDispatcherOwner.
+    // Their host keeps the existing window-level Back behavior, while Activity
+    // hosts use Compose to dismiss the nested chooser before outer Cancel.
+    if (useBackHandler) {
+        BackHandler(onBack = handleBack)
+    }
+
+    standaloneBackBridge?.let { bridge ->
+        DisposableEffect(bridge, temporaryPassChooserState, onCancel) {
+            bridge.onBack = handleBack
+            onDispose { bridge.onBack = null }
+        }
+    }
+
+    val overlayBackModifier = if (!useBackHandler) {
+        Modifier
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyUp || event.key != Key.Back) {
+                    false
+                } else {
+                    handleBack()
+                    true
+                }
+            }
+    } else {
+        Modifier
     }
 
     // A selection is one-shot so rapid taps cannot grant duplicate passes.
@@ -509,7 +564,8 @@ internal fun PauseScreenContent(
         Box(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .then(overlayBackModifier),
         contentAlignment = Alignment.TopCenter
     ) {
         Column(
@@ -600,7 +656,8 @@ internal fun PauseScreenContent(
                     items(recommendedApps, key = { it.packageName }) { app ->
                         RecommendedAppChip(
                             app = app,
-                            onClick = { onOpenRecommendedApp?.invoke(app.packageName) }
+                            onClick = { onOpenRecommendedApp?.invoke(app.packageName) },
+                            enabled = outerActionsEnabled
                         )
                     }
                 }
@@ -646,8 +703,10 @@ internal fun PauseScreenContent(
             // Disabled until the countdown finishes. When tapped, logs the
             // selected reason (empty if none) and proceeds to the target app.
             Button(
-                onClick = { onContinueWithReason(selectedReason ?: "") },
-                enabled = isFinished,
+                onClick = {
+                    if (outerActionsEnabled) onContinueWithReason(selectedReason ?: "")
+                },
+                enabled = isFinished && outerActionsEnabled,
                 modifier = Modifier
                     .width(200.dp)
                     .height(48.dp)
@@ -661,7 +720,7 @@ internal fun PauseScreenContent(
             Spacer(modifier = Modifier.height(8.dp))
 
             // ── Cancel button — always available ──
-            TextButton(onClick = onCancel) {
+            TextButton(onClick = onCancel, enabled = outerActionsEnabled) {
                 Text(
                     text = stringResource(R.string.pause_cancel),
                     style = MaterialTheme.typography.labelLarge
@@ -687,7 +746,8 @@ internal fun PauseScreenContent(
     if (showTemporaryPassChooser && useInlineTemporaryPassChooser) {
         Surface(
             modifier = Modifier
-                .fillMaxSize(),
+                .fillMaxSize()
+                .then(overlayBackModifier),
             color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.32f)
         ) {
             Box(
@@ -806,7 +866,8 @@ private fun ReasonButton(
 @Composable
 private fun RecommendedAppChip(
     app: AppInfo,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean = true
 ) {
     // Load the app icon from PackageManager — cached per package name.
     val context = LocalContext.current
@@ -823,6 +884,7 @@ private fun RecommendedAppChip(
 
     Card(
         onClick = onClick,
+        enabled = enabled,
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
