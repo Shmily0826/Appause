@@ -9,7 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
 import com.appause.android.data.local.AppGroup
 import com.appause.android.data.pro.ProState
-import com.appause.android.service.AccessibilityServiceChecker
+import com.appause.android.service.AccessibilityHealthChecker
+import com.appause.android.service.AccessibilityHealthState
 import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -88,13 +89,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
      * Whether the Accessibility Service is enabled by the user.
      * This is a simple snapshot — checked when the screen appears.
      *
-     * We query the SYSTEM setting (Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
-     * via AccessibilityServiceChecker, NOT an in-process flag. The system setting
-     * survives process death, so reopening the app no longer falsely reports the
-     * service as disabled (which used to nag the user to re-grant permission).
+     * We combine the SYSTEM setting with process-local lifecycle evidence. The
+     * system setting survives process death, but a fresh process remains UNKNOWN
+     * until Android reports onServiceConnected.
      */
-    private val _isServiceRunning = MutableStateFlow(false)
-    val isServiceRunning: StateFlow<Boolean> = _isServiceRunning.asStateFlow()
+    private val _accessibilityHealth = MutableStateFlow(AccessibilityHealthState.UNKNOWN)
+    val accessibilityHealth: StateFlow<AccessibilityHealthState> = _accessibilityHealth.asStateFlow()
 
     /**
      * Whether "Display over other apps" (SYSTEM_ALERT_WINDOW) is granted.
@@ -152,13 +152,18 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val groupsExpanded: StateFlow<Boolean> = _groupsExpanded.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            AccessibilityHealthChecker.observe(getApplication()).collect {
+                _accessibilityHealth.value = it
+            }
+        }
         refreshServiceStatus()
         loadAppCounts()
     }
 
     /** Re-check the accessibility service status. Called when the screen resumes. */
     fun refreshServiceStatus() {
-        _isServiceRunning.value = AccessibilityServiceChecker.isEnabled(getApplication())
+        _accessibilityHealth.value = AccessibilityHealthChecker.snapshot(getApplication())
         _canDrawOverlays.value = Settings.canDrawOverlays(getApplication())
         _isUsageAccessGranted.value = ForegroundChecker.isUsageAccessGranted(getApplication())
         val pm = getApplication<Application>().getSystemService(Context.POWER_SERVICE) as? PowerManager

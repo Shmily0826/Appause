@@ -1037,3 +1037,64 @@ passes remain a separate emulator evidence class. Historical release-package
 2038 behavior is not counted as current Debug 2032 evidence.
 
 No commit, push, tag, release, or deploy was performed.
+
+## 30. Accessibility Health & Recovery V1 emulator phase (2026-09-06 — APPAUSE-20260906-1459)
+
+### Implementation contract
+
+- `AccessibilityHealthState` combines two independent facts: the user-controlled system Accessibility component list and process-local service lifecycle evidence.
+- `HEALTHY` requires both system `ENABLED` and process `CONNECTED`.
+- `ACCESSIBILITY_NOT_ENABLED` is selected when the global Accessibility switch is off or the current Appause component is absent from the enabled list. `SERVICE_NOT_CONNECTED` is selected only after the current connected instance is observed being destroyed. System/process uncertainty remains `UNKNOWN` and is never rendered as permission-off.
+- `AccessibilityHealthChecker.observe()` subscribes the three ViewModels to the service lifecycle `StateFlow`; `refreshServiceStatus()` still takes a fresh system snapshot on every screen resume. Recovery remains user-driven through `Settings.ACTION_ACCESSIBILITY_SETTINGS`.
+
+### JVM verification
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| `:app:testDebugUnitTest` | **PASS** | 134 tests, 0 failures; includes 6 `AccessibilityHealthPolicyTest` cases |
+| `:app:assembleDebug` | **PASS** | Gradle 8.11.1, JDK 17, current debug APK |
+| `git diff --check` | **PASS** | No whitespace errors; Git emitted only existing line-ending warnings |
+
+The new deterministic tests cover `ENABLED + UNKNOWN -> UNKNOWN` (fail closed),
+`UNKNOWN -> CONNECTED -> HEALTHY` without another resume, `CONNECTED ->
+DISCONNECTED -> SERVICE_NOT_CONNECTED`, disabled-system precedence, and unknown
+system state.
+
+### Emulator verification
+
+Target: API 34 AVD `Appause_P0_Nav_API34_Temp`, serial `emulator-5554`, model
+`sdk_gphone64_x86_64`, `ro.kernel.qemu=1`. The physical Xiaomi serial
+`6036d5b` was not targeted.
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Data-preserving debug APK install | **PASS** | `adb -s emulator-5554 install -r`, no uninstall/clear/wipe |
+| Disabled baseline via normal Settings UI | **PASS** | Stop confirmation produced `accessibility_enabled=0`, empty enabled and Bound services |
+| Disabled Appause UI | **PASS** | After normal Back/resume, Home showed Accessibility recovery item and Settings route |
+| Enable via normal Settings UI | **PASS** | Allow confirmation produced `accessibility_enabled=1`, debug component enabled and Bound |
+| Enable return/resume | **PASS** | Returning to Appause removed the Accessibility missing item; logcat recorded service connected and foreground events |
+| Fresh emulator process | **PASS, bounded** | Reboot preserved enabled setting and Bound service; post-reboot Appause launch showed no false permission-off state |
+| Final disable via normal Settings UI | **PASS** | Stop confirmation and return showed system-disabled red recovery UI again |
+| Direct secure-setting writes | **NOT USED** | Settings values were read-only observations; all toggles used normal Android UI |
+| `uiautomator` | **NOT USED** | Screen screenshots and coordinate input only |
+| Healthy configured-target interception | **NOT TESTED** | No configured group existed; creating test data was outside this bounded validation |
+
+The emulator also showed that `am force-stop`/`am crash` can cause Android to
+disable or quarantine the Accessibility service; those probes were not treated
+as product failures. `am kill` did not remove the bound service. The final
+emulator state was deliberately left disabled through normal Settings UI.
+
+No commit, push, merge, tag, release, or deploy occurred.
+
+### Review follow-up
+
+The independent lifecycle/state review found one same-scope race and fixed it:
+`currentProcessState()` now reads the process `StateFlow` as the sole runtime
+source, so a destroy emission cannot be overwritten by a still-clearing static
+instance reference. `systemState()` also converts ordinary setting-read
+exceptions to `UNKNOWN`, preventing an observer from terminating while retaining
+stale health. Focused JVM tests and `assembleDebug` were rerun successfully;
+the rebuilt APK was data-preservingly installed on `emulator-5554`, and the
+read-only disabled setting/dumpsys plus Appause launch check passed. No blocking
+review finding remains. The configured-target interception path remains outside
+this validation because the emulator had no configured group.

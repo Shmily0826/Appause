@@ -11,7 +11,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.appause.android.AppauseApp
 import com.appause.android.data.settings.SettingsDataStore
-import com.appause.android.service.AccessibilityServiceChecker
+import com.appause.android.service.AccessibilityHealthChecker
+import com.appause.android.service.AccessibilityHealthState
 import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -48,8 +49,8 @@ class OnboardingViewModel(
             settingsDataStore.getLanguageSync()
         )
 
-    private val _isServiceRunning = MutableStateFlow(false)
-    val isServiceRunning: StateFlow<Boolean> = _isServiceRunning
+    private val _accessibilityHealth = MutableStateFlow(AccessibilityHealthState.UNKNOWN)
+    val accessibilityHealth: StateFlow<AccessibilityHealthState> = _accessibilityHealth
 
     /** Whether "Display over other apps" (SYSTEM_ALERT_WINDOW) is granted. */
     private val _canDrawOverlays = MutableStateFlow(false)
@@ -62,6 +63,15 @@ class OnboardingViewModel(
     /** Whether the app is exempt from battery optimization ("Unrestricted"). */
     private val _isIgnoringBattery = MutableStateFlow(false)
     val isIgnoringBattery: StateFlow<Boolean> = _isIgnoringBattery
+
+    init {
+        viewModelScope.launch {
+            AccessibilityHealthChecker.observe(getApplication()).collect {
+                _accessibilityHealth.value = it
+            }
+        }
+        refreshServiceStatus()
+    }
 
     /**
      * Current onboarding step.
@@ -81,7 +91,7 @@ class OnboardingViewModel(
     /** Re-query permission status (call when the screen resumes). */
     fun refreshServiceStatus() {
         val app = getApplication<Application>()
-        _isServiceRunning.value = AccessibilityServiceChecker.isEnabled(app)
+        _accessibilityHealth.value = AccessibilityHealthChecker.snapshot(app)
         _canDrawOverlays.value = Settings.canDrawOverlays(app)
         _isUsageAccessGranted.value = ForegroundChecker.isUsageAccessGranted(app)
         val pm = app.getSystemService(Context.POWER_SERVICE) as? PowerManager

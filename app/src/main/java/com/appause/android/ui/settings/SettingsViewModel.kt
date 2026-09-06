@@ -7,7 +7,8 @@ import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
-import com.appause.android.service.AccessibilityServiceChecker
+import com.appause.android.service.AccessibilityHealthChecker
+import com.appause.android.service.AccessibilityHealthState
 import com.appause.android.service.AppauseAccessibilityService
 import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,8 +42,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000),
             (application as AppauseApp).settingsDataStore.getThemeModeSync())
 
-    private val _isServiceRunning = MutableStateFlow(false)
-    val isServiceRunning: StateFlow<Boolean> = _isServiceRunning
+    private val _accessibilityHealth = MutableStateFlow(AccessibilityHealthState.UNKNOWN)
+    val accessibilityHealth: StateFlow<AccessibilityHealthState> = _accessibilityHealth
 
     private val _isUsageAccessGranted = MutableStateFlow(false)
     val isUsageAccessGranted: StateFlow<Boolean> = _isUsageAccessGranted
@@ -63,6 +64,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     init {
+        viewModelScope.launch {
+            AccessibilityHealthChecker.observe(getApplication()).collect {
+                _accessibilityHealth.value = it
+            }
+        }
         // Initialise immediately so the permissions screen does not flash red
         // before the first ON_RESUME refresh.
         refreshServiceStatus()
@@ -79,7 +85,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      */
     fun refreshServiceStatus() {
         val app = getApplication<Application>()
-        _isServiceRunning.value = AccessibilityServiceChecker.isEnabled(app)
+        _accessibilityHealth.value = AccessibilityHealthChecker.snapshot(app)
         _isUsageAccessGranted.value = ForegroundChecker.isUsageAccessGranted(app)
         val powerManager = app.getSystemService(Context.POWER_SERVICE) as? PowerManager
         _isIgnoringBattery.value = powerManager?.isIgnoringBatteryOptimizations(app.packageName) ?: false

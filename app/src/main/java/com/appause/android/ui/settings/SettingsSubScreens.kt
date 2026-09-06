@@ -62,6 +62,8 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
+import com.appause.android.service.AccessibilityHealthState
+import com.appause.android.service.AccessibilityHealthStatus
 
 /**
  * Shared scaffold for every Settings sub-screen: a top bar with a back button
@@ -228,7 +230,7 @@ fun PermissionsSettingsScreen(
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-    val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
+    val accessibilityHealth by viewModel.accessibilityHealth.collectAsStateWithLifecycle()
     val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
     val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
     val canDrawOverlays by viewModel.canDrawOverlays.collectAsStateWithLifecycle()
@@ -287,26 +289,47 @@ fun PermissionsSettingsScreen(
         }
 
         // ── Accessibility Service (required) ──
+        val isUnknown = accessibilityHealth.status == AccessibilityHealthStatus.UNKNOWN
+        val isHealthy = accessibilityHealth.isHealthy
+        val statusRes = when (accessibilityHealth.status) {
+            AccessibilityHealthStatus.HEALTHY -> R.string.status_enabled
+            AccessibilityHealthStatus.ACCESSIBILITY_NOT_ENABLED -> R.string.status_disabled
+            AccessibilityHealthStatus.SERVICE_NOT_CONNECTED -> R.string.status_recovery_needed
+            AccessibilityHealthStatus.UNKNOWN -> R.string.status_unverified
+        }
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.accessibility_service), style = MaterialTheme.typography.titleMedium)
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
-                        text = stringResource(if (isServiceRunning) R.string.status_enabled else R.string.status_disabled),
+                        text = stringResource(statusRes),
                         style = MaterialTheme.typography.labelMedium,
-                        color = if (isServiceRunning) enabledGreen else MaterialTheme.colorScheme.error
+                        color = when {
+                            isHealthy -> enabledGreen
+                            isUnknown -> MaterialTheme.colorScheme.onSurfaceVariant
+                            else -> MaterialTheme.colorScheme.error
+                        }
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(
-                        if (isServiceRunning) R.string.service_running else R.string.service_not_enabled
+                        when (accessibilityHealth.status) {
+                            AccessibilityHealthStatus.HEALTHY -> R.string.service_running
+                            AccessibilityHealthStatus.ACCESSIBILITY_NOT_ENABLED -> R.string.service_not_enabled
+                            AccessibilityHealthStatus.SERVICE_NOT_CONNECTED -> R.string.service_not_connected_desc
+                            AccessibilityHealthStatus.UNKNOWN -> R.string.service_status_unknown_desc
+                        }
                     ),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = if (isServiceRunning) enabledGreen else MaterialTheme.colorScheme.error
+                    color = when {
+                        isHealthy -> enabledGreen
+                        isUnknown -> MaterialTheme.colorScheme.onSurfaceVariant
+                        else -> MaterialTheme.colorScheme.error
+                    }
                 )
-                if (!isServiceRunning) {
+                if (!isHealthy) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(onClick = {
                         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
@@ -624,7 +647,12 @@ private fun ProLockedCard(
  * `enabled = null` means the row has no boolean state (e.g. Android version).
  */
 @Composable
-private fun DebugStatusRow(label: String, enabled: Boolean?) {
+private fun DebugStatusRow(
+    label: String,
+    enabled: Boolean? = null,
+    statusTextRes: Int? = null,
+    statusColor: Color? = null
+) {
     val enabledGreen = if (isSystemInDarkTheme()) Color(0xFF81C784) else Color(0xFF2E7D32)
     Row(
         modifier = Modifier
@@ -637,11 +665,13 @@ private fun DebugStatusRow(label: String, enabled: Boolean?) {
             text = label,
             style = MaterialTheme.typography.bodyMedium
         )
-        if (enabled != null) {
+        if (enabled != null || statusTextRes != null) {
             Text(
-                text = stringResource(if (enabled) R.string.status_enabled else R.string.status_disabled),
+                text = stringResource(
+                    statusTextRes ?: if (enabled == true) R.string.status_enabled else R.string.status_disabled
+                ),
                 style = MaterialTheme.typography.labelMedium,
-                color = if (enabled) enabledGreen else MaterialTheme.colorScheme.error
+                color = statusColor ?: if (enabled == true) enabledGreen else MaterialTheme.colorScheme.error
             )
         }
     }
@@ -657,7 +687,7 @@ fun AboutSettingsScreen(
     viewModel: SettingsViewModel = viewModel()
 ) {
     val isEnabled by viewModel.isEnabled.collectAsStateWithLifecycle()
-    val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
+    val accessibilityHealth by viewModel.accessibilityHealth.collectAsStateWithLifecycle()
     val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -684,7 +714,17 @@ fun AboutSettingsScreen(
                 )
                 DebugStatusRow(
                     label = stringResource(R.string.debug_service),
-                    enabled = isServiceRunning
+                    statusTextRes = when (accessibilityHealth.status) {
+                        AccessibilityHealthStatus.HEALTHY -> R.string.status_enabled
+                        AccessibilityHealthStatus.ACCESSIBILITY_NOT_ENABLED -> R.string.status_disabled
+                        AccessibilityHealthStatus.SERVICE_NOT_CONNECTED -> R.string.status_recovery_needed
+                        AccessibilityHealthStatus.UNKNOWN -> R.string.status_unverified
+                    },
+                    statusColor = when (accessibilityHealth.status) {
+                        AccessibilityHealthStatus.HEALTHY -> if (isSystemInDarkTheme()) Color(0xFF81C784) else Color(0xFF2E7D32)
+                        AccessibilityHealthStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
+                        else -> MaterialTheme.colorScheme.error
+                    }
                 )
                 DebugStatusRow(
                     label = stringResource(R.string.debug_usage_access),

@@ -28,6 +28,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancel
@@ -297,6 +300,16 @@ class AppauseAccessibilityService : AccessibilityService() {
         @Volatile
         var instance: AppauseAccessibilityService? = null
 
+        /**
+         * Process-local lifecycle evidence. UNKNOWN is intentional after a
+         * process restart: the system setting may still be enabled, but this
+         * process must not claim a live connection before onServiceConnected.
+         */
+        private val _processState = MutableStateFlow(AccessibilityProcessState.UNKNOWN)
+        val processState: StateFlow<AccessibilityProcessState> = _processState.asStateFlow()
+
+        fun currentProcessState(): AccessibilityProcessState = _processState.value
+
         // ── Diagnostics counters ──
         // Plain in-memory fields read by the Diagnostics screen (debug builds).
         // They exist so a tester without adb can see whether the service is
@@ -557,6 +570,7 @@ class AppauseAccessibilityService : AccessibilityService() {
 
     override fun onCreate() {
         super.onCreate()
+        _processState.value = AccessibilityProcessState.UNKNOWN
         PersistentLog.log(this, "Svc", "AccessibilityService.onCreate pid=${android.os.Process.myPid()}")
     }
 
@@ -569,6 +583,7 @@ class AppauseAccessibilityService : AccessibilityService() {
             // Keep a static reference so the Settings screen can toggle the
             // monitoring notification at runtime (start/stop foreground).
             instance = this
+            _processState.value = AccessibilityProcessState.CONNECTED
             connectedAt = System.currentTimeMillis()
             eventCount = 0L
 
@@ -1666,6 +1681,9 @@ class AppauseAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         PersistentLog.log(this, "Svc", "onDestroy")
         super.onDestroy()
+        if (instance == this && _processState.value == AccessibilityProcessState.CONNECTED) {
+            _processState.value = AccessibilityProcessState.DISCONNECTED
+        }
 
         // Drop the static reference so a dead instance can't be toggled.
         // The Diagnostics screen reads this to tell "enabled in system settings"

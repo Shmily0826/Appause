@@ -69,6 +69,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
 import com.appause.android.data.local.AppGroup
 import com.appause.android.data.pro.ProState
+import com.appause.android.service.AccessibilityHealthState
+import com.appause.android.service.AccessibilityHealthStatus
 
 /**
  * Home Screen — the main entry point of Appause.
@@ -97,7 +99,7 @@ fun HomeScreen(
     val sortedGroups by viewModel.sortedGroups.collectAsStateWithLifecycle()
     val groupsExpanded by viewModel.groupsExpanded.collectAsStateWithLifecycle()
     val isEnabled by viewModel.isEnabled.collectAsStateWithLifecycle()
-    val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
+    val accessibilityHealth by viewModel.accessibilityHealth.collectAsStateWithLifecycle()
     val canDrawOverlays by viewModel.canDrawOverlays.collectAsStateWithLifecycle()
     val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
     val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
@@ -189,9 +191,9 @@ fun HomeScreen(
             // it is preparation work rather than an app failure.
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                if (!isServiceRunning || !isUsageAccessGranted || !isIgnoringBattery) {
+                if (!accessibilityHealth.isHealthy || !isUsageAccessGranted || !isIgnoringBattery) {
                     SetupChecklistCard(
-                        isServiceRunning = isServiceRunning,
+                        accessibilityHealth = accessibilityHealth,
                         isUsageAccessGranted = isUsageAccessGranted,
                         isIgnoringBattery = isIgnoringBattery,
                         onShowWhy = { showWhy = true },
@@ -220,7 +222,7 @@ fun HomeScreen(
                     )
                 } else {
                     StatusHeaderCard(
-                        isServiceRunning = isServiceRunning,
+                        accessibilityHealth = accessibilityHealth,
                         isEnabled = isEnabled,
                         onToggle = viewModel::toggleEnabled,
                         onOpenSettings = {
@@ -489,7 +491,7 @@ private fun Bullet(text: String) {
  */
 @Composable
 private fun SetupChecklistCard(
-    isServiceRunning: Boolean,
+    accessibilityHealth: AccessibilityHealthState,
     isUsageAccessGranted: Boolean,
     isIgnoringBattery: Boolean,
     onOpenAccessibilitySettings: () -> Unit,
@@ -500,7 +502,8 @@ private fun SetupChecklistCard(
     // Accessibility is the only missing state that prevents Appause from
     // observing foreground apps. Usage access and battery optimization are
     // preparation steps, so keep those states in the softer warning palette.
-    val isBlocking = !isServiceRunning
+    val isBlocking = accessibilityHealth.status != AccessibilityHealthStatus.UNKNOWN &&
+        !accessibilityHealth.isHealthy
     val containerColor = if (isBlocking) {
         MaterialTheme.colorScheme.errorContainer
     } else {
@@ -547,7 +550,7 @@ private fun SetupChecklistCard(
                 color = contentColor
             )
             Spacer(modifier = Modifier.height(8.dp))
-            if (!isServiceRunning) {
+            if (!accessibilityHealth.isHealthy) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = "•",
@@ -556,7 +559,13 @@ private fun SetupChecklistCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(R.string.required_permissions_accessibility),
+                        text = stringResource(
+                            if (accessibilityHealth.status == AccessibilityHealthStatus.UNKNOWN) {
+                                R.string.required_permissions_accessibility_unverified
+                            } else {
+                                R.string.required_permissions_accessibility
+                            }
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = contentColor
                     )
@@ -597,7 +606,7 @@ private fun SetupChecklistCard(
                 onClick = {
                     // Open one item at a time, in the order that makes the core
                     // pause flow reliable. The card updates on return.
-                    if (!isServiceRunning) onOpenAccessibilitySettings()
+                    if (!accessibilityHealth.isHealthy) onOpenAccessibilitySettings()
                     else if (!isUsageAccessGranted) onOpenUsageAccessSettings()
                     else onOpenBatterySettings()
                 },
@@ -626,7 +635,7 @@ private fun SetupChecklistCard(
  */
 @Composable
 private fun StatusHeaderCard(
-    isServiceRunning: Boolean,
+    accessibilityHealth: AccessibilityHealthState,
     isEnabled: Boolean,
     onToggle: () -> Unit,
     onOpenSettings: () -> Unit
@@ -634,13 +643,32 @@ private fun StatusHeaderCard(
     // Controls the OEM guidance dialog shown from the warning card.
     var showServiceHelp by remember { mutableStateOf(false) }
 
-    if (!isServiceRunning) {
-        // ── Warning state: accessibility permission is missing ──
+    if (!accessibilityHealth.isHealthy) {
+        val isUnknown = accessibilityHealth.status == AccessibilityHealthStatus.UNKNOWN
+        val titleRes = when (accessibilityHealth.status) {
+            AccessibilityHealthStatus.ACCESSIBILITY_NOT_ENABLED -> R.string.service_not_enabled_title
+            AccessibilityHealthStatus.SERVICE_NOT_CONNECTED -> R.string.service_not_connected_title
+            AccessibilityHealthStatus.UNKNOWN -> R.string.service_status_unknown_title
+            AccessibilityHealthStatus.HEALTHY -> R.string.service_active
+        }
+        val descriptionRes = when (accessibilityHealth.status) {
+            AccessibilityHealthStatus.ACCESSIBILITY_NOT_ENABLED -> R.string.service_not_enabled_desc
+            AccessibilityHealthStatus.SERVICE_NOT_CONNECTED -> R.string.service_not_connected_desc
+            AccessibilityHealthStatus.UNKNOWN -> R.string.service_status_unknown_desc
+            AccessibilityHealthStatus.HEALTHY -> R.string.service_running
+        }
+        val containerColor = if (isUnknown) MaterialTheme.colorScheme.surfaceVariant
+        else MaterialTheme.colorScheme.errorContainer
+        val contentColor = if (isUnknown) MaterialTheme.colorScheme.onSurfaceVariant
+        else MaterialTheme.colorScheme.onErrorContainer
+        val accentColor = if (isUnknown) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.error
+
         Card(
             modifier = Modifier.fillMaxWidth(),
             onClick = onOpenSettings,
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
+                containerColor = containerColor
             )
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
@@ -648,36 +676,36 @@ private fun StatusHeaderCard(
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.error,
+                    tint = accentColor,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = stringResource(R.string.service_not_enabled_title),
+                        text = stringResource(titleRes),
                         style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = contentColor
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = stringResource(R.string.service_not_enabled_desc),
+                    text = stringResource(descriptionRes),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onErrorContainer
+                    color = contentColor
                 )
                 // Explicit action — don't rely on card color alone to convey
                 // what the user should do.
                 TextButton(onClick = onOpenSettings) {
                     Text(
                         text = stringResource(R.string.open_settings),
-                        color = MaterialTheme.colorScheme.error
+                        color = accentColor
                     )
                 }
                 // Secondary action: explain why Xiaomi/Huawei keep turning
                 // the service off and what the user can do about it.
-                TextButton(onClick = { showServiceHelp = true }) {
+                if (!isUnknown) TextButton(onClick = { showServiceHelp = true }) {
                     Text(
                         text = stringResource(R.string.service_off_help),
-                        color = MaterialTheme.colorScheme.onErrorContainer
+                        color = contentColor
                     )
                 }
             }

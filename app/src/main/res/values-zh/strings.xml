@@ -32,10 +32,16 @@
     <string name="optional_badge">可选</string>
     <string name="status_enabled">已开启</string>
     <string name="status_disabled">未开启</string>
+    <string name="status_recovery_needed">需要恢复</string>
+    <string name="status_unverified">未确认</string>
 
     <!-- 状态头部卡片：系统权限状态 -->
     <string name="service_not_enabled_title">服务未启用</string>
     <string name="service_not_enabled_desc">请开启无障碍权限以使用 Appause。</string>
+    <string name="service_not_connected_title">无障碍服务需要恢复</string>
+    <string name="service_not_connected_desc">系统设置显示已开启，但 Appause 当前未连接。请打开无障碍设置后返回此处重新检查。</string>
+    <string name="service_status_unknown_title">尚未确认无障碍状态</string>
+    <string name="service_status_unknown_desc">Appause 当前无法确认服务连接状态。请返回此页面或打开无障碍设置重新检查。</string>
     <string name="service_active">服务运行中</string>
     <string name="open_settings">打开设置</string>
 
@@ -43,6 +49,7 @@
     <string name="required_permissions_title">请开启必要权限</string>
     <string name="required_permissions_desc">Appause 需要以下权限才能正常工作：</string>
     <string name="required_permissions_accessibility">无障碍服务 — 检测当前前台应用</string>
+    <string name="required_permissions_accessibility_unverified">无障碍服务 — 状态尚未确认</string>
     <string name="required_permissions_overlay">显示悬浮窗 — 在目标应用上显示暂停页</string>
     <string name="required_permissions_usage">使用情况访问 — 确认真正在屏幕上的应用</string>
     <string name="required_permissions_action">去开启</string>
@@ -401,6 +408,8 @@
     <string name="onboarding_service_open">前往系统设置开启</string>
     <string name="onboarding_service_on">已开启，很好！</string>
     <string name="onboarding_service_off">尚未开启，请在系统设置里允许 Appause 使用无障碍服务。</string>
+    <string name="onboarding_service_not_connected">系统设置显示已开启，但 Appause 服务当前未连接。打开设置后返回此处重新检查。</string>
+    <string name="onboarding_service_unknown">尚未确认无障碍状态。请从系统设置返回后重新检查。</string>
     <string name="onboarding_preview_title">打开前，你会看到这样的提醒</string>
     <string name="onboarding_preview_desc">Appause 不会直接阻止你使用应用。打开前先等几秒，你可以选择继续或返回。</string>
     <string name="onboarding_group_title">创建第一个分组</string>

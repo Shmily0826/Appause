@@ -32,10 +32,16 @@
     <string name="optional_badge">Optional</string>
     <string name="status_enabled">Enabled</string>
     <string name="status_disabled">Not enabled</string>
+    <string name="status_recovery_needed">Needs recovery</string>
+    <string name="status_unverified">Not verified</string>
 
     <!-- Status header card: service permission state -->
     <string name="service_not_enabled_title">Service not enabled</string>
     <string name="service_not_enabled_desc">Enable accessibility permission to use Appause.</string>
+    <string name="service_not_connected_title">Accessibility service needs recovery</string>
+    <string name="service_not_connected_desc">Accessibility is enabled, but Appause is not currently connected. Open Accessibility settings and return here to re-check.</string>
+    <string name="service_status_unknown_title">Accessibility status not confirmed</string>
+    <string name="service_status_unknown_desc">Appause cannot confirm the service connection yet. Return to this screen or open Accessibility settings to check it.</string>
     <string name="service_active">Service active</string>
     <string name="open_settings">Open settings</string>
 
@@ -43,6 +49,7 @@
     <string name="required_permissions_title">Required permissions missing</string>
     <string name="required_permissions_desc">Appause needs the following permissions to work:</string>
     <string name="required_permissions_accessibility">Accessibility service — detect the foreground app</string>
+    <string name="required_permissions_accessibility_unverified">Accessibility service — status not confirmed yet</string>
     <string name="required_permissions_overlay">Display over other apps — show the pause screen</string>
     <string name="required_permissions_usage">Usage access — confirm which app is really on screen</string>
     <string name="required_permissions_action">Open settings</string>
@@ -406,6 +413,8 @@
     <string name="onboarding_service_open">Open system settings</string>
     <string name="onboarding_service_on">Enabled — great!</string>
     <string name="onboarding_service_off">Not enabled yet — please allow Appause to use the Accessibility service in system settings.</string>
+    <string name="onboarding_service_not_connected">Accessibility is enabled, but the Appause service is not currently connected. Open settings and return to check again.</string>
+    <string name="onboarding_service_unknown">Accessibility status is not confirmed yet. Return from settings to check again.</string>
     <string name="onboarding_preview_title">This is the reminder you will see</string>
     <string name="onboarding_preview_desc">Appause does not block an app outright. It gives you a few seconds, then lets you decide whether to continue.</string>
     <string name="onboarding_group_title">Create your first group</string>

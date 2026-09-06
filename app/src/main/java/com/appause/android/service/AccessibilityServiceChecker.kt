@@ -31,45 +31,47 @@ import android.text.TextUtils
 object AccessibilityServiceChecker {
 
     /**
-     * @return true if the user has enabled the Appause accessibility service
-     *         in system settings (and accessibility is turned on at all).
+     * Read the user-controlled system setting without treating an exception or
+     * unavailable setting as permission granted.
      */
-    fun isEnabled(context: Context): Boolean {
-        // 1. Is accessibility switched on for the device at all?
-        //    If the user turned off accessibility entirely, no service runs,
-        //    so we should treat ours as not enabled.
+    fun systemState(context: Context): AccessibilitySystemState {
         val accessibilityOn = try {
             Settings.Secure.getInt(
                 context.contentResolver,
                 Settings.Secure.ACCESSIBILITY_ENABLED
             ) == 1
-        } catch (e: Settings.SettingNotFoundException) {
-            false
+        } catch (_: Exception) {
+            return AccessibilitySystemState.UNKNOWN
         }
-        if (!accessibilityOn) return false
+        if (!accessibilityOn) return AccessibilitySystemState.DISABLED
 
-        // 2. Is OUR service listed among the enabled accessibility services?
-        //    The value is a colon-separated list of flattened component names,
-        //    e.g. "com.foo/.MyService:com.appause.android/.AppauseAccessibilityService".
-        val enabledServices = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
+        val enabledServices = try {
+            Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            )
+        } catch (_: Exception) {
+            return AccessibilitySystemState.UNKNOWN
+        } ?: return AccessibilitySystemState.DISABLED
 
-        // The component we expect to find in that list.
         val expected = ComponentName(context, AppauseAccessibilityService::class.java)
-
-        // Split on ':' and compare each entry. unflattenFromString() safely
-        // parses both full ("pkg/full.Class") and short ("pkg/.Class") forms.
         val splitter = TextUtils.SimpleStringSplitter(':')
         splitter.setString(enabledServices)
         for (entry in splitter) {
             val component = ComponentName.unflattenFromString(entry)
             if (component != null && component == expected) {
-                return true
+                return AccessibilitySystemState.ENABLED
             }
         }
-        return false
+        return AccessibilitySystemState.DISABLED
+    }
+
+    /**
+     * @return true if the user has enabled the Appause accessibility service
+     *         in system settings (and accessibility is turned on at all).
+     */
+    fun isEnabled(context: Context): Boolean {
+        return systemState(context) == AccessibilitySystemState.ENABLED
     }
 
     /**

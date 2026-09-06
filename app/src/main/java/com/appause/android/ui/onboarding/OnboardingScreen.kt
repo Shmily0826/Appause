@@ -74,6 +74,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
+import com.appause.android.service.AccessibilityHealthState
+import com.appause.android.service.AccessibilityHealthStatus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -106,7 +108,7 @@ fun OnboardingScreen(
 
     val page by viewModel.page
     val language by viewModel.language.collectAsStateWithLifecycle()
-    val isServiceRunning by viewModel.isServiceRunning.collectAsStateWithLifecycle()
+    val accessibilityHealth by viewModel.accessibilityHealth.collectAsStateWithLifecycle()
     val canDrawOverlays by viewModel.canDrawOverlays.collectAsStateWithLifecycle()
     val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
     val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
@@ -188,7 +190,7 @@ fun OnboardingScreen(
                     desc = R.string.onboarding_welcome_desc
                 )
                 3 -> ServiceStep(
-                    isRunning = isServiceRunning,
+                    accessibilityHealth = accessibilityHealth,
                     onOpenSettings = {
                         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -551,7 +553,7 @@ private fun GroupStepPreview() {
 
 @Composable
 private fun ServiceStep(
-    isRunning: Boolean,
+    accessibilityHealth: AccessibilityHealthState,
     onOpenSettings: () -> Unit
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -570,17 +572,20 @@ private fun ServiceStep(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        val statusColor = if (isRunning) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.error
+        val statusColor = when (accessibilityHealth.status) {
+            AccessibilityHealthStatus.HEALTHY -> MaterialTheme.colorScheme.primary
+            AccessibilityHealthStatus.UNKNOWN -> MaterialTheme.colorScheme.onSurfaceVariant
+            else -> MaterialTheme.colorScheme.error
         }
         Text(
-            text = if (isRunning) {
-                stringResource(R.string.onboarding_service_on)
-            } else {
-                stringResource(R.string.onboarding_service_off)
-            },
+            text = stringResource(
+                when (accessibilityHealth.status) {
+                    AccessibilityHealthStatus.HEALTHY -> R.string.onboarding_service_on
+                    AccessibilityHealthStatus.ACCESSIBILITY_NOT_ENABLED -> R.string.onboarding_service_off
+                    AccessibilityHealthStatus.SERVICE_NOT_CONNECTED -> R.string.onboarding_service_not_connected
+                    AccessibilityHealthStatus.UNKNOWN -> R.string.onboarding_service_unknown
+                }
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = statusColor,
             textAlign = TextAlign.Center

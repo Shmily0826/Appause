@@ -7,7 +7,7 @@ import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import com.appause.android.data.settings.FakeSettingsDataStore
 import com.appause.android.data.settings.SettingsDataStore
-import com.appause.android.service.AccessibilityServiceChecker
+import com.appause.android.service.AccessibilityHealthChecker
 import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -104,9 +104,9 @@ class OnboardingViewModelTest {
         viewModel.refreshServiceStatus()
         val pm = app.getSystemService(Context.POWER_SERVICE) as? PowerManager
         assertEquals(
-            "isServiceRunning must mirror AccessibilityServiceChecker",
-            AccessibilityServiceChecker.isEnabled(app),
-            viewModel.isServiceRunning.value
+            "accessibility health must mirror the shared checker",
+            AccessibilityHealthChecker.snapshot(app),
+            viewModel.accessibilityHealth.value
         )
         assertEquals(
             "canDrawOverlays must mirror Settings.canDrawOverlays",
