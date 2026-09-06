@@ -662,3 +662,14 @@
 - ⑦ (P1-7) `InterceptionManager.bypassedPackages` and both `SessionState` sets switched from plain `mutableSetOf` to `ConcurrentHashMap.newKeySet()` (cross-thread access from service main thread, Dispatchers.IO overlay callbacks, PauseActivity, PauseAlarmReceiver).
 - Verification: `JAVA_HOME=D:\Dev-Setup\jdk` `./gradlew assembleDebug` PASS after each code task; final combined `./gradlew assembleDebug testDebugUnitTest` PASS (BUILD SUCCESSFUL, 134 tests, 0 failures). No emulator/device verification was performed — UI behavior changes (P0-1 recommended apps on the fallback path, P0-2 list ordering on resume, P0-3 midnight rollover) still need an emulator/physical smoke pass and are marked as such in `docs/ENGINEERING_REVIEW.md`.
 - No commit, push, tag, release, or deploy was performed. `ci.yml` requires an explicit push authorization to take effect.
+
+### 2026-09-06 CI follow-up (first run failed, fixed, second run green)
+- The first CI run (run 34030199226) failed at `./gradlew` with exit 126
+  ("Permission denied"): the wrapper's git index mode was 100644 because it
+  was committed from Windows. Fixed with `git update-index --chmod=+x gradlew`
+  (index mode now 100755) and bumped `actions/setup-java` v4 → v5 to clear the
+  deprecation warning. Retry run 34030264341 concluded **success** (job `test`).
+- Pushed to `origin/main` under user authorization: commits `16ef15c` (docs),
+  `27d1a30` (ci), `9067adb` (P0 fixes + PROGRESS), `537d109` (ci fix).
+  Working tree afterwards contains only the pre-existing uncommitted
+  `index.html` redesign. No tag, release, merge, or deploy.
