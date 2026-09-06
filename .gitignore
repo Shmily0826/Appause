@@ -59,7 +59,8 @@ key.properties
 # Cloudflare Worker (Plan B activation server)
 worker/node_modules/
 worker/.wrangler/
-worker/.dev.vars          # local secrets (never commit)
+# local secrets (never commit)
+worker/.dev.vars
 worker/wrangler.toml.local
 
 # Stray design-skill variant templates (not part of Appause)
