@@ -79,6 +79,24 @@ object LicenseVerifier {
         deviceFingerprint: String,
         requireDeviceBinding: Boolean = false
     ): LicenseClaims? {
+        // Any failure — malformed base64url, non-JSON segments, wrong types —
+        // must come back as null (fail closed), never as an exception. The
+        // callers do wrap verify in runCatching, but the documented contract
+        // of this method is "null on any failed verification step", so the
+        // guarantee lives here too.
+        return try {
+            verifyTokenParts(token, serverPublicKey, deviceFingerprint, requireDeviceBinding)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    private fun verifyTokenParts(
+        token: String,
+        serverPublicKey: PublicKey,
+        deviceFingerprint: String,
+        requireDeviceBinding: Boolean
+    ): LicenseClaims? {
         val parts = token.trim().split(".")
         if (parts.size != 3) return null
 
