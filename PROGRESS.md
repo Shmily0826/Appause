@@ -572,3 +572,67 @@
 - WindowManager and SurfaceFlinger reported the Appause overlay surface ready, visible, and shown, while a device screenshot still contained only Bilibili pixels. This isolates the physical failure to post-attach overlay rendering/compositing on the tested HyperOS device; no Temporary Pass or foreground-decision regression was proven.
 - Temporary `AppauseDiag` logging was removed after diagnosis. Clean `assembleDebug` and `assembleRelease` passed, and the clean signed Release was restored with data-preserving `adb install -r`; Accessibility remained enabled/bound/live.
 - Temporary Pass physical lifecycle validation remains blocked until the device can visibly render the existing 2032 cooldown surface. No product fix, staging, commit, push, tag, release, or deploy was performed.
+
+### 2026-09-04 (P0 fail-safe Home overlay follow-up — APPAUSE-20260904-2323)
+- Preserved the existing dirty Android, landing-page, strings, `.gradle-rc-review`, and opaque `worker/.dev.vars` work. Added a bounded Home confirmation retry: the first check retains event-time and current-foreground protection against stale Recents launcher events; when UsageStats still names the target, a final fail-open retry dismisses the attached 2032 overlay if no newer real-app event arrived.
+- Added a focused JVM regression for the bounded stale-target fallback. Focused JVM tests PASS and `assembleDebug` PASS using JDK 17, Gradle 8.11.1, and process-local SDK configuration.
+- Emulator-only validation is BLOCKED on `Medium_Phone` but continued on a disposable API 34 AVD. `Appause_P0_API34_Temp` was created from the installed `android-34/google_apis/x86_64` image on port 5558; the fresh debug APK installed successfully and `MainActivity` ran there. Runtime scenario validation remains in progress in the next checkpoint.
+- No physical Xiaomi/HyperOS device was used. No commit, push, merge, tag, release, or deploy.
+
+### 2026-09-05 (P0 fail-safe emulator acceptance continuation — APPAUSE-20260904-2323)
+- Added the platform-correct package-visibility declaration for `ACTION_MAIN` + `CATEGORY_HOME`, while retaining dynamic launcher query/resolve logic. The service logged `Resolved HOME packages: [com.google.android.apps.nexuslauncher, com.android.settings]` on `emulator-5560`.
+- The metadata experiment for `flagRequestFilterKeyEvents` was validated and then removed: with `android:canRequestFilterKeyEvents="true"`, dumpsys reported `capabilities=8`, but emulator `KEYCODE_HOME` still did not reach `onKeyEvent`; no `System navigation escape 3` log appeared and the 2032 remained. The final implementation relies on accessibility/window events and foreground confirmation instead of this ineffective hook.
+- Final watchdog repetition 1: fresh active 2032=1; after 34 seconds active 2032=1 with `Pause guard watchdog: exceeded max hold — releasing guard`; Home produced `Confirmed system Home — dismissing standalone overlay` and `Overlay dismissed`, Launcher top, active 2032=0. Independent repetition 2 met the same criteria and also finished with active 2032=0.
+- Gesture mode (`navigation_mode=2`) Home and left-edge Back smoke passed with fresh 2032 removed and Nexus Launcher top. Three-button mode (`navigation_mode=0`) Home, Back, and Recents each passed with fresh 2032 removed; Recents exposed `recents_animation_input_consumer` and `isHomeRecentsComponent=true`. Navigation mode was restored to 2.
+- Final geometry remains full width: `fitTypes=NAVIGATION_BARS`, requested 1080x1920, frame [0,0][1080,1920], with the bottom navigation region reserved. The `SYSTEM_GESTURES` fit was not restored; no fake navigation bar was added.
+- Focused JVM tests and `assembleDebug` passed after the final source changes. Only emulator-5560 was mutated/installed in this continuation; the physical Xiaomi and other AVDs were not touched. No commit, push, tag, release, or deploy.
+
+### 2026-09-05 (Physical Xiaomi P0 follow-up: bounded read-only stop diagnosis)
+- Read-only discovery reconfirmed physical serial `6036d5b` as Xiaomi
+  `2410DPN6CC`, with emulator `emulator-5560` left as a separate device. The
+  physical package remains installed at `0.5.39-debug`, versionCode 91, with
+  the expected data directory; no 2032 window is currently present and
+  Launcher is foreground.
+- Current User 0 accessibility state contains only
+  `com.zidongdianji.autoclicker/.AutoClickService`; `accessibility_enabled=1`.
+  Appause is absent from Enabled and Bound services, while the autoclicker was
+  preserved. Appause package state reports `installed=true`,
+  `suspended=false`, `hidden=false`, but `enabled=0` and `stopped=true`.
+- The Appause AccessibilityService component remains registered with
+  `BIND_ACCESSIBILITY_SERVICE` and resolves in the package resolver table.
+  `cmd package resolve-service` is not available on this HyperOS build, so
+  component registration was verified from `dumpsys package` instead.
+- `dumpsys activity exit-info` records the latest Appause process exit at
+  `22:03:40.108` as `USER REQUESTED`, subreason `FORCE STOP`, description
+  `stop ... due to SwipeUpClean`. This identifies a recorded stop event but
+  does not identify its actor or prove that it caused the accessibility setting
+  to become disabled. No remaining system log ties the disable/death to a
+  specific cause; the cause is therefore **UNKNOWN**.
+- Physical Home had already passed with a fresh 2032 blocker and Launcher
+  foreground afterward. Physical Back with injected `KEYCODE_BACK` was not
+  accepted, and no valid system-Back-button tap was completed before the
+  service became disabled. Physical Recents and the post-disable watchdog
+  paths remain NOT TESTED. The earlier emulator navigation/watchdog evidence
+  remains separate and is not physical proof.
+- Earlier `uiautomator dump` contamination remains documented: it caused an
+  AccessibilityService lifecycle rebind, so it was not used in this diagnosis.
+  No service reload, settings write, uninstall, clear, wipe, source change,
+  commit, push, tag, release, or deploy was performed in this pass.
+
+### 2026-09-05 (Physical Xiaomi package-identity boundary after manual re-enable)
+- Read-only baseline confirmed both `com.appause.android/.service.AppauseAccessibilityService` and the preserved autoclicker Enabled+Bound, with three-button navigation (`navigation_mode=0`) and no Appause 2032 before testing.
+- The bound service is the installed release package `com.appause.android` (`0.5.39`, lastUpdateTime `2026-09-01 16:39:19`). The current local P0 debug package remains separately installed as `com.appause.android.debug` (`0.5.39-debug`, lastUpdateTime `2026-09-05 20:36:47`) but is not enabled or bound. No Accessibility setting was changed to correct this identity mismatch.
+- A normal Bilibili launch under the bound release service did not produce fresh `INTERCEPT` plus `Overlay shown ... type=2032` evidence. It exposed a release `APPLICATION_OVERLAY` type 2038 window instead, so the actual Back-region tap was not sent and the scenario was not counted.
+- System Home returned Launcher, but the release 2038 window remained in WindowManager. This is release-package evidence only, not a verdict on the current debug 2032 fail-open implementation; physical Back, Recents, and watchdog acceptance cannot safely proceed against the wrong installed service.
+- No source change, test/build, Accessibility toggle, secure-setting write, force-stop shortcut, uninstall, clear, wipe, commit, push, tag, release, or deploy was performed. The next setup action is selecting the debug Appause service through normal Xiaomi Accessibility Settings while retaining the autoclicker.
+
+### 2026-09-06 (Physical Xiaomi P0 input-boundary repair validation — APPAUSE-20260905-2032)
+- Continued with the user-selected Debug Appause service only for current-P0 evidence; the preserved autoclicker remained Enabled+Bound. No Accessibility setting, secure setting, app data, or package removal was changed.
+- The accepted same-root-cause repair is the public window-policy combination: `FLAG_NOT_TOUCH_MODAL` plus an explicit height computed from `maximumWindowMetrics` minus status/navigation insets. The existing `NAVIGATION_BARS`-only fit policy and `fitInsetsIgnoringVisibility` remain; no hidden touch-region API, fake navigation bar, or additional inset flag was added. The disproven `Side.BOTTOM` experiment is absent.
+- Fresh Debug-only Bilibili interception on `6036d5b` produced `INTERCEPT: tv.danmaku.bili` and `Overlay shown ... type=2032`. `dumpsys input` showed frame and touchable region `[0,193][1080,2333]`, while `NavigationBar0` remained `[0,2267][1080,2400]`; the overlay no longer covers the three-button center row at y=2333.
+- Physical three-button Back PASS: an independently fresh Debug 2032 was followed by the observed system Back-region tap `(810,2333)`; the post-state focused `com.miui.home/.launcher.Launcher` and no Debug 2032 input window remained. The earlier injected `KEYCODE_BACK` failure remains an ADB injection limitation, not this product verdict.
+- Physical three-button Recents safe-escape PASS: a fresh Debug 2032 followed by the observed Recents-region tap `(270,2333)` left Launcher/top system state and no Debug 2032. The one-second sample did not characterize the full human overview animation.
+- Physical watchdog repetitions 1 and 2: each fresh blocker remained a real Debug 2032 with the bounded input region after more than 34 seconds, then semantic Home produced Launcher focus and removed the Debug 2032 window. The elapsed/state safety result passed independently twice; a dedicated watchdog-expiry log line was not visible in the concise physical log capture, so expiry-log observability remains a stated boundary.
+- Duplicate/flash smoke: normal Bilibili launch → actual Back-region escape → normal Bilibili reopen produced one fresh Debug intercept/2032 per open and no rapid duplicate or stale surface; the final Back returned to Launcher with no Debug 2032.
+- Emulator navigation/watchdog results remain emulator-only. Physical gesture-mode human Home/Back/Recents, human Recents swipe/hold, and true frozen-process/ANR safety remain unproven. Release-package 2038 observations are not current Debug P0 evidence.
+- No commit, push, tag, release, or deploy was performed.

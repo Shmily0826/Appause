@@ -862,3 +862,178 @@ on the host.
 
 - Public naming convention is `Appause-v<version>.apk`, while `scripts/make_release.py` still emits a code-suffixed internal artifact. Resolve that mismatch in a future source/script task.
 - Continue to distinguish automated/build evidence, inherited RC evidence, and physical-device smoke. The final interception manual gap remains open.
+
+## 25. P0 fail-safe Home overlay follow-up (2026-09-04)
+
+Task `APPAUSE-20260904-2323` continued the existing uncommitted P0 overlay
+work. The Home confirmation path now keeps the event-time ordering guard and
+the first UsageStats cross-check, but schedules one bounded fail-open retry when
+UsageStats still reports the intercepted target. If no newer real-app
+accessibility event arrives, the retry treats the already observed launcher
+event as authoritative and removes the standalone 2032 overlay. This addresses
+the stale-foreground case without removing the previous Recents double-flash
+protection. A focused JVM test covers the retry decision.
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Focused JVM tests | PASS | `HomeTransitionPolicyTest`, `OverlayPresentationPolicyTest`, and `InterceptionDeciderTest`; Gradle reported 30 actionable tasks successful |
+| `assembleDebug` | PASS | Gradle 8.11.1, JDK 17, installed SDK API 35; process-local SDK override only |
+| Alternate AVD setup | PASS | Disposable `Appause_P0_API34_Temp` created from installed API 34 `google_apis/x86_64` image; no existing AVD was wiped or modified |
+| APK install and MainActivity launch | PASS | Fresh debug APK installed successfully only on emulator-5558; MainActivity became the resumed activity |
+| Cancel/Home/watchdog/reopen/double-flash | NOT TESTED | Runtime scenario execution is the next checkpoint |
+| Xiaomi/HyperOS physical validation | NOT TESTED | User phone unavailable; no physical device was used |
+
+The source/test changes remain local and uncommitted. No commit, push, merge,
+tag, release, or deploy occurred.
+
+## 26. P0 fail-safe emulator acceptance continuation (2026-09-05)
+
+Task `APPAUSE-20260904-2323` continued on disposable API 34 emulator
+`emulator-5560` only. The physical Xiaomi was not targeted. The existing
+`P0Testv` Chrome target was used without clearing app data.
+
+### Implementation and contract checks
+
+- Added a separate manifest package-visibility query for
+  `ACTION_MAIN` + `CATEGORY_HOME`; the existing `ACTION_MAIN` + `CATEGORY_LAUNCHER`
+  query remains for app discovery. The dynamic service resolver then reported
+  `[com.google.android.apps.nexuslauncher, com.android.settings]`.
+- The Android SDK 36.1 source confirms that `FLAG_REQUEST_FILTER_KEY_EVENTS`
+  requires `canRequestFilterKeyEvents`. A temporary metadata + `onKeyEvent`
+  experiment reached dumpsys `capabilities=8`, but emulator HOME still produced
+  no `onKeyEvent` callback or `System navigation escape 3` log, and left 2032
+  attached. That ineffective hook and its metadata were removed rather than
+  stacked with the event path.
+- The bounded fail-open path now preserves a pending Launcher confirmation
+  when a later quick-search/system helper event arrives. After watchdog expiry,
+  a resolved Launcher event is allowed to dismiss an orphaned attached surface
+  even though the logical pause guard has already been released.
+
+### Verification
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Focused JVM tests | PASS | `OverlayPresentationPolicyTest` and `HomeTransitionPolicyTest` |
+| `assembleDebug` | PASS | JDK 17, Gradle 8.11.1, installed SDK; current APK output rebuilt |
+| Data-preserving emulator install | PASS | `adb -s emulator-5560 install -r`; no uninstall/clear/wipe |
+| Service binding | PASS | Appause enabled and bound in `dumpsys accessibility` |
+| 2032 geometry | PASS | `fitTypes=NAVIGATION_BARS`, requested 1080x1920, frame [0,0][1080,1920]; bottom nav inset [0,1857][1080,1920] |
+| Watchdog repetition 1 | PASS | fresh 2032=1; after 34s 2032=1 + watchdog expiry log; Home -> Launcher top, `Confirmed system Home`, `Overlay dismissed`, 2032=0 |
+| Watchdog repetition 2 | PASS | independent fresh 2032=1; after 34s 2032=1 + expiry log; Home -> Launcher top and 2032=0 |
+| Gesture Home | PASS | `navigation_mode=2`, fresh 2032=1 -> Launcher top and 2032=0 |
+| Gesture edge Back | PASS | left-edge ADB swipe, fresh 2032=1 -> Launcher top and 2032=0 |
+| Three-button Home/Back/Recents | PASS | `navigation_mode=0`; each fresh 2032=1 -> 2032=0; Recents showed `recents_animation_input_consumer` and `isHomeRecentsComponent=true` |
+| Gesture Recents human swipe/hold | NOT TESTED | ADB injected touch is non-authoritative for this interaction |
+| Frozen-process/true ANR safety | NOT TESTED | Emulator runs did not prove behavior when Appause or the target is genuinely frozen |
+
+The final emulator navigation mode was restored to `navigation_mode=2` and the
+Launcher was left foreground. Physical-device Xiaomi validation remains a
+separate evidence boundary. The source and documentation changes remain local
+and uncommitted; no commit, push, tag, release, or deploy occurred.
+
+## 27. Physical Xiaomi P0 follow-up: read-only accessibility stop diagnosis (2026-09-05)
+
+This was a bounded diagnostic pass on the explicitly identified physical
+Xiaomi `6036d5b` (`2410DPN6CC`, Android 16/API 36). No accessibility setting,
+app data, package, or user setting was changed.
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Physical identity | PASS | `adb devices -l`: `6036d5b`, model `2410DPN6CC`; emulator-5560 was not mutated |
+| Appause package present | PASS | `installed=true`, `versionName=0.5.39-debug`, versionCode 91, data directory present |
+| Current top/window state | PASS | `com.miui.home/.launcher.Launcher` top; no Appause `ty=2032` window |
+| Accessibility setting | FAIL / blocker | `accessibility_enabled=1`, but enabled list contains only the preserved autoclicker; Appause is not enabled or bound |
+| Autoclicker preservation | PASS | `com.zidongdianji.autoclicker/.AutoClickService` remains enabled and bound |
+| Appause component registration | PASS | Package resolver table contains AppauseAccessibilityService with `BIND_ACCESSIBILITY_SERVICE`; HyperOS lacks `cmd package resolve-service` |
+| Package state | OBSERVED | `suspended=false`, `hidden=false`, `enabled=0`, `stopped=true`; this is current state, not a causal explanation |
+| Latest process exit | OBSERVED | `22:03:40.108`, `USER REQUESTED`, `FORCE STOP`, `SwipeUpClean` |
+| Disable/death cause | UNKNOWN | Remaining filtered system logs contain no direct actor/cause linkage; no causal inference made |
+
+The latest exit record proves that HyperOS recorded a `SwipeUpClean` force-stop
+for the Appause process, but does not prove who initiated it or that it caused
+the service to be disabled. The service was not restored because the user
+explicitly reserved that action for a later normal Settings UI step.
+
+Physical acceptance boundaries remain: Home previously passed from a fresh
+2032 blocker; injected `KEYCODE_BACK` did not dismiss a valid blocker and was
+not treated as a product verdict; a valid actual system Back-button tap was not
+completed before service disable. Physical Recents and physical >32-second
+watchdog/Home validation are NOT TESTED after a fresh blocker. No duplicate or
+flash regression was authoritatively tested in this stopped state. Emulator
+three-button/gesture and watchdog passes remain emulator-only evidence.
+
+The earlier `uiautomator dump` was excluded from this pass because it caused
+`onDestroy -> onCreate -> onServiceConnected` and contaminated the physical
+session/re-arm state. No service reload/toggle, secure-setting write,
+uninstall, clear, wipe, force-stop shortcut, source change, commit, push, tag,
+release, or deploy was performed.
+
+## 28. Physical Xiaomi package-identity boundary after manual re-enable (2026-09-05)
+
+The user restored Appause through normal Xiaomi Accessibility Settings. This
+read-only baseline confirmed the preserved autoclicker and an Appause service
+were both Enabled+Bound, with three-button navigation (`navigation_mode=0`) and
+no Appause 2032 before testing.
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Bound Appause identity | OBSERVED | `com.appause.android/.service.AppauseAccessibilityService` (release package) |
+| Current local P0 debug package | NOT BOUND | `com.appause.android.debug` remains installed at `0.5.39-debug`, but is absent from enabled/bound services |
+| Bound release package | OBSERVED | `0.5.39`, versionCode 91, lastUpdateTime `2026-09-01 16:39:19` |
+| Current debug package | OBSERVED | `0.5.39-debug`, versionCode 91, lastUpdateTime `2026-09-05 20:36:47` |
+| Accessibility/autoclicker | PASS | Both release Appause and autoclicker Enabled+Bound; autoclicker unchanged |
+| Navigation baseline | PASS | `navigation_mode=0`; Launcher after cleanup |
+| Fresh current-P0 2032 | NOT TESTED | Normal Bilibili launch under release service produced no fresh 2032 evidence |
+| Release overlay observation | OBSERVED, NOT CURRENT-P0 VERDICT | WindowManager showed release `APPLICATION_OVERLAY` type 2038; no Back tap was sent |
+| Home cleanup | LIMITATION | Launcher became top, but the release 2038 window remained attached |
+
+Because the manually selected service is the older release package, no Back,
+Recents, or >32-second watchdog result from this probe can be counted as
+acceptance of the current debug P0 implementation. The observed persistent
+2038 is retained as release-package evidence, not attributed to the current
+2032 code. Physical validation is blocked until the debug Appause component is
+selected through normal Settings UI; this pass did not perform that action.
+
+No source changes or test/build reruns were needed. No Accessibility toggle,
+secure-setting write, force-stop shortcut, uninstall, clear, wipe, commit,
+push, tag, release, or deploy was performed.
+
+## 29. Physical Xiaomi P0 input-boundary repair validation (2026-09-06)
+
+Task `APPAUSE-20260905-2032` continued on physical Xiaomi `6036d5b`
+(`2410DPN6CC`, Android 16/API 36, 1080x2400, three-button navigation). The
+Debug Appause service was already enabled and bound by the user; the
+autoclicker remained enabled and bound. No Accessibility reload/toggle,
+secure-setting write, app-data mutation, uninstall, clear, wipe, or force-stop
+reset was used.
+
+The final narrow window-policy repair combines `FLAG_NOT_TOUCH_MODAL` with an
+explicit public `maximumWindowMetrics` height ending above the navigation bar.
+The existing `WindowInsets.Type.navigationBars()` fit policy and
+`setFitInsetsIgnoringVisibility(true)` remain. The hidden/internal
+`OnComputeInternalInsetsListener` route, fake navigation UI, extra
+`SYSTEM_GESTURES` fit, and disproven `Side.BOTTOM` experiment are not used.
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Focused JVM tests | PASS | Existing focused policy/Home tests remained passing after the source repair |
+| `assembleDebug` | PASS | Current APK was rebuilt with the existing JDK 17/Gradle setup |
+| Same-signer data-preserving install | PASS | `adb -s 6036d5b install -r` succeeded; no uninstall/clear |
+| Fresh current Debug blocker | PASS | Fresh Bilibili `INTERCEPT` plus `Overlay shown ... type=2032`; no release intercept in the test window |
+| Physical input geometry | PASS | Debug frame/touchable region `[0,193][1080,2333]`; NavigationBar0 `[0,2267][1080,2400]` |
+| Three-button Back tap | PASS | Fresh 2032 then tap `(810,2333)`; Launcher focused and no Debug 2032 remained |
+| Three-button Recents tap | PASS, bounded | Fresh 2032 then tap `(270,2333)`; Launcher/system state and no Debug 2032; full overview animation not held in the one-second sample |
+| Watchdog repetition 1 | PASS for state safety | More than 34 seconds with physical 2032 still attached, then Home -> Launcher and 2032 absent; dedicated physical expiry log not observed |
+| Watchdog repetition 2 | PASS for state safety | Independent fresh run met the same >34-second pre-Home and post-Home criteria; dedicated physical expiry log not observed |
+| Duplicate/flash smoke | PASS, bounded | Normal Bilibili open/Back/reopen showed one fresh intercept/2032 per open and no stale/rapid duplicate; final Back left Launcher with no Debug 2032 |
+| Injected `KEYCODE_BACK` | NOT A PRODUCT VERDICT | Earlier failure is retained as an input-injection limitation; actual three-button region tap passed |
+| Human gesture navigation | NOT TESTED | Device remained three-button; ADB injection is not human-finger proof |
+| Frozen-process / true ANR safety | NOT TESTED | No genuine Appause/target freeze was induced |
+
+The two physical watchdog runs establish the required fail-open state safety
+after a long-held blocker, but the concise physical capture did not expose a
+separate watchdog-expiry log message. Emulator watchdog logs and navigation
+passes remain a separate emulator evidence class. Historical release-package
+2038 behavior is not counted as current Debug 2032 evidence.
+
+No commit, push, tag, release, or deploy was performed.

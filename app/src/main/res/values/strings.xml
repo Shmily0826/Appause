@@ -266,6 +266,10 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="pause_cancel">Cancel</string>
     <string name="pause_continue">Continue</string>
+    <string name="pause_temporary_pass">Temporary pass</string>
+    <string name="pause_temporary_pass_title">Use this app for a while?</string>
+    <string name="pause_temporary_pass_desc">Choose how long this app can stay open. Appause will check again after the pass expires.</string>
+    <string name="pause_temporary_pass_option">Use for %d min</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Intent Tracking (Pause Screen)               -->

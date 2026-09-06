@@ -225,6 +225,10 @@
     <!-- ═══════════════════════════════════════════ -->
     <string name="pause_cancel">取消</string>
     <string name="pause_continue">继续</string>
+    <string name="pause_temporary_pass">临时放行</string>
+    <string name="pause_temporary_pass_title">要使用一段时间吗？</string>
+    <string name="pause_temporary_pass_desc">选择允许使用的时长。临时放行到期后，Appause 会恢复检查。</string>
+    <string name="pause_temporary_pass_option">使用 %d 分钟</string>
 
     <!-- ═══════════════════════════════════════════ -->
     <!-- Intent Tracking (Pause Screen)               -->

@@ -18,6 +18,7 @@ import java.util.Locale
 import com.appause.android.util.AppLogger
 import com.appause.android.util.PersistentLog
 import android.view.WindowManager
+import android.view.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
@@ -236,12 +237,10 @@ class OverlayManager {
         //
         // v0.5.27 (ROOT-CAUSE FIX): prefer TYPE_ACCESSIBILITY_OVERLAY (2032)
         // because HyperOS target apps can hide TYPE_APPLICATION_OVERLAY (2038),
-        // even when addView() succeeds. On Xiaomi Android 16, however, direct
-        // user testing proved that a 2032 surface can be visible yet route its
-        // controls' touches to the covered app. Use 2038 first only when the
-        // runtime overlay permission is actually granted. If it is absent, or
-        // if 2038 is rejected, use the existing Activity/Alarm fallback rather
-        // than retrying the known non-interactive 2032 surface.
+        // even when addView() succeeds. The accessibility-owned 2032 surface
+        // is the primary blocking path; on ROMs where it is rejected, the
+        // existing alternate overlay and Activity/Alarm fallback remains
+        // bounded by OverlayPresentationPolicy.
         // WindowManager selection is completed below after the device policy is known.
         val isXiaomiApi36OrLater = Build.VERSION.SDK_INT >= 36 &&
             Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true)
@@ -264,17 +263,13 @@ class OverlayManager {
         } else {
             WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
         }
-        // - MATCH_PARENT: covers the entire screen
-        // - FLAG_LAYOUT_IN_SCREEN: positions the window across the full screen
-        // - FLAG_LAYOUT_NO_LIMITS: extends the window behind status bar and
-        //   navigation bar, eliminating the white gap at the top of the screen
+        // - MATCH_PARENT: fills the app surface without claiming system-owned
+        //   navigation/gesture controls. Insets below reserve the bottom bar.
         // Overlay-hosted Compose handles Back itself because standalone windows
         // do not have an OnBackPressedDispatcherOwner. Keeping the window
         // focusable lets the chooser dismiss before the outer Cancel action.
         val keepOverlayNonFocusable = false
-        val overlayFlags = WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
-            if (keepOverlayNonFocusable) WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE else 0
+        val overlayFlags = OverlayWindowPolicy.flags(keepOverlayNonFocusable)
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -282,6 +277,41 @@ class OverlayManager {
             overlayFlags,
             android.graphics.PixelFormat.TRANSLUCENT
         )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Fit only the navigation bar. The left/right system-gesture
+            // insets would shrink the blocker horizontally and consume the
+            // user's Back edge gesture. The system still owns the bottom
+            // navigation/gesture region, while the blocker keeps full width.
+            params.setFitInsetsTypes(WindowInsets.Type.navigationBars())
+            // HyperOS can report the visible three-button bar after the
+            // initial layout pass. Ignore visibility so the window still
+            // reserves the system-owned bottom region instead of covering it.
+            params.setFitInsetsIgnoringVisibility(true)
+
+            // On Android 36 the internal touch-region callback is hidden and
+            // unsupported for targetSdk 35. HyperOS also expands a MATCH_PARENT
+            // accessibility window's touchable region beyond its reported
+            // frame. Use the public explicit-size API instead: the window keeps
+            // full width and its input region ends above the visible nav bar.
+            val metrics = windowManager.maximumWindowMetrics
+            val displayInsets = metrics.windowInsets.getInsets(
+                WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()
+            )
+            if (displayInsets.bottom > 0) {
+                params.height = OverlayWindowPolicy.heightBeforeNavigationBar(
+                    metrics.bounds.height(),
+                    displayInsets.top,
+                    displayInsets.bottom
+                )
+                AppLogger.d(
+                    TAG,
+                    "Overlay input boundary stops above navigation bar: " +
+                        "display=${metrics.bounds.height()} top=${displayInsets.top} " +
+                        "bottom=${displayInsets.bottom} height=${params.height}"
+                )
+            }
+
+        }
 
         fun registerStandaloneBackCallback() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

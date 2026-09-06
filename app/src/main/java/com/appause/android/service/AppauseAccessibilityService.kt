@@ -50,6 +50,74 @@ import kotlinx.coroutines.cancel
  * IMPORTANT: This is an accessibility feature, NOT a monitoring tool.
  * We only read package names — we never read UI content or user data.
  */
+internal object HomeTransitionPolicy {
+    fun shouldDeferImmediateHandling(isHomePackage: Boolean, pauseShown: Boolean): Boolean =
+        isHomePackage && pauseShown
+
+    /**
+     * Event times are monotonic. A newer real-app event means a launcher event
+     * was delivered late and must not confirm a Home transition.
+     */
+    fun shouldConfirm(
+        homePackage: String,
+        lastObservedNavigationPackage: String?,
+        pauseShown: Boolean,
+        pauseTargetPackage: String?,
+        homeEventTime: Long,
+        latestRealForegroundEventTime: Long,
+        currentForegroundPackage: String? = null,
+        allowStaleForegroundFallback: Boolean = false
+    ): Boolean {
+        if (lastObservedNavigationPackage != homePackage ||
+            !pauseShown
+        ) {
+            return false
+        }
+        // Accessibility delivery can lag the actual task switch on HyperOS.
+        // A positive foreground query therefore outranks a still-pending Home
+        // event, even when the target's accessibility event has not arrived.
+        if (!allowStaleForegroundFallback &&
+            currentForegroundPackage != null &&
+            currentForegroundPackage != homePackage
+        ) {
+            return false
+        }
+        // After the watchdog has released the logical guard, a late target
+        // event can arrive behind the real launcher transition. A foreground
+        // query that already resolves the launcher is stronger evidence than
+        // that stale event and must still permit fail-open dismissal.
+        if (allowStaleForegroundFallback && currentForegroundPackage == homePackage) {
+            return true
+        }
+        return homeEventTime <= 0L || latestRealForegroundEventTime <= homeEventTime
+    }
+
+    fun shouldDismissForConfirmedHome(
+        homePackage: String,
+        currentForegroundPackage: String?,
+        pausePresentationActive: Boolean,
+        allowStaleForegroundFallback: Boolean = false
+    ): Boolean = (pausePresentationActive || allowStaleForegroundFallback) &&
+        (allowStaleForegroundFallback ||
+            currentForegroundPackage == null ||
+            currentForegroundPackage == homePackage)
+
+    /**
+     * Some HyperOS HOME transitions deliver only a SystemUI event while a
+     * full-screen 2032 overlay is attached. That event is only a trigger;
+     * the foreground query must still name a resolved launcher before we
+     * remove the overlay.
+     */
+    fun shouldConfirmSystemUiHome(
+        pausePresentationActive: Boolean,
+        pauseTargetPackage: String?,
+        currentForegroundPackage: String?,
+        homePackages: Set<String>
+    ): Boolean = pausePresentationActive &&
+        currentForegroundPackage != null &&
+        currentForegroundPackage in homePackages
+}
+
 class AppauseAccessibilityService : AccessibilityService() {
 
     companion object {
@@ -89,6 +157,10 @@ class AppauseAccessibilityService : AccessibilityService() {
         /** elapsedRealtime() when [pauseGuardRaised] was last set to true. */
         @Volatile
         private var pauseGuardRaisedAt: Long = 0L
+
+        /** True after the max-hold watchdog has released the logical guard. */
+        @Volatile
+        private var pauseGuardWatchdogExpired: Boolean = false
 
         /**
          * True while PauseActivity is actually on screen (onStart..onStop).
@@ -143,6 +215,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                 // forever.
                 if (elapsed > PAUSE_GUARD_MAX_MS) {
                     pauseGuardRaised = false
+                    pauseGuardWatchdogExpired = true
                     lastDecision = "WATCHDOG: released stale guard (exceeded max hold)"
                     AppLogger.w(TAG, "Pause guard watchdog: exceeded max hold — releasing guard")
                     return false
@@ -159,7 +232,12 @@ class AppauseAccessibilityService : AccessibilityService() {
             }
             set(value) {
                 pauseGuardRaised = value
-                if (value) pauseGuardRaisedAt = SystemClock.elapsedRealtime()
+                if (value) {
+                    pauseGuardRaisedAt = SystemClock.elapsedRealtime()
+                    pauseGuardWatchdogExpired = false
+                } else {
+                    pauseGuardWatchdogExpired = false
+                }
             }
 
         /**
@@ -317,8 +395,13 @@ class AppauseAccessibilityService : AccessibilityService() {
     private var pendingHomeTransition: Runnable? = null
     @Volatile
     private var lastObservedNavigationPackage: String? = null
+    @Volatile
+    private var latestRealForegroundEventTime: Long = 0L
 
-    private val HOME_TRANSITION_SETTLE_MS = 350L
+    // HyperOS can report the launcher while a fast Recents return is still
+    // settling. The bounded wait gives the foreground query time to confirm
+    // the real destination; the event-only path remains capped at 750 ms.
+    private val HOME_TRANSITION_SETTLE_MS = 750L
 
     /**
      * The overlay manager that shows the cooldown screen.
@@ -594,6 +677,10 @@ class AppauseAccessibilityService : AccessibilityService() {
                 val fg = withContext(Dispatchers.IO) {
                     ForegroundChecker.getForegroundPackage(applicationContext)
                 } ?: continue
+                // The watchdog is intentionally lazy, but the poller must
+                // evaluate it before the grouped-target short circuit so an
+                // attached surface cannot prevent expiry indefinitely.
+                val guardActive = pauseShown
                 // v0.5.25: getForegroundPackage() is UNRELIABLE for grouped
                 // (target) apps on HyperOS / Android 16 — it can report a
                 // backgrounded target app as foreground, or report Appause
@@ -609,9 +696,24 @@ class AppauseAccessibilityService : AccessibilityService() {
                     lastPolledPackage = fg
                     continue
                 }
+                // HyperOS can update UsageStats to the launcher without
+                // delivering a launcher accessibility event. If the watchdog
+                // has already released the guard, the normal skip path below
+                // would leave an attached 2032 window covering Home. The
+                // resolved HOME package is sufficient confirmation here.
+                if (homePackages.contains(fg) &&
+                    dismissAttachedOverlayForConfirmedHome(
+                        homePackage = fg,
+                        currentForegroundPackage = fg,
+                        allowStaleForegroundFallback = pauseGuardWatchdogExpired
+                    )
+                ) {
+                    lastPolledPackage = fg
+                    continue
+                }
                 // Skip redundant evaluation when the foreground hasn't changed
                 // and no pause is on screen.
-                if (fg == lastPolledPackage && !pauseShown) continue
+                if (fg == lastPolledPackage && !guardActive) continue
                 lastPolledPackage = fg
                 try {
                     handleForegroundChange(fg)
@@ -637,18 +739,77 @@ class AppauseAccessibilityService : AccessibilityService() {
         // immediately: Recents can emit launcher/system windows while its
         // animation is settling. Wait briefly, and only proceed if no real app
         // event replaces the launcher as the observed destination.
+        // `pauseShown` has a watchdog for hidden/broken fallback windows. A
+        // still-attached standalone overlay must remain an active presentation
+        // signal here, otherwise the watchdog can make system Home fall through
+        // the system-package early exit while the 2032 window still covers the
+        // launcher.
+        // Evaluate the lazy watchdog before the attached-window signals below.
+        // Otherwise overlayAttached short-circuits the read and the max-hold
+        // expiry is delayed until an unrelated decision happens to inspect it.
+        val guardActive = pauseShown
+        val pausePresentationActive = pauseTargetPackage != null ||
+            overlayManager.isShowing ||
+            OverlayManager.overlayAttached ||
+            pauseActivityVisible ||
+            guardActive
+        val watchdogHomeConfirmationPending = pauseGuardWatchdogExpired &&
+            pendingHomeTransition != null
+        val deferImmediateHomeHandling = HomeTransitionPolicy.shouldDeferImmediateHandling(
+            isHomePackage = homePackages.contains(packageName),
+            pauseShown = pausePresentationActive
+        )
         if (homePackages.contains(packageName)) {
             lastObservedNavigationPackage = packageName
-            scheduleHomeTransitionConfirmation(packageName)
+            if (pauseGuardWatchdogExpired) {
+                // After the logical guard expires, this resolved launcher event
+                // is the bounded fail-open signal. Remove any still-attached
+                // 2032 surface immediately instead of waiting on stale UsageStats.
+                dismissAttachedOverlayForConfirmedHome(
+                    homePackage = packageName,
+                    currentForegroundPackage = packageName,
+                    allowStaleForegroundFallback = true
+                )
+            }
+            scheduleHomeTransitionConfirmation(
+                homePackage = packageName,
+                homeEventTime = event.eventTime,
+                allowStaleForegroundFallback = pauseGuardWatchdogExpired
+            )
+        } else if (pausePresentationActive && isSystemPackage(packageName)) {
+            // On some platforms, HOME surfaces only a system navigation helper
+            // (for example Android's quick-search box) to accessibility while
+            // the 2032 window is attached. Confirm the actual destination via
+            // UsageStats before removing the overlay; a system event alone is
+            // never treated as proof of Home. Preserve a stronger Launcher
+            // confirmation if it was already scheduled for this transition.
+            if (pendingHomeTransition == null) {
+                scheduleSystemUiHomeConfirmation()
+            }
         } else if (packageName != applicationContext.packageName && !isSystemPackage(packageName)) {
             // A real app event means the pending launcher transition was not
             // the final destination. Its normal foreground handling below is
             // still responsible for dismissing an active cooldown if needed.
             lastObservedNavigationPackage = packageName
-            cancelPendingHomeTransition()
+            if (event.eventTime > latestRealForegroundEventTime) {
+                latestRealForegroundEventTime = event.eventTime
+            }
+            if (watchdogHomeConfirmationPending) {
+                // Keep the bounded Home confirmation alive. A late target
+                // event can be emitted while the launcher transition settles;
+                // the confirmation will query the real foreground before it
+                // dismisses anything.
+                AppLogger.d(TAG, "Defer late target event while watchdog Home confirmation settles")
+            } else {
+                cancelPendingHomeTransition()
+            }
         }
 
-        AppLogger.d(TAG, "Event received: package=$packageName, class=${event.className}")
+        AppLogger.d(
+            TAG,
+            "Event received: package=$packageName, class=${event.className}, " +
+                "eventTime=${event.eventTime}, deliveryUptime=${SystemClock.uptimeMillis()}"
+        )
 
         // Record the burst fingerprint for Recents-replay detection (step 6.5
         // uses it as one of three signals confirming a genuine open). Must run
@@ -659,26 +820,97 @@ class AppauseAccessibilityService : AccessibilityService() {
         }
 
         // Use a coroutine because we need to suspend for Repository queries.
-        serviceScope.launch {
-            try {
-                handleForegroundChange(packageName)
-            } catch (e: Exception) {
-                AppLogger.e(TAG, "Error in handleForegroundChange for $packageName", e)
+        if (deferImmediateHomeHandling || watchdogHomeConfirmationPending) {
+            AppLogger.d(TAG, "Defer Home handling while cooldown overlay is showing")
+        } else {
+            serviceScope.launch {
+                try {
+                    handleForegroundChange(packageName)
+                } catch (e: Exception) {
+                    AppLogger.e(TAG, "Error in handleForegroundChange for $packageName", e)
+                }
             }
         }
     }
 
-    private fun scheduleHomeTransitionConfirmation(homePackage: String) {
+    private fun scheduleHomeTransitionConfirmation(
+        homePackage: String,
+        homeEventTime: Long,
+        allowStaleForegroundFallback: Boolean = false
+    ) {
         cancelPendingHomeTransition()
         val confirmation = Runnable {
             pendingHomeTransition = null
-            if (lastObservedNavigationPackage != homePackage || !pauseShown || pauseTargetPackage == null) {
+            if (!HomeTransitionPolicy.shouldConfirm(
+                    homePackage = homePackage,
+                    lastObservedNavigationPackage = lastObservedNavigationPackage,
+                    pauseShown = pauseTargetPackage != null ||
+                        overlayManager.isShowing ||
+                        OverlayManager.overlayAttached ||
+                        pauseActivityVisible ||
+                        pauseShown,
+                    pauseTargetPackage = pauseTargetPackage,
+                    homeEventTime = homeEventTime,
+                    latestRealForegroundEventTime = latestRealForegroundEventTime
+                )
+            ) {
                 return@Runnable
             }
             serviceScope.launch {
                 try {
-                    if (lastObservedNavigationPackage != homePackage ||
-                        !pauseShown || pauseTargetPackage == null
+                    val currentForegroundPackage = withContext(Dispatchers.IO) {
+                        ForegroundChecker.getForegroundPackage(applicationContext)
+                    }
+                    if (!HomeTransitionPolicy.shouldConfirm(
+                            homePackage = homePackage,
+                            lastObservedNavigationPackage = lastObservedNavigationPackage,
+                            pauseShown = pauseTargetPackage != null ||
+                                overlayManager.isShowing ||
+                                OverlayManager.overlayAttached ||
+                                pauseActivityVisible ||
+                                pauseShown,
+                            pauseTargetPackage = pauseTargetPackage,
+                            homeEventTime = homeEventTime,
+                            latestRealForegroundEventTime = latestRealForegroundEventTime,
+                            currentForegroundPackage = currentForegroundPackage,
+                            allowStaleForegroundFallback = allowStaleForegroundFallback
+                        )
+                    ) {
+                        // UsageStats can still name the target briefly after a
+                        // real launcher event. Give accessibility delivery one
+                        // more bounded window to report a newer real-app event;
+                        // if it does not, fail open and remove the standalone
+                        // overlay rather than leaving 2032 over the launcher.
+                        if (!allowStaleForegroundFallback &&
+                            currentForegroundPackage != null &&
+                            currentForegroundPackage != homePackage &&
+                            HomeTransitionPolicy.shouldConfirm(
+                                homePackage = homePackage,
+                                lastObservedNavigationPackage = lastObservedNavigationPackage,
+                                pauseShown = pauseTargetPackage != null ||
+                                    overlayManager.isShowing ||
+                                    OverlayManager.overlayAttached ||
+                                    pauseActivityVisible ||
+                                    pauseShown,
+                                pauseTargetPackage = pauseTargetPackage,
+                                homeEventTime = homeEventTime,
+                                latestRealForegroundEventTime = latestRealForegroundEventTime,
+                                allowStaleForegroundFallback = true
+                            )
+                        ) {
+                            scheduleHomeTransitionConfirmation(
+                                homePackage = homePackage,
+                                homeEventTime = homeEventTime,
+                                allowStaleForegroundFallback = true
+                            )
+                        }
+                        return@launch
+                    }
+                    if (dismissAttachedOverlayForConfirmedHome(
+                            homePackage = homePackage,
+                            currentForegroundPackage = currentForegroundPackage,
+                            allowStaleForegroundFallback = allowStaleForegroundFallback
+                        )
                     ) {
                         return@launch
                     }
@@ -688,6 +920,80 @@ class AppauseAccessibilityService : AccessibilityService() {
                     handleForegroundChange(homePackage, homeEventConfirmed = true)
                 } catch (e: Exception) {
                     AppLogger.e(TAG, "Error confirming Home transition", e)
+                }
+            }
+        }
+        pendingHomeTransition = confirmation
+        homeTransitionHandler.postDelayed(confirmation, HOME_TRANSITION_SETTLE_MS)
+    }
+
+    private fun dismissAttachedOverlayForConfirmedHome(
+        homePackage: String,
+        currentForegroundPackage: String?,
+        allowStaleForegroundFallback: Boolean = false
+    ): Boolean {
+        val targetPackage = pauseTargetPackage
+        val pausePresentationActive = overlayManager.isShowing ||
+            OverlayManager.overlayAttached ||
+            pauseActivityVisible ||
+            pauseShown
+        if (!HomeTransitionPolicy.shouldDismissForConfirmedHome(
+                homePackage = homePackage,
+                currentForegroundPackage = currentForegroundPackage,
+                pausePresentationActive = pausePresentationActive,
+                allowStaleForegroundFallback = allowStaleForegroundFallback
+            )
+        ) {
+            return false
+        }
+        if (targetPackage != null) {
+            InterceptionManager.clearBypass(targetPackage)
+            noteCancelled(targetPackage)
+        }
+        AppLogger.d(TAG, "Confirmed system Home — dismissing standalone overlay")
+        overlayManager.dismiss()
+        lastForegroundPackage = homePackage
+        lastEventForeground = homePackage
+        return true
+    }
+
+    private fun scheduleSystemUiHomeConfirmation() {
+        cancelPendingHomeTransition()
+        val confirmation = Runnable {
+            pendingHomeTransition = null
+            serviceScope.launch {
+                try {
+                    val pausePresentationActive = pauseTargetPackage != null ||
+                        overlayManager.isShowing ||
+                        OverlayManager.overlayAttached ||
+                        pauseActivityVisible ||
+                        pauseShown
+                    val currentForegroundPackage = withContext(Dispatchers.IO) {
+                        ForegroundChecker.getForegroundPackage(applicationContext)
+                    }
+                    if (!HomeTransitionPolicy.shouldConfirmSystemUiHome(
+                            pausePresentationActive = pausePresentationActive,
+                            pauseTargetPackage = pauseTargetPackage,
+                            currentForegroundPackage = currentForegroundPackage,
+                            homePackages = homePackages
+                        )
+                    ) {
+                        return@launch
+                    }
+                    val targetPackage = pauseTargetPackage
+                    if (targetPackage != null) {
+                        InterceptionManager.clearBypass(targetPackage)
+                        noteCancelled(targetPackage)
+                    }
+                    AppLogger.d(
+                        TAG,
+                        "Confirmed system UI Home — dismissing standalone overlay"
+                    )
+                    overlayManager.dismiss()
+                    lastForegroundPackage = currentForegroundPackage
+                    lastEventForeground = currentForegroundPackage
+                } catch (e: Exception) {
+                    AppLogger.e(TAG, "Error confirming SystemUI Home transition", e)
                 }
             }
         }
@@ -791,6 +1097,22 @@ class AppauseAccessibilityService : AccessibilityService() {
 
             is PreGroupDecision.SkipSystem -> {
                 decide(decision.diagnosticsReason)
+                // The watchdog deliberately releases pauseShown after 30s,
+                // even when an attached 2032 surface is still present. In
+                // that state a launcher event can reach this normal system
+                // branch instead of the deferred Home confirmation path.
+                // Reuse the same foreground-confirmed dismissal here so Home
+                // cannot leave the stale accessibility window over Launcher.
+                if (homePackages.contains(packageName) &&
+                    dismissAttachedOverlayForConfirmedHome(
+                        homePackage = packageName,
+                        currentForegroundPackage = withContext(Dispatchers.IO) {
+                            ForegroundChecker.getForegroundPackage(applicationContext)
+                        }
+                    )
+                ) {
+                    return
+                }
                 // The user left the previous app (via Home, Recents, etc.).
                 // Start its 3-min away cooldown instead of clearing the bypass
                 // immediately. This is the core fix for the in-app transient-switch
@@ -986,12 +1308,17 @@ class AppauseAccessibilityService : AccessibilityService() {
     private fun refreshHomePackages() {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
         homePackages = try {
-            packageManager.queryIntentActivities(intent, 0)
+            val queriedPackages = packageManager.queryIntentActivities(intent, 0)
                 .mapNotNull { it.activityInfo?.packageName }
-                .toSet()
+            val defaultPackage = packageManager.resolveActivity(
+                intent,
+                android.content.pm.PackageManager.MATCH_DEFAULT_ONLY
+            )?.activityInfo?.packageName
+            (queriedPackages + listOfNotNull(defaultPackage)).toSet()
         } catch (e: Exception) {
             emptySet()
         }
+        AppLogger.d(TAG, "Resolved HOME packages: $homePackages")
     }
 
     /**
