@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Appause — A few seconds before the reflex wins</title>
+<meta name="description" content="Appause interrupts distracting app openings with a short pause screen. Local-first, no account, fully open source." />
+<style>
+  :root {
+    --bg: #ffffff; --text: #111318; --muted: #5b6472;
+    --line: #e8ebf1; --accent: #0f62fe; --soft: #f5f7fb;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 24px; }
+  header { padding: 26px 0; display: flex; justify-content: space-between; align-items: center; }
+  .brand { font-weight: 700; }
+  .brand i { font-style: normal; color: var(--accent); }
+  nav a { color: var(--muted); text-decoration: none; margin-left: 22px; font-size: .92rem; }
+  .hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; padding: 72px 0; }
+  @media (max-width: 800px) { .hero { grid-template-columns: 1fr; } }
+  h1 { font-size: 2.7rem; line-height: 1.15; margin: 0 0 18px; letter-spacing: -.5px; }
+  h1 span { color: var(--accent); }
+  .hero p { font-size: 1.1rem; color: var(--muted); margin: 0 0 30px; }
+  .btns { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn { padding: 13px 26px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: .95rem; }
+  .btn-pri { background: var(--accent); color: #fff; }
+  .btn-sec { border: 1px solid var(--line); color: var(--text); }
+  .phone { width: 260px; border-radius: 30px; border: 1px solid var(--line); box-shadow: 0 30px 70px rgba(17,19,24,.12); justify-self: center; }
+  .ribbon { background: var(--soft); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .ribbon .wrap { display: flex; justify-content: space-around; padding: 28px 24px; flex-wrap: wrap; gap: 20px; }
+  .ribbon div { text-align: center; }
+  .ribbon b { display: block; font-size: 1.4rem; }
+  .ribbon span { color: var(--muted); font-size: .85rem; }
+  section { padding: 72px 0; }
+  h2 { font-size: 1.9rem; margin: 0 0 8px; letter-spacing: -.4px; }
+  .sub { color: var(--muted); margin: 0 0 36px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; }
+  .card { border: 1px solid var(--line); border-radius: 14px; padding: 22px; }
+  .card h3 { margin: 0 0 6px; font-size: 1.02rem; }
+  .card p { margin: 0; color: var(--muted); font-size: .92rem; }
+  .pair { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-top: 40px; }
+  .pair img { width: 220px; border-radius: 24px; border: 1px solid var(--line); }
+  .note { background: var(--soft); border-radius: 14px; padding: 22px 26px; font-size: .93rem; color: var(--muted); margin-top: 28px; }
+  .note b { color: var(--text); }
+  footer { border-top: 1px solid var(--line); padding: 40px 0 64px; color: var(--muted); font-size: .88rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">App<i>ause</i></div>
+    <nav><a href="#features">Features</a><a href="#trust">Trust</a><a href="#download">Download</a></nav>
+  </header>
+
+  <div class="hero">
+    <div>
+      <h1>Open with a reason,<br /><span>not a reflex.</span></h1>
+      <p>Appause sits between your finger and your distraction. When you tap a target app, a pause screen with a short countdown asks the question feed algorithms never do: <em>do you actually want this?</em></p>
+      <div class="btns">
+        <a class="btn btn-pri" href="https://github.com/Shmily0826/Appause/releases/latest">Download APK</a>
+        <a class="btn btn-sec" href="https://github.com/Shmily0826/Appause">View source</a>
+      </div>
+    </div>
+    <img class="phone" src="../images/screenshots/en/pause.png" alt="Pause screen with countdown" />
+  </div>
+</div>
+
+<div class="ribbon">
+  <div class="wrap" style="max-width:980px;margin:0 auto;padding-left:24px;padding-right:24px;">
+    <div><b>No account</b><span>install and use</span></div>
+    <div><b>No cloud</b><span>data never leaves the device</span></div>
+    <div><b>No telemetry</b><span>zero analytics SDKs</span></div>
+    <div><b>Open source</b><span>MIT licensed</span></div>
+  </div>
+</div>
+
+<div class="wrap">
+  <section id="features">
+    <h2>A speed bump, not a wall</h2>
+    <p class="sub">Appause never locks you out. It makes continuing an intentional choice.</p>
+    <div class="grid">
+      <div class="card"><h3>⏳ Cooldown pause</h3><p>A full-screen pause with a live countdown covers the target app the instant it opens. Watch the seconds and decide.</p></div>
+      <div class="card"><h3>🏷️ Open with a reason</h3><p>Continuing requires picking a reason — work, bored, messages. Your log becomes a mirror.</p></div>
+      <div class="card"><h3>🚫 Cancel escapes</h3><p>Cancel sends you straight back to the launcher. The impulse is interrupted, not indulged.</p></div>
+      <div class="card"><h3>⏱️ Temporary pass</h3><p>Really need it right now? Grant a 5/15/30-minute pass. It expires by itself.</p></div>
+      <div class="card"><h3>🌱 Alternatives</h3><p>The pause screen suggests apps you chose as better defaults — the swap happens before the feed loads.</p></div>
+      <div class="card"><h3>📊 Visible progress</h3><p>Today's completed/avoided counts plus 7-day and 365-day trends. What gets measured gets managed.</p></div>
+    </div>
+    <div class="pair">
+      <img src="../images/screenshots/en/home.png" alt="Home screen" />
+      <img src="../images/screenshots/en/statistics.png" alt="Statistics" />
+      <img src="../images/screenshots/en/group.png" alt="Group editor" />
+    </div>
+  </section>
+
+  <section id="trust">
+    <h2>Trust, by architecture</h2>
+    <p class="sub">Not a privacy policy you have to believe — a design you can verify.</p>
+    <div class="grid">
+      <div class="card"><h3>Reads package names only</h3><p>The accessibility service checks which app is foreground and nothing else. Window-content retrieval is explicitly disabled in its configuration.</p></div>
+      <div class="card"><h3>Local-first storage</h3><p>Every record lives in the app's own database. There is no server that could receive it, and no SDK that could copy it.</p></div>
+      <div class="card"><h3>Auditable</h3><p>The full source is on GitHub, including exactly how the accessibility permission is used. You don't have to trust us — read it.</p></div>
+    </div>
+    <p class="note"><b>Honest disclosure:</b> Appause needs Android's Accessibility permission to detect app openings. This is an accessibility use, not surveillance — and the permission dialog says so. Uninstall and every trace is gone.</p>
+  </section>
+
+  <section id="download">
+    <h2>Put the speed bump in</h2>
+    <p class="sub">Android 8.0+ · Free core · MIT license</p>
+    <div class="btns">
+      <a class="btn btn-pri" href="https://github.com/Shmily0826/Appause/releases/latest">GitHub Releases</a>
+      <a class="btn btn-sec" href="https://github.com/Shmily0826/Appause/blob/main/INSTALL.md">Install guide</a>
+    </div>
+  </section>
+
+  <footer>
+    <div>Appause — open with a reason, not a reflex.</div>
+    <div><a href="../privacy-policy.html">Privacy policy</a> · <a href="https://github.com/Shmily0826/Appause/issues">Feedback</a></div>
+  </footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Appause — 打开之前，先停一下</title>
+<meta name="description" content="Appause：在打开分心应用之前插入几秒停顿，让继续成为一种选择。纯本地运行，无需注册。" />
+<style>
+  :root {
+    --bg: #fafaf8; --text: #1c1c1a; --muted: #6f6f6a;
+    --line: #e6e6e0; --accent: #2f6bff; --card: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.8;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+  header { padding: 28px 0; display: flex; justify-content: space-between; align-items: center; }
+  .brand { font-weight: 700; font-size: 1.2rem; letter-spacing: .5px; }
+  .brand span { color: var(--accent); }
+  nav a { color: var(--muted); text-decoration: none; margin-left: 20px; font-size: .92rem; }
+  .hero { padding: 72px 0 48px; max-width: 640px; }
+  .hero h1 { font-size: 2.6rem; line-height: 1.25; margin: 0 0 16px; font-weight: 700; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { font-size: 1.12rem; color: var(--muted); margin: 0 0 32px; }
+  .btns { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn { padding: 13px 26px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: .95rem; }
+  .btn-pri { background: var(--accent); color: #fff; }
+  .btn-sec { border: 1px solid var(--line); color: var(--text); background: #fff; }
+  .shots { display: flex; gap: 28px; justify-content: center; padding: 48px 0 72px; flex-wrap: wrap; }
+  .shot { width: 240px; border-radius: 28px; border: 1px solid var(--line); box-shadow: 0 24px 60px rgba(0,0,0,.08); }
+  section { border-top: 1px solid var(--line); padding: 64px 0; }
+  .kicker { font-size: .8rem; letter-spacing: 2px; color: var(--accent); font-weight: 700; margin: 0 0 8px; }
+  h2 { font-size: 1.7rem; margin: 0 0 28px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
+  .card h3 { margin: 0 0 8px; font-size: 1.05rem; }
+  .card p { margin: 0; color: var(--muted); font-size: .93rem; }
+  .num { font-size: 2rem; font-weight: 700; color: var(--accent); margin: 0 0 4px; }
+  .honest { background: #f4f6ff; border: 1px solid #dce4ff; border-radius: 14px; padding: 24px; font-size: .93rem; color: var(--muted); }
+  .honest b { color: var(--text); }
+  footer { border-top: 1px solid var(--line); padding: 40px 0 64px; color: var(--muted); font-size: .88rem; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+  footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">App<span>ause</span></div>
+    <nav><a href="#features">功能</a><a href="#privacy">隐私</a><a href="#download">下载</a></nav>
+  </header>
+
+  <div class="hero">
+    <h1>打开之前，<br />先停一下。<em>几秒就够了。</em></h1>
+    <p>刷手机常常不是决定，是条件反射。Appause 在你点开分心应用的那一瞬间插进一块暂停屏：倒计时几秒，问一句"为什么打开"。很多时候，停一下，你就不想刷了。</p>
+    <div class="btns">
+      <a class="btn btn-pri" href="https://github.com/Shmily0826/Appause/releases/latest">下载 APK</a>
+      <a class="btn btn-sec" href="https://github.com/Shmily0826/Appause">GitHub 源码</a>
+    </div>
+  </div>
+
+  <div class="shots">
+    <img class="shot" src="../images/screenshots/zh/home.png" alt="Appause 首页：分组与今日统计" />
+    <img class="shot" src="../images/screenshots/zh/pause.png" alt="暂停屏：倒计时与打开理由" />
+    <img class="shot" src="../images/screenshots/zh/statistics.png" alt="统计图表" />
+  </div>
+
+  <section id="features">
+    <p class="kicker">功能</p>
+    <h2>不禁止，只让你慢下来</h2>
+    <div class="grid">
+      <div class="card"><h3>⏳ 冷却暂停屏</h3><p>打开被管理应用前先等几秒。倒计时结束或点"继续"才能进入——主动权还在你手里。</p></div>
+      <div class="card"><h3>🏷️ 打开理由</h3><p>继续之前选一个理由：工作、无聊、看消息。随手记下，一周后看看自己都在"为什么"打开。</p></div>
+      <div class="card"><h3>🚫 取消即退出</h3><p>按取消直接回桌面。打开行为被中断，而不是被记账了事。</p></div>
+      <div class="card"><h3>⏱️ 临时通行</h3><p>确实有急事？给这个应用 5/15/30 分钟的通行证，到期自动恢复管理。</p></div>
+      <div class="card"><h3>🌱 替代推荐</h3><p>暂停屏上显示你配置的替代应用——想刷的时候，先看看有没有更有价值的选择。</p></div>
+      <div class="card"><h3>📊 今日与统计</h3><p>今天完成/放弃了几次、7 天和 365 天的趋势图。改变从看得见开始。</p></div>
+    </div>
+  </section>
+
+  <section id="privacy">
+    <p class="kicker">隐私</p>
+    <h2>三个"零"，写在设计里</h2>
+    <div class="grid">
+      <div class="card"><div class="num">0</div><h3>无需注册</h3><p>没有账号体系，下载即用。</p></div>
+      <div class="card"><div class="num">0</div><h3>数据上传</h3><p>所有记录只存在你的手机里。没有统计 SDK，没有崩溃上报。</p></div>
+      <div class="card"><div class="num">0</div><h3>屏幕内容读取</h3><p>无障碍服务只读取"前台应用的包名"，从不读取屏幕内容，配置里也明确关闭了内容权限。</p></div>
+    </div>
+    <p class="honest" style="margin-top:24px"><b>关于无障碍权限，说实话：</b>Appause 需要无障碍服务才能知道"你打开了哪个应用"。这是一个辅助功能用途，不是监控工具——我们只看包名，而且应用完全开源，你可以随时审查它到底做了什么。</p>
+  </section>
+
+  <section id="download">
+    <p class="kicker">下载</p>
+    <h2>Android 8.0+，免费，开源</h2>
+    <div class="btns">
+      <a class="btn btn-pri" href="https://github.com/Shmily0826/Appause/releases/latest">GitHub Releases</a>
+      <a class="btn btn-sec" href="https://appause-pro-worker.rng2018520.workers.dev/api/download?to=https://shmily0826.lanzoup.com/b01eunt29a&amp;t=kP9xQ2mZ8vL3nR7tB4wY6hC1sD5fG0jU">国内网盘</a>
+      <a class="btn btn-sec" href="../INSTALL.md">安装说明</a>
+    </div>
+  </section>
+
+  <footer>
+    <div>Appause — 打开之前，先停一下。</div>
+    <div><a href="../privacy-policy.html">隐私政策</a> · <a href="https://github.com/Shmily0826/Appause/issues">问题反馈</a></div>
+  </footer>
+</div>
+</body>
+</html>

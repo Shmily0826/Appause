@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Appause 落地页方案总览</title>
+<style>
+  :root { --bg:#f6f7fb; --text:#1a1d24; --muted:#5b6472; --line:#e2e6ee; --accent:#5b8cff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--text); line-height:1.7; }
+  .wrap { max-width:920px; margin:0 auto; padding:48px 24px 80px; }
+  h1 { font-size:1.9rem; margin:0 0 8px; }
+  .sub { color:var(--muted); margin:0 0 40px; }
+  table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  th,td { text-align:left; padding:14px 16px; border-bottom:1px solid var(--line); font-size:.94rem; vertical-align:top; }
+  th { background:#fafbfd; color:var(--muted); font-weight:600; }
+  td a { color:var(--accent); font-weight:600; text-decoration:none; }
+  td .d { color:var(--muted); font-size:.87rem; }
+  .tip { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin-top:28px; color:var(--muted); font-size:.9rem; }
+  .tip b { color:var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Appause 落地页方案总览</h1>
+  <p class="sub">中英文各两版不同风格，供宣传投放挑选；截图与文案语言一一对应。仓库根目录的 <code>index.html</code> 是另一版英文重设计，可作第五个候选。</p>
+  <table>
+    <tr><th>方案</th><th>风格与适用场景</th></tr>
+    <tr>
+      <td><a href="zh-a.html">zh-a · 中文 / 清爽留白</a><br /><span class="d">浅色、多留白、功能卡片</span></td>
+      <td><span class="d">克制、可信的产品介绍风。适合酷安/微信文章等需要"认真读完"的渠道，以及作为默认官网首页。</span></td>
+    </tr>
+    <tr>
+      <td><a href="zh-b.html">zh-b · 中文 / 深色营销</a><br /><span class="d">暗色 hero、渐变标题、数据带</span></td>
+      <td><span class="d">冲击力强、转化导向。适合短视频简介、社区开屏贴、需要一眼抓住注意力的场景。</span></td>
+    </tr>
+    <tr>
+      <td><a href="en-a.html">en-a · English / Minimal light</a><br /><span class="d">Split hero、浅色 ribbon、编辑风</span></td>
+      <td><span class="d">Calm, editorial tone. Suits the GitHub Pages front page and tech audiences who read before they trust.</span></td>
+    </tr>
+    <tr>
+      <td><a href="en-b.html">en-b · English / Bold dark</a><br /><span class="d">Dark hero, gradient claims, "Zero. Zero. Zero."</span></td>
+      <td><span class="d">High-contrast launch/post style. Good for Reddit/X/HN launches and release announcements.</span></td>
+    </tr>
+    <tr>
+      <td><a href="../index.html">root index.html · English redesign</a><br /><span class="d">当前工作区里未提交的改版</span></td>
+      <td><span class="d">第五候选：现有英文重设计版，风格介于两者之间。</span></td>
+    </tr>
+  </table>
+  <div class="tip">
+    <b>使用说明：</b>截图引用的是 <code>../images/screenshots/{zh,en}/</code> 下的真实应用截图（中文页面配中文界面截图、英文页面配英文界面截图），本地直接打开或部署到 GitHub Pages 都能显示。所有页面均含下载（GitHub Releases + 国内网盘）、隐私政策和 GitHub 链接，可直接上线；确认选用哪一版后，再把它替换/合并进根目录的 <code>index.html</code>。
+  </div>
+</div>
+</body>
+</html>

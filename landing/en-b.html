@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Appause — Take back the tap</title>
+<meta name="description" content="A 3-second interruption between your impulse and the feed. Local-first Android app, zero accounts, zero telemetry, open source." />
+<style>
+  :root {
+    --bg: #0b0d12; --surface: #14171f; --text: #eef0f5; --muted: #98a0b3;
+    --grad: linear-gradient(100deg, #4f8cff, #a06bff 50%, #ff7ab0);
+    --line: #232838;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 24px; }
+  header { padding: 24px 0; display: flex; justify-content: space-between; align-items: center; }
+  .brand { font-weight: 800; }
+  nav a { color: var(--muted); text-decoration: none; margin-left: 22px; font-size: .92rem; }
+  .hero { text-align: center; padding: 84px 0 36px; }
+  h1 { font-size: clamp(2.4rem, 6.5vw, 4rem); line-height: 1.08; margin: 0 0 22px; font-weight: 800; letter-spacing: -1px; }
+  .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { font-size: 1.15rem; color: var(--muted); max-width: 620px; margin: 0 auto 38px; }
+  .btns { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn { padding: 14px 30px; border-radius: 999px; text-decoration: none; font-weight: 700; font-size: .98rem; }
+  .btn-pri { background: var(--grad); color: #fff; box-shadow: 0 10px 36px rgba(122,107,255,.4); }
+  .btn-sec { border: 1px solid var(--line); color: var(--text); }
+  .loop { display: flex; justify-content: center; align-items: center; gap: 14px; flex-wrap: wrap; margin: 44px auto 0; color: var(--muted); font-size: .95rem; }
+  .loop span { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 18px; }
+  .loop b { color: var(--text); }
+  .phones { display: flex; gap: 30px; justify-content: center; padding: 56px 0 84px; flex-wrap: wrap; }
+  .phones img { width: 248px; border-radius: 30px; border: 1px solid #2e3548; box-shadow: 0 0 70px rgba(112,107,255,.22), 0 34px 80px rgba(0,0,0,.65); }
+  section { border-top: 1px solid var(--line); padding: 76px 0; }
+  h2 { font-size: clamp(1.7rem, 4vw, 2.3rem); text-align: center; margin: 0 0 12px; letter-spacing: -.5px; }
+  .sub { text-align: center; color: var(--muted); margin: 0 0 48px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; max-width: 920px; margin: 0 auto; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 26px; }
+  .card b { font-size: 1.05rem; }
+  .card p { color: var(--muted); font-size: .92rem; margin: 8px 0 0; }
+  .big { text-align: center; font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 800; max-width: 780px; margin: 0 auto 56px; line-height: 1.35; }
+  footer { border-top: 1px solid var(--line); padding: 44px 0 64px; color: var(--muted); font-size: .88rem; text-align: center; }
+  footer a { color: var(--muted); margin: 0 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">Appause</div>
+    <nav><a href="#why">Why</a><a href="#proof">Proof</a><a href="#get">Get it</a></nav>
+  </header>
+
+  <div class="hero">
+    <h1>The feed wins because<br />it loads <span class="grad">instantly.</span><br />So does the pause.</h1>
+    <p>Every addictive app is one tap from impulse to content. Appause inserts itself at exactly that tap — a 3-second, full-screen checkpoint. The impulse often doesn't survive it.</p>
+    <div class="btns">
+      <a class="btn btn-pri" href="https://github.com/Shmily0826/Appause/releases/latest">Get Appause — free</a>
+      <a class="btn btn-sec" href="https://github.com/Shmily0826/Appause">Read the code</a>
+    </div>
+    <div class="loop">
+      <span><b>Tap</b> the app</span> → <span><b>Pause</b> 3 seconds</span> → <span><b>Decide</b> or bail</span> → <span><b>See</b> the pattern</span>
+    </div>
+  </div>
+
+  <div class="phones">
+    <img src="../images/screenshots/en/pause.png" alt="Pause screen" />
+    <img src="../images/screenshots/en/home.png" alt="Home" />
+    <img src="../images/screenshots/en/statistics.png" alt="Statistics" />
+  </div>
+
+  <section id="why">
+    <h2>Built for the moment you regret</h2>
+    <p class="sub">Not another screen-time dashboard you check after the damage. A checkpoint before it.</p>
+    <div class="cards">
+      <div class="card"><b>Interrupts the reflex</b><p>The pause screen covers the target app the instant it opens — before the feed, the autoplay, the red badges.</p></div>
+      <div class="card"><b>Makes cost visible</b><p>Continuing costs a reason and a countdown. Most taps were worth neither.</p></div>
+      <div class="card"><b>Offers the exit</b><p>Cancel returns you to your home screen. Your configured alternative apps are one tap away on the pause screen itself.</p></div>
+      <div class="card"><b>Forgives real needs</b><p>Temporary passes (5/15/30 min) cover the genuine cases — and expire without you remembering to revoke them.</p></div>
+      <div class="card"><b>Shows the trend</b><p>Completed vs avoided, per day, up to a year. Watch the avoid-rate climb as the reflex weakens.</p></div>
+      <div class="card"><b>Pro, without identity</b><p>Pro features (re-reminders, custom prompts, unlimited groups) unlock with a device-bound signed license. No email, ever.</p></div>
+    </div>
+  </section>
+
+  <section id="proof">
+    <h2>Zero. Zero. Zero.</h2>
+    <p class="sub">Claims are cheap, so here's the verifiable kind:</p>
+    <div class="big">No <span class="grad">account</span>. No <span class="grad">telemetry</span>. No <span class="grad">cloud</span>.<br />100% open source, auditable line by line.</div>
+    <div class="cards">
+      <div class="card"><b>Package names, nothing more</b><p>The accessibility service reads which app is in the foreground. Window-content retrieval is disabled in its configuration file — go look.</p></div>
+      <div class="card"><b>Your data, your device</b><p>Records live in the app's local database. There is no endpoint that could exfiltrate them, because there is no endpoint.</p></div>
+      <div class="card"><b>Uninstall = gone</b><p>Root out the app and every trace leaves with it. No residue on any server, because there is no server.</p></div>
+    </div>
+  </section>
+
+  <section id="get">
+    <h2>Take back the tap</h2>
+    <p class="sub">Android 8.0+ · Free core · MIT licensed</p>
+    <div class="btns">
+      <a class="btn btn-pri" href="https://github.com/Shmily0826/Appause/releases/latest">Download</a>
+      <a class="btn btn-sec" href="https://github.com/Shmily0826/Appause/blob/main/INSTALL.md">Install guide</a>
+    </div>
+  </section>
+
+  <footer>
+    <div>Appause · take back the tap</div>
+    <div><a href="../privacy-policy.html">Privacy policy</a> · <a href="https://github.com/Shmily0826/Appause/issues">Feedback</a></div>
+  </footer>
+</div>
+</body>
+</html>
