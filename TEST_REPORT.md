@@ -1098,3 +1098,53 @@ the rebuilt APK was data-preservingly installed on `emulator-5554`, and the
 read-only disabled setting/dumpsys plus Appause launch check passed. No blocking
 review finding remains. The configured-target interception path remains outside
 this validation because the emulator had no configured group.
+
+## 2026-09-06 Emulator interception smoke — P0 batch + session lifecycle (Medium_Phone, emulator-5554)
+- Environment: headless `Medium_Phone` AVD, debug package `com.appause.android.debug`
+  installed with data-preserving `install -r`; its AccessibilityService was already
+  the only enabled one. `TestGroup2` (Chrome, 10 s cooldown) pre-existed; a global
+  recommended app (Calendar) was configured through the UI to exercise P0-1.
+- **P0-1 (pause-screen data source merge) PASS**: launching Chrome produced a real
+  `type=2032` window (`dumpsys` verified) showing the correct app name/icon, a
+  ticking 10 s countdown, and the recommended app Calendar sourced from the same
+  global DataStore list the overlay path uses.
+- **Cancel path PASS**: Cancel returned to `NexusLauncherActivity`; 2032 window
+  count dropped to 0 (no remnant); a further log entry was written to stats
+  (Avoided=1 visible on the home screen).
+- **Immediate re-open after Cancel PASS**: fresh 2032 pause screen appeared
+  (count=1), so the 800 ms `noteCancelled` suppression did not swallow a genuine
+  re-open.
+- **Continue path PASS**: selecting the "Work" reason enabled Continue; after
+  Continue the overlay was dismissed (count=0), Chrome reached the foreground,
+  and the home screen Today card showed Completed=1 / Avoided=1 (proceed and
+  cancel both persisted and observed).
+- **Session lifecycle PASS**: reopening Chrome within the 3-minute leave window
+  resumed without interception (count=0); after leaving to the launcher for
+  200 s, reopening produced a fresh 2032 pause screen (count=1, re-armed).
+  Note: a first re-arm attempt with Chrome kept in the foreground during the
+  wait correctly did NOT re-arm (leave timer starts only on real leave) — the
+  tester's sequencing error, not a product defect.
+- Not covered: navigation-escape (Back/Recents) region behavior on three-button
+  devices (covered by the separate physical-Xiaomi P0 evidence), re-remind
+  (Pro-gated, not unlocked here), Temporary Pass chooser, PauseActivity fallback
+  path (2032 attach did not fail on this AVD). Physical device was not touched.
+
+## 2026-09-06 B1/B2 verification (JVM + emulator regression)
+- B1 (P1-1 dead-strategy removal, P1-6 record retention, P2-1 dead code, P2-6
+  comment fixes): `assembleDebug` PASS, `testDebugUnitTest` PASS. Emulator
+  regression: refactored build reinstalled with `-r` on emulator-5554; opening
+  the grouped target still produced a real `type=2032` pause screen with the
+  recommended app row intact — the overlay refactor is behavior-preserving as
+  claimed. Overlay dismissed cleanly afterwards.
+- B2 (G2 PauseGuardPolicy extraction, G3a LicenseVerifier hardening + tests):
+  `testDebugUnitTest` PASS with 147 tests (baseline 134, net +13: +8
+  PauseGuardPolicy boundary cases, +6 LicenseVerifier fail-closed cases,
+  −4 replaced OverlayPresentationPolicy cases, −1 SessionState/other drift).
+- LicenseVerifier.verify now catches malformed-segment exceptions itself and
+  returns null, matching its documented "null on any failed step" contract;
+  callers already wrapped it in runCatching, so end-to-end behavior is
+  unchanged (fail closed either way).
+- New pure policy: `PauseGuardPolicy.evaluate` with exact historical
+  boundaries (max-hold `>` 30 s, grace `<` 1.5 s), wired into the
+  `pauseShown` getter with identical read points and identical side effects.
+- Physical device was not touched. No commit happened at the time of testing.

@@ -41,11 +41,11 @@
 
 ## P1 — 高价值，近期修
 
-- [ ] **P1-1 · `OverlayPresentationPolicy.initialPath` 死参数与不可达分支（纯减法）**
-      `initialPath` 忽略两个参数恒返回 2032；`OverlayManager` 的
-      `Settings.canDrawOverlays` 查询白做；`alternatePathAfterFailure` 两分支不可达；
-      `flags(keepOverlayNonFocusable)` 生产恒传 false。收敛为最小真值形态，
-      同步精简测试。宣称零行为变化，完成后模拟器冒烟一遍。
+- [x] **P1-1 · `OverlayPresentationPolicy.initialPath` 死参数与不可达分支（纯减法）**（2026-09-06 完成）
+      `initialPath` 收敛为常量 `initialPath`；`Settings.canDrawOverlays` 白查删除；
+      `alternatePathAfterFailure` 收敛为 `shouldRetryWith2038AfterFailure(isXiaomiApi36OrLater)`；
+      `flags()` 去掉恒 false 参数。测试同步精简（7→6 用例）。模拟器回归：
+      重装后 2032 暂停屏正常弹出。
 - [ ] **P1-2 · 三个 ViewModel 复制同一份权限/健康状态（约 -120 行）**
       Home / Onboarding / Settings 各持 `accessibilityHealth`/`canDrawOverlays`/
       `isUsageAccessGranted`/`isIgnoringBattery`。抽单一持有者。
@@ -66,8 +66,9 @@
       **新拦截目标会被旧 intent 吞掉**（singleInstance re-front 不更新 intent）。
       ~~倒计时重置~~ **不成立**：manifest `launchMode="singleInstance"`，
       重复启动仅 re-front 不重建。修法：统一启动策略 + override `onNewIntent`。
-- [ ] **P1-6 · `app_launch_records` 无上限增长**
-      `AppLaunchDao.deleteOldRecords(before)` 零调用者。启动时异步删 365 天前记录。
+- [x] **P1-6 · `app_launch_records` 无上限增长**（2026-09-06 完成）
+      `AppGroupRepository.deleteOldLaunchRecords()`（365 天保留窗口，与统计窗口
+      一致）在 `AppauseApp.onCreate` 以 GlobalScope(IO) 异步调用，异常只记日志。
 - [x] **P1-7 · bypass 集合非线程安全**（2026-09-06 完成）
       `InterceptionManager.bypassedPackages` 换 `ConcurrentHashMap.newKeySet()`；
       `SessionState` 两个集合一并处理。
@@ -76,12 +77,12 @@
 
 | # | 问题 | 状态 |
 |---|---|---|
-| P2-1 | 死代码：`ForegroundChecker.wasResumedRecently`、`sessionStart` map（只写不读）、`HomeTransitionPolicy.shouldConfirm` 的 `pauseTargetPackage` 参数、`startLeaveTimer` 不可达的 cancel | [ ] |
+| P2-1 | 死代码：`ForegroundChecker.wasResumedRecently`、`sessionStart` map（只写不读）、`HomeTransitionPolicy.shouldConfirm`/`shouldConfirmSystemUiHome` 的 `pauseTargetPackage` 死参数、`startLeaveTimer` 不可达的 cancel | [x] |
 | P2-2 | `AppSelectScreen.cachedSelectedPackages` companion var 跨屏传结果 → 改 SavedStateHandle | [ ] |
 | P2-3 | 分组空名保存静默失败 → 暴露 `nameError` | [ ] |
 | P2-4 | `getForegroundPackage`（Binder）在 service :1076/:1479 跑在 Main，其余调用点在 IO → 统一 IO | [ ] |
 | P2-5 | `allowBackup="true"`（manifest:61），Room DB + DataStore（含 license_token）在备份范围 → false 或显式规则 | [ ] |
-| P2-6 | 注释漂移：GroupEditorViewModel:155 "free 1–30"（实际 free/pro 都是 60）；DAO 头注释过时 | [ ] |
+| P2-6 | 注释漂移：GroupEditorViewModel "free 1–30"（实际 free/pro 都是 60）；AppLaunchDao "v1/未来版本"头注释 | [x] |
 | P2-7 | 每个前台事件两次 DataStore 挂起读（enabled / temporaryPass）→ stateIn 缓存 | [ ] |
 | P2-8 | 测试盲区 → 见 `docs/TEST_GAP_ANALYSIS.md`（G1 已并入 P1-4b，G3a/G4/G5/G7 独立推进） | [ ] |
 

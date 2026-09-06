@@ -42,14 +42,14 @@
   没测试，且并发正确性只能靠 `pauseShown` 守卫兜底。修复方案见
   `docs/ENGINEERING_REVIEW.md` P1-4。
 
-### G2（高）——pause guard 看门狗（1.5s 宽限 / 30s 硬上限）无测试
+### G2（高）——已完成（2026-09-06）：看门狗决策核心抽为 `PauseGuardPolicy` + 8 个边界用例
 `pauseShown` getter 的自我修复逻辑（协议 §5）是历史上两个真实 bug 的修复物，
 但它的触发条件依赖 `SystemClock.elapsedRealtime()`，无法在 JVM 里直接测。
 - **建议**：把 watchdog 判定抽成 `pauseGuardWatchdog(elapsedMs, overlayAttached,
   activityVisible) -> GuardAction` 纯函数 + 注入时钟，测四个象限：
   宽限期内/宽限期满无窗口/硬上限超时（含 attached-but-hidden）/正常持有。
 
-### G3（高）——Pro 兑换失败模式（用户既定优先级 #1）
+### G3（高，部分完成 2026-09-06：G3a LicenseVerifier 失败分支已补 6 例，verify() 同时加固为任何畸形 token 一律返回 null）——Pro 兑换失败模式（用户既定优先级 #1）
 `ProStateRedeemTest` 15 例覆盖了主路径；缺口在失败分支矩阵：过期 JWT、
 未来生效的 nbf、设备绑定不匹配、KV 无此码、重复兑换的网络时序、Worker 5xx
 后 UI 状态、兑换中途进程死亡。`worker/` 侧的签发逻辑完全没有测试。
