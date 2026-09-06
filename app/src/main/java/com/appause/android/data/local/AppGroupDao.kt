@@ -97,19 +97,6 @@ interface AppGroupDao {
     suspend fun getAllGroupedPackageNames(): List<String>
 
     /**
-     * Get package names of apps that belong to "learning" groups only.
-     *
-     * Learning groups hold apps the user WANTS to use (e.g. study apps).
-     * These are shown as suggestions on the cooldown screen ("try this
-     * instead") and are never intercepted themselves.
-     */
-    @Query(
-        "SELECT packageName FROM group_apps WHERE groupId IN " +
-            "(SELECT id FROM app_groups WHERE type = 'learning')"
-    )
-    suspend fun getLearningGroupPackageNames(): List<String>
-
-    /**
      * Count how many apps belong to each group, for all groups at once.
      * Returns one row per group that has at least one app (groups with no
      * apps are simply absent — treat them as a count of 0).

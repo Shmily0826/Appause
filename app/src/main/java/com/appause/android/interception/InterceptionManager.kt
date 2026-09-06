@@ -27,15 +27,18 @@ import com.appause.android.util.AppLogger
  * - Lost when the process is killed (acceptable — user just sees cooldown again).
  *
  * Thread safety:
- * - The bypassedPackages set is accessed from multiple threads (service + activity).
- * - For v1, we use a simple HashSet. A concurrent set would be safer for production.
+ * - The bypassedPackages set is accessed from multiple threads (service main
+ *   thread, Dispatchers.IO overlay callbacks, PauseActivity, the
+ *   PauseAlarmReceiver broadcast thread). It is therefore a concurrent set —
+ *   a plain HashSet under concurrent reads/writes could lose entries, which
+ *   here would mean an app silently skipping its cooldown.
  */
 object InterceptionManager {
 
     private const val TAG = "InterceptionManager"
 
     /** Apps that are currently bypassed (user completed cooldown and is using the app). */
-    private val bypassedPackages = mutableSetOf<String>()
+    private val bypassedPackages: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
 
     /**
      * Check if a package should be bypassed (no interception).

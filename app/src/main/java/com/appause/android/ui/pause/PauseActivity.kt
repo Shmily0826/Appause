@@ -82,6 +82,7 @@ import com.appause.android.ui.theme.appauseDarkTheme
 import com.appause.android.util.AppLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -214,13 +215,15 @@ class PauseActivity : ComponentActivity() {
                         }
                     }
 
-                    // Recommended learning apps — apps the user has added to their
-                    // "learning" groups. Shown during the cooldown as "try one of
-                    // these instead" suggestions. Excludes the target app itself.
+                    // Recommended apps — the global list the user configured.
+                    // Shown during the cooldown as "try one of these instead"
+                    // suggestions. Excludes the target app itself.
+                    // Same source as OverlayManager's overlay path, so the
+                    // Activity fallback always shows the same suggestions.
                     var recommendedApps by remember { mutableStateOf<List<AppInfo>>(emptyList()) }
                     LaunchedEffect(Unit) {
                         recommendedApps = withContext(Dispatchers.IO) {
-                            repository.getLearningGroupPackageNames()
+                            repository.recommendedApps.first()
                                 .filter { it != targetPackage }
                                 .mapNotNull { pkg ->
                                     appQueryService.getAppName(pkg)?.let { name ->
