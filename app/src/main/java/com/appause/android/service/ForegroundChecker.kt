@@ -81,36 +81,6 @@ object ForegroundChecker {
     }
 
     /**
-     * @return true if [pkg] had a genuine ACTIVITY_RESUMED event in the last
-     *         [windowMs] milliseconds.
-     *
-     * Unlike [getForegroundPackage] (which reports the app CURRENTLY on top),
-     * this confirms the app was actually opened even if the user has since
-     * switched away. That is exactly what we want for interception: opening
-     * 小红书 and glancing back at Appause should still trigger the pause screen.
-     * Notifications and Recents glances never produce a real RESUMED for the
-     * target, so they remain correctly ignored.
-     */
-    fun wasResumedRecently(context: Context, pkg: String, windowMs: Long): Boolean {
-        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE)
-            as? UsageStatsManager ?: return false
-        val now = System.currentTimeMillis()
-        val events = try {
-            usageStatsManager.queryEvents(now - windowMs, now)
-        } catch (e: Exception) {
-            return false
-        } ?: return false
-        val event = UsageEvents.Event()
-        while (events.hasNextEvent()) {
-            events.getNextEvent(event)
-            if (event.eventType == EVENT_ACTIVITY_RESUMED && event.packageName == pkg) {
-                return true
-            }
-        }
-        return false
-    }
-
-    /**
      * Replay the system's usage-event log over the last [lookbackMs] and return
      * the package that is currently resumed.
      *

@@ -144,6 +144,11 @@ open class AppGroupRepository(
 
     // ── Launch records ──
 
+    /** Records older than this are not reachable by any stats query (365-day window). */
+    companion object {
+        private const val RECORD_RETENTION_MS = 365L * 24 * 60 * 60 * 1000
+    }
+
     /**
      * Log an interception event.
      * @param reason Why the user opened the app (empty for cancellations).
@@ -157,6 +162,16 @@ open class AppGroupRepository(
                 reason = reason
             )
         )
+    }
+
+    /**
+     * Delete interception records older than the 365-day stats window, so the
+     * table cannot grow without bound. Called at process start; every query
+     * in the app looks at most 365 days back, so this never deletes visible
+     * data.
+     */
+    suspend fun deleteOldLaunchRecords(now: Long = System.currentTimeMillis()) {
+        launchDao.deleteOldRecords(before = now - RECORD_RETENTION_MS)
     }
 
     /** Count interceptions since a given timestamp (e.g., start of today). */

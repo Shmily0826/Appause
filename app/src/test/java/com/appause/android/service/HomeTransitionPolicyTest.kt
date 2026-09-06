@@ -35,7 +35,7 @@ class HomeTransitionPolicyTest {
                 homePackage = "com.google.android.apps.nexuslauncher",
                 lastObservedNavigationPackage = "com.android.chrome",
                 pauseShown = true,
-                pauseTargetPackage = "com.android.chrome",
+
                 homeEventTime = 40_310_478L,
                 latestRealForegroundEventTime = 40_310_759L
             )
@@ -49,7 +49,7 @@ class HomeTransitionPolicyTest {
                 homePackage = "com.google.android.apps.nexuslauncher",
                 lastObservedNavigationPackage = "com.google.android.apps.nexuslauncher",
                 pauseShown = true,
-                pauseTargetPackage = "com.android.chrome",
+
                 homeEventTime = 40_310_478L,
                 latestRealForegroundEventTime = 40_310_478L,
                 currentForegroundPackage = "com.android.chrome"
@@ -64,7 +64,7 @@ class HomeTransitionPolicyTest {
                 homePackage = "com.google.android.apps.nexuslauncher",
                 lastObservedNavigationPackage = "com.google.android.apps.nexuslauncher",
                 pauseShown = true,
-                pauseTargetPackage = "com.android.chrome",
+
                 homeEventTime = 40_310_478L,
                 latestRealForegroundEventTime = 40_310_478L,
                 currentForegroundPackage = "com.android.chrome",
@@ -80,7 +80,7 @@ class HomeTransitionPolicyTest {
                 homePackage = "com.google.android.apps.nexuslauncher",
                 lastObservedNavigationPackage = "com.google.android.apps.nexuslauncher",
                 pauseShown = true,
-                pauseTargetPackage = "com.android.chrome",
+
                 homeEventTime = 1_000L,
                 latestRealForegroundEventTime = 1_100L,
                 currentForegroundPackage = "com.google.android.apps.nexuslauncher",
@@ -96,7 +96,7 @@ class HomeTransitionPolicyTest {
                 homePackage = "com.google.android.apps.nexuslauncher",
                 lastObservedNavigationPackage = "com.google.android.apps.nexuslauncher",
                 pauseShown = true,
-                pauseTargetPackage = "com.android.chrome",
+
                 homeEventTime = 40_310_478L,
                 latestRealForegroundEventTime = 40_310_478L,
                 currentForegroundPackage = "com.google.android.apps.nexuslauncher"
@@ -120,7 +120,7 @@ class HomeTransitionPolicyTest {
         assertTrue(
             HomeTransitionPolicy.shouldConfirmSystemUiHome(
                 pausePresentationActive = true,
-                pauseTargetPackage = "com.xingin.xhs",
+
                 currentForegroundPackage = "com.miui.home",
                 homePackages = setOf("com.miui.home")
             )
@@ -128,7 +128,6 @@ class HomeTransitionPolicyTest {
         assertFalse(
             HomeTransitionPolicy.shouldConfirmSystemUiHome(
                 pausePresentationActive = true,
-                pauseTargetPackage = "com.xingin.xhs",
                 currentForegroundPackage = "com.xingin.xhs",
                 homePackages = setOf("com.miui.home")
             )
@@ -140,7 +139,7 @@ class HomeTransitionPolicyTest {
         assertTrue(
             HomeTransitionPolicy.shouldConfirmSystemUiHome(
                 pausePresentationActive = true,
-                pauseTargetPackage = null,
+
                 currentForegroundPackage = "com.google.android.apps.nexuslauncher",
                 homePackages = setOf("com.google.android.apps.nexuslauncher")
             )
@@ -200,7 +199,7 @@ class HomeTransitionPolicyTest {
                 homePackage = "com.miui.home",
                 lastObservedNavigationPackage = "com.miui.home",
                 pauseShown = true,
-                pauseTargetPackage = "tv.danmaku.bili",
+
                 homeEventTime = 1_000L,
                 latestRealForegroundEventTime = 1_100L
             )
@@ -214,7 +213,7 @@ class HomeTransitionPolicyTest {
                 homePackage = "com.miui.home",
                 lastObservedNavigationPackage = "com.miui.home",
                 pauseShown = true,
-                pauseTargetPackage = "tv.danmaku.bili",
+
                 homeEventTime = 1_000L,
                 latestRealForegroundEventTime = 999L
             )
@@ -228,7 +227,7 @@ class HomeTransitionPolicyTest {
                 homePackage = "com.miui.home",
                 lastObservedNavigationPackage = "com.miui.home",
                 pauseShown = true,
-                pauseTargetPackage = "tv.danmaku.bili",
+
                 homeEventTime = 0L,
                 latestRealForegroundEventTime = 2_000L
             )

@@ -191,6 +191,55 @@ class LicenseVerifierTest {
         assertEquals("token-id-1", claims.jti)
     }
 
+    // ---------- Fail-closed: malformed tokens must return null, never throw ----------
+
+    @Test
+    fun `non-JSON payload segment is rejected without throwing`() {
+        val valid = mintToken(proPayload())
+        val parts = valid.split(".")
+        val garbage = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("this is not json".toByteArray(Charsets.UTF_8))
+        assertNull(verifyToken("${parts[0]}.$garbage.${parts[2]}"))
+    }
+
+    @Test
+    fun `non-JSON header segment is rejected without throwing`() {
+        val garbage = Base64.getUrlEncoder().withoutPadding()
+            .encodeToString("not json at all".toByteArray(Charsets.UTF_8))
+        assertNull(verifyToken("$garbage.$garbage.$garbage"))
+    }
+
+    @Test
+    fun `invalid base64url signature segment is rejected without throwing`() {
+        val valid = mintToken(proPayload())
+        val parts = valid.split(".")
+        assertNull(verifyToken("${parts[0]}.${parts[1]}.!!!not-base64!!!"))
+    }
+
+    @Test
+    fun `exp claim of a non-numeric type is rejected without throwing`() {
+        val payload = JSONObject().put("tier", "pro").put("exp", "tomorrow")
+        assertNull(verifyToken(mintToken(payload)))
+    }
+
+    @Test
+    fun `blank device claim counts as unbound - accepted in dev mode, rejected in production mode`() {
+        val token = mintToken(proPayload(device = "   "))
+        // Dev/test policy: a blank claim is treated as absent.
+        val claims = verifyToken(token, fingerprint = "any-device")
+        assertNotNull(claims)
+        // Production policy: the token MUST carry a real device binding.
+        assertNull(verifyToken(token, requireDeviceBinding = true))
+    }
+
+    @Test
+    fun `token with surrounding whitespace is accepted`() {
+        val token = mintToken(proPayload())
+        val padded = "   $token   "
+        val claims = verifyToken(padded)
+        assertNotNull(claims)
+    }
+
     // ---------- Helpers ----------
 
     @Test

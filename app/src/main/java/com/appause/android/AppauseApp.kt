@@ -9,6 +9,9 @@ import com.appause.android.data.repository.AppGroupRepository
 import com.appause.android.data.settings.SettingsDataStore
 import com.appause.android.util.PersistentLog
 import com.appause.android.util.CrashLog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 /**
@@ -59,6 +62,17 @@ class AppauseApp : Application() {
         super.onCreate()
         CrashLog.install(this)
         PersistentLog.log(this, "App", "Application.onCreate pid=${android.os.Process.myPid()}")
+        // Trim interception records older than the 365-day stats window so the
+        // table cannot grow forever on a long-lived install. GlobalScope is
+        // deliberate: this cleanup must outlive any screen and nothing waits
+        // on its result.
+        kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
+            try {
+                repository.deleteOldLaunchRecords()
+            } catch (e: Exception) {
+                android.util.Log.w("AppauseApp", "Launch-record cleanup failed: ${e.message}")
+            }
+        }
     }
 
     /**

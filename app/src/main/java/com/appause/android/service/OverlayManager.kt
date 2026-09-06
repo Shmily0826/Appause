@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.Build
-import android.provider.Settings
 import android.view.KeyEvent
 import android.view.View
 import android.widget.FrameLayout
@@ -244,10 +243,7 @@ class OverlayManager {
         // WindowManager selection is completed below after the device policy is known.
         val isXiaomiApi36OrLater = Build.VERSION.SDK_INT >= 36 &&
             Build.MANUFACTURER.equals("Xiaomi", ignoreCase = true)
-        val presentationPath = OverlayPresentationPolicy.initialPath(
-            isXiaomiApi36OrLater = isXiaomiApi36OrLater,
-            canDrawOverlays = Settings.canDrawOverlays(service)
-        )
+        val presentationPath = OverlayPresentationPolicy.initialPath
         // 2032 uses the AccessibilityService token; 2038 uses the application
         // WindowManager so its Compose controls retain interactive input.
         val windowManagerContext = if (
@@ -268,8 +264,7 @@ class OverlayManager {
         // Overlay-hosted Compose handles Back itself because standalone windows
         // do not have an OnBackPressedDispatcherOwner. Keeping the window
         // focusable lets the chooser dismiss before the outer Cancel action.
-        val keepOverlayNonFocusable = false
-        val overlayFlags = OverlayWindowPolicy.flags(keepOverlayNonFocusable)
+        val overlayFlags = OverlayWindowPolicy.flags()
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -569,16 +564,8 @@ class OverlayManager {
             } catch (e: Exception) {
                 AppLogger.w(TAG, "addView failed with type $usedType: ${e.javaClass.simpleName}: ${e.message}")
                 PersistentLog.log(context, "Overlay", "addView FAILED ($usedType): ${e.javaClass.simpleName}: ${e.message}")
-                val alternatePath = OverlayPresentationPolicy.alternatePathAfterFailure(
-                    isXiaomiApi36OrLater,
-                    presentationPath
-                )
-                if (alternatePath != null) {
-                    val altType = if (alternatePath == OverlayPresentationPolicy.Path.ACCESSIBILITY_OVERLAY) {
-                        WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
-                    } else {
-                        WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                    }
+                if (OverlayPresentationPolicy.shouldRetryWith2038AfterFailure(isXiaomiApi36OrLater)) {
+                    val altType = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                     try {
                         params.type = altType
                         usedType = altType
@@ -589,9 +576,9 @@ class OverlayManager {
                         overlayHost.requestFocus()
                         registerStandaloneBackCallback()
                         overlayAdded = true
+                        AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
                         AppLogger.d(TAG, "Overlay added with alternate type $altType")
                         PersistentLog.log(context, "Overlay", "addView OK with alternate type $altType")
-                        AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
                     } catch (e2: Exception) {
                         AppLogger.w(TAG, "addView also failed with alternate type $altType: ${e2.javaClass.simpleName}: ${e2.message}")
                         PersistentLog.log(context, "Overlay", "addView FAILED ($altType): ${e2.javaClass.simpleName}: ${e2.message}")

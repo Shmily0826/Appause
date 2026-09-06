@@ -8,9 +8,10 @@ import kotlinx.coroutines.flow.Flow
 /**
  * Data Access Object for the app_launch_records table.
  *
- * This DAO is used to log interception events.
- * In v1, the data is only used for the debug screen (interception count).
- * Future versions may use it for usage statistics and charts.
+ * This DAO logs every interception event (proceeded / cancelled / reason).
+ * The data feeds the Home "today" counters and the Stats charts (7-day and
+ * 365-day windows). Records older than the 365-day window are deleted at
+ * process start by AppGroupRepository.deleteOldLaunchRecords().
  */
 @Dao
 interface AppLaunchDao {

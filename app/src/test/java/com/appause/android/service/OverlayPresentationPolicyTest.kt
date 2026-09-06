@@ -3,8 +3,8 @@ package com.appause.android.service
 import android.view.WindowManager
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class OverlayPresentationPolicyTest {
@@ -56,64 +56,27 @@ class OverlayPresentationPolicyTest {
     }
 
     @Test
-    fun `non-focusable fallback remains explicitly opt in`() {
-        val flags = OverlayWindowPolicy.flags(keepOverlayNonFocusable = true)
-
+    fun `primary presentation surface is always the accessibility overlay`() {
         assertEquals(
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
-            flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            OverlayPresentationPolicy.Path.ACCESSIBILITY_OVERLAY,
+            OverlayPresentationPolicy.initialPath
         )
     }
 
     @Test
-    fun `Xiaomi Android 16 starts with accessibility overlay even with overlay permission`() {
-        assertEquals(
-            OverlayPresentationPolicy.Path.ACCESSIBILITY_OVERLAY,
-            OverlayPresentationPolicy.initialPath(
-                isXiaomiApi36OrLater = true,
-                canDrawOverlays = true
-            )
-        )
-        assertNull(
-            OverlayPresentationPolicy.alternatePathAfterFailure(
-                isXiaomiApi36OrLater = true,
-                attemptedPath = OverlayPresentationPolicy.Path.ACCESSIBILITY_OVERLAY
+    fun `ordinary devices retry with the application overlay after 2032 failure`() {
+        assertTrue(
+            OverlayPresentationPolicy.shouldRetryWith2038AfterFailure(
+                isXiaomiApi36OrLater = false
             )
         )
     }
 
     @Test
-    fun `Xiaomi Android 16 without overlay permission still starts with accessibility overlay`() {
-        assertEquals(
-            OverlayPresentationPolicy.Path.ACCESSIBILITY_OVERLAY,
-            OverlayPresentationPolicy.initialPath(
-                isXiaomiApi36OrLater = true,
-                canDrawOverlays = false
-            )
-        )
-    }
-
-    @Test
-    fun `ordinary devices preserve accessibility overlay then application fallback`() {
-        assertEquals(
-            OverlayPresentationPolicy.Path.ACCESSIBILITY_OVERLAY,
-            OverlayPresentationPolicy.initialPath(
-                isXiaomiApi36OrLater = false,
-                canDrawOverlays = false
-            )
-        )
-        assertEquals(
-            OverlayPresentationPolicy.Path.APPLICATION_OVERLAY,
-            OverlayPresentationPolicy.alternatePathAfterFailure(
-                isXiaomiApi36OrLater = false,
-                attemptedPath = OverlayPresentationPolicy.Path.ACCESSIBILITY_OVERLAY
-            )
-        )
-        assertEquals(
-            OverlayPresentationPolicy.Path.ACCESSIBILITY_OVERLAY,
-            OverlayPresentationPolicy.alternatePathAfterFailure(
-                isXiaomiApi36OrLater = false,
-                attemptedPath = OverlayPresentationPolicy.Path.APPLICATION_OVERLAY
+    fun `Xiaomi Android 16 skips the 2038 retry after 2032 failure`() {
+        assertFalse(
+            OverlayPresentationPolicy.shouldRetryWith2038AfterFailure(
+                isXiaomiApi36OrLater = true
             )
         )
     }

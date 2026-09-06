@@ -3,9 +3,9 @@ package com.appause.android.service
 import android.view.WindowManager
 
 /**
- * Selects the first presentation surface and whether an overlay failure may
- * try the other overlay type.  This is pure so ROM-specific policy remains
- * testable without constructing WindowManager objects.
+ * Selects the presentation surface for the cooldown screen and whether an
+ * overlay failure may try the other overlay type. Pure so ROM-specific policy
+ * remains testable without constructing WindowManager objects.
  */
 internal object OverlayPresentationPolicy {
 
@@ -15,29 +15,25 @@ internal object OverlayPresentationPolicy {
         ACTIVITY
     }
 
-    fun initialPath(isXiaomiApi36OrLater: Boolean, canDrawOverlays: Boolean): Path {
-        // Xiaomi/HyperOS may hide 2038 when the target app opts out of
-        // non-system overlays. The accessibility-owned 2032 window is the
-        // reliable primary surface for interception and does not need the
-        // separate draw-over-other-apps permission.
-        return Path.ACCESSIBILITY_OVERLAY
-    }
+    /**
+     * The primary presentation surface: the accessibility-owned 2032 window.
+     * It needs no SYSTEM_ALERT_WINDOW permission and anti-tamper target apps
+     * cannot hide it (unlike TYPE_APPLICATION_OVERLAY), so it is always tried
+     * first. A previous revision accepted a Xiaomi/Android-16 flag and the
+     * canDrawOverlays result here, but every branch returned this value — the
+     * parameters were dead and made the strategy look more configurable than
+     * it actually is. If a future ROM ever needs a different initial window
+     * type, reintroduce the decision here (with tests).
+     */
+    val initialPath: Path = Path.ACCESSIBILITY_OVERLAY
 
     /**
      * Xiaomi Android 16 has a known 2032 interaction limitation. Do not add a
-     * second overlay attempt after 2032 fails on that target.
+     * second overlay attempt after 2032 fails on that target (fall straight
+     * through to PauseActivity); on every other ROM the 2038 retry is allowed.
      */
-    fun alternatePathAfterFailure(
-        isXiaomiApi36OrLater: Boolean,
-        attemptedPath: Path
-    ): Path? {
-        if (isXiaomiApi36OrLater) return null
-        return when (attemptedPath) {
-            Path.ACCESSIBILITY_OVERLAY -> Path.APPLICATION_OVERLAY
-            Path.APPLICATION_OVERLAY -> Path.ACCESSIBILITY_OVERLAY
-            Path.ACTIVITY -> null
-        }
-    }
+    fun shouldRetryWith2038AfterFailure(isXiaomiApi36OrLater: Boolean): Boolean =
+        !isXiaomiApi36OrLater
 }
 
 /**
@@ -57,16 +53,10 @@ internal object OverlayWindowPolicy {
         navigationBarInset: Int
     ): Int = (displayHeight - statusBarInset - navigationBarInset).coerceAtLeast(1)
 
-    fun flags(keepOverlayNonFocusable: Boolean = false): Int {
-        // Keep the blocker interactive inside its frame, but let pointer
-        // events outside that frame reach system-owned windows such as the
-        // navigation bar. FLAG_NOT_FOCUSABLE implies this too, but the
-        // focusable primary path must state it explicitly.
-        return WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
-            if (keepOverlayNonFocusable) {
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-            } else {
-                0
-            }
-    }
+    /**
+     * Interactive inside its frame, but pointer events outside that frame
+     * reach system-owned windows such as the navigation bar. The primary
+     * 2032 window is focusable, so FLAG_NOT_FOCUSABLE is deliberately absent.
+     */
+    fun flags(): Int = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
 }

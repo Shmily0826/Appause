@@ -65,7 +65,6 @@ internal object HomeTransitionPolicy {
         homePackage: String,
         lastObservedNavigationPackage: String?,
         pauseShown: Boolean,
-        pauseTargetPackage: String?,
         homeEventTime: Long,
         latestRealForegroundEventTime: Long,
         currentForegroundPackage: String? = null,
@@ -113,7 +112,6 @@ internal object HomeTransitionPolicy {
      */
     fun shouldConfirmSystemUiHome(
         pausePresentationActive: Boolean,
-        pauseTargetPackage: String?,
         currentForegroundPackage: String?,
         homePackages: Set<String>
     ): Boolean = pausePresentationActive &&
@@ -127,24 +125,6 @@ class AppauseAccessibilityService : AccessibilityService() {
         private const val TAG = "AppauseA11yService"
         private const val NOTIFICATION_CHANNEL_ID = "appause_monitoring"
         private const val NOTIFICATION_ID = 1
-
-        /**
-         * How long the guard may stay raised while nothing is actually on
-         * screen. Covers the fallback path, where PauseActivity is launched
-         * asynchronously (direct startActivity, then an AlarmManager retry
-         * ~250ms later) and may need a moment to become visible.
-         */
-        private const val PAUSE_GUARD_GRACE_MS = 1_500L
-        /**
-         * Hard cap: never let the guard stick longer than this, even if a window
-         * is "attached but not actually visible" (e.g. an anti-tamper app like
-         * 小红书 hid our TYPE_APPLICATION_OVERLAY via setHideOverlayWindows).
-         * Without this, a hidden-but-attached overlay would keep pauseShown=true
-         * forever and silently swallow every later open. A genuinely visible
-         * overlay returns true at the `overlayAttached` check long before this
-         * cap, so the cap only ever releases a stuck/dead guard.
-         */
-        private const val PAUSE_GUARD_MAX_MS = 30_000L
 
         /**
          * Raw backing field for [pauseShown]. Do NOT read this directly —
@@ -213,25 +193,30 @@ class AppauseAccessibilityService : AccessibilityService() {
             get() {
                 if (!pauseGuardRaised) return false
                 val elapsed = SystemClock.elapsedRealtime() - pauseGuardRaisedAt
-                // Hard cap: release even an "attached but not visible" guard
-                // (anti-tamper app hid our overlay) so it can't block interception
-                // forever.
-                if (elapsed > PAUSE_GUARD_MAX_MS) {
-                    pauseGuardRaised = false
-                    pauseGuardWatchdogExpired = true
-                    lastDecision = "WATCHDOG: released stale guard (exceeded max hold)"
-                    AppLogger.w(TAG, "Pause guard watchdog: exceeded max hold — releasing guard")
-                    return false
+                // The decision core lives in PauseGuardPolicy (pure, unit-tested);
+                // only the side effects of a release remain here. Read points are
+                // unchanged — the watchdog still fires exactly when this getter runs.
+                return when (PauseGuardPolicy.evaluate(
+                    elapsedMs = elapsed,
+                    overlayAttached = OverlayManager.overlayAttached,
+                    pauseActivityVisible = pauseActivityVisible
+                )) {
+                    PauseGuardPolicy.GuardAction.KEEP,
+                    PauseGuardPolicy.GuardAction.KEEP_WITHIN_GRACE -> true
+                    PauseGuardPolicy.GuardAction.RELEASE_MAX -> {
+                        pauseGuardRaised = false
+                        pauseGuardWatchdogExpired = true
+                        lastDecision = "WATCHDOG: released stale guard (exceeded max hold)"
+                        AppLogger.w(TAG, "Pause guard watchdog: exceeded max hold — releasing guard")
+                        false
+                    }
+                    PauseGuardPolicy.GuardAction.RELEASE_STALE -> {
+                        pauseGuardRaised = false
+                        lastDecision = "WATCHDOG: released a stale cooldown guard (nothing on screen)"
+                        AppLogger.w(TAG, "Pause guard watchdog: no overlay and no visible PauseActivity — releasing guard")
+                        false
+                    }
                 }
-                // Something is genuinely on screen → the guard is legitimate.
-                if (OverlayManager.overlayAttached || pauseActivityVisible) return true
-                // Nothing is on screen. Give the fallback Activity a moment to
-                // come up before declaring the guard stale.
-                if (elapsed < PAUSE_GUARD_GRACE_MS) return true
-                pauseGuardRaised = false
-                lastDecision = "WATCHDOG: released a stale cooldown guard (nothing on screen)"
-                AppLogger.w(TAG, "Pause guard watchdog: no overlay and no visible PauseActivity — releasing guard")
-                return false
             }
             set(value) {
                 pauseGuardRaised = value
@@ -475,9 +460,6 @@ class AppauseAccessibilityService : AccessibilityService() {
      * cooldown to re-pop on every in-app detour (gallery/chooser/player).
      */
     private val leaveTimers = mutableMapOf<String, Job>()
-
-    /** Wall-clock time each session started; used for logging/debug. */
-    private val sessionStart = mutableMapOf<String, Long>()
 
     /**
      * Guards against starting a session/loop twice for the same package. The
@@ -864,7 +846,6 @@ class AppauseAccessibilityService : AccessibilityService() {
                         OverlayManager.overlayAttached ||
                         pauseActivityVisible ||
                         pauseShown,
-                    pauseTargetPackage = pauseTargetPackage,
                     homeEventTime = homeEventTime,
                     latestRealForegroundEventTime = latestRealForegroundEventTime
                 )
@@ -884,8 +865,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                                 OverlayManager.overlayAttached ||
                                 pauseActivityVisible ||
                                 pauseShown,
-                            pauseTargetPackage = pauseTargetPackage,
-                            homeEventTime = homeEventTime,
+                                    homeEventTime = homeEventTime,
                             latestRealForegroundEventTime = latestRealForegroundEventTime,
                             currentForegroundPackage = currentForegroundPackage,
                             allowStaleForegroundFallback = allowStaleForegroundFallback
@@ -907,8 +887,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                                     OverlayManager.overlayAttached ||
                                     pauseActivityVisible ||
                                     pauseShown,
-                                pauseTargetPackage = pauseTargetPackage,
-                                homeEventTime = homeEventTime,
+                                            homeEventTime = homeEventTime,
                                 latestRealForegroundEventTime = latestRealForegroundEventTime,
                                 allowStaleForegroundFallback = true
                             )
@@ -988,7 +967,6 @@ class AppauseAccessibilityService : AccessibilityService() {
                     }
                     if (!HomeTransitionPolicy.shouldConfirmSystemUiHome(
                             pausePresentationActive = pausePresentationActive,
-                            pauseTargetPackage = pauseTargetPackage,
                             currentForegroundPackage = currentForegroundPackage,
                             homePackages = homePackages
                         )
@@ -1583,7 +1561,6 @@ class AppauseAccessibilityService : AccessibilityService() {
             return
         }
         cancelLeaveTimer(targetPackage)
-        sessionStart[targetPackage] = System.currentTimeMillis()
         InterceptionManager.startBypass(targetPackage)
         AppLogger.d(TAG, "Session start: $targetPackage")
         if (reRemindMinutes > 0) {
@@ -1632,7 +1609,6 @@ class AppauseAccessibilityService : AccessibilityService() {
         // repeated window events) would keep resetting the 3-min window while
         // the user sits in another app, so re-arm would never fire.
         if (leaveTimers.containsKey(targetPackage)) return
-        cancelLeaveTimer(targetPackage)
         AppLogger.d(TAG, "Leave cooldown started for $targetPackage (${LEAVE_COOLDOWN_MS / 1000}s)")
         val job = serviceScope.launch {
             delay(LEAVE_COOLDOWN_MS)
@@ -1658,7 +1634,6 @@ class AppauseAccessibilityService : AccessibilityService() {
         InterceptionManager.clearBypass(targetPackage)
         cancelReRemind(targetPackage)
         cancelLeaveTimer(targetPackage)
-        sessionStart.remove(targetPackage)
         AppLogger.d(TAG, "Re-armed: $targetPackage")
     }
 

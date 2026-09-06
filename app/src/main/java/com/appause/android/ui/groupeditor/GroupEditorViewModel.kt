@@ -152,7 +152,8 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun updateCooldown(seconds: Int) {
-        // Clamp to valid range for the current tier (free 1–30, pro 1–60).
+        // Clamp to valid range. Free and Pro currently share the same 1–60 cap
+        // (FREE_COOLDOWN_MAX_SECONDS == PRO_COOLDOWN_MAX_SECONDS == 60).
         _cooldownSeconds.value = seconds.coerceIn(1, maxCooldown.value)
     }
 
