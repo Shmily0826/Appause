@@ -673,3 +673,22 @@
   `27d1a30` (ci), `9067adb` (P0 fixes + PROGRESS), `537d109` (ci fix).
   Working tree afterwards contains only the pre-existing uncommitted
   `index.html` redesign. No tag, release, merge, or deploy.
+
+### 2026-09-06 Emulator smoke for the P0 batch (Medium_Phone, emulator-5554)
+- User asked why no emulator was connected; none was running, so the
+  repository's default `Medium_Phone` AVD was booted headless (same flags as
+  `launch-emulator.bat`, plus -no-window/-no-audio for CI-like conditions).
+- Installed the new debug APK with data-preserving `install -r`. App launch:
+  no AndroidRuntime fatal errors; home screen renders with the pre-existing
+  `TestGroup2` group visible immediately (P0-2 derived `sortedGroups` shows
+  data on first composition).
+- Resume scenario: HOME → relaunch after ~3 s AND after ~14 s (exceeding the
+  `WhileSubscribed(5000)` gap that triggered the original empty-snapshot bug)
+  — the group list remained populated both times, zero fatal exceptions.
+  Today counters render 0/0 (no records today; midnight rollover path not
+  force-tested across a real date change).
+- Emulator accessibility: only `com.appause.android.debug/
+  .service.AppauseAccessibilityService` is enabled. Full interception
+  (pause overlay + recommended apps on the fallback path) was NOT exercised
+  in this pass; the physical Xiaomi was not touched.
+- No source change; PROGRESS.md only. Emulator left running (emulator-5554).
