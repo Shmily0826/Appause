@@ -31,8 +31,8 @@ android {
         minSdk = 26
         targetSdk = 35
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 91
-        versionName = "0.5.39"
+        versionCode = 92
+        versionName = "0.5.40"
         // Baked at build time; lets a shared diagnostics report prove exactly
         // which APK is installed (used by the Diagnostics "build time" row).
         buildConfigField(

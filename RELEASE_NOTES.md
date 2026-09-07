@@ -1,11 +1,23 @@
-# Appause v0.5.39 — 发布说明 (Release Notes)
+# Appause v0.5.40 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.39/Appause-v0.5.39.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.40/Appause-v0.5.40.apk`
 
 ---
 
 ## 🇨🇳 中文
+
+### 本次更新 (v0.5.40) — 导航逃生、临时通行与权限生命周期可靠性
+- **版本更新**：版本为 `0.5.40`，Android versionCode 为 `92`；公开 APK 使用 `Appause-v0.5.40.apk`。
+- **阻断页安全**：Cancel 可退出阻断页；系统 Home/Back/Recents 导航保持可用，Appause 不会困住或劫持用户，减少残留页面和错误重拦截。
+- **临时通行与重拦截**：Temporary Pass 按应用和有效期处理；取消后的快速重开与通行到期后的再次拦截保持独立、可恢复。
+- **权限与生命周期**：无障碍权限启用状态与服务连接状态分开显示，并在服务生命周期变化后提供明确的恢复路径。
+
+### 本次更新 (v0.5.40) — English summary
+- Public APK: `Appause-v0.5.40.apk`, package `com.appause.android`, versionCode `92`.
+- Cancel exits the blocker; system Home, Back, and Recents navigation remains usable without Appause trapping or hijacking the user, reducing stale surfaces and incorrect re-interception.
+- Temporary Pass expiry and post-Cancel quick reopen remain separate from ordinary bypass state so interception can recover reliably.
+- Accessibility permission and service-connection lifecycle are reported separately, with an explicit recovery path when service health is not confirmed.
 
 ### 本次更新 (v0.5.39) — 发布隔离与拦截可靠性
 - **发布包更新**：版本为 `0.5.39`，Android versionCode 为 `91`；公开 APK 使用 `Appause-v0.5.39.apk`，不把内部 versionCode 放入文件名。
