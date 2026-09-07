@@ -1,10 +1,31 @@
 package com.appause.android.service
 
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PausePresentationPolicyTest {
+
+    @Test
+    fun `clearing pause guard also clears its target`() {
+        AppauseAccessibilityService.pauseTargetPackage = "com.example.target"
+        AppauseAccessibilityService.pauseShown = true
+
+        AppauseAccessibilityService.pauseShown = false
+
+        assertNull(AppauseAccessibilityService.pauseTargetPackage)
+    }
+
+    @Test
+    fun `watchdog release also clears its target`() {
+        AppauseAccessibilityService.pauseTargetPackage = "com.example.target"
+
+        AppauseAccessibilityService.releasePauseGuard(watchdogExpired = true)
+
+        assertFalse(AppauseAccessibilityService.pauseShown)
+        assertNull(AppauseAccessibilityService.pauseTargetPackage)
+    }
 
     @Test
     fun `target is included only when requested`() {

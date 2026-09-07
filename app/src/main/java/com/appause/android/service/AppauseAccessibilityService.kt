@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.cancel
 
@@ -135,6 +136,20 @@ internal object PausePresentationPolicy {
         pauseShown()
 }
 
+/** Serializes foreground handlers shared by accessibility events and polling. */
+internal class ForegroundChangeSingleFlight {
+    private val mutex = Mutex()
+
+    suspend fun <T> run(block: suspend () -> T): T {
+        mutex.lock()
+        return try {
+            block()
+        } finally {
+            mutex.unlock()
+        }
+    }
+}
+
 class AppauseAccessibilityService : AccessibilityService() {
 
     companion object {
@@ -189,6 +204,13 @@ class AppauseAccessibilityService : AccessibilityService() {
         @Volatile
         var pauseTargetPackage: String? = null
 
+        /** Clear every field that makes a pause presentation appear active. */
+        internal fun releasePauseGuard(watchdogExpired: Boolean) {
+            pauseGuardRaised = false
+            pauseTargetPackage = null
+            pauseGuardWatchdogExpired = watchdogExpired
+        }
+
         /**
          * Guard flag: true while the cooldown screen is showing.
          * Prevents re-triggering interception while a cooldown is in progress.
@@ -220,14 +242,13 @@ class AppauseAccessibilityService : AccessibilityService() {
                     PauseGuardPolicy.GuardAction.KEEP,
                     PauseGuardPolicy.GuardAction.KEEP_WITHIN_GRACE -> true
                     PauseGuardPolicy.GuardAction.RELEASE_MAX -> {
-                        pauseGuardRaised = false
-                        pauseGuardWatchdogExpired = true
+                        releasePauseGuard(watchdogExpired = true)
                         lastDecision = "WATCHDOG: released stale guard (exceeded max hold)"
                         AppLogger.w(TAG, "Pause guard watchdog: exceeded max hold — releasing guard")
                         false
                     }
                     PauseGuardPolicy.GuardAction.RELEASE_STALE -> {
-                        pauseGuardRaised = false
+                        releasePauseGuard(watchdogExpired = false)
                         lastDecision = "WATCHDOG: released a stale cooldown guard (nothing on screen)"
                         AppLogger.w(TAG, "Pause guard watchdog: no overlay and no visible PauseActivity — releasing guard")
                         false
@@ -240,7 +261,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                     pauseGuardRaisedAt = SystemClock.elapsedRealtime()
                     pauseGuardWatchdogExpired = false
                 } else {
-                    pauseGuardWatchdogExpired = false
+                    releasePauseGuard(watchdogExpired = false)
                 }
             }
 
@@ -398,6 +419,7 @@ class AppauseAccessibilityService : AccessibilityService() {
 
     /** Coroutine scope for async work (survives individual event cancellations). */
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val foregroundChangeSingleFlight = ForegroundChangeSingleFlight()
 
     /**
      * UsageStats can lag behind a launcher window-state event on HyperOS. Keep
@@ -1026,6 +1048,13 @@ class AppauseAccessibilityService : AccessibilityService() {
      * 8. Otherwise → skip (not a target app)
      */
     private suspend fun handleForegroundChange(
+        packageName: String,
+        homeEventConfirmed: Boolean = false
+    ) = foregroundChangeSingleFlight.run {
+        handleForegroundChangeImpl(packageName, homeEventConfirmed)
+    }
+
+    private suspend fun handleForegroundChangeImpl(
         packageName: String,
         homeEventConfirmed: Boolean = false
     ) {
