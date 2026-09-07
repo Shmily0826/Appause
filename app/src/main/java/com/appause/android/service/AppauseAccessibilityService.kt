@@ -119,6 +119,22 @@ internal object HomeTransitionPolicy {
         currentForegroundPackage in homePackages
 }
 
+/** Ordered, short-circuiting membership predicate for an active pause UI. */
+internal object PausePresentationPolicy {
+    fun isActive(
+        includeTarget: Boolean,
+        targetPresent: () -> Boolean,
+        overlayShowing: () -> Boolean,
+        overlayAttached: () -> Boolean,
+        activityVisible: () -> Boolean,
+        pauseShown: () -> Boolean
+    ): Boolean = (includeTarget && targetPresent()) ||
+        overlayShowing() ||
+        overlayAttached() ||
+        activityVisible() ||
+        pauseShown()
+}
+
 class AppauseAccessibilityService : AccessibilityService() {
 
     companion object {
@@ -745,11 +761,7 @@ class AppauseAccessibilityService : AccessibilityService() {
         // Otherwise overlayAttached short-circuits the read and the max-hold
         // expiry is delayed until an unrelated decision happens to inspect it.
         val guardActive = pauseShown
-        val pausePresentationActive = pauseTargetPackage != null ||
-            overlayManager.isShowing ||
-            OverlayManager.overlayAttached ||
-            pauseActivityVisible ||
-            guardActive
+        val pausePresentationActive = pausePresentationActive(includeTarget = true) { guardActive }
         val watchdogHomeConfirmationPending = pauseGuardWatchdogExpired &&
             pendingHomeTransition != null
         val deferImmediateHomeHandling = HomeTransitionPolicy.shouldDeferImmediateHandling(
@@ -841,11 +853,7 @@ class AppauseAccessibilityService : AccessibilityService() {
             if (!HomeTransitionPolicy.shouldConfirm(
                     homePackage = homePackage,
                     lastObservedNavigationPackage = lastObservedNavigationPackage,
-                    pauseShown = pauseTargetPackage != null ||
-                        overlayManager.isShowing ||
-                        OverlayManager.overlayAttached ||
-                        pauseActivityVisible ||
-                        pauseShown,
+                    pauseShown = pausePresentationActive(includeTarget = true) { pauseShown },
                     homeEventTime = homeEventTime,
                     latestRealForegroundEventTime = latestRealForegroundEventTime
                 )
@@ -860,11 +868,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                     if (!HomeTransitionPolicy.shouldConfirm(
                             homePackage = homePackage,
                             lastObservedNavigationPackage = lastObservedNavigationPackage,
-                            pauseShown = pauseTargetPackage != null ||
-                                overlayManager.isShowing ||
-                                OverlayManager.overlayAttached ||
-                                pauseActivityVisible ||
-                                pauseShown,
+                            pauseShown = pausePresentationActive(includeTarget = true) { pauseShown },
                                     homeEventTime = homeEventTime,
                             latestRealForegroundEventTime = latestRealForegroundEventTime,
                             currentForegroundPackage = currentForegroundPackage,
@@ -882,11 +886,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                             HomeTransitionPolicy.shouldConfirm(
                                 homePackage = homePackage,
                                 lastObservedNavigationPackage = lastObservedNavigationPackage,
-                                pauseShown = pauseTargetPackage != null ||
-                                    overlayManager.isShowing ||
-                                    OverlayManager.overlayAttached ||
-                                    pauseActivityVisible ||
-                                    pauseShown,
+                                pauseShown = pausePresentationActive(includeTarget = true) { pauseShown },
                                             homeEventTime = homeEventTime,
                                 latestRealForegroundEventTime = latestRealForegroundEventTime,
                                 allowStaleForegroundFallback = true
@@ -927,10 +927,7 @@ class AppauseAccessibilityService : AccessibilityService() {
         allowStaleForegroundFallback: Boolean = false
     ): Boolean {
         val targetPackage = pauseTargetPackage
-        val pausePresentationActive = overlayManager.isShowing ||
-            OverlayManager.overlayAttached ||
-            pauseActivityVisible ||
-            pauseShown
+        val pausePresentationActive = pausePresentationActive(includeTarget = false) { pauseShown }
         if (!HomeTransitionPolicy.shouldDismissForConfirmedHome(
                 homePackage = homePackage,
                 currentForegroundPackage = currentForegroundPackage,
@@ -957,11 +954,7 @@ class AppauseAccessibilityService : AccessibilityService() {
             pendingHomeTransition = null
             serviceScope.launch {
                 try {
-                    val pausePresentationActive = pauseTargetPackage != null ||
-                        overlayManager.isShowing ||
-                        OverlayManager.overlayAttached ||
-                        pauseActivityVisible ||
-                        pauseShown
+                    val pausePresentationActive = pausePresentationActive(includeTarget = true) { pauseShown }
                     val currentForegroundPackage = withContext(Dispatchers.IO) {
                         ForegroundChecker.getForegroundPackage(applicationContext)
                     }
@@ -998,6 +991,18 @@ class AppauseAccessibilityService : AccessibilityService() {
         pendingHomeTransition?.let(homeTransitionHandler::removeCallbacks)
         pendingHomeTransition = null
     }
+
+    private fun pausePresentationActive(
+        includeTarget: Boolean,
+        pauseShown: () -> Boolean
+    ): Boolean = PausePresentationPolicy.isActive(
+        includeTarget = includeTarget,
+        targetPresent = { pauseTargetPackage != null },
+        overlayShowing = { overlayManager.isShowing },
+        overlayAttached = { OverlayManager.overlayAttached },
+        activityVisible = { pauseActivityVisible },
+        pauseShown = pauseShown
+    )
 
     /**
      * Core interception logic. Called for every foreground app change.

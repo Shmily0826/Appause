@@ -2,15 +2,11 @@ package com.appause.android.ui.settings
 
 import android.app.Application
 import android.content.Context
-import android.os.PowerManager
-import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
-import com.appause.android.service.AccessibilityHealthChecker
 import com.appause.android.service.AccessibilityHealthState
 import com.appause.android.service.AppauseAccessibilityService
-import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,6 +30,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val isPro: StateFlow<Boolean> = (application as AppauseApp).proState.isPro
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    private val systemStatus = (getApplication() as AppauseApp).systemStatus
+
     val language: StateFlow<String> = repository.language
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000),
             (application as AppauseApp).settingsDataStore.getLanguageSync())
@@ -42,33 +40,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000),
             (application as AppauseApp).settingsDataStore.getThemeModeSync())
 
-    private val _accessibilityHealth = MutableStateFlow(AccessibilityHealthState.UNKNOWN)
-    val accessibilityHealth: StateFlow<AccessibilityHealthState> = _accessibilityHealth
-
-    private val _isUsageAccessGranted = MutableStateFlow(false)
-    val isUsageAccessGranted: StateFlow<Boolean> = _isUsageAccessGranted
-
-    private val _isIgnoringBattery = MutableStateFlow(false)
-    val isIgnoringBattery: StateFlow<Boolean> = _isIgnoringBattery
-
-    /**
-     * Whether "Display over other apps" (SYSTEM_ALERT_WINDOW) is granted.
-     * Required on OEM ROMs (HyperOS/MIUI) where the overlay window otherwise
-     * can't be shown. Surfaced in the Permissions screen so the user can grant it.
-     */
-    private val _canDrawOverlays = MutableStateFlow(false)
-    val canDrawOverlays: StateFlow<Boolean> = _canDrawOverlays
+    // Permission/service status shared with Home and Onboarding (SystemStatusHolder).
+    val accessibilityHealth: StateFlow<AccessibilityHealthState> get() = systemStatus.accessibilityHealth
+    val isUsageAccessGranted: StateFlow<Boolean> get() = systemStatus.isUsageAccessGranted
+    val isIgnoringBattery: StateFlow<Boolean> get() = systemStatus.isIgnoringBattery
+    // "Display over other apps" (SYSTEM_ALERT_WINDOW): required on OEM ROMs
+    // (HyperOS/MIUI) where the overlay window otherwise can't be shown.
+    val canDrawOverlays: StateFlow<Boolean> get() = systemStatus.canDrawOverlays
 
     /** Whether the persistent monitoring notification is shown. Default true. */
     val showNotification: StateFlow<Boolean> = (getApplication<Application>() as AppauseApp).settingsDataStore.showNotification
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
     init {
-        viewModelScope.launch {
-            AccessibilityHealthChecker.observe(getApplication()).collect {
-                _accessibilityHealth.value = it
-            }
-        }
         // Initialise immediately so the permissions screen does not flash red
         // before the first ON_RESUME refresh.
         refreshServiceStatus()
@@ -84,12 +68,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
      * SettingsScreen calls this from a DisposableEffect on resume.
      */
     fun refreshServiceStatus() {
-        val app = getApplication<Application>()
-        _accessibilityHealth.value = AccessibilityHealthChecker.snapshot(app)
-        _isUsageAccessGranted.value = ForegroundChecker.isUsageAccessGranted(app)
-        val powerManager = app.getSystemService(Context.POWER_SERVICE) as? PowerManager
-        _isIgnoringBattery.value = powerManager?.isIgnoringBatteryOptimizations(app.packageName) ?: false
-        _canDrawOverlays.value = Settings.canDrawOverlays(app)
+        systemStatus.refresh()
     }
 
     fun updateDefaultPrompt(prompt: String) {

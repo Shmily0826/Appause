@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import com.appause.android.data.local.AppDatabase
 import com.appause.android.data.pro.ProState
 import com.appause.android.data.repository.AppGroupRepository
+import com.appause.android.data.repository.SystemStatusHolder
 import com.appause.android.data.settings.SettingsDataStore
 import com.appause.android.util.PersistentLog
 import com.appause.android.util.CrashLog
@@ -56,6 +57,15 @@ class AppauseApp : Application() {
      */
     val repository: AppGroupRepository by lazy {
         AppGroupRepository(database.appGroupDao(), database.appLaunchDao(), settingsDataStore)
+    }
+
+    /**
+     * SystemStatusHolder — process-wide permission/service status shared by
+     * the Home, Onboarding, and Settings screens (previously duplicated in
+     * each ViewModel).
+     */
+    val systemStatus: SystemStatusHolder by lazy {
+        SystemStatusHolder(this)
     }
 
     override fun onCreate() {

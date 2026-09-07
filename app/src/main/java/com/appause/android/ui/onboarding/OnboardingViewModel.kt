@@ -1,24 +1,20 @@
 package com.appause.android.ui.onboarding
 
 import android.app.Application
-import android.content.Context
-import android.os.PowerManager
-import android.provider.Settings
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.appause.android.AppauseApp
+import com.appause.android.data.repository.SystemStatusHolder
 import com.appause.android.data.settings.SettingsDataStore
-import com.appause.android.service.AccessibilityHealthChecker
 import com.appause.android.service.AccessibilityHealthState
-import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 
 /**
  * ViewModel for the first-launch onboarding flow.
@@ -37,10 +33,14 @@ import kotlinx.coroutines.launch
 class OnboardingViewModel(
     application: Application,
     // Test seam: lets unit tests inject a SettingsDataStore (defaults to the real one).
-    settingsDataStoreOverride: SettingsDataStore? = null
+    settingsDataStoreOverride: SettingsDataStore? = null,
+    // Test seam: lets unit tests inject a SystemStatusHolder (defaults to the
+    // process-wide one) so permission refreshes run against the test context.
+    systemStatusOverride: SystemStatusHolder? = null
 ) : AndroidViewModel(application) {
 
     private val settingsDataStore = settingsDataStoreOverride ?: (application as AppauseApp).settingsDataStore
+    private val systemStatus = systemStatusOverride ?: (application as AppauseApp).systemStatus
 
     val language: StateFlow<String> = settingsDataStore.language
         .stateIn(
@@ -49,27 +49,13 @@ class OnboardingViewModel(
             settingsDataStore.getLanguageSync()
         )
 
-    private val _accessibilityHealth = MutableStateFlow(AccessibilityHealthState.UNKNOWN)
-    val accessibilityHealth: StateFlow<AccessibilityHealthState> = _accessibilityHealth
-
-    /** Whether "Display over other apps" (SYSTEM_ALERT_WINDOW) is granted. */
-    private val _canDrawOverlays = MutableStateFlow(false)
-    val canDrawOverlays: StateFlow<Boolean> = _canDrawOverlays
-
-    /** Whether "Usage access" (PACKAGE_USAGE_STATS) is granted. */
-    private val _isUsageAccessGranted = MutableStateFlow(false)
-    val isUsageAccessGranted: StateFlow<Boolean> = _isUsageAccessGranted
-
-    /** Whether the app is exempt from battery optimization ("Unrestricted"). */
-    private val _isIgnoringBattery = MutableStateFlow(false)
-    val isIgnoringBattery: StateFlow<Boolean> = _isIgnoringBattery
+    // Permission/service status shared with Home and Settings (SystemStatusHolder).
+    val accessibilityHealth: StateFlow<AccessibilityHealthState> get() = systemStatus.accessibilityHealth
+    val canDrawOverlays: StateFlow<Boolean> get() = systemStatus.canDrawOverlays
+    val isUsageAccessGranted: StateFlow<Boolean> get() = systemStatus.isUsageAccessGranted
+    val isIgnoringBattery: StateFlow<Boolean> get() = systemStatus.isIgnoringBattery
 
     init {
-        viewModelScope.launch {
-            AccessibilityHealthChecker.observe(getApplication()).collect {
-                _accessibilityHealth.value = it
-            }
-        }
         refreshServiceStatus()
     }
 
@@ -90,12 +76,7 @@ class OnboardingViewModel(
 
     /** Re-query permission status (call when the screen resumes). */
     fun refreshServiceStatus() {
-        val app = getApplication<Application>()
-        _accessibilityHealth.value = AccessibilityHealthChecker.snapshot(app)
-        _canDrawOverlays.value = Settings.canDrawOverlays(app)
-        _isUsageAccessGranted.value = ForegroundChecker.isUsageAccessGranted(app)
-        val pm = app.getSystemService(Context.POWER_SERVICE) as? PowerManager
-        _isIgnoringBattery.value = pm?.isIgnoringBatteryOptimizations(app.packageName) ?: false
+        systemStatus.refresh()
     }
 
     /** Persist the chosen language. The UI recreates the Activity to apply it. */

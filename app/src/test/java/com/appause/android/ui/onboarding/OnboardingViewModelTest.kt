@@ -5,14 +5,19 @@ import android.content.Context
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
+import com.appause.android.data.repository.SystemStatusHolder
 import com.appause.android.data.settings.FakeSettingsDataStore
 import com.appause.android.data.settings.SettingsDataStore
 import com.appause.android.service.AccessibilityHealthChecker
 import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.test.resetMain
@@ -43,22 +48,29 @@ class OnboardingViewModelTest {
 
     private lateinit var app: Application
     private lateinit var settings: FakeSettingsDataStore
+    private lateinit var holder: SystemStatusHolder
+    private lateinit var holderScope: CoroutineScope
+    private lateinit var mainDispatcher: TestDispatcher
 
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        mainDispatcher = UnconfinedTestDispatcher()
+        Dispatchers.setMain(mainDispatcher)
         app = ApplicationProvider.getApplicationContext()
         // In-memory fake — no real DataStore, so persistence is observable
         // synchronously without a `withTimeout`/`first { it }` race.
         settings = FakeSettingsDataStore(app)
+        holderScope = CoroutineScope(SupervisorJob() + mainDispatcher)
+        holder = SystemStatusHolder(app, holderScope)
     }
 
     @After
     fun tearDown() {
+        holderScope.cancel()
         Dispatchers.resetMain()
     }
 
-    private fun vm(): OnboardingViewModel = OnboardingViewModel(app, settings)
+    private fun vm(): OnboardingViewModel = OnboardingViewModel(app, settings, holder)
 
     @Test
     fun `nextPage advances and clamps at the last step`() {

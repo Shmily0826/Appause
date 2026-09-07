@@ -1,17 +1,12 @@
 package com.appause.android.ui.home
 
 import android.app.Application
-import android.content.Context
-import android.os.PowerManager
-import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
 import com.appause.android.data.local.AppGroup
 import com.appause.android.data.pro.ProState
-import com.appause.android.service.AccessibilityHealthChecker
 import com.appause.android.service.AccessibilityHealthState
-import com.appause.android.service.ForegroundChecker
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -102,52 +97,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         set(Calendar.MILLISECOND, 0)
     }.timeInMillis
 
-    /**
-     * Whether the Accessibility Service is enabled by the user.
-     * This is a simple snapshot — checked when the screen appears.
-     *
-     * We combine the SYSTEM setting with process-local lifecycle evidence. The
-     * system setting survives process death, but a fresh process remains UNKNOWN
-     * until Android reports onServiceConnected.
-     */
-    private val _accessibilityHealth = MutableStateFlow(AccessibilityHealthState.UNKNOWN)
-    val accessibilityHealth: StateFlow<AccessibilityHealthState> = _accessibilityHealth.asStateFlow()
-
-    /**
-     * Whether "Display over other apps" (SYSTEM_ALERT_WINDOW) is granted.
-     *
-     * NOTE: this is now OPTIONAL. The pause screen uses a TYPE_ACCESSIBILITY_OVERLAY
-     * (2032) window, which does NOT require SYSTEM_ALERT_WINDOW and which anti-tamper
-     * apps (e.g. 小红书's setHideOverlayWindows) cannot hide. SYSTEM_ALERT_WINDOW is
-     * only consulted as a fallback if 2032 is rejected on a rare ROM. So a missing
-     * overlay permission must NOT block or alarm the user — interception still works.
-     */
-    private val _canDrawOverlays = MutableStateFlow(false)
-    val canDrawOverlays: StateFlow<Boolean> = _canDrawOverlays.asStateFlow()
-
-    /**
-     * Whether "Usage access" (PACKAGE_USAGE_STATS) is granted.
-     *
-     * This used to be treated as an optional nicety, which turned out to be
-     * wrong: without it Appause cannot tell a real app launch from the burst of
-     * window events that MIUI/HyperOS replays for every cached task when the
-     * user opens Recents or swipes to switch apps. The result is a pause screen
-     * appearing on the home screen out of nowhere. It belongs in the required
-     * set, next to accessibility and overlay.
-     */
-    private val _isUsageAccessGranted = MutableStateFlow(false)
-    val isUsageAccessGranted: StateFlow<Boolean> = _isUsageAccessGranted.asStateFlow()
-
-    /**
-     * Whether the app is exempt from battery optimization ("无限制" / no
-     * restrictions). On HyperOS/MIUI this is the #1 cause of "first open isn't
-     * intercepted, only works after switching to Appause": when false, the
-     * system kills the AccessibilityService in the background and does NOT
-     * auto-restart it, so foreground events stop arriving until the Appause app
-     * itself is opened again. This must be ON for interception to be reliable.
-     */
-    private val _isIgnoringBattery = MutableStateFlow(false)
-    val isIgnoringBattery: StateFlow<Boolean> = _isIgnoringBattery.asStateFlow()
+    // Permission/service status is shared process-wide (the Onboarding and
+    // Settings screens show the same four values); see SystemStatusHolder for
+    // what each status means and why some are snapshots rather than flows.
+    private val systemStatus = (application as AppauseApp).systemStatus
+    val accessibilityHealth: StateFlow<AccessibilityHealthState> get() = systemStatus.accessibilityHealth
+    val canDrawOverlays: StateFlow<Boolean> get() = systemStatus.canDrawOverlays
+    val isUsageAccessGranted: StateFlow<Boolean> get() = systemStatus.isUsageAccessGranted
+    val isIgnoringBattery: StateFlow<Boolean> get() = systemStatus.isIgnoringBattery
 
     /**
      * Number of apps in each group (groupId -> count).
@@ -188,11 +145,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val groupsExpanded: StateFlow<Boolean> = _groupsExpanded.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            AccessibilityHealthChecker.observe(getApplication()).collect {
-                _accessibilityHealth.value = it
-            }
-        }
         refreshServiceStatus()
         loadAppCounts()
     }
@@ -202,12 +154,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         // Also roll the "today" window over if the date changed while we were
         // away (see the Today's Statistics block above).
         _startOfToday.value = computeStartOfToday()
-        _accessibilityHealth.value = AccessibilityHealthChecker.snapshot(getApplication())
-        _canDrawOverlays.value = Settings.canDrawOverlays(getApplication())
-        _isUsageAccessGranted.value = ForegroundChecker.isUsageAccessGranted(getApplication())
-        val pm = getApplication<Application>().getSystemService(Context.POWER_SERVICE) as? PowerManager
-        _isIgnoringBattery.value =
-            pm?.isIgnoringBatteryOptimizations(getApplication<Application>().packageName) ?: false
+        systemStatus.refresh()
     }
 
     /**

@@ -56,9 +56,13 @@
         </intent>
     </queries>
 
+    <!-- Backup disabled: the local interception log and the license token are
+         this device's private data. There is nothing cloud-side to restore
+         from anyway (no accounts, no sync), and the license token is
+         device-bound, so carrying it to another device is useless. -->
     <application
         android:name=".AppauseApp"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
