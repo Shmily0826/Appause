@@ -330,6 +330,11 @@ class AppauseAccessibilityService : AccessibilityService() {
         private val _processState = MutableStateFlow(AccessibilityProcessState.UNKNOWN)
         val processState: StateFlow<AccessibilityProcessState> = _processState.asStateFlow()
 
+        /** Deadlines for the active post-leave grace periods, keyed by package. */
+        private val _leaveCooldownDeadlines = MutableStateFlow<Map<String, Long>>(emptyMap())
+        internal val leaveCooldownDeadlines: StateFlow<Map<String, Long>> =
+            _leaveCooldownDeadlines.asStateFlow()
+
         fun currentProcessState(): AccessibilityProcessState = _processState.value
 
         // ── Diagnostics counters ──
@@ -414,6 +419,15 @@ class AppauseAccessibilityService : AccessibilityService() {
             // them back in with no cooldown if they were quick. 800ms is enough
             // to catch the stale event but lets a genuine quick re-open re-trigger.
             cancelClearHandler.postDelayed({ justCancelledPackage = null }, 800L)
+        }
+
+        /**
+         * A confirmed system Home already proves the target was left. Do not
+         * start a new stale-event suppression window in that case.
+         */
+        fun clearCancelledPackage() {
+            cancelClearHandler.removeCallbacksAndMessages(null)
+            justCancelledPackage = null
         }
     }
 
@@ -961,7 +975,7 @@ class AppauseAccessibilityService : AccessibilityService() {
         }
         if (targetPackage != null) {
             InterceptionManager.clearBypass(targetPackage)
-            noteCancelled(targetPackage)
+            clearCancelledPackage()
         }
         AppLogger.d(TAG, "Confirmed system Home — dismissing standalone overlay")
         overlayManager.dismiss()
@@ -991,7 +1005,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                     val targetPackage = pauseTargetPackage
                     if (targetPackage != null) {
                         InterceptionManager.clearBypass(targetPackage)
-                        noteCancelled(targetPackage)
+                        clearCancelledPackage()
                     }
                     AppLogger.d(
                         TAG,
@@ -1644,6 +1658,8 @@ class AppauseAccessibilityService : AccessibilityService() {
         // the user sits in another app, so re-arm would never fire.
         if (leaveTimers.containsKey(targetPackage)) return
         AppLogger.d(TAG, "Leave cooldown started for $targetPackage (${LEAVE_COOLDOWN_MS / 1000}s)")
+        _leaveCooldownDeadlines.value = _leaveCooldownDeadlines.value +
+            (targetPackage to System.currentTimeMillis() + LEAVE_COOLDOWN_MS)
         val job = serviceScope.launch {
             delay(LEAVE_COOLDOWN_MS)
             // Still bypassed means the user never came back → re-arm.
@@ -1652,12 +1668,14 @@ class AppauseAccessibilityService : AccessibilityService() {
                 reArm(targetPackage)
             }
             leaveTimers.remove(targetPackage)
+            _leaveCooldownDeadlines.value = _leaveCooldownDeadlines.value - targetPackage
         }
         leaveTimers[targetPackage] = job
     }
 
     private fun cancelLeaveTimer(targetPackage: String) {
         leaveTimers.remove(targetPackage)?.cancel()
+        _leaveCooldownDeadlines.value = _leaveCooldownDeadlines.value - targetPackage
     }
 
     /**
@@ -1716,6 +1734,7 @@ class AppauseAccessibilityService : AccessibilityService() {
         // Cancel all pending away cooldown timers
         leaveTimers.values.forEach { it.cancel() }
         leaveTimers.clear()
+        _leaveCooldownDeadlines.value = emptyMap()
 
         // Cancel the service coroutine scope so any in-flight work is stopped
         // (handleForegroundChange coroutines, etc.) instead of leaking.

@@ -124,6 +124,33 @@ class PauseActivity : ComponentActivity() {
     /** Tracks whether the user tapped Continue (vs Cancel or back press). */
     private var userProceeded = false
 
+    private var pauseSessionGeneration = 0
+
+    private data class PauseSession(
+        val targetPackage: String,
+        val groupId: Long,
+        val cooldownSeconds: Int,
+        val reRemindMinutes: Int,
+        val reRemindCooldownSeconds: Int,
+        val reRemindRepeat: Boolean,
+        val reRemindEscalate: Boolean,
+        val generation: Int
+    )
+
+    private fun currentPauseSession() = PauseSession(
+        targetPackage = targetPackage,
+        groupId = groupId,
+        cooldownSeconds = cooldownSeconds,
+        reRemindMinutes = reRemindMinutes,
+        reRemindCooldownSeconds = reRemindCooldownSeconds,
+        reRemindRepeat = reRemindRepeat,
+        reRemindEscalate = reRemindEscalate,
+        generation = pauseSessionGeneration
+    )
+
+    private fun isCurrentPauseSession(session: PauseSession): Boolean =
+        session.generation == pauseSessionGeneration && session.targetPackage == targetPackage
+
     /**
      * Override locale so the pause screen uses the correct language.
      * Default: system language (Chinese system → "zh", otherwise → "en").
@@ -156,17 +183,22 @@ class PauseActivity : ComponentActivity() {
         resources.updateConfiguration(config, resources.displayMetrics)
 
         super.onCreate(savedInstanceState)
+        setupPauseContent()
+    }
+
+    private fun setupPauseContent() {
+        val session = currentPauseSession()
 
         // Load target app info from PackageManager (icon + display name).
         // We do this here (not in Compose) because PackageManager needs Context.
         val pm = packageManager
         val appName = try {
-            pm.getApplicationLabel(pm.getApplicationInfo(targetPackage, 0)).toString()
+            pm.getApplicationLabel(pm.getApplicationInfo(session.targetPackage, 0)).toString()
         } catch (e: Exception) {
-            targetPackage
+            session.targetPackage
         }
         val appIcon: Drawable? = try {
-            pm.getApplicationIcon(targetPackage)
+            pm.getApplicationIcon(session.targetPackage)
         } catch (e: Exception) {
             null
         }
@@ -224,7 +256,7 @@ class PauseActivity : ComponentActivity() {
                     LaunchedEffect(Unit) {
                         recommendedApps = withContext(Dispatchers.IO) {
                             repository.recommendedApps.first()
-                                .filter { it != targetPackage }
+                                .filter { it != session.targetPackage }
                                 .mapNotNull { pkg ->
                                     appQueryService.getAppName(pkg)?.let { name ->
                                         AppInfo(packageName = pkg, appName = name)
@@ -235,9 +267,9 @@ class PauseActivity : ComponentActivity() {
 
                     // Countdown state — shared helper provides smooth progress (~60fps)
                     // instead of stepping once per second. Also handles the onFinished callback.
-                    val countdown = rememberCountdownState(cooldownSeconds) {
+                    val countdown = rememberCountdownState(session.cooldownSeconds) {
                         // Timer finished → start bypass so the user can enter the app
-                        InterceptionManager.startBypass(targetPackage)
+                        InterceptionManager.startBypass(session.targetPackage)
                     }
 
                     PauseScreenContent(
@@ -246,21 +278,42 @@ class PauseActivity : ComponentActivity() {
                         prompt = prompt,
                         secondsLeft = countdown.secondsLeft,
                         smoothProgress = countdown.smoothProgress,
-                        totalSeconds = cooldownSeconds,
+                        totalSeconds = session.cooldownSeconds,
                         isFinished = countdown.isFinished,
-                        onCancel = { handleCancel() },
-                        onContinueWithReason = { reason -> handleContinueWithReason(reason) },
+                        onCancel = { handleCancel(session) },
+                        onContinueWithReason = { reason -> handleContinueWithReason(session, reason) },
                         onTemporaryPassSelected = { minutes, onFinished ->
-                            handleTemporaryPass(minutes, onFinished)
+                            handleTemporaryPass(session, minutes, onFinished)
                         },
                         reasons = reasons,
                         recommendedApps = recommendedApps,
-                        onOpenRecommendedApp = { pkg -> openRecommendedApp(pkg) }
+                        onOpenRecommendedApp = { pkg -> openRecommendedApp(session, pkg) }
                     )
 
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        val previousTargetPackage = targetPackage
+        val newTargetPackage = intent.getStringExtra("target_package") ?: ""
+        setIntent(intent)
+
+        // AlarmManager deliberately re-fronts the same Activity after direct
+        // launch. Keep the existing countdown for that duplicate intent.
+        if (!hasDifferentPauseTarget(previousTargetPackage, newTargetPackage)) return
+
+        // The old countdown may already have opened a bypass for A. Remove it
+        // before rebuilding the screen for B so later actions cannot leak A.
+        if (previousTargetPackage.isNotEmpty()) {
+            InterceptionManager.clearBypass(previousTargetPackage)
+        }
+        pauseSessionGeneration += 1
+        userProceeded = false
+        setupPauseContent()
     }
 
     /**
@@ -270,12 +323,13 @@ class PauseActivity : ComponentActivity() {
      * We clear the bypass for the target so that the next time the user
      * opens the target, the cooldown will trigger again.
      */
-    private fun openRecommendedApp(packageName: String) {
+    private fun openRecommendedApp(session: PauseSession, packageName: String) {
+        if (!isCurrentPauseSession(session)) return
         val launchIntent = packageManager.getLaunchIntentForPackage(packageName) ?: return
 
         // The user chose an alternative app — they are NOT proceeding to the target.
         // Clear any bypass so the target is intercepted again next time.
-        InterceptionManager.clearBypass(targetPackage)
+        InterceptionManager.clearBypass(session.targetPackage)
 
         startActivity(launchIntent)
         finish()
@@ -285,22 +339,24 @@ class PauseActivity : ComponentActivity() {
      * User tapped Cancel or pressed Back.
      * Send them to the home screen so they don't land on the target app.
      */
-    private fun handleCancel() {
+    private fun handleCancel(session: PauseSession) {
+        if (!isCurrentPauseSession(session)) return
+
         // Log the cancellation
         val repository = (application as AppauseApp).repository
         CoroutineScope(Dispatchers.IO).launch {
-            repository.logLaunch(targetPackage, groupId, "cancelled")
+            repository.logLaunch(session.targetPackage, session.groupId, "cancelled")
         }
 
         // Clean up any bypass state
-        InterceptionManager.clearBypass(targetPackage)
+        InterceptionManager.clearBypass(session.targetPackage)
 
         // Suppress the stale window event that fires for the target app right
         // before the launcher takes over — otherwise the cooldown re-triggers
         // on the home screen. (Same guard as the overlay path in OverlayManager.)
         // noteCancelled() also auto-clears after a short grace window so the app
         // is intercepted again on the next genuine open.
-        AppauseAccessibilityService.noteCancelled(targetPackage)
+        AppauseAccessibilityService.noteCancelled(session.targetPackage)
 
         // Go to home screen — NOT just finish(), because that would reveal the target app
         val homeIntent = Intent(Intent.ACTION_MAIN).apply {
@@ -316,58 +372,69 @@ class PauseActivity : ComponentActivity() {
      * The bypass is already active (set by the LaunchedEffect when timer hit 0).
      * Log the reason and finish this Activity — the target app is underneath.
      */
-    private fun handleContinueWithReason(reason: String) {
+    private fun handleContinueWithReason(session: PauseSession, reason: String) {
+        if (!isCurrentPauseSession(session)) return
         userProceeded = true
 
         // Log the successful proceed with the selected reason
         val repository = (application as AppauseApp).repository
         CoroutineScope(Dispatchers.IO).launch {
-            repository.logLaunch(targetPackage, groupId, "proceeded", reason)
+            repository.logLaunch(session.targetPackage, session.groupId, "proceeded", reason)
         }
 
-        startSessionAfterProceed()
+        startSessionAfterProceed(session)
         finish()
     }
 
     /** Enter the app while retaining the existing re-remind/session semantics. */
-    private fun startSessionAfterProceed(preserveForegroundSession: Boolean = true) {
-        InterceptionManager.startBypass(targetPackage)
+    private fun startSessionAfterProceed(
+        session: PauseSession,
+        preserveForegroundSession: Boolean = true
+    ) {
+        InterceptionManager.startBypass(session.targetPackage)
         AppauseAccessibilityService.instance?.let { service ->
-            service.completeInitialContinue(targetPackage)
+            service.completeInitialContinue(session.targetPackage)
             service.onSessionStart(
-                targetPackage = targetPackage,
-                groupId = groupId,
-                cooldownSeconds = cooldownSeconds,
-                reRemindMinutes = reRemindMinutes,
-                reRemindCooldownSeconds = reRemindCooldownSeconds,
-                reRemindRepeat = reRemindRepeat,
-                reRemindEscalate = reRemindEscalate,
+                targetPackage = session.targetPackage,
+                groupId = session.groupId,
+                cooldownSeconds = session.cooldownSeconds,
+                reRemindMinutes = session.reRemindMinutes,
+                reRemindCooldownSeconds = session.reRemindCooldownSeconds,
+                reRemindRepeat = session.reRemindRepeat,
+                reRemindEscalate = session.reRemindEscalate,
                 preserveForegroundSession = preserveForegroundSession
             )
         }
     }
 
     /** Persist the bounded exception before revealing the target app. */
-    private fun handleTemporaryPass(minutes: Int, onSelectionFinished: () -> Unit) {
+    private fun handleTemporaryPass(
+        session: PauseSession,
+        minutes: Int,
+        onSelectionFinished: () -> Unit
+    ) {
+        if (!isCurrentPauseSession(session)) return
         val repository = (application as AppauseApp).repository
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val granted = repository.grantTemporaryPass(
-                    packageName = targetPackage,
+                    packageName = session.targetPackage,
                     minutes = minutes,
                     now = System.currentTimeMillis()
                 )
                 if (granted != null) {
-                    repository.logLaunch(targetPackage, groupId, "proceeded")
+                    repository.logLaunch(session.targetPackage, session.groupId, "proceeded")
                     withContext(Dispatchers.Main) {
-                        if (isFinishing || isDestroyed) return@withContext
+                        if (isFinishing || isDestroyed || !isCurrentPauseSession(session)) {
+                            return@withContext
+                        }
                         userProceeded = true
-                        startSessionAfterProceed(preserveForegroundSession = false)
+                        startSessionAfterProceed(session, preserveForegroundSession = false)
                         // The persisted pass is authoritative for this bounded
                         // session. Clear any bypass left by the cooldown or an
                         // earlier Continue so expiry cannot leave a stale
                         // runtime exception behind.
-                        InterceptionManager.clearBypass(targetPackage)
+                        InterceptionManager.clearBypass(session.targetPackage)
                         finish()
                     }
                 }
@@ -375,7 +442,9 @@ class PauseActivity : ComponentActivity() {
                 AppLogger.e(TAG, "Temporary pass selection failed", e)
             } finally {
                 withContext(Dispatchers.Main) {
-                    if (!isFinishing && !isDestroyed) onSelectionFinished()
+                    if (!isFinishing && !isDestroyed && isCurrentPauseSession(session)) {
+                        onSelectionFinished()
+                    }
                 }
             }
         }
@@ -412,6 +481,11 @@ class PauseActivity : ComponentActivity() {
         }
     }
 }
+
+internal fun hasDifferentPauseTarget(
+    currentTargetPackage: String,
+    newTargetPackage: String
+): Boolean = currentTargetPackage != newTargetPackage
 
 /**
  * The visual content of the Pause Screen.
@@ -756,7 +830,8 @@ internal fun PauseScreenContent(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(24.dp)
+                    .padding(bottom = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Card(modifier = Modifier.fillMaxWidth()) {

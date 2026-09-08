@@ -429,4 +429,6 @@
     <string name="onboarding_preview_app_name">Sample App</string>
     <string name="onboarding_preview_caption">Before these apps open, Appause gives you a few seconds to pause.</string>
 
+    <string name="leave_cooldown_title">Grace period active</string>
+    <string name="leave_cooldown_desc">Returning within %1$d:%2$02d keeps this session active. After that, Appause will show the cooldown again.</string>
 </resources>

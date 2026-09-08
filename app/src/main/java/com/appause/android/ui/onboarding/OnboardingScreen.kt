@@ -592,8 +592,17 @@ private fun ServiceStep(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.onboarding_service_open))
+        Button(
+            onClick = onOpenSettings,
+            enabled = !accessibilityHealth.isHealthy,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                stringResource(
+                    if (accessibilityHealth.isHealthy) R.string.onboarding_service_on
+                    else R.string.onboarding_service_open
+                )
+            )
         }
     }
 }
@@ -692,8 +701,17 @@ private fun UsageStep(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.onboarding_usage_open))
+        Button(
+            onClick = onOpenSettings,
+            enabled = !isGranted,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                stringResource(
+                    if (isGranted) R.string.onboarding_usage_on
+                    else R.string.onboarding_usage_open
+                )
+            )
         }
     }
 }
@@ -742,8 +760,17 @@ private fun BatteryStep(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(onClick = onOpenSettings, modifier = Modifier.fillMaxWidth()) {
-            Text(stringResource(R.string.onboarding_battery_open))
+        Button(
+            onClick = onOpenSettings,
+            enabled = !isIgnoring,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                stringResource(
+                    if (isIgnoring) R.string.onboarding_battery_on
+                    else R.string.onboarding_battery_open
+                )
+            )
         }
     }
 }

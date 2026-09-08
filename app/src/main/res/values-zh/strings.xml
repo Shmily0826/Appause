@@ -424,4 +424,6 @@
     <string name="onboarding_preview_app_name">示例应用</string>
     <string name="onboarding_preview_caption">下次打开这些应用，会先等几秒。</string>
 
+    <string name="leave_cooldown_title">离开后的宽限期进行中</string>
+    <string name="leave_cooldown_desc">在 %1$d:%2$02d 内返回会保留本次会话；超时后再次打开时会重新显示冷却页。</string>
 </resources>

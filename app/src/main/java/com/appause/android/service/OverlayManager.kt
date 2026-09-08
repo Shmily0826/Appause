@@ -289,20 +289,23 @@ class OverlayManager {
             // frame. Use the public explicit-size API instead: the window keeps
             // full width and its input region ends above the visible nav bar.
             val metrics = windowManager.maximumWindowMetrics
-            val displayInsets = metrics.windowInsets.getInsets(
-                WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()
-            )
-            if (displayInsets.bottom > 0) {
+            val statusBarInset = metrics.windowInsets.getInsets(
+                WindowInsets.Type.statusBars()
+            ).top
+            val navigationBarInset = metrics.windowInsets.getInsetsIgnoringVisibility(
+                WindowInsets.Type.navigationBars()
+            ).bottom
+            if (navigationBarInset > 0) {
                 params.height = OverlayWindowPolicy.heightBeforeNavigationBar(
                     metrics.bounds.height(),
-                    displayInsets.top,
-                    displayInsets.bottom
+                    statusBarInset,
+                    navigationBarInset
                 )
                 AppLogger.d(
                     TAG,
                     "Overlay input boundary stops above navigation bar: " +
-                        "display=${metrics.bounds.height()} top=${displayInsets.top} " +
-                        "bottom=${displayInsets.bottom} height=${params.height}"
+                        "display=${metrics.bounds.height()} top=$statusBarInset " +
+                        "bottom=$navigationBarInset height=${params.height}"
                 )
             }
 

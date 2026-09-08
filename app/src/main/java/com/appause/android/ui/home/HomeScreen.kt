@@ -46,6 +46,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -71,6 +72,7 @@ import com.appause.android.data.local.AppGroup
 import com.appause.android.data.pro.ProState
 import com.appause.android.service.AccessibilityHealthState
 import com.appause.android.service.AccessibilityHealthStatus
+import kotlinx.coroutines.delay
 
 /**
  * Home Screen — the main entry point of Appause.
@@ -105,6 +107,7 @@ fun HomeScreen(
     val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
     val proceededToday by viewModel.proceededToday.collectAsStateWithLifecycle()
     val cancelledToday by viewModel.cancelledToday.collectAsStateWithLifecycle()
+    val leaveCooldownDeadlines by viewModel.leaveCooldownDeadlines.collectAsStateWithLifecycle()
     val appCounts by viewModel.appCounts.collectAsStateWithLifecycle()
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -235,6 +238,12 @@ fun HomeScreen(
             }
 
             // ── Today's Statistics ──
+            leaveCooldownDeadlines.values.minOrNull()?.let { deadline ->
+                item {
+                    LeaveCooldownStatusCard(deadline = deadline)
+                }
+            }
+
             item {
                 TodayStatsCard(
                     proceeded = proceededToday,
@@ -489,6 +498,42 @@ private fun Bullet(text: String) {
  * (accessibility first, overlay second); the secondary action shows an in-app
  * explanation so users don't have to trust the banner blindly.
  */
+@Composable
+private fun LeaveCooldownStatusCard(deadline: Long) {
+    var now by remember(deadline) { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(deadline) {
+        while (now < deadline) {
+            delay(1000L)
+            now = System.currentTimeMillis()
+        }
+    }
+
+    val secondsLeft = ((deadline - now + 999L) / 1000L).toInt().coerceAtLeast(0)
+    if (secondsLeft == 0) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.leave_cooldown_title),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = stringResource(
+                    R.string.leave_cooldown_desc,
+                    secondsLeft / 60,
+                    secondsLeft % 60
+                ),
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+    }
+}
+
 @Composable
 private fun SetupChecklistCard(
     accessibilityHealth: AccessibilityHealthState,

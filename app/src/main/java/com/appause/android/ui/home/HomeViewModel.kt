@@ -7,6 +7,7 @@ import com.appause.android.AppauseApp
 import com.appause.android.data.local.AppGroup
 import com.appause.android.data.pro.ProState
 import com.appause.android.service.AccessibilityHealthState
+import com.appause.android.service.AppauseAccessibilityService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -105,6 +106,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     val canDrawOverlays: StateFlow<Boolean> get() = systemStatus.canDrawOverlays
     val isUsageAccessGranted: StateFlow<Boolean> get() = systemStatus.isUsageAccessGranted
     val isIgnoringBattery: StateFlow<Boolean> get() = systemStatus.isIgnoringBattery
+    val leaveCooldownDeadlines: StateFlow<Map<String, Long>> =
+        AppauseAccessibilityService.leaveCooldownDeadlines
 
     /**
      * Number of apps in each group (groupId -> count).
