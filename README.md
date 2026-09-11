@@ -7,13 +7,14 @@ in groups, and set a cooldown. When a target app comes to the foreground,
 Appause shows a short pause screen so you can breathe and decide whether to
 continue.
 
-## Latest release: v0.5.39
+## Latest release: v0.5.40
 
-Download the signed APK from the canonical [GitHub Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.39):
+Download the signed APK from the canonical [GitHub Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.40):
 
-- [Appause-v0.5.39.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.39/Appause-v0.5.39.apk)
+- [Appause-v0.5.40.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.40/Appause-v0.5.40.apk)
 - Package: `com.appause.android`
-- SHA-256: `cc05a6b742018d907d71d1bd3f07b3044accd6ad4ab582f900ea55e1a1248a3f`
+- versionCode: `92`
+- SHA-256: `a3fdb617569268798090bedc3e968ef41100a88ce0d1c4d100944ade66954550`
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
 `versionCode` is internal metadata and is not part of the public filename.
@@ -97,22 +98,21 @@ Diagnostics and Pro test controls are isolated to the `debug` build
 (`com.appause.android.debug`). They are not included in the production Release
 APK and are not a production activation path.
 
-## v0.5.39 validation status
+## v0.5.40 validation status
 
-- Android debug unit tests: **80/80 passed**; Worker tests: **31/31 passed**.
-- Release candidate gates passed: debug tests, debug and release assembly,
-  release lint, release bundle, packaging script, diff checks, and release
-  signing verification. The Release APK is non-debuggable, and the public
-  GitHub asset matches the verified local artifact digest above.
-- Physical-device post-release smoke passed data-preserving installation,
-  package/version checks, installed base-APK hash comparison, configured and
-  running AccessibilityService checks, overlay/usage/notification app-op checks,
-  launch/process checks, and an app-specific crash/ANR scan.
-- A separate post-release interception run against an already-configured target
-  app was not performed because the phone was on its lock screen/AOD. Earlier
-  v0.5.39 RC device evidence exercised the pause/continue/cancel and system
-  navigation flow, but it should not be presented as a new post-release
-  interception result.
+- The public GitHub Release is `v0.5.40`, package `com.appause.android`,
+  versionCode `92`. The current `main` source remains `0.5.40 / 92`, while
+  containing post-release Home/Recents fixes after the `v0.5.40` tag.
+- Focused JVM policy tests and `assembleDebug` passed for the current
+  Home/Recents and pause-overlay implementation.
+- Emulator-only smoke verified Home dismisses the active pause presentation,
+  Recents is not treated as Home, and an immediate target reopen is intercepted
+  again.
+- Xiaomi 2410DPN6CC / Android 16 physical validation also passed with objective
+  ADB, logcat, and WindowManager evidence: `reason=homekey` dismissed the
+  overlay; `reason=recentapps` left it present after about 1.8 seconds; and a
+  Home-to-Bilibili reopen about 291 ms later produced a fresh second intercept.
+  No subjective visual-smoothness measurement is claimed.
 
 See [PROGRESS.md](PROGRESS.md) and [TEST_REPORT.md](TEST_REPORT.md) for the
 full evidence ledger and its remaining boundaries.

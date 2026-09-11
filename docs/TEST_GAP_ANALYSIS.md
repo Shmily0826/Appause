@@ -1,6 +1,8 @@
 # Appause 测试缺口分析（Test Gap Analysis）
 
-> 截至 `main` @ `461ee33`（2026-09-06），`testDebugUnitTest` 基线 134 个用例。
+> 原始盘点基线为 `main` @ `461ee33`（2026-09-06，134 个用例）；当前源基线为
+> `main` @ `ed64329`（2026-09-11）。下表保留该历史覆盖快照，数量应以最新测试
+> 报告重算，不作为当前总数声明。
 > 本文把 `docs/INTERCEPTION_PROTOCOL.md` 里的每个环节和现有测试对上号，
 > 找出"没被任何测试钉住"的行为。优先级排序对接用户已确认的测试优先级
 > （Pro 兑换失败模式 → Room 迁移 → ViewModel → re-remind 虚拟时钟）。

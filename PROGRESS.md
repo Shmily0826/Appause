@@ -1,5 +1,22 @@
 # Appause — Development Progress
 
+## 2026-09-11 — v0.5.40 current source and Home/Recents finalization
+- The public GitHub Release is `v0.5.40` (`versionCode 92`). The current
+  `main` source is also `0.5.40 / 92`, but includes commits after the release
+  tag, so the current source and tagged APK are not identical.
+- Final Home/Recents handling is committed on `main`: system Home dismisses
+  the active standalone 2032 pause presentation, Recents is held out of Home
+  confirmation, stale target events after Home are bounded, and an immediate
+  target reopen can be intercepted again.
+- Focused Home/overlay/pause JVM tests and `assembleDebug` passed. Emulator
+  `emulator-5554` and Xiaomi 2410DPN6CC / Android 16 physical validation both
+  supplied objective evidence: `homekey` dismissed the overlay, `recentapps`
+  left it present after about 1.8 seconds, and Home → Bilibili reopen about
+  291 ms later produced a fresh second intercept. No subjective
+  visual-smoothness measurement is claimed.
+- The public Worker documentation describes the committed generic activation
+  and optional-expiry path. Local uncommitted Pro/Worker entitlement changes
+  are not public, released, deployed, or production evidence.
 ## 2026-08-28 — Async signing serialization verification (TASK APPAUSE-20260828-2028)
 - Confirmed the previous whole-request test queue was stronger than real DO
   handler semantics and could hide an async signing interleaving.
@@ -121,7 +138,7 @@
   - Corrected INSTALL.md: accessibility is required; overlay permission is an optional fallback; upgrades must install over the existing app rather than uninstalling first.
   - Corrected privacy disclosures for user-initiated diagnostic feedback, including group/package and recent foreground/interception fields shown before sending.
   - Corrected the manifest overlay comment to match the actual 2032 → 2038 → Activity fallback order.
-  - Updated README, hosted privacy policy, Coolapk materials, and domestic/overseas payment-route notes.
+  - Updated README, hosted privacy policy, and domestic/overseas payment-route notes.
 - Onboarding flow refinement:
   - Reordered the guide so users see the pause-screen preview before configuring permissions.
   - Moved the privacy/value explanation ahead of AccessibilityService setup.
@@ -388,11 +405,11 @@
 - Added `PRIVACY.md` — bilingual (EN + ZH) privacy policy stating the app is
   fully local: no account, no network, no analytics, no ads; AccessibilityService
   reads package name only (`canRetrieveWindowContent = false`); permissions table.
-  Suitable as the privacy-policy URL for 酷安 / Play Data Safety.
+  Suitable as a privacy-policy URL for an app store or distribution platform.
 - Rewrote `README.md` into a publish-ready framework: features, screenshots
   placeholder, how-it-works, permissions table, requirements, build-from-source
-  (with JDK 17 / JAVA_HOME note + signing guidance), install (GitHub Releases +
-  酷安), privacy link, status (0.2.1, all phases done), contributing, license,
+  (with JDK 17 / JAVA_HOME note + signing guidance), install (GitHub Releases),
+  privacy link, status (0.2.1, all phases done), contributing, license,
   disclaimer. Notes clearly that Appause is NOT on Google Play due to the
   AccessibilityService policy.
 - Enhanced `.gitignore`: added signing-file patterns (`signing.properties`,

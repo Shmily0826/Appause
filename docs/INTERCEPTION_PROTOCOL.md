@@ -1,11 +1,11 @@
 # Appause 拦截协议（Interception Protocol）
 
-> 状态：只读架构审计的产出，记录截至 `main` @ `461ee33`（2026-09-06）的真实行为。
+> 状态：只读架构审计的产出，记录截至 `main` @ `ed64329`（2026-09-11）的真实行为。
 > 本文档不描述"应该怎样"，只描述"代码现在实际怎样"。改代码后应同步更新本文。
 
 ## 0. 为什么要有一份协议
 
-Appause 的拦截行为不是一次性设计出来的，而是 v0.5.1 → v0.5.39 期间几十次
+Appause 的拦截行为不是一次性设计出来的，而是 v0.5.1 → v0.5.40 期间几十次
 真机排错"长"出来的（HyperOS 事件重放、2032/2038 窗口差异、看门狗、Home 确认……）。
 这些知识原本散落在代码注释、AGENTS.md 注意事项和 PROGRESS.md 的调试记录里。
 本文把它们整理成一份人能读的协议，作为以后排查和重构的地图。
@@ -84,21 +84,29 @@ Appause 的拦截行为不是一次性设计出来的，而是 v0.5.1 → v0.5.3
 ## 4. Home / Recents 转换确认（最微妙的部分）
 
 launcher 事件是"用户在导航"的信号，但 HyperOS 上 Recents 动画期间也会发
-launcher/系统事件，所以**不能见了 launcher 事件就撤 overlay**。规则：
+launcher/系统事件，所以**不能见了 launcher 事件就撤 overlay**。当前实现还
+优先处理 `ACTION_CLOSE_SYSTEM_DIALOGS`：`homekey` 立即确认 Home，`recentapps`
+只建立短暂保护窗口，不被当成 Home。规则：
 
-1. launcher 事件到达 → 记录 `lastObservedNavigationPackage`，调度 750 ms 的
+1. 在系统-dialog receiver 可用时，`homekey` 直接 dismiss 当前 standalone
+   overlay 并记录被 dismiss 的 target；`recentapps` 取消待定 Home 确认并建立
+   1 s Recents 保护窗口。
+2. receiver 不可用时，launcher 事件到达 → 记录
+   `lastObservedNavigationPackage`，调度 750 ms 的
    `HOME_TRANSITION_SETTLE_MS` 确认任务，然后**推迟**本次事件的 foreground 处理。
-2. 750 ms 内来了**真实应用**事件 → 取消确认任务，按正常前景处理。
-3. 750 ms 到点 → `HomeTransitionPolicy.shouldConfirm()` 两阶段判定
+3. 750 ms 内来了**真实应用**事件 → 取消确认任务，按正常前景处理。
+4. 750 ms 到点 → `HomeTransitionPolicy.shouldConfirm()` 两阶段判定
    （先看事件时间序，再查 UsageStats 前景），确认后 `handleForegroundChange(home, homeEventConfirmed=true)`
    或直接 `dismissAttachedOverlayForConfirmedHome()`。
-4. 只收到 SystemUI 事件（无 launcher 事件）→ `shouldConfirmSystemUiHome()`：
+5. 只收到 SystemUI 事件（无 launcher 事件）→ `shouldConfirmSystemUiHome()`：
    事件只是触发器，**必须**由前景查询确认 launcher 才撤 overlay。
-5. 看门狗过期后（`pauseGuardWatchdogExpired=true`），确认路径进入
+6. 看门狗过期后（`pauseGuardWatchdogExpired=true`），确认路径进入
    `allowStaleForegroundFallback` 模式：宁可 fail-open 撤掉 2032 也不让
    覆盖层挡住 launcher（P0 修复）。
 
-这些分支由 `HomeTransitionPolicyTest`（237 行）覆盖纯逻辑部分。
+这些分支由 `HomeTransitionPolicyTest` 覆盖纯逻辑部分；目标事件在系统 Home
+后的短窗口内还会重新检查当前前景证据，避免旧事件重新打开暂停页，同时保留
+真正快速重开的拦截路径。
 
 ## 5. 暂停守卫（pause guard）与看门狗
 
@@ -129,9 +137,10 @@ launcher/系统事件，所以**不能见了 launcher 事件就撤 overlay**。�
       │    （2038 用 applicationContext 的 WindowManager，输入路由才正确）
       └─ 都失败 → PauseActivity（直接 startActivity + 250ms 后 AlarmManager 重试
             + Alarm 也失败再 Handler 重试）
-  → 2032 的窗口参数：fitInsets=NAVIGATION_BARS、忽略可见性、
+  → 2032 的窗口参数：FLAG_LAYOUT_IN_SCREEN、TOP|START gravity、
+      y=状态栏 inset、setFitInsetsTypes(0)、忽略隐式重复 fitting，
       Android R+ 上显式高度 = maximumWindowMetrics − 状态栏 − 导航栏
-      （输入区止于导航栏之上，三键导航物理测试通过的方案）
+      （输入区止于导航栏之上）
   → show/dismiss 均 @Synchronized；异步回调（临时通行选择）用
       overlayGeneration 防止旧 overlay 的迟到回调操作新 overlay
 ```

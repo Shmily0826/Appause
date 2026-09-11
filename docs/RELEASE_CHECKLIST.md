@@ -1,11 +1,11 @@
 # Appause 发版清单（Release Checklist）
 
 > 面向"准备给陌生用户使用"的发版流程。每次发 release 前**从上到下过一遍**，
-> 全部勾完才打包。清单基于 v0.5.39 时的项目实际配置，改配置后请同步更新。
+> 全部勾完才打包。当前公开版本为 v0.5.40 / versionCode 92，改配置后请同步更新。
 
 ## 1. 版本与构建配置
 
-- [ ] `app/build.gradle.kts`：`versionCode` +1（当前 91 / v0.5.39），`versionName` 按语义更新
+- [ ] `app/build.gradle.kts`：`versionCode` +1（当前 92 / v0.5.40），`versionName` 按语义更新
   - debug flavor 的 `versionNameSuffix = "-debug"` 依赖 **更高的** versionCode 保证共存，勿降
 - [ ] minSdk 26 / targetSdk 未被意外改动；新增依赖在 version catalog（`gradle/libs.versions.toml`），未硬编码版本号
 - [ ] `./gradlew assembleDebug` 与 `./gradlew assembleRelease` 均通过（需 `JAVA_HOME=D:\Dev-Setup\jdk`）
@@ -33,7 +33,7 @@
 
 ## 4. 测试门禁
 
-- [ ] `./gradlew testDebugUnitTest` 全绿（当前基线 134 个）
+- [ ] `./gradlew testDebugUnitTest` 全绿（数量以当前运行结果为准）
 - [ ] 模拟器冒烟：安装 → onboarding → 建组 → 拦截 → 暂停屏操作（每轮发版至少一遍）
 - [ ] 真机冒烟（小米 HyperOS 优先）：同上 + P0 导航逃生（Home/Back/Recents 物理按键）
       模拟器结果**永远不得**记为真机结果（PROGRESS.md 惯例）

@@ -2,12 +2,13 @@
 
 > 来源：2026-09-06 的独立深度审查（外部 agent）+ 本地拦截链路审计
 > （`docs/INTERCEPTION_PROTOCOL.md` §9），经用户与本地 agent 逐条核实后合并。
-> 基线：`main` @ `461ee33`。状态标记：`[ ] 待做` / `[~] 进行中` / `[x] 完成` /
+> 基线：`main` @ `ed64329`（2026-09-11）。状态标记：`[ ] 待做` / `[~] 进行中` / `[x] 完成` /
 > `[-] 不做`。每完成一项在本文件勾选并在 `PROGRESS.md` 记录。
 
 ## 结论摘要
 
-- 成熟度判定：**usable（个人可用），尚未 release-ready**。三个卡点：
+- 成熟度判定：**usable（个人可用）**；v0.5.40 已有公开 Release。本文件继续
+  记录工程风险，不把 backlog 评语当成发布状态：
   (a) 无自动化测试门禁；(b) 暂停屏主路径/兜底路径行为已分叉；
   (c) Service 核心状态是伴生对象静态字段 + 有副作用的 getter。
 - 项目最好的资产：`BurstTracker` / `InterceptionDecider` / `HomeTransitionPolicy`
@@ -50,7 +51,7 @@
       Home / Onboarding / Settings 各持 `accessibilityHealth`/`canDrawOverlays`/
       `isUsageAccessGranted`/`isIgnoringBattery`。抽单一持有者。
 - [ ] **P1-3 · `pausePresentationActive` 表达式手写 6 处**
-      行号（@461ee33）：service 766/862/882/905/951/981。且 `pauseShown` getter
+      当前 service 中仍有多处 `pausePresentationActive` 组合表达式，且 `pauseShown` getter
       有副作用（看门狗在读取时释放守卫）。**分两步**：先表达式收敛（行为等价），
       副作用外移（`releaseStaleGuard()`）单独立项。需真机回归，**必须在 P0-4 落地后做**。
 - [ ] **P1-4 · 事件处理无串行化 + 编排层零测试**
@@ -98,20 +99,19 @@
 
 ## 已核实为"足够好，不要动"
 
-- 纯函数策略层 + 134 个 JVM 用例。
+- 纯函数策略层 + 已有 JVM 用例；具体数量以最新测试报告为准。
 - `LicenseVerifier`：alg==RS256 显式校验、`SHA256withRSA`、`requireDeviceBinding`
   生产开关、失败一律 null。
 - 日志隐私门禁：`AppLogger`/`PersistentLog`/`CrashLog` 全部 `BuildConfig.DEBUG`
   守卫，release 零输出。
 - Room 迁移 1→6 完整 + `exportSchema = true`；密钥零入库。
-- Home 逃逸动画（2026-09-11，Xiaomi/HyperOS `6036d5b`）：当前不视为 Home
-  逃逸逻辑/性能 bug。`TYPE_ACCESSIBILITY_OVERLAY`（2032）是独立 window/layer，
-  不属于被拦截 app task，故不参与 task 缩回 launcher 的动画；实测 Home 广播→
-  overlay dismiss 约 3 ms、overlay 约 300 ms 内消失，普通 launcher transition
-  约 0.97 s、overlay→Home 约 1.28 s。Back/Cancel 走 Appause 的
-  `handleCancel()` Home 路径，体感更顺；Cancel 未单独做真机 runtime 验证。
-  暂不改稳定的 Home/Back/Recents 安全路径；若重访，只考虑约 80–150 ms 的 UI
-  fade/alpha 退出且不延迟逻辑 Home，需先有逐帧证据。
+- Home/Recents finalization（2026-09-11）：当前实现使用 standalone
+  `TYPE_ACCESSIBILITY_OVERLAY`（2032），通过 system-dialog 的 `homekey` 信号
+  立即 dismiss，并将 `recentapps` 排除出 Home 确认；旧 target 事件有 bounded
+  late-event check，真正 immediate reopen 仍可重新拦截。当前最终验收证据为
+  JVM focused tests、`assembleDebug`、emulator smoke，以及 Xiaomi
+  2410DPN6CC / Android 16 的 ADB/logcat/WindowManager objective evidence。
+  未声称主观顺滑度或正式延迟测量；当前 main 也晚于 v0.5.40 release tag。
 
 ## 执行顺序（已获授权的批次）
 

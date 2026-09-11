@@ -1148,3 +1148,24 @@ this validation because the emulator had no configured group.
   boundaries (max-hold `>` 30 s, grace `<` 1.5 s), wired into the
   `pauseShown` getter with identical read points and identical side effects.
 - Physical device was not touched. No commit happened at the time of testing.
+
+## 31. v0.5.40 current-source Home/Recents finalization (2026-09-11)
+
+**Scope:** the current `main` source @ `ed64329`, version `0.5.40` /
+versionCode `92`. The `v0.5.40` release tag points to an earlier commit, so
+this entry describes current source behavior and does not claim that the tagged
+APK contains these post-tag fixes.
+
+### Focused validation
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Home transition policy | **PASS** | Focused `HomeTransitionPolicyTest` covered Home, Recents, stale target, and immediate reopen decisions. |
+| Existing pause/overlay policy tests | **PASS** | `OverlayPresentationPolicyTest`, `PausePresentationPolicyTest`, `PauseGuardPolicyTest`, and `PauseActivityIntentTest` passed. |
+| `assembleDebug` | **PASS** | Current source assembled successfully. |
+| Emulator smoke | **PASS** | `emulator-5554`: Home dismissed the active pause presentation; Recents did not dismiss it as Home; immediate target reopen intercepted again. |
+| Xiaomi physical smoke | **PASS** | Xiaomi 2410DPN6CC / Android 16: ADB/logcat/WindowManager showed `reason=homekey` → overlay dismiss, `reason=recentapps` → overlay still present after about 1.8 s, and Home → Bilibili reopen about 291 ms later → fresh second intercept. |
+
+No subjective visual-smoothness measurement is claimed. The physical evidence is
+objective navigation/overlay/intercept evidence, not a claim about the tagged
+v0.5.40 APK; the current source is later than that tag.

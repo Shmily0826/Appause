@@ -1,5 +1,9 @@
 # Appause — Technical Architecture
 
+> Current source baseline: `main` @ `ed64329` (2026-09-11), versionName `0.5.40`,
+> versionCode `92`. The public `v0.5.40` tag predates this current-source
+> baseline.
+
 ---
 
 ## 1. Technology Stack
@@ -96,7 +100,7 @@ Appause/
 │               │   ├── AppauseAccessibilityService.kt  # event detection
 │               │   ├── OverlayManager.kt       # pause overlay lifecycle
 │               │   ├── AccessibilityServiceChecker.kt  # reads system state
-│               │   ├── PauseAlarmReceiver.kt   # schedule re-remind
+│               │   ├── PauseAlarmReceiver.kt   # fallback pause presentation
 │               │   └── (res/xml/accessibility_service_config.xml)
 │               │
 │               ├── interception/               # ── Interception Logic ──
@@ -337,6 +341,31 @@ This is why `AppauseAccessibilityService` no longer clears the bypass on *every*
 non-target switch — only a confirmed leave (home screen or a sustained 3-minute
 away window) re-arms the limit. See `OverlayManager` and `scheduleReRemind`.
 
+### 6.5 Current Home / Recents handling
+
+The pause presentation uses a standalone `TYPE_ACCESSIBILITY_OVERLAY` (2032)
+when the accessibility service can attach it. Android's system-dialog signal is
+handled separately from ordinary foreground-package events:
+
+- `homekey` confirms system Home and dismisses the active standalone pause
+  presentation immediately, while recording the dismissed target for a bounded
+  late-event check.
+- `recentapps` records a bounded Recents transition and does **not** dismiss the
+  pause presentation as Home.
+- A target event arriving after Home is ignored only while current foreground
+  evidence still identifies a launcher; evidence that the target is genuinely
+  foreground permits the immediate reopen to be intercepted again.
+- If the system-dialog receiver is unavailable, the existing launcher/SystemUI
+  confirmation fallback remains in use.
+
+For Android R+, the 2032 window owns its geometry: it uses screen-layout flags,
+top/start gravity, an explicit status-bar y offset, explicit height ending above
+the navigation-bar inset, and no second implicit system-bar fitting. This keeps
+the input boundary above the system navigation region without double-applying
+insets. Accessibility permission and service connection health remain separate;
+the app provides a Settings recovery path and does not re-enable the service
+programmatically.
+
 ---
 
 ## 7. Common Pitfalls and Mitigations
@@ -377,7 +406,7 @@ away window) re-arms the limit. See `OverlayManager` and `scheduleReRemind`.
 
 ## 8. Development Phases
 
-### Phase 0: Project Setup ← **Current**
+### Phase 0: Project Setup ← **Done**
 - Create Android Studio project structure
 - Configure Gradle, Version Catalog, package name
 - Create documentation files

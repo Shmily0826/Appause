@@ -6,7 +6,7 @@
 > 🔗 A linkable, hostable version of this policy is available at
 > [`privacy-policy.html`](privacy-policy.html) and is published via GitHub Pages at
 > `https://shmily0826.github.io/Appause/privacy-policy.html` — use this URL as the
-> privacy-policy link when submitting to app stores (Coolapk / Google Play / F-Droid).
+> privacy-policy link when submitting to an app store or distribution platform.
 > (Enabled 2026-07-29: Settings → Pages → deploy from branch `main`, `/root`.)
 
 Appause is built around a single promise: **your data never leaves your device.**
@@ -53,7 +53,7 @@ and never leave your device.
   This is aggregate analytics, not user tracking. Because the counter runs on
   our own infrastructure, it is self-reported and approximate; treat it as a
   rough floor rather than an audited figure. The authoritative install numbers
-  come from the platforms themselves (e.g. GitHub Release downloads, Coolapk).
+  come from the platforms themselves (e.g. GitHub Release downloads).
 - All configuration (your app groups, cooldowns, and usage stats) is stored
   **locally** in an on-device database (Room) and preferences store (DataStore).
 
@@ -122,7 +122,7 @@ or email [rng2018520@gmail.com](mailto:rng2018520@gmail.com).
   应用不会自动刷新或后台联网校验，令牌过期后可能需要你再次主动兑换，或导入另一张
   仍有效的令牌。不会上传任何浏览记录、消息或使用行为。
 - 反馈**只有你主动选择时才会发送**（设置 → 反馈），应用不会自动上传任何内容。发送前，页面会展示留言、可选联系方式、设备/版本信息和诊断快照。诊断可能包含服务与权限状态、最近的前台应用和拦截状态、已配置的分组名称及其中的应用包名；不包含屏幕内容、聊天记录、账号信息或按时间排列的使用历史。「通过 Appause 发送」会把页面中展示的内容发到 Cloudflare Worker；邮件与 GitHub 方式会通过你选择的应用发送同一份报告。
-- 我们在服务器（同一个 Cloudflare Worker）上维护一个**纯聚合的下载计数器**，用来统计 Appause 通过各个渠道（GitHub Release 及镜像）被安装的总次数。它**只记录一个数字**——不会保存任何 IP 地址、设备标识或个人数据。这是聚合统计，不是用户追踪。由于计数器运行在我们自己的服务器上，它是一个自报、近似的数字，请将其视为粗略下限而非经审计的精确值；权威的安装数据来自各分发平台本身（如 GitHub Release 下载量、酷安下载量）。
+- 我们在服务器（同一个 Cloudflare Worker）上维护一个**纯聚合的下载计数器**，用来统计 Appause 通过各个渠道（GitHub Release 及镜像）被安装的总次数。它**只记录一个数字**——不会保存任何 IP 地址、设备标识或个人数据。这是聚合统计，不是用户追踪。由于计数器运行在我们自己的服务器上，它是一个自报、近似的数字，请将其视为粗略下限而非经审计的精确值；权威的安装数据来自各分发平台本身（如 GitHub Release 下载量及其他分发平台的下载量）。
 - 你的所有配置（应用分组、冷却时间、使用统计）都**仅保存在本机**的数据库
   （Room）和偏好存储（DataStore）中。
 

@@ -1,5 +1,7 @@
 # Appause Pro — 国内收款路线（爱发电 / Afdian 卡密）
 
+> 状态：规划稿。本文描述可能的爱发电交付流程，不代表当前已公开销售或生产 Worker 已验证在线。
+
 > 背景：作者当前在新西兰学习，签证、税务居民身份与收款收入的定性需要由
 > 新西兰持牌移民顾问和会计师确认。本文件只讨论产品与技术路线，不构成法律、
 > 移民或税务意见。在取得专业意见前，暂不采用自行经营的 Stripe NZ 路线。
@@ -62,7 +64,7 @@ App 本地用内嵌公钥验签 → 解锁 Pro（离线生效，之后不再联�
 
 **我来做（已就绪 / 可生成）**
 - [x] App 端「输入激活码」+「导入许可证」UI 已存在并接好 Worker。
-- [x] Worker `/api/redeem` + `/admin/gencode` 已部署且在线（实测 `download-count` 存活）。
+- [ ] Worker `/api/redeem` + `/admin/gencode` 的当前生产部署状态：仓库证据未验证，本文不作在线或生产声明。
 - [x] `worker/scripts/gencodes-batch.mjs`：批量生成激活码 → `codes.batch.json`(KV) + `codes.txt`(卡密)。
 - [ ] 运行脚本生成 N 个码（默认 50）。
 
