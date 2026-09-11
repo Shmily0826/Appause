@@ -16,6 +16,7 @@ import android.window.OnBackInvokedDispatcher
 import java.util.Locale
 import com.appause.android.util.AppLogger
 import com.appause.android.util.PersistentLog
+import android.view.Gravity
 import android.view.WindowManager
 import android.view.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -273,42 +274,46 @@ class OverlayManager {
             android.graphics.PixelFormat.TRANSLUCENT
         )
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Fit only the navigation bar. The left/right system-gesture
-            // insets would shrink the blocker horizontally and consume the
-            // user's Back edge gesture. The system still owns the bottom
-            // navigation/gesture region, while the blocker keeps full width.
-            params.setFitInsetsTypes(WindowInsets.Type.navigationBars())
-            // HyperOS can report the visible three-button bar after the
-            // initial layout pass. Ignore visibility so the window still
-            // reserves the system-owned bottom region instead of covering it.
-            params.setFitInsetsIgnoringVisibility(true)
-
             // On Android 36 the internal touch-region callback is hidden and
             // unsupported for targetSdk 35. HyperOS also expands a MATCH_PARENT
             // accessibility window's touchable region beyond its reported
             // frame. Use the public explicit-size API instead: the window keeps
             // full width and its input region ends above the visible nav bar.
             val metrics = windowManager.maximumWindowMetrics
-            val statusBarInset = metrics.windowInsets.getInsets(
+            // Ignore visibility so a transiently hidden bar still reserves the
+            // system-owned region instead of being covered by the blocker.
+            val statusBarInset = metrics.windowInsets.getInsetsIgnoringVisibility(
                 WindowInsets.Type.statusBars()
             ).top
             val navigationBarInset = metrics.windowInsets.getInsetsIgnoringVisibility(
                 WindowInsets.Type.navigationBars()
             ).bottom
-            if (navigationBarInset > 0) {
-                params.height = OverlayWindowPolicy.heightBeforeNavigationBar(
-                    metrics.bounds.height(),
-                    statusBarInset,
-                    navigationBarInset
-                )
-                AppLogger.d(
-                    TAG,
-                    "Overlay input boundary stops above navigation bar: " +
-                        "display=${metrics.bounds.height()} top=$statusBarInset " +
-                        "bottom=$navigationBarInset height=${params.height}"
-                )
-            }
 
+            // Own the vertical geometry instead of relying on the system's
+            // implicit insetting. Without FLAG_LAYOUT_IN_SCREEN the window is
+            // placed inside the inset-decorated frame — already pushed below
+            // the status bar — while the height below ALSO subtracts the status
+            // bar. On ROMs that inset a 2032 window that way, the two offsets
+            // stack and the top edge lands an extra status bar too low, so the
+            // target app shows through above the blocker.
+            params.flags = params.flags or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN
+            // Both bars are already accounted for by y/height below; asking the
+            // system to fit them as well would apply the same inset twice.
+            params.setFitInsetsTypes(0)
+            params.setFitInsetsSides(0)
+            params.gravity = Gravity.TOP or Gravity.START
+            params.y = statusBarInset
+            params.height = OverlayWindowPolicy.heightBeforeNavigationBar(
+                metrics.bounds.height(),
+                statusBarInset,
+                navigationBarInset
+            )
+            AppLogger.d(
+                TAG,
+                "Overlay input boundary stops above navigation bar: " +
+                    "display=${metrics.bounds.height()} top=$statusBarInset " +
+                    "bottom=$navigationBarInset y=${params.y} height=${params.height}"
+            )
         }
 
         fun registerStandaloneBackCallback() {

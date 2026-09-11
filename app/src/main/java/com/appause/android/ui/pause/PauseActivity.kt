@@ -648,7 +648,12 @@ internal fun PauseScreenContent(
         Column(
             modifier = Modifier
                 .widthIn(max = 560.dp)
-                .padding(horizontal = 16.dp, vertical = 24.dp),
+                // The last row of this stack is the Temporary Pass button, so
+                // this bottom padding is the ONLY gap between it and the
+                // navigation bar (the blocker window itself already ends above
+                // the bar). Keep it clearly larger than the top padding so the
+                // button never reads as glued to the system bar.
+                .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 48.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -831,7 +836,10 @@ internal fun PauseScreenContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(24.dp)
-                    .padding(bottom = 16.dp),
+                    // Extra bottom room so the chooser card (centred in the
+                    // remaining space) keeps a visible gap from the navigation
+                    // bar rather than crowding it.
+                    .padding(bottom = 24.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Card(modifier = Modifier.fillMaxWidth()) {

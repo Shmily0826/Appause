@@ -1,6 +1,8 @@
 package com.appause.android.service
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -221,6 +223,84 @@ class HomeTransitionPolicyTest {
     }
 
     @Test
+    fun `resolved launcher foreground permits immediate home confirmation`() {
+        assertTrue(
+            HomeTransitionPolicy.shouldConfirm(
+                homePackage = "com.miui.home",
+                lastObservedNavigationPackage = "com.miui.home",
+                pauseShown = true,
+                homeEventTime = 1_000L,
+                latestRealForegroundEventTime = 999L,
+                currentForegroundPackage = "com.miui.home"
+            )
+        )
+    }
+
+    @Test
+    fun `homekey system dialog permits immediate active presentation dismissal`() {
+        assertTrue(
+            HomeTransitionPolicy.shouldDismissForSystemDialog(
+                reason = "homekey",
+                pausePresentationActive = true
+            )
+        )
+    }
+
+    @Test
+    fun `recentapps system dialog never permits immediate dismissal`() {
+        assertFalse(
+            HomeTransitionPolicy.shouldDismissForSystemDialog(
+                reason = "recentapps",
+                pausePresentationActive = true
+            )
+        )
+    }
+
+    @Test
+    fun `recentapps guard defers home confirmation only within its bounded window`() {
+        assertTrue(
+            HomeTransitionPolicy.shouldDeferHomeConfirmationDuringRecents(
+                ageMs = 250L,
+                graceMs = 1_000L
+            )
+        )
+        assertFalse(
+            HomeTransitionPolicy.shouldDeferHomeConfirmationDuringRecents(
+                ageMs = 1_001L,
+                graceMs = 1_000L
+            )
+        )
+    }
+
+    @Test
+    fun `late target event is ignored only while foreground evidence is launcher`() {
+        assertTrue(
+            HomeTransitionPolicy.shouldIgnoreLateSystemHomeTarget(
+                packageName = "com.android.chrome",
+                dismissedTargetPackage = "com.android.chrome",
+                currentForegroundPackage = "com.google.android.apps.nexuslauncher",
+                homePackages = setOf("com.google.android.apps.nexuslauncher"),
+                ageMs = 100L,
+                graceMs = 750L
+            )
+        )
+    }
+
+    @Test
+    fun `immediate target reopen is not ignored when foreground evidence is target`() {
+        assertFalse(
+            HomeTransitionPolicy.shouldIgnoreLateSystemHomeTarget(
+                packageName = "com.android.chrome",
+                dismissedTargetPackage = "com.android.chrome",
+                currentForegroundPackage = "com.android.chrome",
+                homePackages = setOf("com.google.android.apps.nexuslauncher"),
+                ageMs = 100L,
+                graceMs = 750L
+            )
+        )
+    }
+
+    @Test
     fun `zero event time keeps the bounded fallback confirmation path`() {
         assertTrue(
             HomeTransitionPolicy.shouldConfirm(
@@ -230,6 +310,57 @@ class HomeTransitionPolicyTest {
 
                 homeEventTime = 0L,
                 latestRealForegroundEventTime = 2_000L
+            )
+        )
+    }
+
+    @Test
+    fun `usage stats naming Appause itself is discarded as evidence`() {
+        assertNull(
+            HomeTransitionPolicy.resolveForegroundEvidence(
+                rawForegroundPackage = "com.appause.android",
+                appausePackage = "com.appause.android"
+            )
+        )
+    }
+
+    @Test
+    fun `a real app named by usage stats is kept as evidence`() {
+        assertEquals(
+            "tv.danmaku.bili",
+            HomeTransitionPolicy.resolveForegroundEvidence(
+                rawForegroundPackage = "tv.danmaku.bili",
+                appausePackage = "com.appause.android"
+            )
+        )
+    }
+
+    @Test
+    fun `a launcher named by usage stats is kept as evidence`() {
+        assertEquals(
+            "com.miui.home",
+            HomeTransitionPolicy.resolveForegroundEvidence(
+                rawForegroundPackage = "com.miui.home",
+                appausePackage = "com.appause.android"
+            )
+        )
+    }
+
+    @Test
+    fun `sanitised Appause evidence no longer vetoes a confirmed home transition`() {
+        // Raw, this answer made shouldConfirm() return false and the cooldown
+        // overlay was never dismissed after Home (which left the guard stuck).
+        assertTrue(
+            HomeTransitionPolicy.shouldConfirm(
+                homePackage = "com.miui.home",
+                lastObservedNavigationPackage = "com.miui.home",
+                pauseShown = true,
+                currentForegroundPackage = HomeTransitionPolicy.resolveForegroundEvidence(
+                    rawForegroundPackage = "com.appause.android",
+                    appausePackage = "com.appause.android"
+                ),
+                homeEventTime = 1_000L,
+                latestRealForegroundEventTime = 999L
             )
         )
     }
