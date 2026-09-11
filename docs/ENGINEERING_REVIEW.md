@@ -104,6 +104,14 @@
 - 日志隐私门禁：`AppLogger`/`PersistentLog`/`CrashLog` 全部 `BuildConfig.DEBUG`
   守卫，release 零输出。
 - Room 迁移 1→6 完整 + `exportSchema = true`；密钥零入库。
+- Home 逃逸动画（2026-09-11，Xiaomi/HyperOS `6036d5b`）：当前不视为 Home
+  逃逸逻辑/性能 bug。`TYPE_ACCESSIBILITY_OVERLAY`（2032）是独立 window/layer，
+  不属于被拦截 app task，故不参与 task 缩回 launcher 的动画；实测 Home 广播→
+  overlay dismiss 约 3 ms、overlay 约 300 ms 内消失，普通 launcher transition
+  约 0.97 s、overlay→Home 约 1.28 s。Back/Cancel 走 Appause 的
+  `handleCancel()` Home 路径，体感更顺；Cancel 未单独做真机 runtime 验证。
+  暂不改稳定的 Home/Back/Recents 安全路径；若重访，只考虑约 80–150 ms 的 UI
+  fade/alpha 退出且不延迟逻辑 Home，需先有逐帧证据。
 
 ## 执行顺序（已获授权的批次）
 
