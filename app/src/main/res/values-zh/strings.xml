@@ -316,6 +316,11 @@
     <string name="pro_title">Appause Pro</string>
     <string name="pro_status_free">免费版</string>
     <string name="pro_status_pro">已解锁 Pro</string>
+    <string name="pro_status_trial_active">7 天试用中</string>
+    <string name="pro_status_trial_expired">试用已过期</string>
+    <string name="pro_status_debug">调试版 Pro 已解锁</string>
+    <string name="pro_trial_ends">试用结束时间：%1$s</string>
+    <string name="pro_trial_expired_desc">请联系开发者获取永久授权码，然后在下方输入。</string>
     <string name="pro_upgrade_desc">解锁更多分组、更长冷却、再次提醒、完整历史与自定义提示语。</string>
     <string name="pro_feature_groups">分组数量</string>
     <string name="pro_feature_cooldown">冷却上限</string>
@@ -345,6 +350,7 @@
     <string name="pro_coming_soon">更多高级功能，陆续推出中…</string>
     <string name="pro_coming_soon_badge">推出中</string>
     <string name="pro_activate_title">激活 Appause Pro</string>
+    <string name="pro_activate_desc">输入试用或永久授权码。激活需要一次性联网。</string>
     <string name="pro_enter_code">激活码</string>
     <string name="pro_code_hint">输入你购买的激活码</string>
     <string name="pro_activate">激活</string>

@@ -321,6 +321,11 @@
     <string name="pro_title">Appause Pro</string>
     <string name="pro_status_free">Free version</string>
     <string name="pro_status_pro">Pro unlocked</string>
+    <string name="pro_status_trial_active">7-day trial active</string>
+    <string name="pro_status_trial_expired">Trial expired</string>
+    <string name="pro_status_debug">Debug Pro unlocked</string>
+    <string name="pro_trial_ends">Trial ends %1$s</string>
+    <string name="pro_trial_expired_desc">Contact the developer for a lifetime access code, then enter it below.</string>
     <string name="pro_upgrade_desc">Unlock more groups, longer cooldowns, re-remind, full history and custom prompts.</string>
     <string name="pro_feature_groups">Groups</string>
     <string name="pro_feature_cooldown">Cooldown cap</string>
@@ -350,6 +355,7 @@
     <string name="pro_coming_soon">More advanced features are on the way…</string>
     <string name="pro_coming_soon_badge">Coming soon</string>
     <string name="pro_activate_title">Activate Appause Pro</string>
+    <string name="pro_activate_desc">Enter a trial or lifetime activation code. Activation needs a one-time internet connection.</string>
     <string name="pro_enter_code">Activation code</string>
     <string name="pro_code_hint">Enter the activation code you purchased</string>
     <string name="pro_activate">Activate</string>

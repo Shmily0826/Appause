@@ -22,6 +22,44 @@ sealed interface RedeemResult {
     data class Error(val reason: String) : RedeemResult
 }
 
+enum class ProAccessStatus {
+    FREE,
+    TRIAL_ACTIVE,
+    TRIAL_EXPIRED,
+    EXPIRING_ACTIVE,
+    LIFETIME,
+    DEBUG
+}
+
+data class ProEntitlement(
+    val status: ProAccessStatus,
+    val expiresAt: Long? = null
+) {
+    val isPro: Boolean
+        get() = status == ProAccessStatus.TRIAL_ACTIVE ||
+            status == ProAccessStatus.EXPIRING_ACTIVE ||
+            status == ProAccessStatus.LIFETIME ||
+            status == ProAccessStatus.DEBUG
+}
+
+internal fun classifyLicenseClaims(claims: LicenseClaims?, nowSeconds: Long): ProEntitlement {
+    if (claims == null) return ProEntitlement(ProAccessStatus.FREE)
+    val expiresAt = claims.exp?.times(1000L)
+    if (claims.trial) {
+        return if (claims.exp != null && nowSeconds <= claims.exp) {
+            ProEntitlement(ProAccessStatus.TRIAL_ACTIVE, expiresAt)
+        } else {
+            ProEntitlement(ProAccessStatus.TRIAL_EXPIRED, expiresAt)
+        }
+    }
+    if (claims.exp == null) return ProEntitlement(ProAccessStatus.LIFETIME)
+    return if (nowSeconds <= claims.exp) {
+        ProEntitlement(ProAccessStatus.EXPIRING_ACTIVE, expiresAt)
+    } else {
+        ProEntitlement(ProAccessStatus.FREE)
+    }
+}
+
 /**
  * A single HTTP response from the redeem endpoint, decoupled from the concrete
  * [HttpURLConnection] so the [ProState.redeemCode] flow can be exercised in
@@ -157,20 +195,26 @@ class ProState(
      * True if the debug flag is on (debug builds) OR a stored license token
      * verifies locally (signature + expiry + device binding).
      */
-    val isPro: Flow<Boolean> = combine(settings.licenseToken, settings.isProDebug) { token, debug ->
-        if (debug) return@combine true
-        if (token.isBlank()) return@combine false
+    val entitlement: Flow<ProEntitlement> = combine(settings.licenseToken, settings.isProDebug) { token, debug ->
+        if (debug) return@combine ProEntitlement(ProAccessStatus.DEBUG)
+        if (token.isBlank()) return@combine ProEntitlement(ProAccessStatus.FREE)
         runCatching {
             val fingerprint = DeviceKeyStore.getDeviceFingerprint(context)
             val publicKey = LicenseVerifier.parsePublicKey(ServerKeys.SERVER_PUBLIC_KEY_PEM)
-            LicenseVerifier.verify(
-                token,
-                publicKey,
-                fingerprint,
-                requireDeviceBinding = ServerKeys.IS_PRODUCTION_KEY
-            ) != null
-        }.getOrDefault(false)
+            classifyLicenseClaims(
+                LicenseVerifier.verify(
+                    token,
+                    publicKey,
+                    fingerprint,
+                    requireDeviceBinding = ServerKeys.IS_PRODUCTION_KEY,
+                    checkExpiry = false
+                ),
+                System.currentTimeMillis() / 1000L
+            )
+        }.getOrDefault(ProEntitlement(ProAccessStatus.FREE))
     }
+
+    val isPro: Flow<Boolean> = entitlement.map { it.isPro }
 
     /** Debug-only unlock — only ever called from debug builds. */
     suspend fun unlockProDebug() {

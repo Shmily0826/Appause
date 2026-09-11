@@ -22,7 +22,8 @@ data class LicenseClaims(
     val device: String?,
     val exp: Long?,
     val iat: Long?,
-    val jti: String?
+    val jti: String?,
+    val trial: Boolean = false
 )
 
 /**
@@ -77,7 +78,8 @@ object LicenseVerifier {
         token: String,
         serverPublicKey: PublicKey,
         deviceFingerprint: String,
-        requireDeviceBinding: Boolean = false
+        requireDeviceBinding: Boolean = false,
+        checkExpiry: Boolean = true
     ): LicenseClaims? {
         // Any failure — malformed base64url, non-JSON segments, wrong types —
         // must come back as null (fail closed), never as an exception. The
@@ -85,7 +87,7 @@ object LicenseVerifier {
         // of this method is "null on any failed verification step", so the
         // guarantee lives here too.
         return try {
-            verifyTokenParts(token, serverPublicKey, deviceFingerprint, requireDeviceBinding)
+            verifyTokenParts(token, serverPublicKey, deviceFingerprint, requireDeviceBinding, checkExpiry)
         } catch (e: Exception) {
             null
         }
@@ -95,7 +97,8 @@ object LicenseVerifier {
         token: String,
         serverPublicKey: PublicKey,
         deviceFingerprint: String,
-        requireDeviceBinding: Boolean
+        requireDeviceBinding: Boolean,
+        checkExpiry: Boolean
     ): LicenseClaims? {
         val parts = token.trim().split(".")
         if (parts.size != 3) return null
@@ -118,7 +121,7 @@ object LicenseVerifier {
         if (tier != "pro") return null
 
         val exp = if (payload.has("exp")) payload.getLong("exp") else null
-        if (exp != null && System.currentTimeMillis() / 1000L > exp) return null
+        if (checkExpiry && exp != null && System.currentTimeMillis() / 1000L > exp) return null
 
         val device = if (payload.has("device")) payload.getString("device") else null
         if (requireDeviceBinding && device.isNullOrBlank()) return null
@@ -126,7 +129,8 @@ object LicenseVerifier {
 
         val iat = if (payload.has("iat")) payload.getLong("iat") else null
         val jti = if (payload.has("jti")) payload.getString("jti") else null
+        val trial = payload.optBoolean("trial", false)
 
-        return LicenseClaims(tier = tier, device = device, exp = exp, iat = iat, jti = jti)
+        return LicenseClaims(tier = tier, device = device, exp = exp, iat = iat, jti = jti, trial = trial)
     }
 }

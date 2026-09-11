@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
 import com.appause.android.data.pro.ProState
+import com.appause.android.data.pro.ProEntitlement
 import com.appause.android.data.pro.RedeemResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +26,9 @@ class ProViewModel(application: Application) : AndroidViewModel(application) {
 
     val isPro: StateFlow<Boolean> = proState.isPro
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val entitlement: StateFlow<ProEntitlement> = proState.entitlement
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProEntitlement(com.appause.android.data.pro.ProAccessStatus.FREE))
 
     /** A one-shot message key for the UI to show (e.g. "pro_imported"). */
     private val _message = MutableStateFlow<String?>(null)

@@ -53,8 +53,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
-import com.appause.android.data.pro.ProState
+import com.appause.android.data.pro.ProAccessStatus
+import com.appause.android.data.pro.ProEntitlement
 import com.appause.android.data.pro.RedeemResult
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Appause Pro screen — shows the free/Pro comparison, lets the user unlock Pro
@@ -71,10 +75,12 @@ fun ProScreen(
     viewModel: ProViewModel = viewModel()
 ) {
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
+    val entitlement by viewModel.entitlement.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val exportedToken by viewModel.exportedToken.collectAsStateWithLifecycle()
     val redeemResult by viewModel.redeemResult.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val trialExpiresAt = entitlement.expiresAt
 
     var codeInput by remember { mutableStateOf("") }
 
@@ -123,12 +129,27 @@ fun ProScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = if (isPro) stringResource(R.string.pro_status_pro)
-                        else stringResource(R.string.pro_status_free),
+                        text = entitlementStatusText(entitlement),
                         style = MaterialTheme.typography.titleMedium,
-                        color = if (isPro) MaterialTheme.colorScheme.primary
+                        color = if (entitlement.isPro) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    if (entitlement.status == ProAccessStatus.TRIAL_ACTIVE && trialExpiresAt != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            stringResource(R.string.pro_trial_ends, formatEntitlementDate(trialExpiresAt)),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (entitlement.status == ProAccessStatus.TRIAL_EXPIRED) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            stringResource(R.string.pro_trial_expired_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
@@ -221,6 +242,12 @@ fun ProScreen(
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(stringResource(R.string.pro_activate_title), style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            stringResource(R.string.pro_activate_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
                             value = codeInput,
@@ -447,3 +474,16 @@ private fun CompareRow(label: String, free: String?, pro: String) {
         }
     }
 }
+
+@Composable
+private fun entitlementStatusText(entitlement: ProEntitlement): String = when (entitlement.status) {
+    ProAccessStatus.FREE -> stringResource(R.string.pro_status_free)
+    ProAccessStatus.TRIAL_ACTIVE -> stringResource(R.string.pro_status_trial_active)
+    ProAccessStatus.TRIAL_EXPIRED -> stringResource(R.string.pro_status_trial_expired)
+    ProAccessStatus.EXPIRING_ACTIVE -> stringResource(R.string.pro_status_pro)
+    ProAccessStatus.LIFETIME -> stringResource(R.string.pro_status_pro)
+    ProAccessStatus.DEBUG -> stringResource(R.string.pro_status_debug)
+}
+
+private fun formatEntitlementDate(expiresAt: Long): String =
+    SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(expiresAt))
