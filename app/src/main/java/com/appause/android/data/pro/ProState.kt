@@ -13,12 +13,15 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
+private const val TRIAL_DURATION_SECONDS = 7L * 24 * 60 * 60
+
 /**
  * Result of a server-side activation attempt ([ProState.redeemCode]).
  * The UI maps [Error.reason] to a user-facing string.
  */
 sealed interface RedeemResult {
     data object Success : RedeemResult
+    data object TrialStarted : RedeemResult
     data class Error(val reason: String) : RedeemResult
 }
 
@@ -77,15 +80,28 @@ fun interface RedeemTransport {
     fun postRedeem(requestBody: String): RedeemHttpResponse
 }
 
+/** Performs the anonymous one-tap trial start POST. */
+fun interface TrialTransport {
+    fun postTrialStart(requestBody: String): RedeemHttpResponse
+}
+
 /**
  * Default [RedeemTransport] backed by [HttpURLConnection]. Behaves exactly like
  * the original inline implementation of [ProState.redeemCode]: POSTs JSON to
  * `{baseUrl}/api/redeem` with 15s connect/read timeouts, and returns the status
  * code plus the response body (success stream or error stream).
  */
-class HttpUrlConnectionTransport(private val baseUrl: String) : RedeemTransport {
+class HttpUrlConnectionTransport(private val baseUrl: String) : RedeemTransport, TrialTransport {
     override fun postRedeem(requestBody: String): RedeemHttpResponse {
-        val url = URL("$baseUrl/api/redeem")
+        return postJson("/api/redeem", requestBody)
+    }
+
+    override fun postTrialStart(requestBody: String): RedeemHttpResponse {
+        return postJson("/api/trial/start", requestBody)
+    }
+
+    private fun postJson(path: String, requestBody: String): RedeemHttpResponse {
+        val url = URL("$baseUrl$path")
         val conn = url.openConnection() as HttpURLConnection
         conn.requestMethod = "POST"
         conn.setRequestProperty("Content-Type", "application/json")
@@ -145,10 +161,12 @@ class ProState(
     private val context: Context,
     // ── Test seams (all default to production behavior) ──
     private val transport: RedeemTransport? = null,
+    private val trialTransport: TrialTransport? = null,
     private val fingerprintProvider: (() -> String)? = null,
     private val tokenVerifier: ((String, String) -> LicenseClaims?)? = null,
     private val tokenPersister: (suspend (String) -> Unit)? = null,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val currentEntitlement: (suspend () -> ProEntitlement)? = null
 ) {
 
     private val defaultVerifier: (String, String) -> LicenseClaims? = { token, fp ->
@@ -273,6 +291,9 @@ class ProState(
      * Returns [RedeemResult.Success] only when the returned token verifies.
      */
     suspend fun redeemCode(code: String): RedeemResult {
+        val current = currentEntitlement?.invoke() ?: this.entitlement.first()
+        if (current.isPro) return RedeemResult.Error("already_active")
+
         val effectiveTransport = transport ?: run {
             val base = ProConfig.WORKER_BASE_URL
             if (base.isBlank()) return RedeemResult.Error("worker_not_configured")
@@ -289,20 +310,87 @@ class ProState(
 
                 val resp = effectiveTransport.postRedeem(body)
 
-                if (resp.code !in 200..299) {
-                    val reason = runCatching {
-                        JSONObject(resp.body).optString("error", "http_${resp.code}")
-                    }.getOrDefault("http_${resp.code}")
-                    return@withContext RedeemResult.Error(reason)
-                }
-
-                val token = JSONObject(resp.body).getString("token")
-                val verified = importLicense(token)
-                if (verified) RedeemResult.Success
-                else RedeemResult.Error("token_verify_failed")
+                processTokenResponse(resp, RedeemResult.Success)
             } catch (e: Exception) {
                 RedeemResult.Error("network_error")
             }
         }
     }
+
+    /** Start the one-time seven-day trial without requiring an activation code. */
+    suspend fun startTrial(): RedeemResult {
+        val current = currentEntitlement?.invoke() ?: this.entitlement.first()
+        if (current.isPro) return RedeemResult.Error("already_active")
+        if (current.status == ProAccessStatus.TRIAL_EXPIRED) {
+            return RedeemResult.Error("trial_expired")
+        }
+
+        val effectiveTransport = trialTransport ?: (transport as? TrialTransport) ?: run {
+            val base = ProConfig.WORKER_BASE_URL
+            if (base.isBlank()) return RedeemResult.Error("worker_not_configured")
+            HttpUrlConnectionTransport(base)
+        }
+
+        return withContext(dispatcher) {
+            try {
+                val fingerprint = fingerprintProvider?.invoke() ?: defaultFingerprint()
+                val body = JSONObject().put("device", fingerprint).toString()
+                processTrialResponse(effectiveTransport.postTrialStart(body), fingerprint)
+            } catch (e: Exception) {
+                RedeemResult.Error("network_error")
+            }
+        }
+    }
+
+    private suspend fun processTrialResponse(
+        response: RedeemHttpResponse,
+        fingerprint: String
+    ): RedeemResult {
+        if (response.code !in 200..299) {
+            val reason = runCatching {
+                JSONObject(response.body).optString("error", "http_${response.code}")
+            }.getOrDefault("http_${response.code}")
+            return RedeemResult.Error(reason)
+        }
+
+        val body = JSONObject(response.body)
+        val token = body.getString("token")
+        val activatedAt = body.optLong("activatedAt", 0L)
+        val expiresAt = body.optLong("expiresAt", 0L)
+        val verifier = tokenVerifier ?: defaultVerifier
+        val claims = verifier(token, fingerprint)
+        val nowSeconds = System.currentTimeMillis() / 1000L
+        val expiryMatchesResponse = claims?.exp != null && claims.exp == expiresAt / 1000L
+        val startMatchesResponse = claims?.iat != null && claims.iat == activatedAt / 1000L
+        val hasSevenDayWindow = activatedAt > 0L && expiresAt - activatedAt == TRIAL_DURATION_SECONDS * 1000L
+        if (
+            claims == null ||
+            claims.tier != "pro" ||
+            !claims.trial ||
+            claims.exp == null ||
+            claims.exp <= nowSeconds ||
+            !expiryMatchesResponse ||
+            !startMatchesResponse ||
+            !hasSevenDayWindow
+        ) {
+            return RedeemResult.Error("token_verify_failed")
+        }
+        (tokenPersister ?: defaultPersister).invoke(token)
+        return RedeemResult.TrialStarted
+    }
+
+    private suspend fun processTokenResponse(
+        response: RedeemHttpResponse,
+        success: RedeemResult
+    ): RedeemResult {
+        if (response.code !in 200..299) {
+            val reason = runCatching {
+                JSONObject(response.body).optString("error", "http_${response.code}")
+            }.getOrDefault("http_${response.code}")
+            return RedeemResult.Error(reason)
+        }
+        val token = JSONObject(response.body).getString("token")
+        return if (importLicense(token)) success else RedeemResult.Error("token_verify_failed")
+    }
+
 }

@@ -28,15 +28,14 @@ and never leave your device.
 - There is no account, no login, and no registration.
 - The app makes **no network requests during normal use** — no analytics, no
   crash reporters, no advertisements, and no third-party SDKs.
-- Pro uses the network only when you explicitly redeem an activation code. The
-  app sends the code and a non-identifying device fingerprint (a SHA-256 hash
-  of an on-device key) to the activation server, which returns a signed token.
-  The token is **verified on your device** and stored locally. An activation
-  code may configure an expiry; Appause accepts tokens without an `exp` claim
-  and checks expiry locally when that claim is present. Appause does not
-  auto-refresh or perform background license checks, so a token that expires
-  may require another user-initiated redeem or import. No browsing history,
-  messages, or app usage is sent.
+- Pro uses the network only when you explicitly start the one-time trial or
+  activate lifetime access. The app sends a non-identifying device fingerprint
+  (a SHA-256 hash of an on-device key) to the activation server, which returns a
+  signed token. The token is **verified on your device** and stored locally.
+  The seven-day trial starts only after the first successful start and cannot
+  be restarted on that device. Lifetime activation remains code-based. Appause
+  does not auto-refresh or perform background license checks. No browsing
+  history, messages, or app usage is sent.
 - Feedback is sent **only when you choose to** (Settings → Feedback). The app
   never sends anything automatically. Before sending, it shows the message,
   optional contact detail, device/app metadata, and a diagnostic snapshot. The
@@ -116,11 +115,11 @@ or email [rng2018520@gmail.com](mailto:rng2018520@gmail.com).
 - 没有账号、没有登录、没有注册。
 - 应用**在日常使用中不进行任何网络请求**——没有分析统计、没有崩溃上报、
   没有广告，也没有任何第三方 SDK。
-- Pro 只会在你主动兑换激活码时联网：会发送兑换码和一个不带个人身份的「设备指纹」
-  （本机密钥的 SHA-256 哈希）到激活服务器，服务器返回经过签名的令牌。激活码可以
-  配置有效期；Appause 接受没有 `exp` 字段的令牌，并只在存在该字段时于本地检查过期。
-  应用不会自动刷新或后台联网校验，令牌过期后可能需要你再次主动兑换，或导入另一张
-  仍有效的令牌。不会上传任何浏览记录、消息或使用行为。
+- Pro 只会在你主动开始一次性试用或激活永久权限时联网：应用向激活服务器发送不带个人
+  身份的「设备指纹」（本机密钥的 SHA-256 哈希），服务器返回经过签名的令牌。令牌会
+  **在本机校验**并本地保存。7 天试用只从首次成功开始后计时，且同一设备不能重新开始；
+  永久权限仍通过激活码获得。应用不会自动刷新或后台联网校验，也不会上传任何浏览记录、
+  消息或使用行为。
 - 反馈**只有你主动选择时才会发送**（设置 → 反馈），应用不会自动上传任何内容。发送前，页面会展示留言、可选联系方式、设备/版本信息和诊断快照。诊断可能包含服务与权限状态、最近的前台应用和拦截状态、已配置的分组名称及其中的应用包名；不包含屏幕内容、聊天记录、账号信息或按时间排列的使用历史。「通过 Appause 发送」会把页面中展示的内容发到 Cloudflare Worker；邮件与 GitHub 方式会通过你选择的应用发送同一份报告。
 - 我们在服务器（同一个 Cloudflare Worker）上维护一个**纯聚合的下载计数器**，用来统计 Appause 通过各个渠道（GitHub Release 及镜像）被安装的总次数。它**只记录一个数字**——不会保存任何 IP 地址、设备标识或个人数据。这是聚合统计，不是用户追踪。由于计数器运行在我们自己的服务器上，它是一个自报、近似的数字，请将其视为粗略下限而非经审计的精确值；权威的安装数据来自各分发平台本身（如 GitHub Release 下载量及其他分发平台的下载量）。
 - 你的所有配置（应用分组、冷却时间、使用统计）都**仅保存在本机**的数据库

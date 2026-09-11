@@ -1,6 +1,7 @@
 import { signJwt, importPrivateKeyPem } from "./jwt.mjs";
 
 const DEFAULT_MAX_DEVICES = 3;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -53,7 +54,10 @@ export class ActivationCodeDurableObject {
     const privateKey = await importPrivateKeyPem(this.env.APPAUSE_PRIVATE_KEY);
     const nowSec = Math.floor(Date.now() / 1000);
     const payload = { tier: "pro", iat: nowSec, jti: code, device };
-    if (record.expiresInDays) {
+    if (record.kind === "trial") {
+      payload.trial = true;
+      payload.exp = Math.floor(record.expiresAt / 1000);
+    } else if (record.expiresInDays) {
       payload.exp = nowSec + record.expiresInDays * 86400;
     }
     return signJwt(payload, privateKey);
@@ -90,6 +94,61 @@ export class ActivationCodeDurableObject {
     return json({ token });
   }
 
+  async startTrial(code, device) {
+    const current = await this.state.storage.get("record");
+    const now = Date.now();
+    if (!current) {
+      const record = {
+        kind: "trial",
+        device,
+        status: "active",
+        maxDevices: 1,
+        expiresInDays: 7,
+        devices: [device],
+        createdAt: now,
+        activatedAt: now,
+        expiresAt: now + 7 * DAY_MS,
+      };
+      try {
+        const token = await this.signToken(record, code, device);
+        await this.saveRecord(record);
+        return json({ token, newlyStarted: true, alreadyStarted: false, activatedAt: now, expiresAt: record.expiresAt });
+      } catch (e) {
+        return json({ error: "trial_unavailable" }, 500);
+      }
+    }
+
+    // A trial object is intentionally strict: malformed state must never
+    // silently restart a device's one-time entitlement.
+    if (
+      current.kind !== "trial" ||
+      current.device !== device ||
+      !Array.isArray(current.devices) ||
+      current.devices.length !== 1 ||
+      current.devices[0] !== device ||
+      current.maxDevices !== 1 ||
+      current.expiresInDays !== 7 ||
+      !current.activatedAt ||
+      !current.expiresAt
+    ) {
+      return json({ error: "trial_state_invalid" }, 500);
+    }
+    if (now >= current.expiresAt) return json({ error: "trial_expired" }, 410);
+
+    try {
+      const token = await this.signToken(current, code, device);
+      return json({
+        token,
+        newlyStarted: false,
+        alreadyStarted: true,
+        activatedAt: current.activatedAt,
+        expiresAt: current.expiresAt,
+      });
+    } catch (e) {
+      return json({ error: "trial_unavailable" }, 500);
+    }
+  }
+
   async unbind(code, device) {
     const record = await this.loadRecord(code);
     if (!record) return json({ error: "invalid_code" }, 404);
@@ -120,6 +179,7 @@ export class ActivationCodeDurableObject {
     return this.state.blockConcurrencyWhile(async () => {
       if (action === "initialize") return this.initialize(code, body.record);
       if (!code || !device) return json({ error: "bad_request" }, 400);
+      if (action === "start_trial") return this.startTrial(code, device);
       if (action === "redeem") return this.redeem(code, device);
       if (action === "unbind") return this.unbind(code, device);
       return json({ error: "bad_request" }, 400);

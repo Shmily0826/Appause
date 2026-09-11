@@ -1,7 +1,8 @@
 # Appause Pro Activation Worker (Plan B)
 
 A tiny [Cloudflare Worker](https://workers.cloudflare.com/) that issues
-**device-bound** Appause Pro license tokens (JWT, RS256). It is the server half
+**device-bound** Appause Pro license tokens (JWT, RS256), including the
+one-time self-service seven-day trial. It is the server half
 of the "open source but paid" model: the app is MIT-licensed and forkable, but
 Pro can only be unlocked with a token signed by **this** worker's private key —
 which never leaves Cloudflare.
@@ -18,10 +19,10 @@ which never leaves Cloudflare.
 A fork of the open-source app gets the *verifier*, not the *printer*. Device
 binding (`device` claim = SHA-256 of the device's Android Keystore public key)
 stops a user from copying one token across phones. The app verifies the token
-locally and does not perform automatic license checks. The activation record
-may include an expiry; the app accepts a token without `exp` and checks the
-claim locally when present. If a token expires, the user must explicitly redeem
-the code again or import another valid token.
+locally and does not perform automatic license checks. The self-service trial
+starts only from `POST /api/trial/start`, is one-time per device, and lasts
+exactly seven days from the first successful start. Lifetime access remains
+activation-code-based through `POST /api/redeem`.
 
 ### Why a Durable Object owns activation state
 
@@ -43,7 +44,7 @@ independently.
 ## Files
 
 - `src/jwt.mjs` — shared RS256 signing (imported by both the worker and the test)
-- `src/index.js` — the worker (`/api/redeem`, `/api/unbind`, `/admin/gencode`, `/admin/unbind`)
+- `src/index.js` — the worker (`/api/trial/start`, `/api/redeem`, `/api/unbind`, `/admin/gencode`, `/admin/unbind`)
 - `src/activation-code-do.js` — per-code SQLite Durable Object and state transitions
 - `scripts/genkeys.mjs` — generates the production key pair
 - `test/sign-verify.mjs` — proves tokens verify against the Android client's verifier
@@ -52,6 +53,7 @@ independently.
 
 | Method & path | Body | Purpose |
 |---------------|------|---------|
+| `POST /api/trial/start` | `{ "device": "<fingerprint>" }` | Start or idempotently resume the device's one-time seven-day trial. No code is required. |
 | `POST /api/redeem` | `{ "code": "...", "device": "<fingerprint>" }` | Activate Pro on a device. Returns `{ "token": "..." }`. |
 | `POST /api/unbind` | `{ "code": "...", "device": "<fingerprint>" }` | Self-service unbind (before selling a device). |
 | `POST /admin/gencode` | header `x-admin-key`; body `{ "maxDevices"? , "expiresInDays"? , "notes"? }` | Mint a new activation code. |
@@ -60,6 +62,13 @@ independently.
 `/api/redeem` enforces `maxDevices` per code (default 3). A device already bound
 to a code is re-issued a token idempotently (handles reinstalls on the same
 device).
+
+`/api/trial/start` hashes the device fingerprint into a deterministic Durable
+Object identity, so the raw fingerprint is not used as the object name. The
+Durable Object stores the fixed seven-day window and returns the same expiry on
+repeated starts. Expired trial state returns `trial_expired`; malformed state
+fails closed. The repository contains this endpoint, but deployment is a
+separate operation and is not implied by this document.
 
 ## Deploy
 

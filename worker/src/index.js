@@ -2,8 +2,8 @@
  * Appause Pro activation Worker (Plan B server side).
  *
  * Responsibilities:
- *  - Issue device-bound Pro license JWTs when a valid activation code + device
- *    fingerprint are presented (/api/redeem).
+ *  - Issue device-bound Pro license JWTs for lifetime activation codes
+ *    (/api/redeem) and one-time self-service trials (/api/trial/start).
  *  - Enforce a per-code device limit (buyout model: e.g. 3 devices).
  *  - Allow unbinding a device (/api/unbind, self-service) or via admin
  *    (/admin/unbind) for lost devices.
@@ -78,6 +78,34 @@ async function handleRedeem(req, env) {
   }
 
   return dispatchCodeOperation(env, code, { action: "redeem", code, device });
+}
+
+async function trialObjectName(device) {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(device)
+  );
+  const hash = Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, "0")
+  ).join("");
+  return `TRIAL-${hash}`;
+}
+
+/**
+ * Start the one-time, device-bound seven-day trial.
+ * Body: { device }
+ */
+async function handleTrialStart(req, env) {
+  const body = await req.json().catch(() => ({}));
+  const device = (body.device || "").toString().trim();
+  if (!device || device.length > 256) return json({ error: "bad_request" }, 400);
+
+  try {
+    const code = await trialObjectName(device);
+    return dispatchCodeOperation(env, code, { action: "start_trial", code, device });
+  } catch {
+    return json({ error: "trial_unavailable" }, 500);
+  }
 }
 
 /**
@@ -263,6 +291,9 @@ export default {
       case "/api/redeem":
         if (!isPost) return json({ error: "method_not_allowed" }, 405);
         return handleRedeem(request, env);
+      case "/api/trial/start":
+        if (!isPost) return json({ error: "method_not_allowed" }, 405);
+        return handleTrialStart(request, env);
       case "/api/unbind":
         if (!isPost) return json({ error: "method_not_allowed" }, 405);
         return handleUnbind(request, env);

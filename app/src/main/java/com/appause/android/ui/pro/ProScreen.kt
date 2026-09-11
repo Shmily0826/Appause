@@ -142,6 +142,14 @@ fun ProScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    if (entitlement.status == ProAccessStatus.FREE) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(stringResource(R.string.pro_trial_start_desc), style = MaterialTheme.typography.bodySmall)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = viewModel::startTrial, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.pro_trial_start))
+                        }
+                    }
                     if (entitlement.status == ProAccessStatus.TRIAL_EXPIRED) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -371,6 +379,18 @@ fun ProScreen(
                     }
                 )
             }
+            is RedeemResult.TrialStarted -> {
+                AlertDialog(
+                    onDismissRequest = viewModel::clearRedeemResult,
+                    title = { Text(stringResource(R.string.pro_trial_started_title)) },
+                    text = { Text(stringResource(R.string.pro_trial_started_desc)) },
+                    confirmButton = {
+                        TextButton(onClick = viewModel::clearRedeemResult) {
+                            Text(stringResource(R.string.pro_dialog_ok))
+                        }
+                    }
+                )
+            }
             is RedeemResult.Error -> {
                 val (msgRes, hintRes) = when (r.reason) {
                     "invalid_code" -> R.string.pro_redeem_invalid to null
@@ -378,6 +398,8 @@ fun ProScreen(
                     "worker_not_configured" -> R.string.pro_redeem_not_configured to null
                     "token_verify_failed" -> R.string.pro_redeem_verify_failed to null
                     "network_error" -> R.string.pro_redeem_network to R.string.pro_redeem_network_hint
+                    "already_active" -> R.string.pro_already_active to null
+                    "trial_expired" -> R.string.pro_trial_already_used to null
                     else -> R.string.pro_redeem_failed to null
                 }
                 AlertDialog(
@@ -481,7 +503,7 @@ private fun entitlementStatusText(entitlement: ProEntitlement): String = when (e
     ProAccessStatus.TRIAL_ACTIVE -> stringResource(R.string.pro_status_trial_active)
     ProAccessStatus.TRIAL_EXPIRED -> stringResource(R.string.pro_status_trial_expired)
     ProAccessStatus.EXPIRING_ACTIVE -> stringResource(R.string.pro_status_pro)
-    ProAccessStatus.LIFETIME -> stringResource(R.string.pro_status_pro)
+    ProAccessStatus.LIFETIME -> stringResource(R.string.pro_status_lifetime)
     ProAccessStatus.DEBUG -> stringResource(R.string.pro_status_debug)
 }
 

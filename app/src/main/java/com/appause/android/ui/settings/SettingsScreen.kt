@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
+import com.appause.android.data.pro.ProAccessStatus
+import com.appause.android.data.pro.ProEntitlement
 
 /**
  * Settings hub — a category list that drills into sub-screens.
@@ -64,7 +66,7 @@ fun SettingsScreen(
     onNavigateToDiagnostics: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel()
 ) {
-    val isPro by viewModel.isPro.collectAsStateWithLifecycle()
+    val entitlement by viewModel.entitlement.collectAsStateWithLifecycle()
 
     // Order matters: the most-used items first.
     val categories = listOf(
@@ -124,7 +126,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item { Spacer(modifier = Modifier.height(8.dp)) }
-            item { ProBanner(isPro = isPro, onNavigateToPro = onNavigateToPro) }
+            item { ProBanner(entitlement = entitlement, onNavigateToPro = onNavigateToPro) }
             items(categories, key = { it.title }) { category ->
                 CategoryItem(category = category)
             }
@@ -202,9 +204,10 @@ private fun CategoryItem(category: SettingsCategory) {
  */
 @Composable
 private fun ProBanner(
-    isPro: Boolean,
+    entitlement: ProEntitlement,
     onNavigateToPro: () -> Unit
 ) {
+    val isPro = entitlement.isPro
     if (isPro) {
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -225,7 +228,13 @@ private fun ProBanner(
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = stringResource(R.string.pro_active_label),
+                    text = stringResource(
+                        when (entitlement.status) {
+                            ProAccessStatus.TRIAL_ACTIVE -> R.string.pro_settings_trial_active
+                            ProAccessStatus.LIFETIME -> R.string.pro_settings_lifetime
+                            else -> R.string.pro_active_label
+                        }
+                    ),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -254,13 +263,25 @@ private fun ProBanner(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(R.string.pro_banner_title),
+                        text = stringResource(
+                            if (entitlement.status == ProAccessStatus.TRIAL_EXPIRED) {
+                                R.string.pro_settings_trial_expired
+                            } else {
+                                R.string.pro_banner_title
+                            }
+                        ),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = stringResource(R.string.pro_banner_desc),
+                        text = stringResource(
+                            if (entitlement.status == ProAccessStatus.TRIAL_EXPIRED) {
+                                R.string.pro_trial_already_used
+                            } else {
+                                R.string.pro_settings_trial_available
+                            }
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )

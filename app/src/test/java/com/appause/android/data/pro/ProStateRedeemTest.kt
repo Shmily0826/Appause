@@ -50,12 +50,20 @@ class ProStateRedeemTest {
     private class FakeTransport(
         private val response: RedeemHttpResponse? = null,
         private val throwable: Throwable? = null,
-        val capturedBodies: MutableList<String> = mutableListOf()
-    ) : RedeemTransport {
+        val capturedBodies: MutableList<String> = mutableListOf(),
+        val capturedTrialBodies: MutableList<String> = mutableListOf(),
+        private val trialResponse: RedeemHttpResponse? = null
+    ) : RedeemTransport, TrialTransport {
         override fun postRedeem(requestBody: String): RedeemHttpResponse {
             capturedBodies.add(requestBody)
             throwable?.let { throw it }
             return response ?: RedeemHttpResponse(200, "{}")
+        }
+
+        override fun postTrialStart(requestBody: String): RedeemHttpResponse {
+            capturedTrialBodies.add(requestBody)
+            throwable?.let { throw it }
+            return trialResponse ?: response ?: RedeemHttpResponse(200, "{}")
         }
     }
 
@@ -63,7 +71,10 @@ class ProStateRedeemTest {
         transport: RedeemTransport,
         fingerprint: String = "device-fp-123",
         verifier: ((String, String) -> LicenseClaims?)? = null,
-        persister: (suspend (String) -> Unit)? = null
+        persister: (suspend (String) -> Unit)? = null,
+        entitlement: suspend () -> ProEntitlement = {
+            ProEntitlement(ProAccessStatus.FREE)
+        }
     ): ProState = ProState(
         settings = settings,
         context = context,
@@ -71,7 +82,8 @@ class ProStateRedeemTest {
         fingerprintProvider = { fingerprint },
         tokenVerifier = verifier,
         tokenPersister = persister,
-        dispatcher = Dispatchers.Unconfined
+        dispatcher = Dispatchers.Unconfined,
+        currentEntitlement = entitlement
     )
 
     /** A verifier that accepts any token and reports the given device. */
@@ -125,6 +137,52 @@ class ProStateRedeemTest {
         ).redeemCode("ABC-123")
         assertEquals(RedeemResult.Success, result)
         assertEquals("GOOD-TOKEN", written)
+    }
+
+    @Test
+    fun `active trial rejects redeem without request or token overwrite`() = runTest {
+        val transport = FakeTransport(RedeemHttpResponse(200, ""))
+        var stored = "TRIAL-TOKEN"
+        val result = proState(
+            transport,
+            persister = { stored = it },
+            entitlement = { ProEntitlement(ProAccessStatus.TRIAL_ACTIVE, 1_000_000L) }
+        ).redeemCode("NEW-TRIAL")
+
+        assertEquals(RedeemResult.Error("already_active"), result)
+        assertTrue(transport.capturedBodies.isEmpty())
+        assertEquals("TRIAL-TOKEN", stored)
+    }
+
+    @Test
+    fun `lifetime entitlement rejects redeem without request or token overwrite`() = runTest {
+        val transport = FakeTransport(RedeemHttpResponse(200, ""))
+        var stored = "LIFETIME-TOKEN"
+        val result = proState(
+            transport,
+            persister = { stored = it },
+            entitlement = { ProEntitlement(ProAccessStatus.LIFETIME) }
+        ).redeemCode("ANOTHER-CODE")
+
+        assertEquals(RedeemResult.Error("already_active"), result)
+        assertTrue(transport.capturedBodies.isEmpty())
+        assertEquals("LIFETIME-TOKEN", stored)
+    }
+
+    @Test
+    fun `expired trial remains eligible to redeem`() = runTest {
+        val transport = FakeTransport(RedeemHttpResponse(200, "{\"token\":\"NEW-TOKEN\"}"))
+        var stored: String? = null
+        val result = proState(
+            transport,
+            verifier = acceptingVerifier(),
+            persister = { stored = it },
+            entitlement = { ProEntitlement(ProAccessStatus.TRIAL_EXPIRED, 1_000_000L) }
+        ).redeemCode("RENEW-CODE")
+
+        assertEquals(RedeemResult.Success, result)
+        assertTrue(transport.capturedBodies.isNotEmpty())
+        assertEquals("NEW-TOKEN", stored)
     }
 
     @Test
@@ -202,6 +260,64 @@ class ProStateRedeemTest {
             .redeemCode("ABC-123")
         val sent = transport.capturedBodies.last()
         assertTrue(sent.contains("\"device\":\"device-fp-xyz\""))
+    }
+
+    @Test
+    fun `one-tap trial requires a seven-day trial token before persisting`() = runTest {
+        val now = System.currentTimeMillis()
+        val transport = FakeTransport(
+            trialResponse = RedeemHttpResponse(
+                200,
+                """{"token":"TRIAL-TOKEN","activatedAt":$now,"expiresAt":${now + 7 * 24 * 60 * 60 * 1000L}}"""
+            )
+        )
+        var stored: String? = null
+        val result = proState(
+            transport,
+            verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", (now / 1000L) + 7 * 24 * 60 * 60, now / 1000L, "trial", true) },
+            persister = { stored = it }
+        ).startTrial()
+
+        assertEquals(RedeemResult.TrialStarted, result)
+        assertEquals("TRIAL-TOKEN", stored)
+        assertTrue(transport.capturedTrialBodies.single().contains("\"device\":\"device-fp-123\""))
+    }
+
+    @Test
+    fun `one-tap trial rejects a valid non-trial token and does not persist`() = runTest {
+        val now = System.currentTimeMillis()
+        val transport = FakeTransport(
+            trialResponse = RedeemHttpResponse(
+                200,
+                """{"token":"LIFETIME-TOKEN","activatedAt":$now,"expiresAt":${now + 7 * 24 * 60 * 60 * 1000L}}"""
+            )
+        )
+        var stored: String? = null
+        val result = proState(
+            transport,
+            verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", null, now / 1000L, "lifetime", false) },
+            persister = { stored = it }
+        ).startTrial()
+
+        assertEquals(RedeemResult.Error("token_verify_failed"), result)
+        assertEquals(null, stored)
+    }
+
+    @Test
+    fun `active or expired entitlement cannot start another trial`() = runTest {
+        val transport = FakeTransport(response = RedeemHttpResponse(200, "{}"))
+        val active = proState(
+            transport,
+            entitlement = { ProEntitlement(ProAccessStatus.TRIAL_ACTIVE, Long.MAX_VALUE) }
+        ).startTrial()
+        val expired = proState(
+            transport,
+            entitlement = { ProEntitlement(ProAccessStatus.TRIAL_EXPIRED, 1L) }
+        ).startTrial()
+
+        assertEquals(RedeemResult.Error("already_active"), active)
+        assertEquals(RedeemResult.Error("trial_expired"), expired)
+        assertTrue(transport.capturedTrialBodies.isEmpty())
     }
 
     @Test

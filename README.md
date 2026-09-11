@@ -35,12 +35,12 @@ See [INSTALL.md](INSTALL.md) before the first sideload.
   settings that matter on Xiaomi/HyperOS and similar devices.
 - **Feedback** — Settings → Feedback lets you review a structured diagnostic
   snapshot before choosing to send a bug report or suggestion.
-- **Appause Pro** — optional activation unlocks unlimited groups, re-remind, a
-  custom pause prompt, and custom open reasons. A user-initiated redeem obtains
-  a signed, device-bound token that Appause verifies locally. Tokens may carry
-  an expiry configured for their activation code; Appause does not auto-refresh
-  or perform background license checks. If a stored token expires, the user may
-  need to redeem the code again or import another valid token.
+- **Appause Pro** — optional Pro unlocks unlimited groups, re-remind, a custom
+  pause prompt, and custom open reasons. The current source supports one
+  explicit, one-time 7-day trial started in the app; it starts only after the
+  first successful trial activation. After expiry, lifetime access remains
+  activation-code-based. Appause verifies signed, device-bound tokens locally,
+  does not auto-refresh them, and performs no background license checks.
 
 ## Screenshots
 
@@ -68,7 +68,7 @@ complete policy.
 | **Usage Access — optional, recommended** | Confirms the genuinely foreground app locally and reduces false triggers from notifications. |
 | **Display over other apps — optional fallback** | The normal pause screen uses an accessibility overlay. Grant this only if a device does not display the pause screen, so Appause can try its compatibility fallback. |
 | **Notifications — optional for the ongoing status notification** | Android 13+ may ask for notification permission; it does not provide foreground-app detection. |
-| **Internet — only for chosen actions** | Used when you explicitly redeem Pro; importing a token does not need a network; feedback is also sent only when chosen. It is not used for automatic license checks or ordinary status checks. |
+| **Internet — only for chosen actions** | Used when you explicitly start the Pro trial or activate lifetime access; importing a token does not need a network; feedback is also sent only when chosen. It is not used for automatic license checks or ordinary status checks. |
 
 Appause is an accessibility / habit-forming aid, not a monitoring, security, or
 medical tool. You can always disable the service or change your groups.

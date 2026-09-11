@@ -1,5 +1,5 @@
 /**
- * redeem-failure-modes.mjs — exercises the Appause Pro Worker's /api/redeem
+ * redeem-failure-modes.mjs — exercises the Appause Pro Worker's activation and trial
  * and /admin/* failure paths WITHOUT a live Cloudflare deployment.
  *
  * Strategy: import the REAL worker entry (../src/index.js) and drive its
@@ -144,6 +144,21 @@ async function redeem(env, code, device) {
   );
 }
 
+async function startTrial(env, device) {
+  return worker.fetch(
+    new Request(`${BASE}/api/trial/start`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ device }),
+    }),
+    env
+  );
+}
+
+function tokenPayload(token) {
+  return JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8"));
+}
+
 function codeRecord(overrides = {}) {
   return {
     status: "unused",
@@ -206,6 +221,62 @@ async function main() {
   }
 
   // --- 4) re-redeem same device is idempotent (still 200, no duplicate) ---
+  {
+    const kv = makeMemoryKv();
+    const env = makeEnv(kv);
+    const start = 1_900_100_000_000;
+    const realNow = Date.now;
+    Date.now = () => start;
+    try {
+      const first = await startTrial(env, "selfServeDevice");
+      const firstBody = await first.json();
+      const firstPayload = tokenPayload(firstBody.token);
+      check("one-tap trial first start -> 200", first.status === 200);
+      check("one-tap trial first start -> marked trial", firstPayload.trial === true);
+      check("one-tap trial first start -> seven-day expiry", firstBody.expiresAt === start + 7 * 86400000);
+      check("one-tap trial first start -> new entitlement", firstBody.newlyStarted === true);
+
+      Date.now = () => start + 2 * 86400000;
+      const second = await startTrial(env, "selfServeDevice");
+      const secondBody = await second.json();
+      check("one-tap trial repeat -> 200", second.status === 200);
+      check("one-tap trial repeat -> idempotent", secondBody.alreadyStarted === true);
+      check("one-tap trial repeat -> expiry unchanged", secondBody.expiresAt === firstBody.expiresAt);
+
+      Date.now = () => start + 8 * 86400000;
+      const expired = await startTrial(env, "selfServeDevice");
+      const expiredBody = await expired.json();
+      check("one-tap trial after expiry -> 410", expired.status === 410 && expiredBody.error === "trial_expired");
+    } finally {
+      Date.now = realNow;
+    }
+  }
+
+  // --- 4b) concurrent starts share one fixed trial entitlement ------------
+  {
+    const kv = makeMemoryKv();
+    const env = makeEnv(kv);
+    const responses = await Promise.all([
+      startTrial(env, "concurrentDevice"),
+      startTrial(env, "concurrentDevice"),
+    ]);
+    const bodies = await Promise.all(responses.map((response) => response.json()));
+    check("one-tap trial concurrent starts -> both succeed", responses.every((response) => response.status === 200));
+    check("one-tap trial concurrent starts -> same expiry", bodies[0].expiresAt === bodies[1].expiresAt);
+    const trialObjects = [...env.ACTIVATION_CODES._objects.values()];
+    const stored = trialObjects.length === 1 ? trialObjects[0].storage.get("record") : null;
+    check("one-tap trial concurrent starts -> one stored device", stored?.devices?.length === 1 && stored.devices[0] === "concurrentDevice");
+  }
+
+  // --- 4c) malformed and empty trial requests fail closed ------------------
+  {
+    const kv = makeMemoryKv();
+    const env = makeEnv(kv);
+    const empty = await startTrial(env, "");
+    const emptyBody = await empty.json();
+    check("one-tap trial missing device -> 400", empty.status === 400 && emptyBody.error === "bad_request");
+  }
+
   {
     const kv = makeMemoryKv();
     const env = makeEnv(kv);

@@ -5,6 +5,8 @@ import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
+import com.appause.android.data.pro.ProAccessStatus
+import com.appause.android.data.pro.ProEntitlement
 import com.appause.android.service.AccessibilityHealthState
 import com.appause.android.service.AppauseAccessibilityService
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +31,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     /** Whether Appause Pro is unlocked (gates the custom prompt editor). */
     val isPro: StateFlow<Boolean> = (application as AppauseApp).proState.isPro
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val entitlement: StateFlow<ProEntitlement> = (application as AppauseApp).proState.entitlement
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProEntitlement(ProAccessStatus.FREE))
 
     private val systemStatus = (getApplication() as AppauseApp).systemStatus
 

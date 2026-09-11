@@ -73,6 +73,13 @@ class ProViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Start the one-time seven-day trial from the Pro screen. */
+    fun startTrial() {
+        viewModelScope.launch {
+            _redeemResult.value = proState.startTrial()
+        }
+    }
+
     /** Export the license token for offline backup. */
     fun exportLicense() {
         viewModelScope.launch {

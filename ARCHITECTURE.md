@@ -23,6 +23,19 @@
 
 ---
 
+## Pro entitlement flow
+
+The current source has four public entitlement states: FREE, one-time
+TRIAL_ACTIVE, TRIAL_EXPIRED, and LIFETIME. A user explicitly starts the
+device-bound trial from the Pro screen; `POST /api/trial/start` anchors exactly
+seven days at the first successful start and is idempotent for that device.
+Android verifies that the response is an active seven-day trial JWT before
+storing it. After expiry, lifetime access remains activation-code-based through
+`POST /api/redeem`. The Worker deployment status is separate from this source
+description.
+
+---
+
 ## 2. Minimum SDK: API 26 (Android 8.0 Oreo)
 
 ### Why API 26?

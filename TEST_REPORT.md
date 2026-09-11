@@ -6,6 +6,23 @@
 - **Environment**: JVM unit tests under Robolectric (`testDebugUnitTest`), Temurin 17 JDK, minSdk 26. No emulator/device required.
 - **Git state at report time**: work uncommitted on `main`. (Commits are left to the user per project convention.)
 
+## Current working-tree validation — one-tap Pro trial (2026-09-11)
+
+This is local source evidence only; no Worker deployment or production-data
+change was made.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Worker trial endpoint | **PASS** | `node test/redeem-failure-modes.mjs`: 51 passed, 0 failed, including first start, fixed seven-day expiry, repeat/concurrent idempotency, expiry, and invalid input. |
+| Android trial contract | **PASS** | `ProStateRedeemTest`: 21 tests passed, including active/expired guards and rejection of a valid non-trial JWT returned by the trial endpoint. |
+| Debug build | **PASS** | `assembleDebug` completed successfully with JDK 17. |
+| Emulator / physical device | **NOT TESTED** | Not required for this source-level/network-seam validation; no device was touched. |
+
+The current source distinguishes FREE, one-time TRIAL_ACTIVE, TRIAL_EXPIRED,
+and LIFETIME. Lifetime remains activation-code-based. The public Worker and
+the tagged v0.5.40 APK have not been changed or deployed by this working-tree
+task.
+
 ---
 
 ## 1. Testability refactors (behavior-preserving)

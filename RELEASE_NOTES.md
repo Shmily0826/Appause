@@ -3,6 +3,10 @@
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
 > 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.40/Appause-v0.5.40.apk`
 
+> Source note: the one-tap seven-day trial is a current-source change. It is
+> not claimed to be present in the already-tagged v0.5.40 APK until a later
+> release is built and published.
+
 ---
 
 ## 🇨🇳 中文

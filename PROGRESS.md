@@ -17,6 +17,19 @@
 - The public Worker documentation describes the committed generic activation
   and optional-expiry path. Local uncommitted Pro/Worker entitlement changes
   are not public, released, deployed, or production evidence.
+
+## 2026-09-11 — one-tap Pro trial (working-tree validation)
+- The current working tree adds a public app-safe `POST /api/trial/start` path:
+  FREE users explicitly start one one-time, device-bound trial; the server
+  anchors exactly seven days at the first successful start and returns the same
+  expiry on repeats. Expired or malformed trial state fails closed.
+- Android's Pro screen now offers `Start 7-day trial`; the code entry remains
+  lifetime activation only. A trial response must be a currently active,
+  seven-day `trial=true` JWT before Android stores it, and active entitlements
+  cannot be downgraded by the trial action.
+- Worker tests and the focused Android Pro tests passed locally; `assembleDebug`
+  passed. The Worker was not deployed, so this working-tree endpoint is not
+  production evidence and is not yet part of the public release APK.
 ## 2026-08-28 — Async signing serialization verification (TASK APPAUSE-20260828-2028)
 - Confirmed the previous whole-request test queue was stronger than real DO
   handler semantics and could hide an async signing interleaving.
