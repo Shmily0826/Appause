@@ -1,6 +1,6 @@
 # Appause — Technical Architecture
 
-> Current source baseline: `main` @ `ed64329` (2026-09-11), versionName `0.5.40`,
+> Current source baseline: `main` @ `0256cf5` (2026-09-12), versionName `0.5.40`,
 > versionCode `92`. The public `v0.5.40` tag predates this current-source
 > baseline.
 
@@ -25,7 +25,7 @@
 
 ## Pro entitlement flow
 
-The current source has four public entitlement states: FREE, one-time
+The current source presents four user-facing entitlement categories: FREE, one-time
 TRIAL_ACTIVE, TRIAL_EXPIRED, and LIFETIME. A user explicitly starts the
 device-bound trial from the Pro screen; `POST /api/trial/start` anchors exactly
 seven days at the first successful start and is idempotent for that device.
