@@ -1,183 +1,1254 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Appause — 打开目标 App 前先停顿几秒</title>
-  <meta name="description" content="Appause：打开目标应用前弹出暂停屏，纯本地运行，无需注册。" />
-<style>
-  :root {
-    --bg: #0f1115;
-    --surface: #1a1d24;
-    --surface-2: #232733;
-    --text: #e7e9ee;
-    --muted: #9aa3b2;
-    --accent: #5b8cff;
-    --accent-2: #7c5bff;
-    --border: #2c313c;
-    --radius: 16px;
-  }
-  @media (prefers-color-scheme: light) {
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f7f8fb" />
+  <title>Appause | Open with a reason, not a reflex</title>
+  <meta name="description" content="Appause interrupts distracting app openings at the moment of action, so continuing becomes an intentional choice. Local-first Android app, no account required." />
+  <style>
+    /* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt · enrichment: real product captures · nav: N1b · footer: Ft2 · tone: calm-utilitarian */
     :root {
-      --bg: #f6f7fb;
-      --surface: #ffffff;
-      --surface-2: #eef1f7;
-      --text: #1a1d24;
-      --muted: #5b6472;
-      --border: #e2e6ee;
+      --color-paper: oklch(98% 0.006 255);
+      --color-paper-soft: oklch(95.5% 0.015 255);
+      --color-paper-blue: oklch(93% 0.035 260);
+      --color-surface: oklch(100% 0 0);
+      --color-ink: oklch(24% 0.045 258);
+      --color-ink-soft: oklch(47% 0.035 258);
+      --color-rule: oklch(88% 0.018 258);
+      --color-accent: oklch(57% 0.205 263);
+      --color-accent-deep: oklch(44% 0.18 263);
+      --color-accent-ink: oklch(99% 0.004 255);
+      --color-focus: oklch(66% 0.19 263);
+      --color-success: oklch(57% 0.13 158);
+      --color-shadow: oklch(25% 0.04 258 / 0.13);
+
+      --font-display: "Aptos Display", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+      --font-body: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+      --font-utility: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
+
+      --space-3xs: 0.25rem;
+      --space-2xs: 0.5rem;
+      --space-xs: 0.75rem;
+      --space-sm: 1rem;
+      --space-md: 1.5rem;
+      --space-lg: 2rem;
+      --space-xl: 3rem;
+      --space-2xl: 4.5rem;
+      --space-3xl: 7rem;
+
+      --text-xs: 0.75rem;
+      --text-sm: 0.875rem;
+      --text-body: 1rem;
+      --text-lead: clamp(1.05rem, 1.5vw, 1.22rem);
+      --text-h3: clamp(1.35rem, 2vw, 1.7rem);
+      --text-h2: clamp(2.25rem, 4.8vw, 4.35rem);
+      --text-display: clamp(3.15rem, 7.1vw, 6.65rem);
+
+      --radius-sm: 0.65rem;
+      --radius-md: 1.1rem;
+      --radius-lg: 1.75rem;
+      --radius-pill: 999px;
+      --rule-thin: 1px;
+      --content: 74rem;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --dur-short: 180ms;
     }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", Roboto, Helvetica, Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    line-height: 1.6;
-  }
-  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px; }
-  header.hero {
-    text-align: center;
-    padding: 72px 20px 48px;
-    background: radial-gradient(1200px 400px at 50% -10%, rgba(91,140,255,.18), transparent 60%);
-  }
-  .logo-img {
-    width: 84px; height: 84px; border-radius: 22px;
-    margin-bottom: 18px;
-    box-shadow: 0 12px 40px rgba(91,140,255,.35);
-    display: block;
-  }
-  h1 { font-size: 2.1rem; margin: 0 0 8px; letter-spacing: -.5px; }
-  .tagline { font-size: 1.15rem; color: var(--muted); margin: 0 auto 28px; max-width: 560px; }
-  .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
-  .btn {
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 13px 22px; border-radius: 12px; font-weight: 600;
-    text-decoration: none; transition: transform .12s ease, opacity .12s ease;
-  }
-  .btn:hover { transform: translateY(-2px); opacity: .95; }
-  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
-  .btn-secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
-  section { padding: 40px 0; border-top: 1px solid var(--border); }
-  h2 { font-size: 1.5rem; margin: 0 0 6px; }
-  .sub { color: var(--muted); margin: 0 0 28px; }
-  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-  .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 20px;
-  }
-  .card .ico { font-size: 26px; }
-  .card h3 { margin: 10px 0 6px; font-size: 1.05rem; }
-  .card p { margin: 0; color: var(--muted); font-size: .95rem; }
-  .shots { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
-  .shot {
-    width: 100%; border-radius: 14px; border: 1px solid var(--border);
-    background: var(--surface-2); display: block;
-  }
-  .shot-card { margin: 0; }
-  .shot-cap { margin-top: 8px; text-align: center; color: var(--muted); font-size: .85rem; }
-  .privacy {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 22px; display: flex; gap: 16px; align-items: flex-start;
-  }
-  .privacy .badge { font-size: 30px; line-height: 1; }
-  .links { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; }
-  .links a { color: var(--accent); text-decoration: none; }
-  .links a:hover { text-decoration: underline; }
-  footer { text-align: center; color: var(--muted); padding: 40px 20px 60px; font-size: .9rem; }
-  .note { font-size: .8rem; color: var(--muted); margin-top: 10px; }
-  code { background: var(--surface-2); padding: 2px 6px; border-radius: 6px; font-size: .85em; }
-</style>
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      overflow-x: clip;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      background: var(--color-paper);
+      color: var(--color-ink);
+      font-family: var(--font-body);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    img {
+      max-width: 100%;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    a:focus-visible {
+      outline: 3px solid var(--color-focus);
+      outline-offset: 4px;
+      border-radius: var(--radius-sm);
+    }
+
+    .skip-link {
+      position: fixed;
+      z-index: 20;
+      top: var(--space-sm);
+      left: var(--space-sm);
+      padding: var(--space-xs) var(--space-sm);
+      border-radius: var(--radius-sm);
+      background: var(--color-ink);
+      color: var(--color-surface);
+      text-decoration: none;
+      transform: translateY(-180%);
+      transition: transform var(--dur-short) var(--ease-out);
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    .container {
+      width: min(var(--content), calc(100% - 3rem));
+      margin-inline: auto;
+    }
+
+    .site-header {
+      position: relative;
+      z-index: 5;
+      border-bottom: var(--rule-thin) solid var(--color-rule);
+      background: var(--color-paper);
+    }
+
+    .nav {
+      min-height: 4.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-xs);
+      flex: 0 0 auto;
+      color: var(--color-ink);
+      font-family: var(--font-display);
+      font-size: 1.08rem;
+      font-weight: 720;
+      letter-spacing: -0.03em;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .brand img {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.55rem;
+      box-shadow: 0 0.35rem 1rem var(--color-shadow);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: clamp(1rem, 2.5vw, 2rem);
+      min-width: 0;
+      color: var(--color-ink-soft);
+      font-size: var(--text-sm);
+      font-weight: 640;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .nav-links a:hover {
+      color: var(--color-ink);
+    }
+
+    .nav-download {
+      min-height: 2.55rem;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.55rem 1rem;
+      border-radius: var(--radius-pill);
+      background: var(--color-ink);
+      color: var(--color-surface) !important;
+    }
+
+    .hero {
+      padding: clamp(4.5rem, 9vw, 7.5rem) 0 clamp(5rem, 9vw, 7rem);
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.04fr) minmax(25rem, 0.96fr);
+      align-items: center;
+      gap: clamp(3rem, 8vw, 7.5rem);
+    }
+
+    .hero-copy,
+    .section-copy,
+    .chapter-copy {
+      min-width: 0;
+    }
+
+    .hero-label {
+      margin: 0 0 var(--space-lg);
+      color: var(--color-accent-deep);
+      font-family: var(--font-utility);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: var(--font-display);
+      font-style: normal;
+      letter-spacing: -0.055em;
+      overflow-wrap: anywhere;
+    }
+
+    h1 {
+      max-width: 11ch;
+      margin-bottom: var(--space-lg);
+      font-size: var(--text-display);
+      font-weight: 720;
+      line-height: 0.91;
+    }
+
+    h2 {
+      max-width: 13ch;
+      margin-bottom: var(--space-md);
+      font-size: var(--text-h2);
+      font-weight: 700;
+      line-height: 0.98;
+    }
+
+    h3 {
+      margin-bottom: var(--space-xs);
+      font-size: var(--text-h3);
+      font-weight: 690;
+      line-height: 1.05;
+    }
+
+    .hero-intro {
+      max-width: 35rem;
+      margin-bottom: var(--space-lg);
+      color: var(--color-ink-soft);
+      font-size: var(--text-lead);
+      line-height: 1.55;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: var(--space-xs);
+    }
+
+    .button {
+      min-height: 3.1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2xs);
+      padding: 0.75rem 1.15rem;
+      border: var(--rule-thin) solid transparent;
+      border-radius: var(--radius-pill);
+      font-size: var(--text-sm);
+      font-weight: 720;
+      line-height: 1;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+    }
+
+    .button:active {
+      transform: translateY(0);
+    }
+
+    .button-primary {
+      background: var(--color-accent);
+      color: var(--color-accent-ink);
+      box-shadow: 0 0.65rem 1.7rem var(--color-shadow);
+    }
+
+    .button-primary:hover {
+      background: var(--color-accent-deep);
+    }
+
+    .button-secondary {
+      border-color: var(--color-rule);
+      background: var(--color-surface);
+      color: var(--color-ink);
+    }
+
+    .release-line {
+      margin: var(--space-sm) 0 0;
+      color: var(--color-ink-soft);
+      font-family: var(--font-utility);
+      font-size: var(--text-xs);
+    }
+
+    .moment-board {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(9rem, 0.72fr) minmax(0, 1fr);
+      align-items: center;
+      gap: clamp(1.25rem, 3vw, 2.5rem);
+      padding: clamp(1.25rem, 3vw, 2.25rem);
+      border: var(--rule-thin) solid var(--color-rule);
+      border-radius: var(--radius-lg);
+      background: var(--color-paper-soft);
+    }
+
+    .decision-track {
+      position: relative;
+      margin: 0;
+    }
+
+    .decision-track::before {
+      position: absolute;
+      top: 0.65rem;
+      bottom: 0.65rem;
+      left: 0.28rem;
+      width: var(--rule-thin);
+      content: "";
+      background: var(--color-rule);
+    }
+
+    .decision-track div {
+      position: relative;
+      padding-left: 1.4rem;
+    }
+
+    .decision-track div + div {
+      margin-top: clamp(2rem, 5vw, 3.75rem);
+    }
+
+    .decision-track div::before {
+      position: absolute;
+      top: 0.45rem;
+      left: 0;
+      width: 0.62rem;
+      height: 0.62rem;
+      border: 2px solid var(--color-paper-soft);
+      border-radius: var(--radius-pill);
+      content: "";
+      background: var(--color-accent);
+      box-shadow: 0 0 0 1px var(--color-accent);
+    }
+
+    .decision-track dt {
+      color: var(--color-ink-soft);
+      font-family: var(--font-utility);
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .decision-track dd {
+      margin: 0.2rem 0 0;
+      font-size: var(--text-sm);
+      font-weight: 680;
+      line-height: 1.35;
+    }
+
+    .product-shot {
+      margin: 0;
+      min-width: 0;
+    }
+
+    .product-shot img {
+      display: block;
+      width: 100%;
+      height: auto;
+      aspect-ratio: auto;
+      object-fit: contain;
+      border: var(--rule-thin) solid var(--color-rule);
+      border-radius: var(--radius-md);
+      background: var(--color-surface);
+      box-shadow: 0 1rem 2.5rem var(--color-shadow);
+      transform: none !important;
+    }
+
+    .hero-shot {
+      width: min(100%, 14rem);
+      justify-self: end;
+    }
+
+    .hero-shot figcaption {
+      margin-top: var(--space-xs);
+      color: var(--color-ink-soft);
+      font-size: var(--text-xs);
+      line-height: 1.4;
+    }
+
+    .hero-shot figcaption strong {
+      display: block;
+      color: var(--color-ink);
+      font-weight: 700;
+    }
+
+    .section {
+      padding: clamp(5.25rem, 10vw, var(--space-3xl)) 0;
+    }
+
+    .section-heading {
+      max-width: 54rem;
+      margin-bottom: clamp(3rem, 7vw, 5.5rem);
+    }
+
+    .section-heading h2 {
+      margin-bottom: var(--space-md);
+    }
+
+    .section-intro {
+      max-width: 34rem;
+      margin-bottom: 0;
+      color: var(--color-ink-soft);
+      font-size: var(--text-lead);
+    }
+
+    .mechanism-section {
+      border-top: var(--rule-thin) solid var(--color-rule);
+      border-bottom: var(--rule-thin) solid var(--color-rule);
+      background: var(--color-surface);
+    }
+
+    .choice-rail {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: var(--rule-thin) solid var(--color-rule);
+      border-bottom: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .choice-rail li {
+      position: relative;
+      min-width: 0;
+      padding: var(--space-lg) clamp(1.25rem, 3vw, 2.5rem) var(--space-xl) 0;
+    }
+
+    .choice-rail li + li {
+      padding-left: clamp(1.25rem, 3vw, 2.5rem);
+      border-left: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .choice-rail li:last-child {
+      padding-right: 0;
+    }
+
+    .choice-index {
+      display: block;
+      margin-bottom: var(--space-xl);
+      color: var(--color-accent-deep);
+      font-family: var(--font-utility);
+      font-size: var(--text-xs);
+      font-weight: 700;
+    }
+
+    .choice-rail p {
+      max-width: 18rem;
+      margin-bottom: 0;
+      color: var(--color-ink-soft);
+      font-size: var(--text-sm);
+    }
+
+    .product-section {
+      background: var(--color-paper);
+    }
+
+    .tour-chapter {
+      display: grid;
+      grid-template-columns: minmax(17rem, 0.68fr) minmax(0, 1.32fr);
+      align-items: center;
+      gap: clamp(2.5rem, 8vw, 7rem);
+      padding: clamp(3rem, 7vw, 5.5rem) 0;
+      border-top: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .tour-chapter:last-child {
+      padding-bottom: 0;
+    }
+
+    .product-section .section-heading h2 {
+      max-width: 16ch;
+      font-size: clamp(2.15rem, 4vw, 3.65rem);
+    }
+
+    .chapter-number {
+      display: inline-block;
+      margin-bottom: var(--space-lg);
+      color: var(--color-accent-deep);
+      font-family: var(--font-utility);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+    }
+
+    .chapter-copy p {
+      max-width: 31rem;
+      margin-bottom: 0;
+      color: var(--color-ink-soft);
+    }
+
+    .paired-shots {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: start;
+      gap: clamp(0.75rem, 3vw, 1.75rem);
+      padding: clamp(1rem, 3vw, 2rem);
+      border-radius: var(--radius-lg);
+      background: var(--color-paper-blue);
+    }
+
+    .paired-shots .product-shot:nth-child(2) {
+      margin-top: clamp(2rem, 5vw, 4rem);
+    }
+
+    .screen-caption {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: var(--space-xs);
+      margin-top: var(--space-sm);
+      align-items: baseline;
+      font-size: var(--text-xs);
+      line-height: 1.4;
+    }
+
+    .screen-caption strong {
+      color: var(--color-ink);
+      font-weight: 720;
+    }
+
+    .screen-caption span {
+      color: var(--color-ink-soft);
+    }
+
+    .tour-chapter-review {
+      grid-template-columns: minmax(0, 1.15fr) minmax(17rem, 0.85fr);
+    }
+
+    .tour-chapter-review .chapter-copy {
+      order: 2;
+    }
+
+    .review-visual {
+      display: grid;
+      grid-template-columns: minmax(0, 15.5rem) minmax(10rem, 1fr);
+      align-items: center;
+      gap: clamp(1.25rem, 4vw, 3rem);
+      padding: clamp(1rem, 3vw, 2rem);
+      border: var(--rule-thin) solid var(--color-rule);
+      border-radius: var(--radius-lg);
+      background: var(--color-surface);
+    }
+
+    .review-notes {
+      margin: 0;
+    }
+
+    .review-notes div {
+      padding: var(--space-md) 0;
+      border-bottom: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .review-notes div:last-child {
+      border-bottom: 0;
+    }
+
+    .review-notes dt {
+      color: var(--color-ink);
+      font-size: var(--text-sm);
+      font-weight: 720;
+    }
+
+    .review-notes dd {
+      margin: var(--space-3xs) 0 0;
+      color: var(--color-ink-soft);
+      font-size: var(--text-xs);
+      line-height: 1.45;
+    }
+
+    .tour-cta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+      margin-top: var(--space-xl);
+      padding: var(--space-md) 0;
+      border-top: var(--rule-thin) solid var(--color-rule);
+      border-bottom: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .tour-cta p {
+      margin-bottom: 0;
+      font-weight: 690;
+    }
+
+    .tour-cta .button {
+      flex: 0 0 auto;
+    }
+
+    .trust-section {
+      border-top: var(--rule-thin) solid var(--color-rule);
+      background: var(--color-surface);
+    }
+
+    .permission-ledger {
+      border-top: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .permission-row {
+      display: grid;
+      grid-template-columns: minmax(8rem, 0.35fr) minmax(13rem, 0.65fr) minmax(18rem, 1fr);
+      gap: clamp(1.25rem, 4vw, 3rem);
+      padding: var(--space-lg) 0;
+      border-bottom: var(--rule-thin) solid var(--color-rule);
+      align-items: start;
+    }
+
+    .permission-status {
+      color: var(--color-accent-deep);
+      font-family: var(--font-utility);
+      font-size: var(--text-xs);
+      font-weight: 700;
+    }
+
+    .permission-row h3 {
+      margin-bottom: 0;
+      font-size: 1.12rem;
+      letter-spacing: -0.025em;
+      line-height: 1.35;
+    }
+
+    .permission-row p {
+      margin-bottom: 0;
+      color: var(--color-ink-soft);
+      font-size: var(--text-sm);
+    }
+
+    .trust-note {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: var(--space-lg);
+      margin-top: var(--space-xl);
+      padding: var(--space-lg);
+      border-radius: var(--radius-md);
+      background: var(--color-paper-soft);
+    }
+
+    .trust-note p {
+      max-width: 48rem;
+      margin-bottom: 0;
+      color: var(--color-ink-soft);
+      font-size: var(--text-sm);
+    }
+
+    .text-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: var(--space-md);
+      font-size: var(--text-sm);
+      font-weight: 700;
+    }
+
+    .text-links a:hover {
+      color: var(--color-accent-deep);
+    }
+
+    .download-section {
+      padding-bottom: clamp(4rem, 9vw, 6.5rem);
+    }
+
+    .download-panel {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
+      gap: clamp(2rem, 7vw, 6rem);
+      padding: clamp(2rem, 6vw, 4.5rem);
+      border-radius: var(--radius-lg);
+      background: var(--color-ink);
+      color: var(--color-surface);
+    }
+
+    .download-panel h2 {
+      max-width: 10ch;
+      margin-bottom: var(--space-md);
+    }
+
+    .download-panel p {
+      max-width: 38rem;
+      color: var(--color-paper-blue);
+    }
+
+    .download-panel .button-primary {
+      margin-top: var(--space-xs);
+      background: var(--color-surface);
+      color: var(--color-accent-deep);
+      box-shadow: none;
+    }
+
+    .download-panel .button-primary:hover {
+      background: var(--color-paper-blue);
+    }
+
+    .install-facts {
+      margin: 0;
+    }
+
+    .install-facts div {
+      display: grid;
+      grid-template-columns: 6.5rem minmax(0, 1fr);
+      gap: var(--space-sm);
+      padding: var(--space-sm) 0;
+      border-bottom: var(--rule-thin) solid var(--color-ink-soft);
+    }
+
+    .install-facts div:last-child {
+      border-bottom: 0;
+    }
+
+    .install-facts dt {
+      color: var(--color-paper-blue);
+      font-family: var(--font-utility);
+      font-size: var(--text-xs);
+    }
+
+    .install-facts dd {
+      margin: 0;
+      color: var(--color-surface);
+      font-size: var(--text-sm);
+      overflow-wrap: anywhere;
+    }
+
+    .download-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-lg);
+      margin-top: var(--space-lg);
+      color: var(--color-ink-soft);
+      font-size: var(--text-sm);
+    }
+
+    .download-links a:hover {
+      color: var(--color-ink);
+    }
+
+    .site-footer {
+      padding: var(--space-lg) 0 var(--space-xl);
+      border-top: var(--rule-thin) solid var(--color-rule);
+      color: var(--color-ink-soft);
+      font-size: var(--text-sm);
+    }
+
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-lg);
+    }
+
+    .footer-row p {
+      margin-bottom: 0;
+    }
+
+    .footer-row a {
+      color: var(--color-ink);
+      text-decoration: none;
+    }
+
+    .footer-row a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 900px) {
+      .hero-grid {
+        grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.8fr);
+        gap: var(--space-xl);
+      }
+
+      .moment-board {
+        grid-template-columns: minmax(8rem, 0.7fr) minmax(0, 1fr);
+      }
+
+      .tour-chapter,
+      .tour-chapter-review {
+        grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 1.3fr);
+        gap: var(--space-xl);
+      }
+
+      .review-visual {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .review-visual .product-shot {
+        width: min(100%, 13rem);
+        justify-self: center;
+      }
+
+      .permission-row {
+        grid-template-columns: 7rem minmax(10rem, 0.75fr) minmax(14rem, 1fr);
+      }
+    }
+
+    @media (max-width: 820px) {
+      .container {
+        width: min(var(--content), calc(100% - 2rem));
+      }
+
+      .nav {
+        min-height: 4.25rem;
+        gap: var(--space-sm);
+      }
+
+      .nav-links {
+        gap: var(--space-xs);
+      }
+
+      .nav-links a:not(.nav-download) {
+        display: none;
+      }
+
+      .nav-download {
+        min-height: 2.35rem;
+        padding-inline: 0.85rem;
+        font-size: var(--text-xs);
+      }
+
+      .hero {
+        padding-top: var(--space-2xl);
+      }
+
+      .hero-grid,
+      .tour-chapter,
+      .tour-chapter-review,
+      .permission-row,
+      .trust-note,
+      .download-panel {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      h1 {
+        max-width: 10ch;
+        font-size: clamp(3.1rem, 15vw, 4.8rem);
+      }
+
+      .actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
+      }
+
+      .moment-board {
+        width: min(100%, 30rem);
+        justify-self: center;
+      }
+
+      .section-heading {
+        margin-bottom: var(--space-xl);
+      }
+
+      .choice-rail {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .choice-rail li,
+      .choice-rail li + li,
+      .choice-rail li:last-child {
+        padding: var(--space-lg) 0;
+        border-left: 0;
+        border-bottom: var(--rule-thin) solid var(--color-rule);
+      }
+
+      .choice-rail li:last-child {
+        border-bottom: 0;
+      }
+
+      .choice-index {
+        margin-bottom: var(--space-sm);
+      }
+
+      .tour-chapter-review .chapter-copy {
+        order: 0;
+      }
+
+      .tour-chapter .chapter-copy {
+        max-width: 35rem;
+      }
+
+      .review-visual {
+        grid-template-columns: minmax(0, 0.75fr) minmax(9rem, 1fr);
+      }
+
+      .review-visual .product-shot {
+        width: auto;
+      }
+
+      .permission-row {
+        gap: var(--space-xs);
+      }
+
+      .permission-row h3 {
+        margin-bottom: var(--space-2xs);
+      }
+
+      .text-links {
+        justify-content: flex-start;
+      }
+
+      .tour-cta {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .footer-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--space-xs);
+      }
+    }
+
+    @media (max-width: 440px) {
+      .moment-board {
+        grid-template-columns: minmax(6.7rem, 0.65fr) minmax(0, 1fr);
+        gap: var(--space-sm);
+        padding: var(--space-sm);
+      }
+
+      .decision-track div {
+        padding-left: 1.1rem;
+      }
+
+      .decision-track div + div {
+        margin-top: var(--space-lg);
+      }
+
+      .decision-track dd {
+        font-size: var(--text-xs);
+      }
+
+      .hero-shot figcaption {
+        display: none;
+      }
+
+      .paired-shots {
+        padding: var(--space-xs);
+        gap: var(--space-xs);
+      }
+
+      .paired-shots .product-shot:nth-child(2) {
+        margin-top: var(--space-lg);
+      }
+
+      .screen-caption {
+        display: block;
+        margin-top: var(--space-xs);
+      }
+
+      .screen-caption span {
+        display: block;
+        margin-top: 0.1rem;
+      }
+
+      .review-visual {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .review-visual .product-shot {
+        width: min(100%, 12rem);
+        justify-self: center;
+      }
+
+      .review-notes div {
+        padding-block: var(--space-sm);
+      }
+
+      .download-panel {
+        padding: var(--space-lg);
+      }
+
+      .install-facts div {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-3xs);
+      }
+
+      .download-links {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--space-sm);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+
+      .button:hover {
+        transform: none;
+      }
+    }
+  </style>
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
 
-<header class="hero">
-  <img class="logo-img" src="images/appause-icon.png" alt="Appause" />
-  <h1>Appause</h1>
-  <p class="tagline">打开目标应用前，先停顿几秒。</p>
-  <div class="cta">
-    <a class="btn btn-primary" href="https://github.com/Shmily0826/Appause/releases/latest">⬇️ 从 GitHub 下载</a>
-    <a class="btn btn-secondary" href="https://appause-pro-worker.rng2018520.workers.dev/api/download?to=https://shmily0826.lanzoup.com/b01eunt29a&t=kP9xQ2mZ8vL3nR7tB4wY6hC1sD5fG0jU">☁️ 蓝奏云镜像</a>
-  </div>
-  <p class="note">安卓 8.0+ · 纯本地 · 无需注册</p>
-</header>
+  <header class="site-header">
+    <nav class="nav container" aria-label="Main navigation">
+      <a class="brand" href="index.html" aria-label="Appause home">
+        <img src="images/appause-icon.png" alt="" width="32" height="32" />
+        <span>Appause</span>
+      </a>
+      <div class="nav-links">
+        <a href="#how-it-works">How it works</a>
+        <a href="#product">Inside the app</a>
+        <a href="#privacy">Privacy</a>
+        <a class="nav-download" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.40/Appause-v0.5.40.apk">Download v0.5.40</a>
+      </div>
+    </nav>
+  </header>
 
-<div class="wrap">
+  <main id="main-content">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-grid container">
+        <div class="hero-copy">
+          <p class="hero-label">An intentional opening starts here</p>
+          <h1 id="hero-title">Put intention between tap and scroll.</h1>
+          <p class="hero-intro">Appause interrupts distracting app openings at the moment of action, so continuing becomes a decision you make on purpose.</p>
+          <div class="actions" aria-label="Primary actions">
+            <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.40/Appause-v0.5.40.apk">Download Appause <span aria-hidden="true">↗</span></a>
+            <a class="button button-secondary" href="#how-it-works">See how it works</a>
+          </div>
+          <p class="release-line">v0.5.40 &#183; Android 8.0+ &#183; no account required</p>
+        </div>
 
-  <section>
-    <h2>功能</h2>
-    <p class="sub">选中你想控制的应用，设置暂停时长，剩下的交给 Appause。</p>
-    <div class="features">
-      <div class="card"><div class="ico">📦</div><h3>应用分组</h3><p>按场景把 App 分组，每组独立设置暂停时长。</p></div>
-      <div class="card"><div class="ico">⏸️</div><h3>暂停屏</h3><p>打开目标 App 时弹出倒计时，时间到后选择继续或返回。</p></div>
-      <div class="card"><div class="ico">🔔</div><h3>再次提醒</h3><p>冷却结束后可再次弹出提醒，支持只提醒一次或重复提醒。</p></div>
-      <div class="card"><div class="ico">📊</div><h3>使用统计</h3><p>查看每个 App 的使用时长和打开次数。</p></div>
-      <div class="card"><div class="ico">🌙</div><h3>深色模式</h3><p>跟随系统自动切换，也可手动设置。</p></div>
-      <div class="card"><div class="ico">🚀</div><h3>推荐替代</h3><p>暂停屏上显示你设定的替代 App，一键跳转。</p></div>
-      <div class="card"><div class="ico">🛠</div><h3>问题反馈</h3><p>提交 Bug 或建议时自动附带本机诊断状态，更快定位"为什么没拦住"。</p></div>
-    </div>
-  </section>
-
-  <section>
-    <h2>截图</h2>
-    <p class="sub">同一套界面，中文与英文两套文案。统计页已填充示例数据，非空。</p>
-
-    <h3 style="margin:26px 0 10px;font-size:1.2rem;color:var(--accent)">中文界面</h3>
-    <div class="shots">
-      <figure class="shot-card"><img class="shot" src="images/screenshots/zh/home.png" alt="首页" loading="lazy" /><figcaption class="shot-cap">首页</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/zh/group.png" alt="分组编辑" loading="lazy" /><figcaption class="shot-cap">分组（编辑）</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/zh/group_apps.png" alt="选择应用" loading="lazy" /><figcaption class="shot-cap">选择应用</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/zh/statistics.png" alt="使用统计" loading="lazy" /><figcaption class="shot-cap">使用统计</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/zh/settings.png" alt="设置" loading="lazy" /><figcaption class="shot-cap">设置</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/zh/settings_appearance.png" alt="外观" loading="lazy" /><figcaption class="shot-cap">外观（语言 / 主题）</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/zh/settings_pause.png" alt="暂停行为" loading="lazy" /><figcaption class="shot-cap">暂停行为</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/zh/feedback.png" alt="反馈" loading="lazy" /><figcaption class="shot-cap">反馈</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/zh/pause.png" alt="暂停屏" loading="lazy" /><figcaption class="shot-cap">暂停屏</figcaption></figure>
-    </div>
-
-    <h3 style="margin:34px 0 10px;font-size:1.2rem;color:var(--accent)">English UI</h3>
-    <div class="shots">
-      <figure class="shot-card"><img class="shot" src="images/screenshots/en/home.png" alt="Home" loading="lazy" /><figcaption class="shot-cap">Home</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/en/group.png" alt="Group editor" loading="lazy" /><figcaption class="shot-cap">Group (editor)</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/en/group_apps.png" alt="Choose apps" loading="lazy" /><figcaption class="shot-cap">Choose apps</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/en/statistics.png" alt="Statistics" loading="lazy" /><figcaption class="shot-cap">Statistics</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/en/settings.png" alt="Settings" loading="lazy" /><figcaption class="shot-cap">Settings</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/en/settings_appearance.png" alt="Appearance" loading="lazy" /><figcaption class="shot-cap">Appearance (language / theme)</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/en/settings_pause.png" alt="Pause behavior" loading="lazy" /><figcaption class="shot-cap">Pause behavior</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/en/feedback.png" alt="Feedback" loading="lazy" /><figcaption class="shot-cap">Feedback</figcaption></figure>
-      <figure class="shot-card"><img class="shot" src="images/screenshots/en/pause.png" alt="Pause overlay" loading="lazy" /><figcaption class="shot-cap">Pause overlay</figcaption></figure>
-    </div>
-  </section>
-
-  <section>
-    <h2>隐私</h2>
-    <div class="privacy">
-      <div class="badge">🔒</div>
-      <div>
-        <p style="margin:0"><strong>完全本地运行</strong>，无网络请求、无账号、无上传、无第三方 SDK。仅通过无障碍服务读取前台应用包名（不读屏幕内容、不监听输入）。详见 <a href="https://github.com/Shmily0826/Appause/blob/main/PRIVACY.md">隐私政策</a>。</p>
-        <div class="links">
-          <a href="https://github.com/Shmily0826/Appause/blob/main/INSTALL.md">📲 安装指引</a>
-          <a href="https://github.com/Shmily0826/Appause/blob/main/PRIVACY.md">📄 隐私政策</a>
-          <a href="https://github.com/Shmily0826/Appause">⭐ GitHub 仓库</a>
+        <div class="moment-board" aria-label="From automatic tap to intentional choice">
+          <dl class="decision-track">
+            <div>
+              <dt>Tap</dt>
+              <dd>The familiar reflex</dd>
+            </div>
+            <div>
+              <dt>Appause</dt>
+              <dd>The opening becomes visible</dd>
+            </div>
+            <div>
+              <dt>Your choice</dt>
+              <dd>Continue or return home</dd>
+            </div>
+          </dl>
+          <figure class="product-shot hero-shot">
+            <img src="images/screenshots/en/pause.png" alt="Appause pause screen asking why YouTube is being opened before offering Continue or Cancel" width="1080" height="2400" />
+            <figcaption><strong>Pause screen</strong>The decision is still yours</figcaption>
+          </figure>
         </div>
       </div>
+    </section>
+
+    <section class="section mechanism-section" id="how-it-works" aria-labelledby="mechanism-title">
+      <div class="container">
+        <div class="section-heading">
+          <h2 id="mechanism-title">The useful moment is before the feed.</h2>
+          <p class="section-intro">Appause does not decide which apps are bad or lock you out. It makes an automatic opening noticeable while the choice still matters.</p>
+        </div>
+
+        <ol class="choice-rail">
+          <li>
+            <span class="choice-index">01</span>
+            <h3>Notice the opening</h3>
+            <p>The pause appears as a selected app comes to the foreground, before the habit takes over.</p>
+          </li>
+          <li>
+            <span class="choice-index">02</span>
+            <h3>Name the reason</h3>
+            <p>A simple prompt turns “just checking” into a reason you can see and reconsider.</p>
+          </li>
+          <li>
+            <span class="choice-index">03</span>
+            <h3>Make the call</h3>
+            <p>Continue when it is intentional, or cancel and return home. The decision stays yours.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section product-section" id="product" aria-labelledby="product-title">
+      <div class="container">
+        <div class="section-heading">
+          <h2 id="product-title">A guided tour of your boundary.</h2>
+          <p class="section-intro">The interface follows one continuous story: choose where you want friction, then learn what happened when it appeared.</p>
+        </div>
+
+        <article class="tour-chapter">
+          <div class="chapter-copy">
+            <span class="chapter-number">01 / Set the boundary</span>
+            <h3>Start with the context, not a blacklist.</h3>
+            <p>Group apps that pull you into the same habit, choose a cooldown, and keep a better next action visible when you need it.</p>
+          </div>
+
+          <div class="paired-shots" aria-label="Home and group setup screens">
+            <figure class="product-shot">
+              <img src="images/screenshots/en/home.png" alt="Appause home screen showing service status, today's activity, and an Entertainment group" width="1080" height="2400" loading="lazy" decoding="async" />
+              <figcaption class="screen-caption"><strong>Home</strong><span>See the boundary at a glance</span></figcaption>
+            </figure>
+            <figure class="product-shot">
+              <img src="images/screenshots/en/group.png" alt="Appause group editor showing a cooldown and selected apps" width="1080" height="2400" loading="lazy" decoding="async" />
+              <figcaption class="screen-caption"><strong>Groups</strong><span>Fit the friction to your context</span></figcaption>
+            </figure>
+          </div>
+        </article>
+
+        <article class="tour-chapter tour-chapter-review">
+          <div class="chapter-copy">
+            <span class="chapter-number">02 / Learn from the result</span>
+            <h3>See choices, not surveillance.</h3>
+            <p>Statistics stay on your device and show completed or avoided openings, helping you notice patterns without creating an account.</p>
+          </div>
+
+          <div class="review-visual" aria-label="Statistics screen with an explanation of what it shows">
+            <figure class="product-shot">
+              <img src="images/screenshots/en/statistics.png" alt="Appause statistics screen showing completed and avoided openings" width="1080" height="2400" loading="lazy" decoding="async" />
+            </figure>
+            <dl class="review-notes">
+              <div>
+                <dt>Completed</dt>
+                <dd>You continued after making the opening explicit.</dd>
+              </div>
+              <div>
+                <dt>Avoided</dt>
+                <dd>You chose not to enter the selected app.</dd>
+              </div>
+              <div>
+                <dt>Local history</dt>
+                <dd>Your activity remains available on your device.</dd>
+              </div>
+            </dl>
+          </div>
+        </article>
+
+        <aside class="tour-cta" aria-label="Download Appause after the product tour">
+          <p>Set one boundary and see how the next opening feels.</p>
+          <a class="button button-secondary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.40/Appause-v0.5.40.apk">Download v0.5.40 <span aria-hidden="true">↗</span></a>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section trust-section" id="privacy" aria-labelledby="trust-title">
+      <div class="container">
+        <div class="section-heading">
+          <h2 id="trust-title">Powerful enough to interrupt. Limited enough to trust.</h2>
+          <p class="section-intro">Appause explains each permission by the job it performs. Core detection uses app identity, not the content on your screen.</p>
+        </div>
+
+        <div class="permission-ledger">
+          <article class="permission-row">
+            <span class="permission-status">Required</span>
+            <h3>Accessibility service</h3>
+            <p>Detects which app comes to the foreground and shows the Appause intervention. <code>canRetrieveWindowContent=false</code>, so Appause does not retrieve screen content or read your input.</p>
+          </article>
+          <article class="permission-row">
+            <span class="permission-status">Recommended</span>
+            <h3>Usage Access</h3>
+            <p>An optional compatibility and confirmation layer that also supports usage statistics. The core pause flow uses Accessibility.</p>
+          </article>
+          <article class="permission-row">
+            <span class="permission-status">Device fallback</span>
+            <h3>Display over other apps</h3>
+            <p>The preferred accessibility overlay path does not need this separate permission. Some device-specific fallback paths may require it.</p>
+          </article>
+        </div>
+
+        <div class="trust-note">
+          <p><strong>Local-first by design.</strong> Normal use stays on your phone. There is no account or background analytics; network access is limited to actions you initiate, such as downloads or opening support links.</p>
+          <div class="text-links">
+            <a href="privacy-policy.html">Privacy policy</a>
+            <a href="https://github.com/Shmily0826/Appause/blob/main/INSTALL.md">Install guide</a>
+            <a href="https://github.com/Shmily0826/Appause">Source code</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section download-section" id="download" aria-labelledby="download-title">
+      <div class="container">
+        <div class="download-panel">
+          <div>
+            <h2 id="download-title">Make the next opening a choice.</h2>
+            <p>Download the public Appause APK from GitHub Releases, review the source, and follow the installation guide if Android asks about installing an app from your browser.</p>
+            <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.40/Appause-v0.5.40.apk">Download v0.5.40 APK <span aria-hidden="true">↗</span></a>
+          </div>
+
+          <dl class="install-facts">
+            <div>
+              <dt>File</dt>
+              <dd>Appause-v0.5.40.apk</dd>
+            </div>
+            <div>
+              <dt>Requires</dt>
+              <dd>Android 8.0 or later</dd>
+            </div>
+            <div>
+              <dt>Account</dt>
+              <dd>Not required</dd>
+            </div>
+            <div>
+              <dt>License</dt>
+              <dd>MIT licensed source</dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="download-links" aria-label="Other download and support links">
+          <a href="https://github.com/Shmily0826/Appause/releases/latest">View latest release</a>
+          <a href="https://appause-pro-worker.rng2018520.workers.dev/api/download?to=https://shmily0826.lanzoup.com/b01eunt29a&amp;t=kP9xQ2mZ8vL3nR7tB4wY6hC1sD5fG0jU">Mirror download</a>
+          <a href="https://github.com/Shmily0826/Appause/issues">Report an issue</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-row container">
+      <p>Appause gives the opening moment back to you.</p>
+      <p><a href="privacy-policy.html">Privacy</a> &#183; <a href="https://github.com/Shmily0826/Appause">GitHub</a> &#183; MIT License</p>
     </div>
-  </section>
-
-  <section>
-    <h2>下载</h2>
-    <p class="sub">无需注册，下载即用。安装时如遇系统安全提示，按 <a href="https://github.com/Shmily0826/Appause/blob/main/INSTALL.md">安装指引</a> 放行即可。</p>
-    <div class="cta" style="justify-content:flex-start">
-      <a class="btn btn-primary" href="https://github.com/Shmily0826/Appause/releases/latest">⬇️ 下载最新版</a>
-    </div>
-  </section>
-
-</div>
-
-<footer>
-  Appause · 本地优先的专注工具 · MIT License<br>
-  问题反馈：<a href="https://github.com/Shmily0826/Appause/issues" style="color:var(--accent)">GitHub Issues</a>
-</footer>
-
+  </footer>
 </body>
 </html>
