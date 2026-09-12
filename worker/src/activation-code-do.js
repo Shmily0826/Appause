@@ -54,11 +54,11 @@ export class ActivationCodeDurableObject {
     const privateKey = await importPrivateKeyPem(this.env.APPAUSE_PRIVATE_KEY);
     const nowSec = Math.floor(Date.now() / 1000);
     const payload = { tier: "pro", iat: nowSec, jti: code, device };
-    if (record.kind === "trial") {
-      payload.trial = true;
-      payload.exp = Math.floor(record.expiresAt / 1000);
-    } else if (record.expiresInDays) {
-      payload.exp = nowSec + record.expiresInDays * 86400;
+    if (record.expiresInDays) {
+      if (Number(record.expiresInDays) === 7) payload.trial = true;
+      const expiresAt = record.expiresAt ||
+        ((record.activatedAt || Date.now()) + record.expiresInDays * DAY_MS);
+      payload.exp = Math.floor(expiresAt / 1000);
     }
     return signJwt(payload, privateKey);
   }
@@ -73,25 +73,45 @@ export class ActivationCodeDurableObject {
       return json({ error: "device_limit_reached" }, 403);
     }
 
+    const expiring = Number(record.expiresInDays) > 0;
+    const now = Date.now();
+    if (expiring && record.expiresAt && now >= record.expiresAt) {
+      return json({ error: "trial_expired" }, 410);
+    }
+
+    // New expiring codes anchor their lifetime at the first successful bind.
+    // Legacy records that already have devices but no anchor retain their old
+    // shape; there is no truthful activation timestamp to reconstruct.
+    const activation = expiring && !alreadyBound && !record.activatedAt
+      ? { activatedAt: now, expiresAt: now + record.expiresInDays * DAY_MS }
+      : null;
+    const nextRecord = activation ? { ...record, ...activation } : record;
+
     // Sign before committing a new device, so signing failure cannot consume
     // a slot. The DO serializes competing requests for this code.
     let token;
     try {
-      token = await this.signToken(record, code, device);
+      token = await this.signToken(nextRecord, code, device);
     } catch (e) {
       return json({ error: "signing_failed", detail: String((e && e.message) || e) }, 500);
     }
 
     if (!alreadyBound) {
       devices.push(device);
-      record.devices = devices;
-      record.status = "active";
-      await this.saveRecord(record);
+      nextRecord.devices = devices;
+      nextRecord.status = "active";
+      await this.saveRecord(nextRecord);
     } else if (record.status !== "active") {
       record.status = "active";
       await this.saveRecord(record);
     }
-    return json({ token });
+    return json({
+      token,
+      newlyBound: !alreadyBound,
+      lifetime: !expiring,
+      activatedAt: nextRecord.activatedAt || null,
+      expiresAt: nextRecord.expiresAt || null,
+    });
   }
 
   async startTrial(code, device) {

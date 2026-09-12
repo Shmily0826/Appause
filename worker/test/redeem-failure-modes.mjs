@@ -218,6 +218,41 @@ async function main() {
     const stored = await env.ACTIVATION_CODES.get(code)._storage.get("record");
     check("redeem valid code -> device persisted", stored.devices.includes("devX"));
     check("redeem valid code -> status active", stored.status === "active");
+    check("lifetime code -> token has no expiry", !Object.hasOwn(tokenPayload(body.token), "exp"));
+  }
+
+  // --- 3b) trial anchors at first activation and never renews --------------
+  {
+    const kv = makeMemoryKv();
+    const env = makeEnv(kv);
+    const code = "APPAUSE-TRIAL-TRIAL";
+    const start = 1_900_000_000_000;
+    const realNow = Date.now;
+    Date.now = () => start;
+    try {
+      kv._raw.set(code, JSON.stringify(codeRecord({ expiresInDays: 7 })));
+      const first = await redeem(env, code, "trialDevice");
+      const firstBody = await first.json();
+      const firstPayload = tokenPayload(firstBody.token);
+      const storedAfterFirst = await env.ACTIVATION_CODES.get(code)._storage.get("record");
+      check("trial first redeem -> 200", first.status === 200);
+      check("trial first redeem -> anchored activation", storedAfterFirst.activatedAt === start);
+      check("trial first redeem -> seven-day expiry", storedAfterFirst.expiresAt === start + 7 * 86400000);
+      check("trial token -> marked trial", firstPayload.trial === true);
+
+      Date.now = () => start + 2 * 86400000;
+      const second = await redeem(env, code, "trialDevice");
+      const secondBody = await second.json();
+      check("trial same-device re-redeem -> 200", second.status === 200);
+      check("trial same-device re-redeem -> expiry unchanged", tokenPayload(secondBody.token).exp === firstPayload.exp);
+
+      Date.now = () => start + 8 * 86400000;
+      const expired = await redeem(env, code, "trialDevice");
+      const expiredBody = await expired.json();
+      check("trial post-expiry re-redeem -> 410", expired.status === 410 && expiredBody.error === "trial_expired");
+    } finally {
+      Date.now = realNow;
+    }
   }
 
   // --- 4) re-redeem same device is idempotent (still 200, no duplicate) ---
@@ -277,6 +312,7 @@ async function main() {
     check("one-tap trial missing device -> 400", empty.status === 400 && emptyBody.error === "bad_request");
   }
 
+  // --- 4d) re-redeem same device is idempotent (still 200, no duplicate) ---
   {
     const kv = makeMemoryKv();
     const env = makeEnv(kv);
