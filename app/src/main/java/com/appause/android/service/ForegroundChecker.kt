@@ -5,6 +5,7 @@ import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.os.Process
+import com.appause.android.data.settings.TemporaryPassWakePolicy
 
 /**
  * ForegroundChecker — confirms which app is genuinely on screen right now.
@@ -78,6 +79,43 @@ object ForegroundChecker {
 
         return resolveFromEvents(usageStatsManager, LOOKBACK_MS)
             ?: resolveFromEvents(usageStatsManager, LOOKBACK_WIDE_MS)
+    }
+
+    /**
+     * Foreground resolution over an EXPLICIT lookback window. Scoped to the
+     * Temporary Pass expiry wake, whose target can be stationary far longer
+     * than the default 10-min horizon — other callers keep the short default
+     * windows so their UsageEvents scan cost is unchanged. Replays through the
+     * same pure core (TemporaryPassWakePolicy.resolveForeground) that the wake
+     * policy's unit tests pin, so ordering semantics cannot drift.
+     */
+    fun getForegroundPackage(context: Context, lookbackMs: Long): String? {
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE)
+            as? UsageStatsManager ?: return null
+
+        val now = System.currentTimeMillis()
+        val events = try {
+            usageStatsManager.queryEvents(now - lookbackMs, now)
+        } catch (e: Exception) {
+            return null
+        } ?: return null
+
+        val sampled = ArrayList<TemporaryPassWakePolicy.ForegroundEvent>()
+        val event = UsageEvents.Event()
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            // queryEvents delivers events in chronological order, which is the
+            // only ordering the pure replay needs — no timestamps required.
+            val sampledEvent = when (event.eventType) {
+                EVENT_ACTIVITY_RESUMED ->
+                    TemporaryPassWakePolicy.ForegroundEvent(event.packageName ?: "", resumed = true)
+                EVENT_ACTIVITY_PAUSED ->
+                    TemporaryPassWakePolicy.ForegroundEvent(event.packageName ?: "", resumed = false)
+                else -> null
+            }
+            if (sampledEvent != null) sampled.add(sampledEvent)
+        }
+        return TemporaryPassWakePolicy.resolveForeground(sampled)
     }
 
     /**

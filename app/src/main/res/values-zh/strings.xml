@@ -424,7 +424,7 @@
     <string name="onboarding_language_title">选择语言</string>
     <string name="onboarding_language_desc">选择后，本引导与应用其余部分都会使用此语言。</string>
     <string name="onboarding_welcome_title">打开前，先等几秒</string>
-    <string name="onboarding_welcome_desc">Appause 只识别当前打开的应用名称，不读取屏幕内容、聊天记录或账号信息。把想少刷一点的应用加入分组后，打开它们时会先出现几秒提醒，你可以选择继续或返回。</string>
+    <string name="onboarding_welcome_desc">Appause 只识别当前打开的应用名称，不读取屏幕内容、聊天记录或账号信息。把想少刷一点的应用加入分组后，打开它们时会先出现几秒提醒，你可以选择继续、使用「临时放行」，也可以随时取消、返回或回到桌面安全离开。</string>
     <string name="onboarding_service_title">开启无障碍服务</string>
     <string name="onboarding_service_desc">Appause 用「无障碍服务」识别你打开的是哪个应用，并在应用上显示提醒页。开启后返回 Appause 即可继续。</string>
     <string name="onboarding_service_open">前往系统设置开启</string>
@@ -433,7 +433,7 @@
     <string name="onboarding_service_not_connected">系统设置显示已开启，但 Appause 服务当前未连接。打开设置后返回此处重新检查。</string>
     <string name="onboarding_service_unknown">尚未确认无障碍状态。请从系统设置返回后重新检查。</string>
     <string name="onboarding_preview_title">打开前，你会看到这样的提醒</string>
-    <string name="onboarding_preview_desc">Appause 不会直接阻止你使用应用。打开前先等几秒，你可以选择继续或返回。</string>
+    <string name="onboarding_preview_desc">Appause 不会直接阻止你使用应用。打开前先等几秒，你可以选择继续、使用「临时放行」或取消；也可以通过返回或回到桌面安全离开。</string>
     <string name="onboarding_group_title">创建第一个分组</string>
     <string name="onboarding_group_desc">选择想少刷一点的应用，设置打开前要等多久。</string>
     <string name="onboarding_group_add">创建分组</string>

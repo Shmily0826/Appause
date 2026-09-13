@@ -429,7 +429,7 @@
     <string name="onboarding_language_title">Choose your language</string>
     <string name="onboarding_language_desc">Once selected, the whole app — including this guide — will use that language.</string>
     <string name="onboarding_welcome_title">A moment to choose before you open</string>
-    <string name="onboarding_welcome_desc">Appause only identifies which app is currently open. It does not read your screen, messages, or account information. Add apps you want to use less to a group, and you will see a brief reminder before opening them — then you decide whether to continue.</string>
+    <string name="onboarding_welcome_desc">Appause only identifies which app is currently open. It does not read your screen, messages, or account information. Add apps you want to use less to a group, and you will see a brief reminder before opening them — then you decide whether to continue, use a Temporary Pass, or leave safely with Cancel, Back, or Home.</string>
     <string name="onboarding_service_title">Turn on Accessibility</string>
     <string name="onboarding_service_desc">Appause needs the Accessibility service to detect which app you\'re opening and overlay the pause screen. After enabling it, come back here to continue.</string>
     <string name="onboarding_service_open">Open system settings</string>
@@ -438,7 +438,7 @@
     <string name="onboarding_service_not_connected">Accessibility is enabled, but the Appause service is not currently connected. Open settings and return to check again.</string>
     <string name="onboarding_service_unknown">Accessibility status is not confirmed yet. Return from settings to check again.</string>
     <string name="onboarding_preview_title">This is the reminder you will see</string>
-    <string name="onboarding_preview_desc">Appause does not block an app outright. It gives you a few seconds, then lets you decide whether to continue.</string>
+    <string name="onboarding_preview_desc">Appause does not block an app outright. It gives you a few seconds, then lets you continue, use a Temporary Pass, or cancel. You can also leave safely with Back or Home.</string>
     <string name="onboarding_group_title">Create your first group</string>
     <string name="onboarding_group_desc">Choose apps that distract you and set a waiting time before they open.</string>
     <string name="onboarding_group_add">Create group</string>

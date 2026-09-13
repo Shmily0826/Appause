@@ -49,3 +49,12 @@ internal object ReRemindSchedulePolicy {
         )
     }
 }
+
+/** Re-remind belongs to the explicit foreground session, not the bypass bit. */
+internal object ReRemindLifecyclePolicy {
+    fun shouldContinueAfterPop(
+        sessionActive: Boolean,
+        repeat: Boolean,
+        remindCount: Int
+    ): Boolean = sessionActive && (repeat || remindCount < 1)
+}

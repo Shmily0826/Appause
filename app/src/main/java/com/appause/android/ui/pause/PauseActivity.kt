@@ -21,6 +21,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -64,10 +66,12 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.appause.android.AppauseApp
@@ -120,6 +124,7 @@ class PauseActivity : ComponentActivity() {
     private val reRemindCooldownSeconds: Int get() = intent.getIntExtra("re_remind_cooldown_seconds", 0)
     private val reRemindRepeat: Boolean get() = intent.getBooleanExtra("re_remind_repeat", true)
     private val reRemindEscalate: Boolean get() = intent.getBooleanExtra("re_remind_escalate", false)
+    private val isReRemind: Boolean get() = intent.getBooleanExtra("is_re_remind", false)
 
     /** Tracks whether the user tapped Continue (vs Cancel or back press). */
     private var userProceeded = false
@@ -134,6 +139,7 @@ class PauseActivity : ComponentActivity() {
         val reRemindCooldownSeconds: Int,
         val reRemindRepeat: Boolean,
         val reRemindEscalate: Boolean,
+        val isReRemind: Boolean,
         val generation: Int
     )
 
@@ -145,6 +151,7 @@ class PauseActivity : ComponentActivity() {
         reRemindCooldownSeconds = reRemindCooldownSeconds,
         reRemindRepeat = reRemindRepeat,
         reRemindEscalate = reRemindEscalate,
+        isReRemind = isReRemind,
         generation = pauseSessionGeneration
     )
 
@@ -349,6 +356,7 @@ class PauseActivity : ComponentActivity() {
         }
 
         // Clean up any bypass state
+        AppauseAccessibilityService.instance?.cancelReRemind(session.targetPackage)
         InterceptionManager.clearBypass(session.targetPackage)
 
         // Suppress the stale window event that fires for the target app right
@@ -393,17 +401,21 @@ class PauseActivity : ComponentActivity() {
     ) {
         InterceptionManager.startBypass(session.targetPackage)
         AppauseAccessibilityService.instance?.let { service ->
-            service.completeInitialContinue(session.targetPackage)
-            service.onSessionStart(
-                targetPackage = session.targetPackage,
-                groupId = session.groupId,
-                cooldownSeconds = session.cooldownSeconds,
-                reRemindMinutes = session.reRemindMinutes,
-                reRemindCooldownSeconds = session.reRemindCooldownSeconds,
-                reRemindRepeat = session.reRemindRepeat,
-                reRemindEscalate = session.reRemindEscalate,
-                preserveForegroundSession = preserveForegroundSession
-            )
+            if (session.isReRemind) {
+                service.completeReRemindContinue(session.targetPackage)
+            } else {
+                service.completeInitialContinue(session.targetPackage)
+                service.onSessionStart(
+                    targetPackage = session.targetPackage,
+                    groupId = session.groupId,
+                    cooldownSeconds = session.cooldownSeconds,
+                    reRemindMinutes = session.reRemindMinutes,
+                    reRemindCooldownSeconds = session.reRemindCooldownSeconds,
+                    reRemindRepeat = session.reRemindRepeat,
+                    reRemindEscalate = session.reRemindEscalate,
+                    preserveForegroundSession = preserveForegroundSession
+                )
+            }
         }
     }
 
@@ -424,12 +436,21 @@ class PauseActivity : ComponentActivity() {
                 )
                 if (granted != null) {
                     repository.logLaunch(session.targetPackage, session.groupId, "proceeded")
+                    AppauseAccessibilityService.instance?.scheduleTemporaryPassExpiry(
+                        session.targetPackage,
+                        granted
+                    )
                     withContext(Dispatchers.Main) {
                         if (isFinishing || isDestroyed || !isCurrentPauseSession(session)) {
                             return@withContext
                         }
                         userProceeded = true
-                        startSessionAfterProceed(session, preserveForegroundSession = false)
+                        if (session.isReRemind) {
+                            InterceptionManager.startBypass(session.targetPackage)
+                            AppauseAccessibilityService.instance?.completeReRemindContinue(session.targetPackage)
+                        } else {
+                            startSessionAfterProceed(session, preserveForegroundSession = false)
+                        }
                         // The persisted pass is authoritative for this bounded
                         // session. Clear any bypass left by the cooldown or an
                         // earlier Continue so expiry cannot leave a stale
@@ -631,32 +652,43 @@ internal fun PauseScreenContent(
         }
     }
 
+    var pauseContentHeightPx by remember { mutableStateOf(0) }
+    val overflowScrollState = rememberScrollState()
+
     // The pause screen must work in any orientation. A full-screen overlay
     // follows the device rotation, and in landscape the screen is short — a
     // fixed vertical stack would overflow and clip the Continue/Cancel
-    // buttons. So we make the whole thing scrollable and cap its width so it
-    // never stretches awkwardly on wide screens. TopCenter keeps the top
-    // reachable when content is taller than the screen.
+    // buttons. Keep normal content static; only add overflow scrolling when a
+    // short viewport or large font makes the measured content taller than it.
     if (!showTemporaryPassChooser || !useInlineTemporaryPassChooser) {
-        Box(
+        BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .then(overlayBackModifier),
         contentAlignment = Alignment.TopCenter
     ) {
-        Column(
+        val viewportHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
+        val overflowModifier = if (pauseContentHeightPx > viewportHeightPx) {
+            Modifier.verticalScroll(overflowScrollState)
+        } else {
+            Modifier
+        }
+
+        Box(
             modifier = Modifier
-                .widthIn(max = 560.dp)
-                // The last row of this stack is the Temporary Pass button, so
-                // this bottom padding is the ONLY gap between it and the
-                // navigation bar (the blocker window itself already ends above
-                // the bar). Keep it clearly larger than the top padding so the
-                // button never reads as glued to the system bar.
-                .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .fillMaxSize()
+                .then(overflowModifier),
+            contentAlignment = Alignment.TopCenter
         ) {
+            Column(
+                modifier = Modifier
+                    .widthIn(max = 560.dp)
+                    .wrapContentHeight(unbounded = true)
+                    .onSizeChanged { pauseContentHeightPx = it.height }
+                    .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
             // ── App Icon ──
             if (appIcon != null) {
                 val bitmap = remember(appIcon) {
@@ -799,7 +831,7 @@ internal fun PauseScreenContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(0.dp))
 
             // ── Cancel button — always available ──
             TextButton(onClick = onCancel, enabled = outerActionsEnabled) {
@@ -822,6 +854,7 @@ internal fun PauseScreenContent(
                 }
             }
             }
+        }
         }
     }
 

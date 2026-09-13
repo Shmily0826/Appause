@@ -17,6 +17,7 @@ import android.view.accessibility.AccessibilityEvent
 import androidx.core.app.NotificationCompat
 import com.appause.android.AppauseApp
 import com.appause.android.R
+import com.appause.android.data.settings.TemporaryPassWakePolicy
 import com.appause.android.interception.BurstTracker
 import com.appause.android.interception.InterceptionDecider
 import com.appause.android.interception.InterceptionManager
@@ -556,6 +557,9 @@ class AppauseAccessibilityService : AccessibilityService() {
      *  first re-remind pop is anchored to that tap (not to session start). */
     private val initialContinueSignal = mutableMapOf<String, CompletableDeferred<Unit>>()
 
+    /** One bounded wake per persisted Temporary Pass; no broad polling. */
+    private val temporaryPassExpiryJobs = mutableMapOf<String, Job>()
+
     /**
      * Away cooldown timers (3-min "leave window"), keyed by package.
      *
@@ -685,6 +689,11 @@ class AppauseAccessibilityService : AccessibilityService() {
             // Start the foreground poller (catches opens the window-event stream
             // misses; see pollJob docs). Harmless if usage access isn't granted.
             startForegroundPoller()
+
+            // Re-arm persisted Temporary Pass expiry wakes lost to a previous
+            // destroy or process death (the wake jobs are instance state, the
+            // persisted expiries are not — see restore docs).
+            restoreTemporaryPassExpiryWakes()
 
             // Show a persistent notification to indicate the service is actively monitoring.
             // This also acts as a foreground service notification, which helps prevent
@@ -1729,8 +1738,8 @@ class AppauseAccessibilityService : AccessibilityService() {
                 delay(waitMs)
 
                 // Session was re-armed (left > cooldown window, or cancelled) → stop looping.
-                if (!InterceptionManager.isBypassed(targetPackage)) {
-                    AppLogger.d(TAG, "Re-remind loop ends: $targetPackage no longer bypassed")
+                if (!sessionState.isForegroundActive(targetPackage)) {
+                    AppLogger.d(TAG, "Re-remind loop ends: $targetPackage session ended")
                     break
                 }
 
@@ -1757,7 +1766,12 @@ class AppauseAccessibilityService : AccessibilityService() {
                     showCooldownOverlay(targetPackage, groupId, rePopSeconds, minutes, reRemindCooldownSeconds, isReRemind = true)
                     remindCount++
                     // "Fire once" mode: after the first pop, stop the loop.
-                    if (!repeat && remindCount >= 1) {
+                    if (!ReRemindLifecyclePolicy.shouldContinueAfterPop(
+                            sessionActive = sessionState.isForegroundActive(targetPackage),
+                            repeat = repeat,
+                            remindCount = remindCount
+                        )
+                    ) {
                         AppLogger.d(TAG, "Re-remind fired once (repeat off), stopping loop")
                         break
                     }
@@ -1769,7 +1783,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                     val nextTarget = lastContinueAt + minutes * 60_000L - rePopSeconds * 1000L
                     AppLogger.d(TAG, "Re-remind CONTINUE @ $lastContinueAt for $targetPackage -> next pop target @ $nextTarget")
                     // If the user cancelled (bypass cleared) or left, stop the loop.
-                    if (!InterceptionManager.isBypassed(targetPackage)) {
+                    if (!sessionState.isForegroundActive(targetPackage)) {
                         AppLogger.d(TAG, "Re-remind loop ends: user did not continue")
                         break
                     }
@@ -1800,6 +1814,110 @@ class AppauseAccessibilityService : AccessibilityService() {
         if (endSession) {
             // Session is over → allow a fresh one to start on next entry.
             sessionState.end(packageName)
+            cancelTemporaryPassExpiry(packageName)
+        }
+    }
+
+    /** Arm the single expiry wake for a newly granted Temporary Pass. */
+    internal fun scheduleTemporaryPassExpiry(targetPackage: String, expiresAt: Long) {
+        temporaryPassExpiryJobs.remove(targetPackage)?.cancel()
+        temporaryPassExpiryJobs[targetPackage] = serviceScope.launch {
+            delay(
+                TemporaryPassWakePolicy.delayMs(
+                    expiresAt = expiresAt,
+                    now = System.currentTimeMillis()
+                )
+            )
+            temporaryPassExpiryJobs.remove(targetPackage)
+
+            // Evidence precedence: normal lookup → long-lookback fallback → the
+            // pass's persisted trusted anchor (grant time, recorded on THIS
+            // record — repeated passes never refresh UsageEvents) → cache only
+            // without usage access → UNKNOWN fails safe. Known OTHER always wins.
+            val foregroundEvidence = withContext(Dispatchers.IO) {
+                val repository = (applicationContext as AppauseApp).repository
+                val usageAccessGranted = ForegroundChecker.isUsageAccessGranted(applicationContext)
+                val normalLookup = if (usageAccessGranted) {
+                    ForegroundChecker.getForegroundPackage(applicationContext)
+                } else {
+                    null
+                }
+                val longLookup = if (usageAccessGranted && normalLookup == null) {
+                    ForegroundChecker.getForegroundPackage(
+                        applicationContext,
+                        TemporaryPassWakePolicy.EXPIRY_EVIDENCE_HORIZON_MS
+                    )
+                } else {
+                    null
+                }
+                val trustedAnchorAtGrant = repository.temporaryPassForegroundAnchor(targetPackage)
+                TemporaryPassWakePolicy.classifyExpiryForeground(
+                    usageAccessGranted = usageAccessGranted,
+                    normalLookup = normalLookup,
+                    longLookup = longLookup,
+                    cacheLastForeground = lastForegroundPackage,
+                    trustedAnchorAtGrant = trustedAnchorAtGrant,
+                    expiresAt = expiresAt,
+                    targetPackage = targetPackage
+                ).also { classified ->
+                    AppLogger.d(
+                        TAG,
+                        "TP expiry wake: target=$targetPackage normal=$normalLookup " +
+                            "long=$longLookup anchor=$trustedAnchorAtGrant evidence=$classified"
+                    )
+                }
+            }
+            if (!TemporaryPassWakePolicy.shouldReevaluate(
+                    expiresAt = expiresAt,
+                    now = System.currentTimeMillis(),
+                    foregroundEvidence = foregroundEvidence
+                )
+            ) {
+                return@launch
+            }
+
+            // This is an explicit expiry re-check, not a new package transition.
+            lastEventForeground = null
+            lastForegroundPackage = null
+            handleForegroundChange(targetPackage)
+        }
+    }
+
+    private fun cancelTemporaryPassExpiry(targetPackage: String) {
+        temporaryPassExpiryJobs.remove(targetPackage)?.cancel()
+    }
+
+    /**
+     * Re-arm persisted Temporary Pass expiry wakes after (re)connect.
+     *
+     * The wake jobs live in this instance's [serviceScope], so a service
+     * rebind or process death loses them while the persisted expiries survive
+     * in DataStore. Without this restore a pass whose target stays foreground
+     * would keep running past its expiry until the next package transition.
+     *
+     * Entries are read UNFILTERED (parseAll keeps expired records), and each
+     * one goes through the SAME existing [scheduleTemporaryPassExpiry] wake:
+     *  - unexpired pass → waits the REMAINING time on the original expiry;
+     *  - already-expired pass → delay collapses to 0, so the re-evaluation
+     *    happens immediately on reconnect, gated by the same foreground check
+     *    (TemporaryPassWakePolicy.shouldReevaluate) — a stale pass therefore
+     *    never pops an overlay over the launcher or another app.
+     *
+     * temporaryPassExpiryJobs replaces per package, so repeated reconnects
+     * re-arm the same wake instead of duplicating it. Expired records are not
+     * pruned here: they are inert (isActive == false everywhere) and existing
+     * persistence semantics replace them on that package's next grant.
+     */
+    private fun restoreTemporaryPassExpiryWakes() {
+        val repository = (applicationContext as AppauseApp).repository
+        serviceScope.launch {
+            try {
+                repository.temporaryPasses.first().forEach { (targetPackage, expiresAt) ->
+                    scheduleTemporaryPassExpiry(targetPackage, expiresAt)
+                }
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Temporary pass wake restore failed", e)
+            }
         }
     }
 
@@ -1852,7 +1970,7 @@ class AppauseAccessibilityService : AccessibilityService() {
         cancelLeaveTimer(targetPackage)
         InterceptionManager.startBypass(targetPackage)
         AppLogger.d(TAG, "Session start: $targetPackage")
-        if (reRemindMinutes > 0) {
+        if (reRemindMinutes > 0 && preserveForegroundSession) {
             // Re-remind is a Pro feature. Even if a (legacy) free user has a
             // stored reRemindMinutes > 0, only fire it when Pro is unlocked.
             serviceScope.launch {
@@ -1904,7 +2022,9 @@ class AppauseAccessibilityService : AccessibilityService() {
         val job = serviceScope.launch {
             delay(LEAVE_COOLDOWN_MS)
             // Still bypassed means the user never came back → re-arm.
-            if (InterceptionManager.isBypassed(targetPackage)) {
+            if (InterceptionManager.isBypassed(targetPackage) ||
+                sessionState.isForegroundActive(targetPackage)
+            ) {
                 AppLogger.d(TAG, "Leave cooldown fired for $targetPackage → re-arm")
                 reArm(targetPackage)
             }
@@ -1936,7 +2056,9 @@ class AppauseAccessibilityService : AccessibilityService() {
      * in-app detours (gallery/chooser/player) and real exits behave the same.
      */
     private fun maybeStartLeaveTimerFor(prev: String?, current: String) {
-        if (prev != null && prev != current && InterceptionManager.isBypassed(prev)) {
+        if (prev != null && prev != current &&
+            (InterceptionManager.isBypassed(prev) || sessionState.isForegroundActive(prev))
+        ) {
             startLeaveTimer(prev)
         }
     }
@@ -1972,6 +2094,9 @@ class AppauseAccessibilityService : AccessibilityService() {
         // Cancel all pending re-remind timers
         reRemindJobs.values.forEach { it.cancel() }
         reRemindJobs.clear()
+
+        temporaryPassExpiryJobs.values.forEach { it.cancel() }
+        temporaryPassExpiryJobs.clear()
 
         // Cancel all pending away cooldown timers
         leaveTimers.values.forEach { it.cancel() }

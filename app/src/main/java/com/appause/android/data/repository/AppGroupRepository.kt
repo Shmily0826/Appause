@@ -112,6 +112,17 @@ open class AppGroupRepository(
     /** Global recommended apps (shown on the cooldown screen). */
     val recommendedApps: Flow<Set<String>> = settings.recommendedApps
 
+    /**
+     * All persisted pass expiries, expired entries INCLUDED. Wake restore after
+     * a service reconnect must see already-expired records so a pass cannot
+     * silently outlive its expiry while the service was down.
+     */
+    val temporaryPasses: Flow<Map<String, Long>> = settings.temporaryPasses
+
+    /** Return the trusted foreground anchor recorded with this package's pass, if any. */
+    suspend fun temporaryPassForegroundAnchor(packageName: String): Long? =
+        settings.temporaryPassForegroundAnchor(packageName)
+
     /** Update the global recommended apps list. */
     suspend fun setRecommendedApps(packages: Set<String>) = settings.setRecommendedApps(packages)
 

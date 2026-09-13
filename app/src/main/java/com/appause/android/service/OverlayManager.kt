@@ -357,8 +357,8 @@ class OverlayManager {
                 repository.logLaunch(targetPackage, groupId, "proceeded", reason)
             }
             if (isReRemind) {
-                // Re-bypass so the user stays in the app AND the loop keeps
-                // running (otherwise isBypassed is false and the loop ends).
+                // Re-bypass so the user stays in the app; session liveness is
+                // tracked independently by the service.
                 InterceptionManager.startBypass(targetPackage)
                 service.completeReRemindContinue(targetPackage)
             } else {
@@ -385,6 +385,7 @@ class OverlayManager {
                 )
                 if (granted != null) {
                     repository.logLaunch(targetPackage, groupId, "proceeded")
+                    service.scheduleTemporaryPassExpiry(targetPackage, granted)
                     withContext(Dispatchers.Main) {
                         if (!isOverlayGenerationActive(generation)) return@withContext
                         if (isReRemind) {
@@ -495,8 +496,7 @@ class OverlayManager {
                                 repository.logLaunch(targetPackage, groupId, "cancelled")
                             }
                             // Let the re-remind loop end its wait (next interval won't start).
-                            if (isReRemind) service.completeReRemindContinue(targetPackage)
-                            else service.cancelReRemind(targetPackage) // cancelled before first Continue → stop loop
+                            service.cancelReRemind(targetPackage)
                             InterceptionManager.clearBypass(targetPackage)
                             // Suppress the stale window event that fires for the target
                             // app right before the launcher takes over — otherwise the
@@ -615,6 +615,7 @@ class OverlayManager {
                 putExtra("re_remind_cooldown_seconds", reRemindCooldownSeconds)
                 putExtra("re_remind_repeat", reRemindRepeat)
                 putExtra("re_remind_escalate", reRemindEscalate)
+                putExtra("is_re_remind", isReRemind)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
             try {
@@ -631,7 +632,8 @@ class OverlayManager {
                 reRemindMinutes,
                 reRemindCooldownSeconds,
                 reRemindRepeat,
-                reRemindEscalate
+                reRemindEscalate,
+                isReRemind
             )
         }
     }
@@ -653,7 +655,8 @@ class OverlayManager {
         reRemindMinutes: Int,
         reRemindCooldownSeconds: Int,
         reRemindRepeat: Boolean,
-        reRemindEscalate: Boolean
+        reRemindEscalate: Boolean,
+        isReRemind: Boolean
     ) {
         try {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -665,6 +668,7 @@ class OverlayManager {
                 putExtra("re_remind_cooldown_seconds", reRemindCooldownSeconds)
                 putExtra("re_remind_repeat", reRemindRepeat)
                 putExtra("re_remind_escalate", reRemindEscalate)
+                putExtra("is_re_remind", isReRemind)
             }
             val pi = PendingIntent.getBroadcast(
                 context,

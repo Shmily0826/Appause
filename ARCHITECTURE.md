@@ -1,6 +1,6 @@
 # Appause — Technical Architecture
 
-> Current source baseline: `main` @ `0256cf5` (2026-09-12), versionName `0.5.40`,
+> Current source baseline: `main` @ `469c780` (2026-09-12), versionName `0.5.40`,
 > versionCode `92`. The public `v0.5.40` tag predates this current-source
 > baseline.
 
@@ -239,7 +239,9 @@ Check: is this packageName in any configured group?
 Check: is it currently bypassed?
         │
         ▼
-If interception needed → launch PauseActivity with FLAG_ACTIVITY_NEW_TASK
+If interception needed → show the pause screen: try TYPE_ACCESSIBILITY_OVERLAY (2032) first;
+if that fails, use the bounded fallback allowed by OverlayPresentationPolicy,
+with 2038 where allowed and PauseActivity as the final fallback
 ```
 
 ### 5.4 Config XML
@@ -284,7 +286,7 @@ Key settings:
 
 ### 6.1 The Core Problem
 
-When Appause intercepts an app launch and shows PauseActivity, the system reports that the foreground app has changed to Appause. When the user taps "Continue" and PauseActivity finishes, the foreground returns to the target app — which would trigger ANOTHER interception. Infinite loop.
+The presentation path matters. With an overlay (2032, or the allowed 2038 fallback), the target app remains the foreground Activity while the pause screen is shown. If overlays fail and the PauseActivity fallback is used, Appause temporarily becomes foreground; dismissing that Activity reveals the target again. In either path, bypass/re-intercept protection is checked before allowing or dismissing back to the target.
 
 ### 6.2 Solution: Bypass List + Package Tracking
 
@@ -304,15 +306,15 @@ lastForegroundPackage: String?           // Last seen foreground package
 | Package is null or system UI | Always ignore |
 | Package == lastForegroundPackage | Skip (same app, Activity switch) |
 | Package is in bypassedPackages | Skip (cooldown already completed) |
-| Package is in a configured group | **INTERCEPT** → show PauseActivity |
+| Package is in a configured group | **INTERCEPT** → show the pause screen via 2032 first, then the bounded fallback allowed by OverlayPresentationPolicy |
 | Package is NOT in any group | Ignore |
 
-**PauseActivity actions:**
+**Pause screen actions:**
 
 | User action | What happens |
 |-------------|-------------|
-| Cancel | Finish PauseActivity → send user to Home screen (launcher Intent) |
-| Continue (after countdown) | Add package to bypassedPackages → finish PauseActivity |
+| Cancel | Dismiss the pause screen → send user to Home screen (launcher Intent) |
+| Continue (after countdown) | Add package to bypassedPackages → dismiss the pause screen |
 
 **Bypass cleanup:**
 
@@ -384,8 +386,8 @@ programmatically.
 ## 7. Common Pitfalls and Mitigations
 
 ### 7.1 Infinite Interception Loop
-**Problem**: PauseActivity finishes → target app visible → service detects target app → intercepts again.
-**Solution**: Add target to bypass list before finishing PauseActivity. Service checks bypass list before intercepting.
+**Problem**: After the PauseActivity fallback is dismissed, the target app becomes visible again and the service can detect it, causing ANOTHER interception; dismissing an overlay does not itself imply a foreground transition.
+**Solution**: Apply bypass protection before continuing or dismissing back to the target. For the PauseActivity fallback, add the target to the bypass list before finishing the Activity; the service checks the bypass list before intercepting.
 
 ### 7.2 Same-App Activity Switches
 **Problem**: User opens YouTube → watches video → clicks channel → new Activity fires event → intercepted again.

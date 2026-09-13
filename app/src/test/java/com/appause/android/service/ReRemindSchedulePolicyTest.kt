@@ -1,8 +1,10 @@
 package com.appause.android.service
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ReRemindSchedulePolicyTest {
@@ -55,6 +57,60 @@ class ReRemindSchedulePolicyTest {
             ),
             scheduled
         )
+    }
+
+    @Test
+    fun `repeat keeps later reminders eligible after each Continue while session is alive`() {
+        assertTrue(
+            ReRemindLifecyclePolicy.shouldContinueAfterPop(
+                sessionActive = true,
+                repeat = true,
+                remindCount = 1
+            )
+        )
+        assertTrue(
+            ReRemindLifecyclePolicy.shouldContinueAfterPop(
+                sessionActive = true,
+                repeat = true,
+                remindCount = 2
+            )
+        )
+    }
+
+    @Test
+    fun `repeat off stops after the first re-remind and ended session stops any mode`() {
+        assertFalse(
+            ReRemindLifecyclePolicy.shouldContinueAfterPop(
+                sessionActive = true,
+                repeat = false,
+                remindCount = 1
+            )
+        )
+        assertFalse(
+            ReRemindLifecyclePolicy.shouldContinueAfterPop(
+                sessionActive = false,
+                repeat = true,
+                remindCount = 1
+            )
+        )
+    }
+
+    @Test
+    fun `session liveness survives bypass clearing until explicit session end`() {
+        val state = SessionState()
+        assertTrue(state.begin(targetPackage, preserveForegroundSession = true))
+
+        // Temporary Pass clears the runtime bypass, but does not end this session.
+        assertTrue(
+            ReRemindLifecyclePolicy.shouldContinueAfterPop(
+                sessionActive = state.isForegroundActive(targetPackage),
+                repeat = true,
+                remindCount = 1
+            )
+        )
+
+        state.end(targetPackage)
+        assertFalse(state.isForegroundActive(targetPackage))
     }
 
     private fun request(

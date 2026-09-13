@@ -53,6 +53,12 @@ open class SettingsDataStore(private val context: Context) {
         val RECOMMENDED_APPS_KEY = stringSetPreferencesKey("recommended_apps")
         val SHOW_NOTIFICATION_KEY = booleanPreferencesKey("show_notification")
         val TEMPORARY_PASSES_KEY = stringSetPreferencesKey("temporary_passes")
+        // Sibling map of "package|anchorAtGrant" recorded when each pass is
+        // granted (same encode format as the passes). Written atomically in
+        // the SAME edit as the pass so a grant can never persist one without
+        // the other. Legacy passes predating the anchor simply have no entry
+        // here → anchor = null → expiry evidence stays UNKNOWN (fail-safe).
+        val TEMPORARY_PASS_ANCHORS_KEY = stringSetPreferencesKey("temporary_pass_foreground_anchors")
 
         // ── Custom open-reason labels (Pro) ──
         // The 4 "why are you opening this app?" options on the Pause Screen.
@@ -150,6 +156,16 @@ open class SettingsDataStore(private val context: Context) {
     /** Persisted package-scoped temporary passes, represented by absolute expiry timestamps. */
     val temporaryPasses: Flow<Map<String, Long>> = context.dataStore.data.map { preferences ->
         TemporaryPassPolicy.parseAll(preferences[TEMPORARY_PASSES_KEY] ?: emptySet())
+    }
+
+    /**
+     * Persisted trusted foreground anchors (package → anchorAtGrant) bound to
+     * each pass. Written by [grantTemporaryPass] in the same atomic edit as
+     * the pass; absent for legacy passes, in which case expiry evidence
+     * falls back to UNKNOWN (fail-safe).
+     */
+    val temporaryPassAnchors: Flow<Map<String, Long>> = context.dataStore.data.map { preferences ->
+        TemporaryPassPolicy.parseAll(preferences[TEMPORARY_PASS_ANCHORS_KEY] ?: emptySet())
     }
 
     /** Custom label for the "work" open-reason option (blank = use default). */
@@ -258,10 +274,19 @@ open class SettingsDataStore(private val context: Context) {
     /**
      * Grant one supported temporary pass. The caller supplies wall-clock time so
      * expiry behavior stays explicit and deterministic in unit tests.
+     *
+     * Also records the pass's TRUSTED FOREGROUND ANCHOR (= grant time) in the
+     * same atomic edit: the user picked this pass on the interception UI over
+     * the target, so the target was foreground exactly then. The anchor lets
+     * the expiry wake still classify TARGET after UsageEvents evidence ages
+     * past the long-lookback horizon (repeated passes never refresh it).
+     * Replacement is per package for BOTH entries, so a second grant fully
+     * replaces the first pass/anchor pair.
      */
     suspend fun grantTemporaryPass(packageName: String, minutes: Int, now: Long): Long? {
         val expiresAt = TemporaryPassPolicy.expiresAt(now, minutes) ?: return null
         val encoded = TemporaryPassPolicy.encode(TemporaryPass(packageName, expiresAt)) ?: return null
+        val encodedAnchor = TemporaryPassPolicy.encode(TemporaryPass(packageName, now)) ?: return null
         context.dataStore.edit { preferences ->
             val current = preferences[TEMPORARY_PASSES_KEY] ?: emptySet()
             val updated = current.mapNotNull { TemporaryPassPolicy.parse(it) }
@@ -270,9 +295,21 @@ open class SettingsDataStore(private val context: Context) {
                 .toMutableSet()
             updated.add(encoded)
             preferences[TEMPORARY_PASSES_KEY] = updated
+
+            val currentAnchors = preferences[TEMPORARY_PASS_ANCHORS_KEY] ?: emptySet()
+            val updatedAnchors = currentAnchors.mapNotNull { TemporaryPassPolicy.parse(it) }
+                .filterNot { it.packageName == packageName }
+                .mapNotNull { TemporaryPassPolicy.encode(it) }
+                .toMutableSet()
+            updatedAnchors.add(encodedAnchor)
+            preferences[TEMPORARY_PASS_ANCHORS_KEY] = updatedAnchors
         }
         return expiresAt
     }
+
+    /** Return the trusted foreground anchor recorded with this package's pass, if any. */
+    suspend fun temporaryPassForegroundAnchor(packageName: String): Long? =
+        temporaryPassAnchors.first()[packageName]
 
     /** Return an unexpired pass expiry, or null for missing, malformed, or expired data. */
     suspend fun temporaryPassExpiresAt(packageName: String, now: Long): Long? =
