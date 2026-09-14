@@ -372,7 +372,6 @@
     <string name="pro_settings_trial_expired">Appause Pro — trial ended</string>
     <string name="pro_settings_lifetime">Appause Pro — lifetime</string>
     <string name="pro_redeem_needs_network">Requires a one-time internet connection to the activation server.</string>
-    <string name="pro_import_token">Import license (device switch / restore)</string>
     <string name="pro_redeem_limit">Device limit reached for this code</string>
     <string name="pro_redeem_invalid">Invalid activation code</string>
     <string name="pro_redeem_not_configured">Activation server not configured</string>
@@ -384,16 +383,6 @@
     <string name="pro_redeem_network">Network error. Check your connection and try again.</string>
     <string name="pro_redeem_network_hint">If it keeps failing, your network may be unable to reach the activation server domain (*.workers.dev can be blocked on some networks). Switch networks or try later.</string>
     <string name="pro_dialog_ok">OK</string>
-    <string name="pro_token_note">For switching phones or after reinstalling: paste a previously exported license token to restore Pro without re-redeeming.</string>
-    <string name="pro_license_title">License</string>
-    <string name="pro_license_desc">Export your license before a factory reset or device switch, then import it to restore Pro offline.</string>
-    <string name="pro_export">Export license</string>
-    <string name="pro_exported_title">Your license</string>
-    <string name="pro_exported_desc">Copy and save this code. Import it after a reset to restore Pro without buying again.</string>
-    <string name="pro_copy">Copy</string>
-    <string name="pro_copied">Copied</string>
-    <string name="pro_imported">License imported</string>
-    <string name="pro_import_failed">License invalid</string>
     <string name="pro_debug_title">Debug tools</string>
     <string name="pro_debug_unlock">Unlock Pro</string>
     <string name="pro_debug_relock">Relock</string>

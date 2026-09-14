@@ -13,6 +13,14 @@
     <string name="pro_debug_relocked">已重新上锁（调试）</string>
     <string name="pro_debug_tools_title">调试工具（仅调试版）</string>
     <string name="pro_debug_unlocked">已解锁 Pro（调试）</string>
+    <string name="debug_activation_title">激活调试（仅调试版）</string>
+    <string name="debug_activation_activate">激活 7 天</string>
+    <string name="debug_activation_cancel">取消激活</string>
+    <string name="debug_activation_use_real">使用真实激活状态</string>
+    <string name="debug_activation_state_real">当前生效：真实状态（授权状态：%1$s）</string>
+    <string name="debug_activation_state_active">当前生效：已激活（调试覆盖，7 天）</string>
+    <string name="debug_activation_state_inactive">当前生效：未激活（调试覆盖）</string>
+    <string name="debug_activation_expires">调试到期时间：%1$s</string>
     <string name="diagnostics_title">运行诊断</string>
     <string name="diagnostics_card_title">运行诊断（Debug）</string>
     <string name="diagnostics_card_subtitle">查看拦截状态与实时日志，可一键分享。</string>

@@ -11,6 +11,14 @@
     <string name="pro_debug_relocked">Relocked (debug)</string>
     <string name="pro_debug_tools_title">Debug tools (debug build only)</string>
     <string name="pro_debug_unlocked">Pro unlocked (debug)</string>
+    <string name="debug_activation_title">Activation debug (debug build only)</string>
+    <string name="debug_activation_activate">Activate for 7 days</string>
+    <string name="debug_activation_cancel">Cancel activation</string>
+    <string name="debug_activation_use_real">Use real activation state</string>
+    <string name="debug_activation_state_real">Effective: REAL (licensed state: %1$s)</string>
+    <string name="debug_activation_state_active">Effective: ACTIVE (debug override, 7 days)</string>
+    <string name="debug_activation_state_inactive">Effective: INACTIVE (debug override)</string>
+    <string name="debug_activation_expires">Debug expiry: %1$s</string>
     <string name="diagnostics_title">Run Diagnostics</string>
     <string name="diagnostics_card_title">Run Diagnostics (Debug)</string>
     <string name="diagnostics_card_subtitle">View interception status and live logs; share with one tap.</string>

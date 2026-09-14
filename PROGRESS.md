@@ -1,5 +1,21 @@
 # Appause — Development Progress
 
+## 2026-09-14 — License import/export removed; debug activation override added
+- Removed the user-facing license JWT import/export and "restore on another
+  device" UI from the Pro screen. The token is device-bound, so a token exported
+  from one device never verifies on another: the UI promised a migration it
+  could not deliver, and it exposed the raw JWT for no benefit. The Pro screen no
+  longer surfaces any token.
+- `ProState.importLicense()` became the internal `verifyAndPersistLicenseToken()`
+  used only by the redeem/trial response path; `exportLicense()` is gone. The
+  device-bound token, RS256 verification, expiry and device-claim checks, and
+  the whole redeem flow are unchanged, and already-stored tokens keep working.
+- Added a debug-build-only activation override for local testing (Activate 7 days
+  / Cancel / Use real activation state). It sits between the real entitlement and
+  the effective one, persists in its own debug-only SharedPreferences file, and
+  release builds get an inert no-op implementation, so a release build can never
+  enter the debug path.
+
 ## 2026-09-11 — v0.5.40 current source and Home/Recents finalization
 - The public GitHub Release is `v0.5.40` (`versionCode 92`). The current
   `main` source is also `0.5.40 / 92`, but includes commits after the release

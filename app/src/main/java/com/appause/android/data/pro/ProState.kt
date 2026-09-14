@@ -213,10 +213,15 @@ class ProState(
      * True if the debug flag is on (debug builds) OR a stored license token
      * verifies locally (signature + expiry + device binding).
      */
-    val entitlement: Flow<ProEntitlement> = combine(settings.licenseToken, settings.isProDebug) { token, debug ->
-        if (debug) return@combine ProEntitlement(ProAccessStatus.DEBUG)
-        if (token.isBlank()) return@combine ProEntitlement(ProAccessStatus.FREE)
-        runCatching {
+    /**
+     * The entitlement the REAL license path produces, ignoring any debug
+     * override. Unchanged from before the override existed, so production
+     * behaviour is identical.
+     */
+    private fun resolveRealEntitlement(token: String, debugFlag: Boolean): ProEntitlement {
+        if (debugFlag) return ProEntitlement(ProAccessStatus.DEBUG)
+        if (token.isBlank()) return ProEntitlement(ProAccessStatus.FREE)
+        return runCatching {
             val fingerprint = DeviceKeyStore.getDeviceFingerprint(context)
             val publicKey = LicenseVerifier.parsePublicKey(ServerKeys.SERVER_PUBLIC_KEY_PEM)
             classifyLicenseClaims(
@@ -230,6 +235,21 @@ class ProState(
                 System.currentTimeMillis() / 1000L
             )
         }.getOrDefault(ProEntitlement(ProAccessStatus.FREE))
+    }
+
+    val entitlement: Flow<ProEntitlement> = combine(
+        settings.licenseToken,
+        settings.isProDebug,
+        DebugActivationStore.overrideFlow(context)
+    ) { token, debugFlag, override ->
+        // The debug-build activation override outranks the real entitlement
+        // while it is set. On a release build overrideFlow() is always None, so
+        // this resolves to the real entitlement and changes nothing.
+        DebugActivationPolicy.resolve(
+            override = override,
+            real = resolveRealEntitlement(token, debugFlag),
+            nowMillis = System.currentTimeMillis()
+        )
     }
 
     val isPro: Flow<Boolean> = entitlement.map { it.isPro }
@@ -250,12 +270,17 @@ class ProState(
     }
 
     /**
-     * Import and verify a license token.
+     * Verify a license token and persist it only when valid.
+     *
+     * Internal to the activation flow: the sole way a token reaches this app is
+     * a redeem / trial response from the server. Tokens are device-bound, so a
+     * token exported from a different device would not verify here anyway —
+     * which is why no user-facing import path exists.
+     *
      * @return true if the token is valid (and device-bound to this device, if
-     *   claimed). The token is stored only when valid, so a mistyped or forged
-     *   token never flips Pro on.
+     *   claimed). A tampered or forged response therefore never flips Pro on.
      */
-    suspend fun importLicense(token: String): Boolean {
+    private suspend fun verifyAndPersistLicenseToken(token: String): Boolean {
         val trimmed = token.trim()
         if (trimmed.isBlank()) return false
         val fp = fingerprintProvider?.invoke() ?: defaultFingerprint()
@@ -266,26 +291,14 @@ class ProState(
     }
 
     /**
-     * Export the license token as a string the user can back up.
-     * If no real token is stored yet (e.g. unlocked via debug), a debug
-     * placeholder is returned so the screen still has something to show. It is
-     * NOT stored, because it would not pass verification elsewhere.
-     */
-    suspend fun exportLicense(): String {
-        val current = settings.licenseToken.first()
-        if (current.isNotBlank()) return current
-        return "APPAUSE-DEBUG-${System.currentTimeMillis()}"
-    }
-
-    /**
      * Redeem an activation code against the Plan B server (Cloudflare Worker).
      *
      * Flow:
      *  1. Compute this device's fingerprint (Android Keystore public key).
      *  2. POST { code, device } to {WORKER_BASE_URL}/api/redeem.
      *  3. On success the server returns a signed, device-bound JWT which we
-     *     verify locally ([importLicense]) before storing — so a tampered or
-     *     forged response never flips Pro on.
+     *     verify locally ([verifyAndPersistLicenseToken]) before storing — so a
+     *     tampered or forged response never flips Pro on.
      *
      * This is the only network call in the app, and it is one-time (activation).
      * Returns [RedeemResult.Success] only when the returned token verifies.
@@ -390,7 +403,8 @@ class ProState(
             return RedeemResult.Error(reason)
         }
         val token = JSONObject(response.body).getString("token")
-        return if (importLicense(token)) success else RedeemResult.Error("token_verify_failed")
+        return if (verifyAndPersistLicenseToken(token)) success
+        else RedeemResult.Error("token_verify_failed")
     }
 
 }

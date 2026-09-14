@@ -1,7 +1,5 @@
 package com.appause.android.ui.pro
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -61,12 +59,12 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Appause Pro screen — shows the free/Pro comparison, lets the user unlock Pro
- * (debug build only for now) or import/export a license token.
+ * Appause Pro screen — shows the free/Pro comparison and lets the user start
+ * the trial or redeem an activation code against the server.
  *
- * Plan A: no backend. Unlock is a local flag; the license token round-trips
- * through DataStore so Pro can be restored offline after a reset. Plan B will
- * verify the token's signature against a server.
+ * The verified license token is device-bound and never surfaced in the UI: it
+ * only verifies on the device it was issued to, so there is no user-facing
+ * import/export or "restore on another phone" path.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,7 +75,6 @@ fun ProScreen(
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val entitlement by viewModel.entitlement.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
-    val exportedToken by viewModel.exportedToken.collectAsStateWithLifecycle()
     val redeemResult by viewModel.redeemResult.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val trialExpiresAt = entitlement.expiresAt
@@ -88,8 +85,6 @@ fun ProScreen(
     LaunchedEffect(message) {
         val currentMessage = message ?: return@LaunchedEffect
         val resId = when (currentMessage) {
-            "pro_imported" -> R.string.pro_imported
-            "pro_import_failed" -> R.string.pro_import_failed
             "pro_redeem_limit" -> R.string.pro_redeem_limit
             "pro_redeem_invalid" -> R.string.pro_redeem_invalid
             "pro_redeem_not_configured" -> R.string.pro_redeem_not_configured
@@ -281,86 +276,13 @@ fun ProScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        // Secondary path: paste a raw license token (dev / manual).
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.importLicense(codeInput)
-                                codeInput = ""
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(stringResource(R.string.pro_import_token))
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            stringResource(R.string.pro_token_note),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
 
                     }
                 }
             }
 
-            // ── License management (export/import) ──
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.pro_license_title), style = MaterialTheme.typography.titleMedium)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        stringResource(R.string.pro_license_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Button(
-                        onClick = viewModel::exportLicense,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.pro_export))
-                    }
-                }
-            }
-
-            ProDebugTools(viewModel = viewModel, isPro = isPro)
+            ProDebugTools(viewModel = viewModel)
         }
-    }
-
-    // Dialog showing the exported token so the user can copy it.
-    if (exportedToken != null) {
-        AlertDialog(
-            onDismissRequest = viewModel::clearExportedToken,
-            title = { Text(stringResource(R.string.pro_exported_title)) },
-            text = {
-                Column {
-                    Text(stringResource(R.string.pro_exported_desc), style = MaterialTheme.typography.bodyMedium)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = exportedToken ?: "",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        clipboard.setPrimaryClip(ClipData.newPlainText("Appause License", exportedToken ?: ""))
-                        Toast.makeText(context, context.getString(R.string.pro_copied), Toast.LENGTH_SHORT).show()
-                        viewModel.clearExportedToken()
-                    }
-                ) {
-                    Text(stringResource(R.string.pro_copy))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = viewModel::clearExportedToken) {
-                    Text(stringResource(R.string.action_cancel))
-                }
-            }
-        )
     }
 
     // Dialog: explicit success / failure feedback for Pro activation.

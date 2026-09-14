@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
+import com.appause.android.data.pro.DebugActivationOverride
+import com.appause.android.data.pro.DebugActivationStore
 import com.appause.android.data.pro.ProState
 import com.appause.android.data.pro.ProEntitlement
 import com.appause.android.data.pro.RedeemResult
@@ -17,8 +19,9 @@ import kotlinx.coroutines.flow.SharingStarted
 /**
  * ViewModel for the Appause Pro screen.
  *
- * Handles the free/paid status and the (plan-A) unlock + license import/export
- * actions. Plan B will add real server verification behind [importLicense].
+ * Handles the free/paid status plus trial start and activation-code redemption.
+ * The verified license token is device-bound and stays in storage; it is never
+ * surfaced to the user, so there is no import/export action here.
  */
 class ProViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -30,13 +33,9 @@ class ProViewModel(application: Application) : AndroidViewModel(application) {
     val entitlement: StateFlow<ProEntitlement> = proState.entitlement
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ProEntitlement(com.appause.android.data.pro.ProAccessStatus.FREE))
 
-    /** A one-shot message key for the UI to show (e.g. "pro_imported"). */
+    /** A one-shot message key for the UI to show (e.g. "pro_redeem_invalid"). */
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
-
-    /** The most recently exported token, shown so the user can copy it. */
-    private val _exportedToken = MutableStateFlow<String?>(null)
-    val exportedToken: StateFlow<String?> = _exportedToken.asStateFlow()
 
     /** Structured result of the last redemption attempt, shown as a dialog. */
     private val _redeemResult = MutableStateFlow<RedeemResult?>(null)
@@ -58,11 +57,38 @@ class ProViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Import a pasted license token. */
-    fun importLicense(token: String) {
+    /**
+     * The debug-build activation override currently in force.
+     *
+     * Always [DebugActivationOverride.None] on a release build, because the
+     * release store has no debug implementation and never reads any storage.
+     */
+    internal val debugActivationOverride: StateFlow<DebugActivationOverride> =
+        DebugActivationStore.overrideFlow(getApplication())
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                DebugActivationOverride.None
+            )
+
+    /** Debug-only: simulate a successful activation for the next seven days. */
+    fun activateDebugForSevenDays() {
         viewModelScope.launch {
-            val ok = proState.importLicense(token.trim())
-            _message.value = if (ok) "pro_imported" else "pro_import_failed"
+            DebugActivationStore.activateForDays(getApplication())
+        }
+    }
+
+    /** Debug-only: force the not-activated state, even with a real license. */
+    fun cancelDebugActivation() {
+        viewModelScope.launch {
+            DebugActivationStore.cancel(getApplication())
+        }
+    }
+
+    /** Debug-only: drop the override and read the real activation state again. */
+    fun clearDebugActivation() {
+        viewModelScope.launch {
+            DebugActivationStore.clear(getApplication())
         }
     }
 
@@ -80,19 +106,8 @@ class ProViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Export the license token for offline backup. */
-    fun exportLicense() {
-        viewModelScope.launch {
-            _exportedToken.value = proState.exportLicense()
-        }
-    }
-
     fun clearMessage() {
         _message.value = null
-    }
-
-    fun clearExportedToken() {
-        _exportedToken.value = null
     }
 
     fun clearRedeemResult() {
