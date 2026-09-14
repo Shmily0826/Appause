@@ -2063,6 +2063,14 @@ class AppauseAccessibilityService : AccessibilityService() {
         }
     }
 
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Rotation/font-scale changes never resize an attached pause overlay
+        // window by themselves — recompute its geometry against the current
+        // display metrics so the actions stay reachable in every orientation.
+        overlayManager.onDeviceConfigurationChanged()
+    }
+
     override fun onInterrupt() {
         PersistentLog.log(this, "Svc", "onInterrupt")
         AppLogger.d(TAG, "AccessibilityService interrupted")

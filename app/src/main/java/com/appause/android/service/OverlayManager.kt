@@ -134,6 +134,10 @@ class OverlayManager {
     /** API 33+ callback for Back dispatched to a standalone overlay window. */
     private var overlayBackDispatcher: OnBackInvokedDispatcher? = null
     private var overlayBackCallback: OnBackInvokedCallback? = null
+    // Re-applies the attached overlay window's explicit y/height against the
+    // CURRENT display metrics; driven by the service's configuration changes
+    // (rotation) and cleared on dismiss. See show().
+    private var overlayGeometryReapply: (() -> Unit)? = null
 
     /**
      * Show the cooldown overlay for the given target app.
@@ -273,12 +277,15 @@ class OverlayManager {
             overlayFlags,
             android.graphics.PixelFormat.TRANSLUCENT
         )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // On Android 36 the internal touch-region callback is hidden and
-            // unsupported for targetSdk 35. HyperOS also expands a MATCH_PARENT
-            // accessibility window's touchable region beyond its reported
-            // frame. Use the public explicit-size API instead: the window keeps
-            // full width and its input region ends above the visible nav bar.
+        // Rotation does NOT resize an already-attached 2032 window: the
+        // explicit y/height below keep the attach-time (portrait) geometry, so
+        // an overlay created during fullscreen-landscape video keeps covering
+        // only the top of the rotated screen and its buttons fall outside the
+        // touchable region. Re-apply the CURRENT display geometry whenever the
+        // configuration changes while this overlay is attached, and stop
+        // tracking it on dismiss.
+        fun applyExplicitWindowGeometry(params: WindowManager.LayoutParams) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
             val metrics = windowManager.maximumWindowMetrics
             // Ignore visibility so a transiently hidden bar still reserves the
             // system-owned region instead of being covered by the blocker.
@@ -288,7 +295,61 @@ class OverlayManager {
             val navigationBarInset = metrics.windowInsets.getInsetsIgnoringVisibility(
                 WindowInsets.Type.navigationBars()
             ).bottom
+            params.y = statusBarInset
+            params.height = OverlayWindowPolicy.heightBeforeNavigationBar(
+                metrics.bounds.height(),
+                statusBarInset,
+                navigationBarInset
+            )
+            // Pre-attach this only sizes the params for addView(); once the
+            // window exists, rotation changes are pushed via updateViewLayout.
+            val host = overlayView
+            val manager = overlayWindowManager
+            // A rotation can land after the overlay was already dismissed or
+            // detached (Cancel, Home, session cleanup), and dismiss() may run on
+            // another dispatcher. Only refresh when this is still the SAME
+            // window this generation added AND it is still attached.
+            if (host != null && manager != null &&
+                isOverlayGenerationActive(generation) &&
+                host.isAttachedToWindow
+            ) {
+                try {
+                    manager.updateViewLayout(host, params)
+                } catch (e: IllegalArgumentException) {
+                    // WindowManager throws this once the view is no longer
+                    // attached. It can happen between the guard above and the
+                    // call, so this is an expected detach race, not a bug.
+                    AppLogger.w(TAG, "Overlay geometry refresh skipped: view detached", e)
+                    PersistentLog.log(context, "Overlay", "geometry refresh skipped: view detached")
+                } catch (e: WindowManager.BadTokenException) {
+                    // Stale accessibility window token: the service or the
+                    // window went away mid-refresh. Expected on OEM rotation
+                    // races; surfacing it would kill the service for nothing.
+                    AppLogger.w(TAG, "Overlay geometry refresh skipped: stale token", e)
+                    PersistentLog.log(context, "Overlay", "geometry refresh skipped: stale token")
+                }
+            } else {
+                AppLogger.d(TAG, "Overlay geometry refresh skipped: no active attached overlay")
+            }
+            AppLogger.d(
+                TAG,
+                "Overlay input boundary stops above navigation bar: " +
+                    "display=${metrics.bounds.height()} top=$statusBarInset " +
+                    "bottom=$navigationBarInset y=${params.y} height=${params.height}"
+            )
+        }
 
+        // The service forwards its own configuration changes (rotation, font
+        // scale, density) here — ComponentCallbacks on a service context does
+        // not reliably receive them.
+        overlayGeometryReapply = { applyExplicitWindowGeometry(params) }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // On Android 36 the internal touch-region callback is hidden and
+            // unsupported for targetSdk 35. HyperOS also expands a MATCH_PARENT
+            // accessibility window's touchable region beyond its reported
+            // frame. Use the public explicit-size API instead: the window keeps
+            // full width and its input region ends above the visible nav bar.
             // Own the vertical geometry instead of relying on the system's
             // implicit insetting. Without FLAG_LAYOUT_IN_SCREEN the window is
             // placed inside the inset-decorated frame — already pushed below
@@ -302,18 +363,7 @@ class OverlayManager {
             params.setFitInsetsTypes(0)
             params.setFitInsetsSides(0)
             params.gravity = Gravity.TOP or Gravity.START
-            params.y = statusBarInset
-            params.height = OverlayWindowPolicy.heightBeforeNavigationBar(
-                metrics.bounds.height(),
-                statusBarInset,
-                navigationBarInset
-            )
-            AppLogger.d(
-                TAG,
-                "Overlay input boundary stops above navigation bar: " +
-                    "display=${metrics.bounds.height()} top=$statusBarInset " +
-                    "bottom=$navigationBarInset y=${params.y} height=${params.height}"
-            )
+            applyExplicitWindowGeometry(params)
         }
 
         fun registerStandaloneBackCallback() {
@@ -714,13 +764,37 @@ class OverlayManager {
     }
 
     /**
+     * Called by the service when the system configuration changes (rotation,
+     * font scale, density). If a pause overlay is attached, its window
+     * geometry is recomputed against the current display metrics — rotation
+     * alone never resizes an attached 2032 window.
+     *
+     * Synchronized so a geometry refresh cannot run against an overlay that
+     * dismiss() is tearing down on another dispatcher (Cancel / Back / Home /
+     * session cleanup all call dismiss()).
+     */
+    @Synchronized
+    fun onDeviceConfigurationChanged() {
+        if (overlayAttached) {
+            overlayGeometryReapply?.invoke()
+        }
+    }
+
+    /**
      * Remove the overlay from the screen and clean up resources.
      * Called when the user taps Cancel, Continue, or when the service
      * detects the user has left the target app.
+     *
+     * Synchronized: teardown reads and clears the same window state that
+     * show() and the configuration refresh touch, and dismiss() can run off
+     * the main thread, so it must not interleave with either.
      */
     @Synchronized
     fun dismiss() {
         val view = overlayView
+
+        // Stop rotation tracking before the window goes away.
+        overlayGeometryReapply = null
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val dispatcher = overlayBackDispatcher
