@@ -73,6 +73,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import com.appause.android.AppauseApp
 import com.appause.android.R
@@ -86,6 +87,7 @@ import com.appause.android.ui.theme.appauseDarkTheme
 import com.appause.android.util.AppLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -655,206 +657,132 @@ internal fun PauseScreenContent(
     var pauseContentHeightPx by remember { mutableStateOf(0) }
     val overflowScrollState = rememberScrollState()
 
-    // The pause screen must work in any orientation. A full-screen overlay
-    // follows the device rotation, and in landscape the screen is short — a
-    // fixed vertical stack would overflow and clip the Continue/Cancel
-    // buttons. Keep normal content static; only add overflow scrolling when a
-    // short viewport or large font makes the measured content taller than it.
+    // The pause screen must work in any orientation. Portrait keeps the
+    // proven single-column stack; a viewport wider than it is tall
+    // (landscape) switches to a two-pane Row — content on the left, actions
+    // on the right — so Continue / Temporary Pass / Cancel are all visible
+    // on the first screen. Both structures share the same state, callbacks
+    // and overflow-scroll fallback: only when the measured layout is taller
+    // than the viewport (tiny height / huge font scale) does the screen
+    // scroll, keeping every action reachable.
     if (!showTemporaryPassChooser || !useInlineTemporaryPassChooser) {
         BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .then(overlayBackModifier),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        val viewportHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
-        val overflowModifier = if (pauseContentHeightPx > viewportHeightPx) {
-            Modifier.verticalScroll(overflowScrollState)
-        } else {
-            Modifier
-        }
-
-        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .then(overflowModifier),
+                .then(overlayBackModifier),
             contentAlignment = Alignment.TopCenter
         ) {
-            Column(
-                modifier = Modifier
-                    .widthIn(max = 560.dp)
-                    .wrapContentHeight(unbounded = true)
-                    .onSizeChanged { pauseContentHeightPx = it.height }
-                    .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+            val viewportHeightPx = with(LocalDensity.current) { maxHeight.toPx() }.roundToInt()
+            val viewportWidthPx = with(LocalDensity.current) { maxWidth.toPx() }.roundToInt()
+            val landscape = PauseLayoutPolicy.useLandscapeTwoPane(
+                viewportWidthPx, viewportHeightPx
+            )
+            val overflowModifier = if (
+                PauseLayoutPolicy.useOverflowScroll(pauseContentHeightPx, viewportHeightPx)
             ) {
-            // ── App Icon ──
-            if (appIcon != null) {
-                val bitmap = remember(appIcon) {
-                    appIcon.toBitmap(width = 128, height = 128).asImageBitmap()
-                }
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = appName,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
+                Modifier.verticalScroll(overflowScrollState)
+            } else {
+                Modifier
             }
 
-            // ── App Name ──
-            Text(
-                text = appName,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // ── Prompt Message ──
-            Text(
-                text = prompt,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // ── Countdown Ring + Number ──
-            Box(contentAlignment = Alignment.Center) {
-                CountdownRing(
-                    progress = smoothProgress,
-                    isFinished = isFinished
-                )
-
-                AnimatedContent(
-                    targetState = if (isFinished) -1 else secondsLeft,
-                    transitionSpec = {
-                        (slideInVertically { it } + fadeIn()) togetherWith
-                            (slideOutVertically { -it } + fadeOut())
-                    },
-                    label = "countdown_number"
-                ) { number ->
-                    Text(
-                        text = if (number >= 0) "$number" else "\u2713",
-                        style = MaterialTheme.typography.displayLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = if (number >= 0)
-                            MaterialTheme.colorScheme.onSurface
-                        else
-                            MaterialTheme.colorScheme.tertiary
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // ── Recommended learning apps ──
-            // Apps the user has already categorised into other groups (e.g. learning
-            // apps). Shown during the cooldown as "try one of these instead" — a
-            // nudge toward a productive app instead of the distracting one.
-            if (recommendedApps.isNotEmpty()) {
-                Text(
-                    text = stringResource(R.string.pause_recommended_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                    contentPadding = PaddingValues(horizontal = 16.dp)
-                ) {
-                    items(recommendedApps, key = { it.packageName }) { app ->
-                        RecommendedAppChip(
-                            app = app,
-                            onClick = { onOpenRecommendedApp?.invoke(app.packageName) },
-                            enabled = outerActionsEnabled
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(overflowModifier),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                if (landscape) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            // A phone in landscape is only ~873dp wide, so the
+                            // old 900dp cap never clamped anything and both
+                            // panes stretched edge to edge. 720dp keeps the
+                            // pair centred with real breathing room.
+                            .widthIn(
+                                max = PauseLayoutPolicy.Compact.CONTENT_MAX_WIDTH_DP.dp
+                            )
+                            .wrapContentHeight(unbounded = true)
+                            .onSizeChanged { pauseContentHeightPx = it.height }
+                            .padding(start = 24.dp, end = 24.dp, top = 16.dp, bottom = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(
+                            PauseLayoutPolicy.Compact.PANE_SPACING_DP.dp,
+                            Alignment.CenterHorizontally
+                        ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        PauseContentPane(
+                            appIcon = appIcon,
+                            appName = appName,
+                            prompt = prompt,
+                            smoothProgress = smoothProgress,
+                            secondsLeft = secondsLeft,
+                            isFinished = isFinished,
+                            recommendedApps = recommendedApps,
+                            onOpenRecommendedApp = onOpenRecommendedApp,
+                            outerActionsEnabled = outerActionsEnabled,
+                            modifier = Modifier.weight(1.1f),
+                            compact = true
+                        )
+                        PauseActionPane(
+                            reasons = reasons,
+                            selectedReason = selectedReason,
+                            onSelectReason = { selectedReason = it },
+                            isFinished = isFinished,
+                            outerActionsEnabled = outerActionsEnabled,
+                            onContinueWithReason = onContinueWithReason,
+                            onCancel = onCancel,
+                            showTemporaryPassLink = isFinished && !temporaryPassSelectionInFlight,
+                            onOpenTemporaryPassChooser = {
+                                temporaryPassChooserState = temporaryPassChooserStateAfterOpen(
+                                    temporaryPassChooserState,
+                                    isFinished
+                                )
+                            },
+                            modifier = Modifier.weight(1f),
+                            compact = true
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .widthIn(max = 560.dp)
+                            .wrapContentHeight(unbounded = true)
+                            .onSizeChanged { pauseContentHeightPx = it.height }
+                            .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        PauseContentPane(
+                            appIcon = appIcon,
+                            appName = appName,
+                            prompt = prompt,
+                            smoothProgress = smoothProgress,
+                            secondsLeft = secondsLeft,
+                            isFinished = isFinished,
+                            recommendedApps = recommendedApps,
+                            onOpenRecommendedApp = onOpenRecommendedApp,
+                            outerActionsEnabled = outerActionsEnabled
+                        )
+                        PauseActionPane(
+                            reasons = reasons,
+                            selectedReason = selectedReason,
+                            onSelectReason = { selectedReason = it },
+                            isFinished = isFinished,
+                            outerActionsEnabled = outerActionsEnabled,
+                            onContinueWithReason = onContinueWithReason,
+                            onCancel = onCancel,
+                            showTemporaryPassLink = isFinished && !temporaryPassSelectionInFlight,
+                            onOpenTemporaryPassChooser = {
+                                temporaryPassChooserState = temporaryPassChooserStateAfterOpen(
+                                    temporaryPassChooserState,
+                                    isFinished
+                                )
+                            }
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(20.dp))
-            } else {
-                Spacer(modifier = Modifier.height(12.dp))
             }
-
-            // ── Reason selection grid — always enabled, single-select ──
-            // The user can pick a reason at any time during the countdown.
-            // Selecting one only records the choice — it does NOT let them
-            // enter the app early. They must still wait for the timer.
-            // Labels come from `reasons` (Pro-customizable, else localized
-            // defaults); laid out 2 per row so long labels are never truncated.
-            if (reasons.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    reasons.chunked(2).forEach { rowItems ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            rowItems.forEach { (key, label) ->
-                                ReasonButton(
-                                    text = label,
-                                    selected = selectedReason == key,
-                                    onClick = { selectedReason = key },
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // ── Continue button — the ONLY way to enter the app ──
-            // Disabled until the countdown finishes. When tapped, logs the
-            // selected reason (empty if none) and proceeds to the target app.
-            Button(
-                onClick = {
-                    if (outerActionsEnabled) onContinueWithReason(selectedReason ?: "")
-                },
-                enabled = isFinished && outerActionsEnabled,
-                modifier = Modifier
-                    .width(200.dp)
-                    .height(48.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.pause_continue),
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-
-            Spacer(modifier = Modifier.height(0.dp))
-
-            // ── Cancel button — always available ──
-            TextButton(onClick = onCancel, enabled = outerActionsEnabled) {
-                Text(
-                    text = stringResource(R.string.pause_cancel),
-                    style = MaterialTheme.typography.labelLarge
-                )
-            }
-
-            // Temporary Pass is another way to proceed, so it has the same
-            // mindful cooldown barrier as the normal Continue action.
-            if (isFinished && !temporaryPassSelectionInFlight) {
-                TextButton(onClick = {
-                    temporaryPassChooserState = temporaryPassChooserStateAfterOpen(
-                        temporaryPassChooserState,
-                        isFinished
-                    )
-                }) {
-                    Text(stringResource(R.string.pause_temporary_pass))
-                }
-            }
-            }
-        }
         }
     }
 
@@ -877,7 +805,14 @@ internal fun PauseScreenContent(
             ) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        // Landscape is short: when the title, three options and
+                        // Cancel do not all fit the available height, the card
+                        // scrolls instead of clipping the last action off the
+                        // bottom edge. Portrait and tall viewports are
+                        // unaffected because they never overflow.
+                        modifier = Modifier
+                            .verticalScroll(rememberScrollState())
+                            .padding(24.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
@@ -937,6 +872,295 @@ internal fun PauseScreenContent(
                 }
             }
         )
+    }
+}
+
+/**
+ * The reading half of the pause screen: app icon, name, the pause message
+ * and the countdown ring, plus the recommended-apps nudge. Purely
+ * presentational — the only callback is opening a recommended app. Shared
+ * unchanged by the portrait column and the landscape row.
+ */
+@Composable
+private fun PauseContentPane(
+    appIcon: Drawable?,
+    appName: String,
+    prompt: String,
+    smoothProgress: Float,
+    secondsLeft: Int,
+    isFinished: Boolean,
+    recommendedApps: List<AppInfo>,
+    onOpenRecommendedApp: ((String) -> Unit)?,
+    outerActionsEnabled: Boolean,
+    modifier: Modifier = Modifier,
+    compact: Boolean = false
+) {
+    // Landscape has about half the usable height of portrait, so it uses a
+    // tighter vertical rhythm and a smaller countdown. Portrait keeps every
+    // historical value untouched.
+    val iconSize = if (compact) {
+        PauseLayoutPolicy.Compact.APP_ICON_SIZE_DP
+    } else {
+        64
+    }
+    val gapIconToName = if (compact) {
+        PauseLayoutPolicy.Compact.GAP_ICON_TO_NAME_DP
+    } else {
+        16
+    }
+    val gapNameToPrompt = if (compact) {
+        PauseLayoutPolicy.Compact.GAP_NAME_TO_PROMPT_DP
+    } else {
+        8
+    }
+    val gapPromptToCountdown = if (compact) {
+        PauseLayoutPolicy.Compact.GAP_PROMPT_TO_COUNTDOWN_DP
+    } else {
+        32
+    }
+    val gapCountdownToRecommended = if (compact) {
+        PauseLayoutPolicy.Compact.GAP_COUNTDOWN_TO_RECOMMENDED_DP
+    } else {
+        20
+    }
+    val gapRecommendedHeadToRow = if (compact) {
+        PauseLayoutPolicy.Compact.GAP_RECOMMENDED_HEAD_TO_ROW_DP
+    } else {
+        8
+    }
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+            // ── App Icon ──
+            if (appIcon != null) {
+                val bitmap = remember(appIcon) {
+                    appIcon.toBitmap(width = 128, height = 128).asImageBitmap()
+                }
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = appName,
+                    modifier = Modifier
+                        .size(iconSize.dp)
+                        .clip(CircleShape)
+                )
+                Spacer(modifier = Modifier.height(gapIconToName.dp))
+            }
+
+            // ── App Name ──
+            Text(
+                text = appName,
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            Spacer(modifier = Modifier.height(gapNameToPrompt.dp))
+
+            // ── Prompt Message ──
+            Text(
+                text = prompt,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(gapPromptToCountdown.dp))
+
+            // ── Countdown Ring + Number ──
+            Box(contentAlignment = Alignment.Center) {
+                CountdownRing(
+                    progress = smoothProgress,
+                    isFinished = isFinished,
+                    size = PauseLayoutPolicy.countdownRingSizeDp(compact).dp
+                )
+
+                AnimatedContent(
+                    targetState = if (isFinished) -1 else secondsLeft,
+                    transitionSpec = {
+                        (slideInVertically { it } + fadeIn()) togetherWith
+                            (slideOutVertically { -it } + fadeOut())
+                    },
+                    label = "countdown_number"
+                ) { number ->
+                    Text(
+                        text = if (number >= 0) "$number" else "\u2713",
+                        // Portrait keeps the theme's displayLarge untouched;
+                        // only landscape overrides the size, so a future theme
+                        // change can never drift the portrait baseline.
+                        style = if (compact) {
+                            MaterialTheme.typography.displayLarge.copy(
+                                fontSize = PauseLayoutPolicy.Compact.COUNTDOWN_NUMBER_SP.sp
+                            )
+                        } else {
+                            MaterialTheme.typography.displayLarge
+                        },
+                        fontWeight = FontWeight.Bold,
+                        color = if (number >= 0)
+                            MaterialTheme.colorScheme.onSurface
+                        else
+                            MaterialTheme.colorScheme.tertiary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(gapCountdownToRecommended.dp))
+
+            // ── Recommended learning apps ──
+            // Apps the user has already categorised into other groups (e.g. learning
+            // apps). Shown during the cooldown as "try one of these instead" — a
+            // nudge toward a productive app instead of the distracting one.
+            if (recommendedApps.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.pause_recommended_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(gapRecommendedHeadToRow.dp))
+                LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    items(recommendedApps, key = { it.packageName }) { app ->
+                        RecommendedAppChip(
+                            app = app,
+                            onClick = { onOpenRecommendedApp?.invoke(app.packageName) },
+                            enabled = outerActionsEnabled
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+            } else {
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+    }
+}
+
+/**
+ * The acting half of the pause screen: intent selection, Continue, Cancel
+ * and the Temporary Pass entry. Shared unchanged by the portrait column and
+ * the landscape row — the actions keep the same order, size and state rules
+ * in both.
+ */
+@Composable
+private fun PauseActionPane(
+    reasons: List<Pair<String, String>>,
+    selectedReason: String?,
+    onSelectReason: (String) -> Unit,
+    isFinished: Boolean,
+    outerActionsEnabled: Boolean,
+    onContinueWithReason: (String) -> Unit,
+    onCancel: () -> Unit,
+    showTemporaryPassLink: Boolean,
+    onOpenTemporaryPassChooser: () -> Unit,
+    modifier: Modifier = Modifier,
+    compact: Boolean = false
+) {
+    // In landscape the pane is wide and short: cap the pills and the primary
+    // CTA so they read as phone controls rather than a stretched web form,
+    // and tighten the gaps so Continue / Cancel / Temporary Pass read as one
+    // decision group. Portrait keeps every historical value.
+    val reasonPillCap: Modifier = if (compact) {
+        Modifier.widthIn(max = PauseLayoutPolicy.Compact.REASON_PILL_MAX_WIDTH_DP.dp)
+    } else {
+        Modifier
+    }
+    val continueWidth = if (compact) {
+        PauseLayoutPolicy.Compact.CONTINUE_BUTTON_WIDTH_DP
+    } else {
+        200
+    }
+    val gapReasonsToActions = if (compact) {
+        PauseLayoutPolicy.Compact.GAP_REASONS_TO_ACTIONS_DP
+    } else {
+        24
+    }
+    val gapBetweenActions = if (compact) {
+        PauseLayoutPolicy.Compact.GAP_BETWEEN_ACTIONS_DP
+    } else {
+        0
+    }
+
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+            // ── Reason selection grid — always enabled, single-select ──
+            // The user can pick a reason at any time during the countdown.
+            // Selecting one only records the choice — it does NOT let them
+            // enter the app early. They must still wait for the timer.
+            // Labels come from `reasons` (Pro-customizable, else localized
+            // defaults); laid out 2 per row so long labels are never truncated.
+            if (reasons.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    reasons.chunked(2).forEach { rowItems ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            rowItems.forEach { (key, label) ->
+                                ReasonButton(
+                                    text = label,
+                                    selected = selectedReason == key,
+                                    onClick = { onSelectReason(key) },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .then(reasonPillCap)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(gapReasonsToActions.dp))
+
+            // ── Continue / Cancel / Temporary Pass — one decision group ──
+            // Continue is the ONLY way to enter the app: disabled until the
+            // countdown finishes. Tapping logs the selected reason (empty if
+            // none) and proceeds to the target app.
+            Button(
+                onClick = {
+                    if (outerActionsEnabled) onContinueWithReason(selectedReason ?: "")
+                },
+                enabled = isFinished && outerActionsEnabled,
+                modifier = Modifier
+                    .width(continueWidth.dp)
+                    .height(48.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.pause_continue),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+
+            Spacer(modifier = Modifier.height(gapBetweenActions.dp))
+
+            // ── Cancel button — always available ──
+            TextButton(onClick = onCancel, enabled = outerActionsEnabled) {
+                Text(
+                    text = stringResource(R.string.pause_cancel),
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+
+            if (showTemporaryPassLink) {
+                Spacer(modifier = Modifier.height(gapBetweenActions.dp))
+            }
+
+            // Temporary Pass is another way to proceed, so it has the same
+            // mindful cooldown barrier as the normal Continue action.
+            if (showTemporaryPassLink) {
+                TextButton(onClick = onOpenTemporaryPassChooser) {
+                    Text(stringResource(R.string.pause_temporary_pass))
+                }
+            }
     }
 }
 
