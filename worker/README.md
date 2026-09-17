@@ -140,7 +140,7 @@ curl -X POST https://<your-worker>/admin/gencode \
 - The server stores only `(code → device fingerprints)`. It never sees the user's
   apps, usage, or identity. Keep it that way.
 
-The v0.5.40 public Release is built with the production verification-key path;
+The v0.5.43 public Release is built with the production verification-key path;
 debug-only Pro controls are isolated from Release. Any future release must
 repeat that check before publishing. Keep all key material and deployment
 configuration outside Git.

@@ -2,12 +2,12 @@
 
 > 来源：2026-09-06 的独立深度审查（外部 agent）+ 本地拦截链路审计
 > （`docs/INTERCEPTION_PROTOCOL.md` §9），经用户与本地 agent 逐条核实后合并。
-> 基线：`main` @ `8648691`（2026-09-17），源码版本 `0.5.42 / versionCode 94`。状态标记：`[ ] 待做` / `[~] 进行中` / `[x] 完成` /
+> 基线：`main` @ `990102a`（2026-09-18），源码版本 `0.5.43 / versionCode 95`。状态标记：`[ ] 待做` / `[~] 进行中` / `[x] 完成` /
 > `[-] 不做`。每完成一项在本文件勾选并在 `PROGRESS.md` 记录。
 
 ## 结论摘要
 
-- 成熟度判定：**usable（个人可用）**；v0.5.42 已有公开 Release。本文件继续
+- 成熟度判定：**usable（个人可用）**；v0.5.43 已有公开 Release。本文件继续
   记录工程风险，不把 backlog 评语当成发布状态：
   (a) 已有 CI 测试/构建工作流，但远端是否实际执行取决于推送后的工作流状态；(b) 暂停屏主路径/兜底路径行为已分叉；
   (c) Service 核心状态是伴生对象静态字段 + 有副作用的 getter。
@@ -108,7 +108,7 @@
   late-event check，真正 immediate reopen 仍可重新拦截。当前最终验收证据为
   JVM focused tests、`assembleDebug`、emulator smoke，以及 Xiaomi
   2410DPN6CC / Android 16 的 ADB/logcat/WindowManager objective evidence。
-  未声称主观顺滑度或正式延迟测量；当前 main 晚于 v0.5.42 release tag，且本工作区的 Home 7 天试用 CTA 尚未提交。
+  未声称主观顺滑度或正式延迟测量；当前 main 已包含 Home 7 天试用 CTA，CTA 只导航到既有 Pro 页面，试用启动逻辑仍集中在 ProState。
 
 ## 执行顺序（已获授权的批次）
 

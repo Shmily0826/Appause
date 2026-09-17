@@ -1,5 +1,25 @@
 # Appause — Development Progress
 
+## 2026-09-17 — production trial endpoint smoke (APPAUSE-20260917-TRIAL-SMOKE-V1)
+- One controlled POST to the deployed `appause-pro-worker` used only the new
+  synthetic fingerprint `b18b6c63e6a7a5301d7ccd3258751ab969a41d68ccb2b9dc6482d4b14b5546c4`.
+  The first response was HTTP 200 with a token; the same fingerprint was
+  posted once more and returned HTTP 200 with `alreadyStarted=true` and
+  `newlyStarted=false`.
+- The returned token verified with the production public PEM in
+  `app/src/main/java/com/appause/android/data/pro/ServerKeys.kt`: RS256 signature, `tier=pro`, `trial=true`,
+  and matching `device` claim all passed. The response window was exactly
+  `604800000 ms` (seven days), and JWT `exp` matched `expiresAt`.
+- The Worker keeps the first expiry but re-signs repeat tokens with a new
+  `iat`; the observed repeat token `iat` did not equal the original
+  `activatedAt / 1000`. Android currently requires that equality in
+  `processTrialResponse`, so repeat responses would be rejected as
+  `token_verify_failed`. This is a remaining cross-layer gap, not fixed here.
+- Production bundle equality with current `main` was not proven; the latest
+  known 100% deployment was version `4af734fe-1bd8-41da-93c9-9c03d5c2f4ed`.
+  No deployment or configuration change was made; only the synthetic trial
+  record was created.
+
 ## 2026-09-14 — License import/export removed; debug activation override added
 - Removed the user-facing license JWT import/export and "restore on another
   device" UI from the Pro screen. The token is device-bound, so a token exported
