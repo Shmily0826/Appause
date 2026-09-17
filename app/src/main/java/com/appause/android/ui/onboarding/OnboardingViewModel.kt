@@ -30,8 +30,18 @@ import kotlinx.coroutines.flow.stateIn
  *   when the screen leaves the composition),
  * - marks onboarding as completed (or skipped) when the user finishes.
  */
-class OnboardingViewModel(
+class OnboardingViewModel @JvmOverloads constructor(
     application: Application,
+    // @JvmOverloads is REQUIRED here. OnboardingScreen's `viewModel` parameter
+    // defaults to the bare `viewModel()` helper, which goes through the default
+    // AndroidViewModelFactory; that factory reflectively looks up an
+    // (Application) single-arg constructor, and Kotlin default parameters do
+    // NOT generate one. Without this annotation the screen dies with
+    // NoSuchMethodException on every entry — the same defect that crashed
+    // StatsViewModel from v0.5.39 to v0.5.42. NavGraph.kt currently passes an
+    // explicit factory, which is the only reason this stayed hidden; do not
+    // rely on that call site. Guarded by ViewModelFactoryContractTest.
+    //
     // Test seam: lets unit tests inject a SettingsDataStore (defaults to the real one).
     settingsDataStoreOverride: SettingsDataStore? = null,
     // Test seam: lets unit tests inject a SystemStatusHolder (defaults to the
