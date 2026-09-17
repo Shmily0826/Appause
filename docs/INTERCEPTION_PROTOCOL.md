@@ -1,6 +1,6 @@
 # Appause 拦截协议（Interception Protocol）
 
-> 状态：只读架构审计的产出，记录截至 `main` @ `0256cf5`（2026-09-12）的真实行为。
+> 状态：只读架构审计的产出，记录截至 `main` @ `8648691`（2026-09-17，v0.5.42）的真实行为。
 > 本文档不描述"应该怎样"，只描述"代码现在实际怎样"。改代码后应同步更新本文。
 
 ## 0. 为什么要有一份协议
@@ -263,23 +263,20 @@ Xiaomi API≥36 的 2032-only 限制。这些**留在原地是合理的**，但�
 推导），无测试覆盖"cancel 后 200ms 内重开"的时序。属于可接受的时序依赖，
 但值得在未来引入虚拟时钟测试。
 
-### R8（中高）——事件处理无串行化（2026-09-06 深度审查补充）
-`onAccessibilityEvent` 对每个事件独立 `serviceScope.launch`（主线程 dispatcher
-并不保证前一个处理完才跑下一个，因为函数内部会挂起），1.5 s poller 也并发调用
-同一 `handleForegroundChange`。对 `lastEventForeground` 的读-改-写之间挂起一次
-Room 查询，无 Mutex/队列串行化。当前靠 `pauseShown` 守卫与 `SessionState` 兜住
-大部分后果，但去重状态本身存在竞态——这是"偶发、不可复现、ROM 特定"类问题的
-温床。修复方案（Mutex / 单消费者 Channel + 副作用抽取）见
-`docs/ENGINEERING_REVIEW.md` P1-4，须在 CI 门禁落地后执行。
+### R8（中高）——事件编排副作用覆盖不足（串行化已实现）
+`onAccessibilityEvent` 对每个事件独立 `serviceScope.launch`，1.5 s poller 也会调用
+同一 `handleForegroundChange`；两者现在共同进入 `ForegroundChangeSingleFlight` 的
+`Mutex`，并由 `ForegroundChangeSingleFlightTest` 覆盖。因此不能再描述为“无
+Mutex/队列串行化”。剩余风险是决策→副作用映射、生命周期回调与真实事件时序仍缺
+服务级覆盖，见 `docs/ENGINEERING_REVIEW.md` P1-4。
 
-### R9（低）——PauseActivity 兜底链的启动冗余与 stale intent（2026-09-06 深度审查修正）
+### R9（低）——PauseActivity 兜底链的启动冗余（stale intent 已修复）
 overlay 两级 addView 都失败时：直接 `startActivity` 之后**无条件**排
 AlarmManager（250ms），Alarm 失败还有 Handler 重试——最多三次启动尝试
 （由 `singleInstance` + CLEAR_TOP re-front 兜住重复界面，倒计时不会重置）。
-真正的问题：`onNewIntent` 未实现且 `targetPackage` 是
-`get() = intent.getStringExtra(...)` 惰性读，若旧 PauseActivity 仍在屏时来了
-**新目标**的拦截，re-front 后读到的仍是旧 intent 的包名。修复见
-`docs/ENGINEERING_REVIEW.md` P1-5。
+当前 `PauseActivity.onNewIntent` 会更新 intent，并在目标变化时清理旧 bypass、
+更新会话代数并重建内容；`PauseAlarmReceiver` 使用 `NEW_TASK | CLEAR_TOP | SINGLE_TOP`。
+因此剩余项是兼容策略本身的启动冗余，不再是 stale intent 问题。
 
 ## 10. 维护本文的约定
 

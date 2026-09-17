@@ -7,14 +7,13 @@ in groups, and set a cooldown. When a target app comes to the foreground,
 Appause shows a short pause screen so you can breathe and decide whether to
 continue.
 
-## Latest release: v0.5.40
+## Latest release: v0.5.42
 
-Download the signed APK from the canonical [GitHub Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.40):
+Download the signed APK from the canonical [GitHub Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.42):
 
-- [Appause-v0.5.40.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.40/Appause-v0.5.40.apk)
+- [Appause-v0.5.42.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.42/Appause-v0.5.42.apk)
 - Package: `com.appause.android`
-- versionCode: `92`
-- SHA-256: `a3fdb617569268798090bedc3e968ef41100a88ce0d1c4d100944ade66954550`
+- versionCode: `94`
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
 `versionCode` is internal metadata and is not part of the public filename.
@@ -98,11 +97,10 @@ Diagnostics and Pro test controls are isolated to the `debug` build
 (`com.appause.android.debug`). They are not included in the production Release
 APK and are not a production activation path.
 
-## v0.5.40 validation status
+## v0.5.42 validation status
 
-- The public GitHub Release is `v0.5.40`, package `com.appause.android`,
-  versionCode `92`. The current `main` source remains `0.5.40 / 92`, while
-  containing post-release Home/Recents fixes after the `v0.5.40` tag.
+- The public GitHub Release is `v0.5.42`, package `com.appause.android`,
+  versionCode `94`. The current `main` source is also `0.5.42 / 94`.
 - Focused JVM policy tests and `assembleDebug` passed for the current
   Home/Recents and pause-overlay implementation.
 - Emulator-only smoke verified Home dismisses the active pause presentation,

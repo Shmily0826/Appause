@@ -1254,6 +1254,19 @@ Full analysis, trigger boundary and raw evidence: `docs/REPEAT_INTERCEPTION_STRE
 - `aapt2 dump badging`: `versionCode='94' versionName='0.5.42'`, minSdk 26.
 - `apksigner verify --print-certs`: V2 signer `CN=Appause`, SHA-256 `843d4ce0…431525`, **byte-identical
   to the published v0.5.41 APK**, so in-place upgrade stays valid.
-- Boundary note: the TP + lockscreen freeze reported by the user on 09-17 10:00–10:14 is attributed to
-  the release + debug dual-accessibility-service interference; single-package TP + lockscreen behaviour
-  remains UNTESTED. The `AbandonCooldown` countdown reset stays intended behaviour, unchanged.
+- Boundary note: the TP + lockscreen freeze reported by the user on 09-17 10:00–10:14 occurred while
+  release + debug accessibility services were simultaneously enabled. Dual-service interference is a
+  plausible hypothesis, not a controlled root-cause proof. The `AbandonCooldown` countdown reset stays
+  intended behaviour, unchanged.
+
+## 34. Xiaomi single-service Temporary Pass lockscreen expiry validation (2026-09-17)
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Release-only AccessibilityService state | **PASS** | Physical Xiaomi 2410DPN6CC / HyperOS / Android 16; debug Appause service was not enabled for this scenario and the original release-only state was restored. |
+| Temporary Pass through lockscreen expiry | **PASS** | Target interception → five-minute Temporary Pass → lock while active → remain locked through expiry → wake/unlock. Exactly one expiry re-evaluation and one resulting 2032 interception. |
+| Duplicate/stacking/stale state | **PASS** | No duplicate `INTERCEPT`, overlapping overlay, stacked `PauseActivity`, stale bypass, or Temporary Pass extension/freeze observed. |
+| Exact 30-second watchdog boundary on Xiaomi | **NOT TESTED** | v0.5.41 watchdog/repeat-interception boundary remains validated on API 37 emulator; Xiaomi exact-30-second evidence is absent. |
+
+This physical result closes the single-package Temporary Pass + lockscreen lifecycle gap. It does not
+prove that dual AccessibilityService interference caused the earlier freeze; that remains unproven.

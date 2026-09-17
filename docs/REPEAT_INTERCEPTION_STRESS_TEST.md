@@ -272,7 +272,8 @@ python scripts/stress/analyze.py            # 默认分析最新一次运行
 均为 1 INTERCEPT / 1 overlay / 0 次 WATCHDOG_RELEASE，analyzer 报 clean。
 对照修复前的 `run-20260916-120927`：3 次 WATCHDOG_RELEASE + DUPLICATE_INTERCEPT + OVERLAY_LEAK。
 
-**真机 Xiaomi/HyperOS 当时未验证。**
+**真机 Xiaomi/HyperOS 的 exact-30-second watchdog boundary 当时未验证；后续单包 Temporary Pass
+锁屏过期验证记录在 `TEST_REPORT.md` §34，但不替代本节的 exact-30-second 证据。**
 
 ---
 
@@ -407,6 +408,5 @@ Overlay shown for bili (type=2032)                  ← 倒计时从满值重开
 就会触发。对于内容持续变化的 App（B站/小红书/抖音等），这意味着**冷却设为 31 秒以上时基本必然发生**。
 
 证据：`scripts/stress/evidence/emulator/self-event3.log`。
-
 
 

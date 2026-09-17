@@ -1,7 +1,7 @@
 # Appause 测试缺口分析（Test Gap Analysis）
 
 > 原始盘点基线为 `main` @ `461ee33`（2026-09-06，134 个用例）；当前源基线为
-> `main` @ `ed64329`（2026-09-11）。下表保留该历史覆盖快照，数量应以最新测试
+> `main` @ `8648691`（2026-09-17，v0.5.42 / versionCode 94）。下表仍是历史覆盖快照，数量应以最新测试
 > 报告重算，不作为当前总数声明。
 > 本文把 `docs/INTERCEPTION_PROTOCOL.md` 里的每个环节和现有测试对上号，
 > 找出"没被任何测试钉住"的行为。优先级排序对接用户已确认的测试优先级
@@ -36,20 +36,15 @@
 - **建议**：把编排映射抽成可测的纯函数（decision → effect list），或引入
   带 fake 时钟/fake OverlayManager 的轻量服务级测试。这是重构 R1/R2 前的
   必要安全网。
-- **补充（2026-09-06 深度审查，与 ENGINEERING_REVIEW.md P1-4 同源）**：
-  编排层还存在**并发面**——`onAccessibilityEvent` 对每个事件独立
-  `serviceScope.launch`，1.5 s poller 也并发调用同一函数，对
-  `lastEventForeground`/`lastForegroundPackage` 的读-改-写中间还挂起一次
-  Room 查询，没有任何 Mutex/串行化。测试缺口因此是双重的：副作用映射
-  没测试，且并发正确性只能靠 `pauseShown` 守卫兜底。修复方案见
+- **补充（当前代码核对）**：`onAccessibilityEvent` 与 1.5 s poller 仍分别启动
+  coroutine，但共同进入 `ForegroundChangeSingleFlight` 的 `Mutex`；该锁及其
+  JVM 测试已存在。因此当前缺口不是“完全无串行化”，而是决策→副作用映射、
+  生命周期回调和真实事件时序仍没有服务级覆盖。修复/测试边界见
   `docs/ENGINEERING_REVIEW.md` P1-4。
 
 ### G2（高）——已完成（2026-09-06）：看门狗决策核心抽为 `PauseGuardPolicy` + 8 个边界用例
-`pauseShown` getter 的自我修复逻辑（协议 §5）是历史上两个真实 bug 的修复物，
-但它的触发条件依赖 `SystemClock.elapsedRealtime()`，无法在 JVM 里直接测。
-- **建议**：把 watchdog 判定抽成 `pauseGuardWatchdog(elapsedMs, overlayAttached,
-  activityVisible) -> GuardAction` 纯函数 + 注入时钟，测四个象限：
-  宽限期内/宽限期满无窗口/硬上限超时（含 attached-but-hidden）/正常持有。
+`pauseShown` getter 的自我修复逻辑（协议 §5）已由 `PauseGuardPolicy` 承载，
+并有边界用例覆盖；当前仍需依赖设备/服务级验证确认窗口、guard 与生命周期回调的组合行为。
 
 ### G3（高，部分完成 2026-09-06：G3a LicenseVerifier 失败分支已补 6 例，verify() 同时加固为任何畸形 token 一律返回 null）——Pro 兑换失败模式（用户既定优先级 #1）
 `ProStateRedeemTest` 15 例覆盖了主路径；缺口在失败分支矩阵：过期 JWT、

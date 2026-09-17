@@ -2,14 +2,14 @@
 
 > 来源：2026-09-06 的独立深度审查（外部 agent）+ 本地拦截链路审计
 > （`docs/INTERCEPTION_PROTOCOL.md` §9），经用户与本地 agent 逐条核实后合并。
-> 基线：`main` @ `0256cf5`（2026-09-12）。状态标记：`[ ] 待做` / `[~] 进行中` / `[x] 完成` /
+> 基线：`main` @ `8648691`（2026-09-17），源码版本 `0.5.42 / versionCode 94`。状态标记：`[ ] 待做` / `[~] 进行中` / `[x] 完成` /
 > `[-] 不做`。每完成一项在本文件勾选并在 `PROGRESS.md` 记录。
 
 ## 结论摘要
 
-- 成熟度判定：**usable（个人可用）**；v0.5.40 已有公开 Release。本文件继续
+- 成熟度判定：**usable（个人可用）**；v0.5.42 已有公开 Release。本文件继续
   记录工程风险，不把 backlog 评语当成发布状态：
-  (a) 无自动化测试门禁；(b) 暂停屏主路径/兜底路径行为已分叉；
+  (a) 已有 CI 测试/构建工作流，但远端是否实际执行取决于推送后的工作流状态；(b) 暂停屏主路径/兜底路径行为已分叉；
   (c) Service 核心状态是伴生对象静态字段 + 有副作用的 getter。
 - 项目最好的资产：`BurstTracker` / `InterceptionDecider` / `HomeTransitionPolicy`
   / `OverlayPresentationPolicy` / `TemporaryPassPolicy` 的纯函数化 + 注入时钟，
@@ -54,19 +54,16 @@
       当前 service 中仍有多处 `pausePresentationActive` 组合表达式，且 `pauseShown` getter
       有副作用（看门狗在读取时释放守卫）。**分两步**：先表达式收敛（行为等价），
       副作用外移（`releaseStaleGuard()`）单独立项。需真机回归，**必须在 P0-4 落地后做**。
-- [ ] **P1-4 · 事件处理无串行化 + 编排层零测试**
-      每个事件 `serviceScope.launch`，poller 并发调同一 `handleForegroundChange`，
-      对 `lastEventForeground`/`lastForegroundPackage` 读-改-写中间挂起 Room 查询。
-      修法：(a) `Mutex` 或 Channel 单消费者（poller 走同一队列）；
-      (b) 决策→副作用映射抽成可注入的 `InterceptionEffects` + 单测。
-      改变事件时序，需真机诊断日志比对。**3–4 天，最后做。**
-- [ ] **P1-5 · PauseActivity 兜底链**（已修正范围）
-      属实部分：直接 `startActivity` 后**无条件**排 AlarmManager（+250ms），
-      Alarm 失败还有 Handler 重试——最多三次启动；`onNewIntent` 未实现且
-      `targetPackage` 是 `get() = intent.getStringExtra(...)` 惰性读，
-      **新拦截目标会被旧 intent 吞掉**（singleInstance re-front 不更新 intent）。
-      ~~倒计时重置~~ **不成立**：manifest `launchMode="singleInstance"`，
-      重复启动仅 re-front 不重建。修法：统一启动策略 + override `onNewIntent`。
+- [ ] **P1-4 · 编排层副作用覆盖不足**
+      当前事件与 poller 仍分别 `serviceScope.launch`，但共同进入
+      `ForegroundChangeSingleFlight` 的 `Mutex`，因此同一 `handleForegroundChange` 已串行化；
+      `ForegroundChangeSingleFlightTest` 也覆盖了该锁。剩余风险是决策→副作用映射、
+      生命周期回调与真实事件时序仍缺服务级覆盖，不应再描述为“无串行化”。
+- [x] **P1-5 · PauseActivity 兜底链**（`onNewIntent` 已修正）
+      当前 `PauseActivity.onNewIntent` 会更新 intent，并在目标变化时清理旧 bypass、
+      更新会话代数并重建内容；`PauseAlarmReceiver` 使用 `NEW_TASK | CLEAR_TOP | SINGLE_TOP`，
+      重复拉起只 re-front，不创建第二个 Activity 或重置倒计时。兜底链仍有无条件
+      AlarmManager/Handler 重试，这是现有兼容策略，不再是旧的 intent 吞目标问题。
 - [x] **P1-6 · `app_launch_records` 无上限增长**（2026-09-06 完成）
       `AppGroupRepository.deleteOldLaunchRecords()`（365 天保留窗口，与统计窗口
       一致）在 `AppauseApp.onCreate` 以 GlobalScope(IO) 异步调用，异常只记日志。
@@ -80,12 +77,12 @@
 |---|---|---|
 | P2-1 | 死代码：`ForegroundChecker.wasResumedRecently`、`sessionStart` map（只写不读）、`HomeTransitionPolicy.shouldConfirm`/`shouldConfirmSystemUiHome` 的 `pauseTargetPackage` 死参数、`startLeaveTimer` 不可达的 cancel | [x] |
 | P2-2 | `AppSelectScreen.cachedSelectedPackages` companion var 跨屏传结果 → 改 SavedStateHandle | [ ] |
-| P2-3 | 分组空名保存静默失败 → 暴露 `nameError` | [ ] |
-| P2-4 | `getForegroundPackage`（Binder）在 service :1076/:1479 跑在 Main，其余调用点在 IO → 统一 IO | [ ] |
-| P2-5 | `allowBackup="true"`（manifest:61），Room DB + DataStore（含 license_token）在备份范围 → false 或显式规则 | [ ] |
+| P2-3 | 分组空名保存静默失败 → 暴露 `nameError` | [x]（当前 UI 显示内联错误，ViewModel 拒绝保存） |
+| P2-4 | `getForegroundPackage`（Binder）调用点需统一复核；当前主要调用已包在 `withContext(Dispatchers.IO)`，旧行号与“跑在 Main”的概括不再可靠 | [ ] |
+| P2-5 | `allowBackup` 需关闭以避免本地数据进入备份范围 | [x]（当前 manifest 为 `android:allowBackup="false"`） |
 | P2-6 | 注释漂移：GroupEditorViewModel "free 1–30"（实际 free/pro 都是 60）；AppLaunchDao "v1/未来版本"头注释 | [x] |
-| P2-7 | 每个前台事件两次 DataStore 挂起读（enabled / temporaryPass）→ stateIn 缓存 | [ ] |
-| P2-8 | 测试盲区 → 见 `docs/TEST_GAP_ANALYSIS.md`（G1 已并入 P1-4b，G3a/G4/G5/G7 独立推进） | [ ] |
+| P2-7 | 前台决策路径仍会按事件读取 `isEnabled` 与 Temporary Pass 状态；可进一步用共享 StateFlow 缓存，但当前应以实际调用路径和性能收益为准 | [ ] |
+| P2-8 | 测试盲区仍存在；`docs/TEST_GAP_ANALYSIS.md` 是历史快照，数量需重算，不能把旧统计当当前总数 | [ ] |
 
 ## WONTFIX（明确不做，防止反复讨论）
 
@@ -111,7 +108,7 @@
   late-event check，真正 immediate reopen 仍可重新拦截。当前最终验收证据为
   JVM focused tests、`assembleDebug`、emulator smoke，以及 Xiaomi
   2410DPN6CC / Android 16 的 ADB/logcat/WindowManager objective evidence。
-  未声称主观顺滑度或正式延迟测量；当前 main 也晚于 v0.5.40 release tag。
+  未声称主观顺滑度或正式延迟测量；当前 main 晚于 v0.5.42 release tag，且本工作区的 Home 7 天试用 CTA 尚未提交。
 
 ## 执行顺序（已获授权的批次）
 

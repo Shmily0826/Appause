@@ -785,8 +785,21 @@
 - Verification: `assembleDebug` + `testDebugUnitTest` **216 tests, 0 failures / 0 errors / 0 skipped**;
   physical device (Xiaomi 2410DPN6CC / HyperOS / Android 16) tapped the Today card → Statistics screen
   renders normally (143 records, charts, Top Apps), 0 FATAL. Before the fix: 2/2 crashes on both builds.
-- Also triaged the same day: the 10:00–10:14 pause-screen freeze over the lockscreen was attributed to
-  **release + debug accessibility services running simultaneously** (dual-service interference). Single-package
-  TP + lockscreen behaviour remains UNTESTED and is the follow-up smoke item for the user.
+- Also triaged the same day: the 10:00–10:14 pause-screen freeze occurred while release + debug
+  accessibility services were simultaneously enabled. Dual-service interference remains a plausible
+  hypothesis, not a controlled root-cause proof.
 - Release: bumped to `0.5.42 / versionCode 94`; RELEASE_NOTES.md v0.5.42 section (zh + en) added;
   RELEASE_CHECKLIST.md version references synced; TEST_REPORT.md §33 appended.
+## 2026-09-17 (Xiaomi single-service Temporary Pass lockscreen validation)
+- Physical Xiaomi 2410DPN6CC / HyperOS / Android 16 validation used the release-only Appause
+  AccessibilityService; the debug service was not enabled for the scenario and the original release-only
+  state was restored afterward.
+- A target interception was shown, a five-minute Temporary Pass was granted, the device was locked while
+  the pass was active, it remained locked through expiry, then wake/unlock produced exactly one expiry
+  re-evaluation and one resulting 2032 interception. No duplicate INTERCEPT, overlapping overlay,
+  stacked PauseActivity, stale bypass, or Temporary Pass extension/freeze was observed.
+- This closes the single-package TP + lockscreen gap. It does not provide exact 30-second watchdog
+  evidence on Xiaomi; that boundary remains emulator-verified only.
+## 2026-09-17 - Home trial CTA (APPAUSE-20260917-HOME-TRIAL-CTA-V1)
+- Added a localized Home card for FREE users: “Try Pro free for 7 days” / “免费试用 Appause Pro 7 天”. The CTA only navigates to the existing Pro screen; it does not duplicate trial-start logic and is hidden for every other entitlement state.
+- `testDebugUnitTest` and `assembleDebug` passed; no commit, push, release, or deploy.
