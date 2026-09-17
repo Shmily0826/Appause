@@ -284,6 +284,72 @@ class ProStateRedeemTest {
     }
 
     @Test
+    fun `one-tap trial accepts an idempotent repeat token with newer issued-at`() = runTest {
+        val nowSeconds = System.currentTimeMillis() / 1000L
+        val activatedAt = (nowSeconds - 60L) * 1000L
+        val expiresAt = activatedAt + 7L * 24 * 60 * 60 * 1000L
+        val transport = FakeTransport(
+            trialResponse = RedeemHttpResponse(
+                200,
+                """{"token":"REPEAT-TOKEN","activatedAt":$activatedAt,"expiresAt":$expiresAt}"""
+            )
+        )
+        var stored: String? = null
+        val result = proState(
+            transport,
+            verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", expiresAt / 1000L, nowSeconds, "trial", true) },
+            persister = { stored = it }
+        ).startTrial()
+
+        assertEquals(RedeemResult.TrialStarted, result)
+        assertEquals("REPEAT-TOKEN", stored)
+    }
+
+    @Test
+    fun `one-tap trial rejects a token issued in the future`() = runTest {
+        val nowSeconds = System.currentTimeMillis() / 1000L
+        val activatedAt = (nowSeconds - 60L) * 1000L
+        val expiresAt = activatedAt + 7L * 24 * 60 * 60 * 1000L
+        val transport = FakeTransport(
+            trialResponse = RedeemHttpResponse(
+                200,
+                """{"token":"FUTURE-IAT","activatedAt":$activatedAt,"expiresAt":$expiresAt}"""
+            )
+        )
+        var stored: String? = null
+        val result = proState(
+            transport,
+            verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", expiresAt / 1000L, nowSeconds + 60L, "trial", true) },
+            persister = { stored = it }
+        ).startTrial()
+
+        assertEquals(RedeemResult.Error("token_verify_failed"), result)
+        assertEquals(null, stored)
+    }
+
+    @Test
+    fun `one-tap trial rejects a response with a non-seven-day window`() = runTest {
+        val nowSeconds = System.currentTimeMillis() / 1000L
+        val activatedAt = (nowSeconds - 60L) * 1000L
+        val expiresAt = activatedAt + 6L * 24 * 60 * 60 * 1000L
+        val transport = FakeTransport(
+            trialResponse = RedeemHttpResponse(
+                200,
+                """{"token":"SIX-DAY-TRIAL","activatedAt":$activatedAt,"expiresAt":$expiresAt}"""
+            )
+        )
+        var stored: String? = null
+        val result = proState(
+            transport,
+            verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", expiresAt / 1000L, nowSeconds, "trial", true) },
+            persister = { stored = it }
+        ).startTrial()
+
+        assertEquals(RedeemResult.Error("token_verify_failed"), result)
+        assertEquals(null, stored)
+    }
+
+    @Test
     fun `one-tap trial rejects a valid non-trial token and does not persist`() = runTest {
         val now = System.currentTimeMillis()
         val transport = FakeTransport(

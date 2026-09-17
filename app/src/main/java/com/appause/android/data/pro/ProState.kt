@@ -363,7 +363,9 @@ class ProState(
         val claims = verifier(token, fingerprint)
         val nowSeconds = System.currentTimeMillis() / 1000L
         val expiryMatchesResponse = claims?.exp != null && claims.exp == expiresAt / 1000L
-        val startMatchesResponse = claims?.iat != null && claims.iat == activatedAt / 1000L
+        val issuedAtIsValid = claims?.iat != null &&
+            claims.iat >= activatedAt / 1000L &&
+            claims.iat <= nowSeconds
         val hasSevenDayWindow = activatedAt > 0L && expiresAt - activatedAt == TRIAL_DURATION_SECONDS * 1000L
         if (
             claims == null ||
@@ -372,7 +374,7 @@ class ProState(
             claims.exp == null ||
             claims.exp <= nowSeconds ||
             !expiryMatchesResponse ||
-            !startMatchesResponse ||
+            !issuedAtIsValid ||
             !hasSevenDayWindow
         ) {
             return RedeemResult.Error("token_verify_failed")
