@@ -82,3 +82,8 @@ db2/
 .gradle-user/
 .android-user/
 .hallmark/
+
+# Stress-test evidence output: raw logcat, screenshots, and copies of the
+# device database / persistent log. Contains real-device package names and
+# usage records — never commit.
+scripts/stress/evidence/
