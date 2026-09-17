@@ -1,5 +1,25 @@
 # Appause — Development Progress
 
+## 2026-09-18 — ViewModel 默认工厂契约门禁（APPAUSE-20260918-VM-FACTORY-GATE-V1）
+- 背景：v0.5.42 修掉的 `StatsViewModel` 崩溃（v0.5.39 起每个用户点统计必崩）不是孤例，而是一整类缺陷：
+  Kotlin 默认参数不生成 `(Application)` 单参构造，而 Compose 的裸 `viewModel()` 走
+  `AndroidViewModelFactory` 反射去找它。全仓单测对此**结构性盲视**——都通过注入构造建 VM，
+  从不经过默认工厂的反射路径。
+- 新增 `app/src/test/java/com/appause/android/ui/ViewModelFactoryContractTest`（纯 JVM，不用 Robolectric、
+  不用模拟器，秒级）：断言 9 个 ViewModel 的字节码里都存在 `(Application)` 单参构造；第二条用例扫描
+  classpath 上所有 `*ViewModel` 类，防止以后新增 ViewModel 忘了加进列表（classpath 不是目录布局时
+  自动跳过，不会让门禁假红）。
+- 新门禁立刻抓出一颗没爆的雷：**`OnboardingViewModel`** —— 有两个默认参数且没有 `@JvmOverloads`，
+  而 `OnboardingScreen.kt:103` 的 `viewModel` 参数默认值就是裸 `viewModel()`。此前不崩的**唯一**原因是
+  全仓唯一调用点 `NavGraph.kt:282` 恰好传了显式 `OnboardingViewModel.Factory(...)`——靠约定而非靠门禁。
+  已按 `StatsViewModel` 的同一解法加 `@JvmOverloads` 并附防删注释（指向本测试）。
+- 逐个人工核对了全部 9 个 ViewModel 的构造签名：其余 8 个是纯 `(application: Application)`，无隐患。
+- 验证：新测试修复前红（断言输出 `Broken: [OnboardingViewModel]`）、修复后绿；`OnboardingViewModelTest`
+  （3 参注入路径）不受影响；全量 `assembleDebug` + `testDebugUnitTest` BUILD SUCCESSFUL，
+  **23 suites / 221 tests，0 failures / 0 errors / 0 skipped**。
+- 未做：未提交、未推送、未发版、未部署。真机 30 秒看门狗缺口（v0.5.41 修复目前只有模拟器证据）
+  仍未关闭，是下一步。
+
 ## 2026-09-18 — v0.5.43 released (trial retry compatibility)
 - Released `v0.5.43` / Android `versionCode 95` from `b57c433`, with the fix in
   `990102a` and the prior trial verification record in `2577550`. `main`, tag
