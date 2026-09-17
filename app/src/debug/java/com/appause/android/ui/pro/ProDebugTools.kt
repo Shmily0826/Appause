@@ -44,13 +44,6 @@ fun ProDebugTools(viewModel: ProViewModel) {
                 ) {
                     Text(stringResource(R.string.pro_debug_unlock))
                 }
-            } else {
-                OutlinedButton(
-                    onClick = viewModel::relockProDebug,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.pro_debug_relock))
-                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -120,6 +113,5 @@ fun ProDebugTools(viewModel: ProViewModel) {
 
 fun proDebugMessageResId(message: String): Int? = when (message) {
     "pro_debug_unlocked" -> R.string.pro_debug_unlocked
-    "pro_debug_relocked" -> R.string.pro_debug_relocked
     else -> null
 }

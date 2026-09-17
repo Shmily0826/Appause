@@ -136,8 +136,8 @@ class HttpUrlConnectionTransport(private val baseUrl: String) : RedeemTransport,
  *   - if it is device-bound, the "device" claim matches this device's
  *     fingerprint ([DeviceKeyStore]).
  *
- * The token is stored in DataStore so Pro survives process death and can be
- * re-imported after a factory reset / device switch (offline, no server call).
+ * The token is stored in DataStore so Pro survives process death and the
+ * verified entitlement can be checked offline after activation.
  *
  * A separate debug flag (debug builds only) can force Pro on for development.
  * The signing private key stays server-side, so a fork of this open-source repo
@@ -260,22 +260,11 @@ class ProState(
     }
 
     /**
-     * Debug-only relock — only ever called from debug builds.
-     * Clears both the debug flag and any stored license token so the app
-     * returns to a clean free state (useful for testing the locked experience).
-     */
-    suspend fun relockProDebug() {
-        settings.setProUnlocked(false)
-        settings.setLicenseToken("")
-    }
-
-    /**
      * Verify a license token and persist it only when valid.
      *
-     * Internal to the activation flow: the sole way a token reaches this app is
-     * a redeem / trial response from the server. Tokens are device-bound, so a
-     * token exported from a different device would not verify here anyway —
-     * which is why no user-facing import path exists.
+     * Internal to the activation flow: redeem and trial responses are verified
+     * locally for signature, expiry, and device binding before their tokens are
+     * persisted. There is no user-facing token import path.
      *
      * @return true if the token is valid (and device-bound to this device, if
      *   claimed). A tampered or forged response therefore never flips Pro on.

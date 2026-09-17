@@ -380,9 +380,7 @@
     <string name="pro_dialog_ok">好</string>
     <string name="pro_debug_title">调试工具</string>
     <string name="pro_debug_unlock">解锁 Pro</string>
-    <string name="pro_debug_relock">重新锁定</string>
     <string name="pro_debug_unlocked">调试版 Pro 已解锁</string>
-    <string name="pro_debug_relocked">调试版 Pro 已重新锁定</string>
     <string name="pro_settings_desc">解锁更多分组与功能</string>
 
     <!-- ═══════════════════════════════════════════ -->

@@ -103,7 +103,7 @@ Appause/
 │               │   ├── settings/
 │               │   │   └── SettingsDataStore.kt   # DataStore preferences
 │               │   └── pro/                    # Appause Pro (Plan B)
-│               │       ├── ProState.kt         # isPro + redeem/import/export
+│               │       ├── ProState.kt         # entitlement + redeem/verify/persist
 │               │       ├── LicenseVerifier.kt  # offline JWT (RS256) verify
 │               │       ├── DeviceKeyStore.kt   # Android Keystore device key
 │               │       ├── ServerKeys.kt       # embedded verify-only key

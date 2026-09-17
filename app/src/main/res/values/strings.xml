@@ -385,9 +385,7 @@
     <string name="pro_dialog_ok">OK</string>
     <string name="pro_debug_title">Debug tools</string>
     <string name="pro_debug_unlock">Unlock Pro</string>
-    <string name="pro_debug_relock">Relock</string>
     <string name="pro_debug_unlocked">Debug Pro unlocked</string>
-    <string name="pro_debug_relocked">Debug Pro relocked</string>
     <string name="pro_settings_desc">Unlock extra groups and features</string>
 
     <!-- ═══════════════════════════════════════════ -->

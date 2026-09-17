@@ -9,8 +9,6 @@
 <resources>
     <string name="app_name">Appause Debug</string>
     <string name="pro_debug_unlock">解锁（调试）</string>
-    <string name="pro_debug_relock">重新上锁（调试）</string>
-    <string name="pro_debug_relocked">已重新上锁（调试）</string>
     <string name="pro_debug_tools_title">调试工具（仅调试版）</string>
     <string name="pro_debug_unlocked">已解锁 Pro（调试）</string>
     <string name="debug_activation_title">激活调试（仅调试版）</string>

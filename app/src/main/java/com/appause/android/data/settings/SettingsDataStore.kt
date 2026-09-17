@@ -74,7 +74,7 @@ open class SettingsDataStore(private val context: Context) {
         //   Real Pro is gated by a verified license token (see ProState), not by
         //   this flag. Never set this in release builds.
         // license_token: the (signed, server-issued) JWT used to unlock Pro and
-        //   to re-activate the app after a factory reset or device switch.
+        //   check the device-bound entitlement offline.
         val PRO_UNLOCKED_KEY = booleanPreferencesKey("pro_unlocked")
         val LICENSE_TOKEN_KEY = stringPreferencesKey("license_token")
 
@@ -197,10 +197,7 @@ open class SettingsDataStore(private val context: Context) {
         preferences[PRO_UNLOCKED_KEY] ?: false
     }
 
-    /**
-     * The stored license token (empty until a license is imported or unlocked).
-     * Used by export/import to let the user restore Pro offline.
-     */
+    /** The stored server-issued license token, used for offline entitlement checks. */
     val licenseToken: Flow<String> = context.dataStore.data.map { preferences ->
         preferences[LICENSE_TOKEN_KEY] ?: ""
     }
@@ -345,7 +342,7 @@ open class SettingsDataStore(private val context: Context) {
         }
     }
 
-    /** Store the license token (used for offline re-activation). */
+    /** Store the verified license token for offline entitlement checks. */
     suspend fun setLicenseToken(token: String) {
         context.dataStore.edit { preferences ->
             preferences[LICENSE_TOKEN_KEY] = token

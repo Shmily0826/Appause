@@ -49,14 +49,6 @@ class ProViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Debug-only relock — the UI only calls this in debug builds. */
-    fun relockProDebug() {
-        viewModelScope.launch {
-            proState.relockProDebug()
-            _message.value = "pro_debug_relocked"
-        }
-    }
-
     /**
      * The debug-build activation override currently in force.
      *
