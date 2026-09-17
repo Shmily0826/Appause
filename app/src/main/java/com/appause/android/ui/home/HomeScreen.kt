@@ -69,6 +69,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
 import com.appause.android.data.local.AppGroup
+import com.appause.android.data.pro.ProAccessStatus
 import com.appause.android.data.pro.ProState
 import com.appause.android.service.AccessibilityHealthState
 import com.appause.android.service.AccessibilityHealthStatus
@@ -110,6 +111,7 @@ fun HomeScreen(
     val leaveCooldownDeadlines by viewModel.leaveCooldownDeadlines.collectAsStateWithLifecycle()
     val appCounts by viewModel.appCounts.collectAsStateWithLifecycle()
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
+    val entitlement by viewModel.entitlement.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     // ── Permission-rationale gating ──
@@ -238,6 +240,12 @@ fun HomeScreen(
             }
 
             // ── Today's Statistics ──
+            if (entitlement.status == ProAccessStatus.FREE) {
+                item {
+                    TrialCtaCard(onNavigateToPro = onNavigateToPro)
+                }
+            }
+
             leaveCooldownDeadlines.values.minOrNull()?.let { deadline ->
                 item {
                     LeaveCooldownStatusCard(deadline = deadline)
@@ -397,6 +405,36 @@ fun HomeScreen(
                     pendingAction = null
                 }
             )
+        }
+    }
+}
+
+@Composable
+private fun TrialCtaCard(onNavigateToPro: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.home_trial_cta_title),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = stringResource(R.string.home_trial_cta_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Button(
+                onClick = onNavigateToPro,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.home_trial_cta_action))
+            }
         }
     }
 }

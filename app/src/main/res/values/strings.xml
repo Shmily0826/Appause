@@ -371,6 +371,9 @@
     <string name="pro_settings_trial_active">Appause Pro — 7-day trial</string>
     <string name="pro_settings_trial_expired">Appause Pro — trial ended</string>
     <string name="pro_settings_lifetime">Appause Pro — lifetime</string>
+    <string name="home_trial_cta_title">Try Pro free for 7 days</string>
+    <string name="home_trial_cta_desc">Start your one-time trial on the Pro page. No activation code required.</string>
+    <string name="home_trial_cta_action">View 7-day trial</string>
     <string name="pro_redeem_needs_network">Requires a one-time internet connection to the activation server.</string>
     <string name="pro_redeem_limit">Device limit reached for this code</string>
     <string name="pro_redeem_invalid">Invalid activation code</string>

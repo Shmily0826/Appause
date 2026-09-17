@@ -366,6 +366,9 @@
     <string name="pro_settings_trial_active">Appause Pro — 7 天试用</string>
     <string name="pro_settings_trial_expired">Appause Pro — 试用已结束</string>
     <string name="pro_settings_lifetime">Appause Pro — 永久</string>
+    <string name="home_trial_cta_title">免费试用 Appause Pro 7 天</string>
+    <string name="home_trial_cta_desc">无需激活码，前往 Pro 页面即可开始一次性试用。</string>
+    <string name="home_trial_cta_action">查看 7 天试用</string>
     <string name="pro_redeem_needs_network">需要一次性联网到激活服务器。</string>
     <string name="pro_redeem_limit">该激活码已达设备上限</string>
     <string name="pro_redeem_invalid">激活码无效</string>

@@ -5,6 +5,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.appause.android.AppauseApp
 import com.appause.android.data.local.AppGroup
+import com.appause.android.data.pro.ProAccessStatus
+import com.appause.android.data.pro.ProEntitlement
 import com.appause.android.data.pro.ProState
 import com.appause.android.service.AccessibilityHealthState
 import com.appause.android.service.AppauseAccessibilityService
@@ -65,6 +67,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = false
+        )
+
+    /** Full entitlement state so Home can show the one-time trial only while available. */
+    val entitlement: StateFlow<ProEntitlement> = (application as AppauseApp).proState.entitlement
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ProEntitlement(ProAccessStatus.FREE)
         )
 
     // ── Today's Statistics ──
