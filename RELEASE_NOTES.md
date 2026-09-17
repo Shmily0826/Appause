@@ -1,11 +1,22 @@
-# Appause v0.5.42 — 发布说明 (Release Notes)
+# Appause v0.5.43 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.42/Appause-v0.5.42.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.43/Appause-v0.5.43.apk`
 
-> Source note: this release carries the pause-overlay stacking fix shipped in
-> v0.5.41 plus the stats-screen crash fix found after that release. The
-> v0.5.41/v0.5.40 notes are kept below as the historical record.
+> Source note: this release carries the Pro trial retry compatibility fix. The
+> v0.5.42/v0.5.41/v0.5.40 notes are kept below as the historical record.
+
+---
+
+## 🇨🇳 中文
+
+### 本次更新 (v0.5.43) — Pro 试用重试兼容性修复
+- **版本更新**：版本为 `0.5.43`，Android versionCode 为 `95`；公开 APK 使用 `Appause-v0.5.43.apk`。
+- **修复试用重试**：试用已经成功开始后，Worker 重试会保留原始七天窗口但重新签发 token。Appause 现在接受这种合法重试，同时继续校验签名、设备绑定、Pro/trial、过期时间和完整七天窗口。
+
+### 本次更新 (v0.5.43) — English summary
+- Public APK: `Appause-v0.5.43.apk`, package `com.appause.android`, versionCode `95`.
+- Fixed legitimate Pro trial retries: the Worker may preserve the original seven-day window while re-signing a retry token with a newer `iat`. Appause accepts that contract while retaining signature, device-binding, Pro/trial, expiry, and exact seven-day-window validation.
 
 ---
 

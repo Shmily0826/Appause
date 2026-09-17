@@ -7,13 +7,13 @@ in groups, and set a cooldown. When a target app comes to the foreground,
 Appause shows a short pause screen so you can breathe and decide whether to
 continue.
 
-## Latest release: v0.5.42
+## Latest release: v0.5.43
 
-Download the signed APK from the canonical [GitHub Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.42):
+Download the signed APK from the canonical [GitHub Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.43):
 
-- [Appause-v0.5.42.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.42/Appause-v0.5.42.apk)
+- [Appause-v0.5.43.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.43/Appause-v0.5.43.apk)
 - Package: `com.appause.android`
-- versionCode: `94`
+- versionCode: `95`
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
 `versionCode` is internal metadata and is not part of the public filename.
@@ -97,10 +97,13 @@ Diagnostics and Pro test controls are isolated to the `debug` build
 (`com.appause.android.debug`). They are not included in the production Release
 APK and are not a production activation path.
 
-## v0.5.42 validation status
+## v0.5.43 validation status
 
-- The public GitHub Release is `v0.5.42`, package `com.appause.android`,
-  versionCode `94`. The current `main` source is also `0.5.42 / 94`.
+- The public GitHub Release is `v0.5.43`, package `com.appause.android`,
+  versionCode `95`. The current `main` source is also `0.5.43 / 95`.
+- The Pro trial retry compatibility fix accepts a freshly signed retry token
+  while retaining signature, device-binding, tier, expiry, and exact seven-day
+  window validation.
 - Focused JVM policy tests and `assembleDebug` passed for the current
   Home/Recents and pause-overlay implementation.
 - Emulator-only smoke verified Home dismisses the active pause presentation,
