@@ -1,5 +1,25 @@
 # Appause — Development Progress
 
+## 2026-09-18 — v0.5.43 released (trial retry compatibility)
+- Released `v0.5.43` / Android `versionCode 95` from `b57c433`, with the fix in
+  `990102a` and the prior trial verification record in `2577550`. `main`, tag
+  `v0.5.43`, and the GitHub Release are aligned; the public asset is
+  `Appause-v0.5.43.apk`.
+- Focused Pro/license tests, full `testDebugUnitTest`, `assembleDebug`, and
+  `assembleRelease` passed. The formal APK and packaged public asset are
+  byte-identical, SHA-256
+  `b1b53e38c398c87cc7559df42d51fd0fe70a679ea47f86d3ec9037a011497ba4`;
+  `apksigner` verified the formal v2 signature and production certificate.
+- On Xiaomi 2410DPN6CC / Android 16 / ADB serial `6036d5b`, both packages were
+  updated with `adb install -r` without uninstalling or clearing data:
+  `com.appause.android` = `0.5.43 / 95`, `com.appause.android.debug` =
+  `0.5.43-debug / 95`. Both launch activities started successfully and their
+  original first-install times remained unchanged.
+- The enabled Appause AccessibilityService remains only
+  `com.appause.android/com.appause.android.service.AppauseAccessibilityService`;
+  the Debug service was not enabled. No Worker deployment, production
+  configuration change, or production business-state mutation was made.
+
 ## 2026-09-17 — production trial endpoint smoke (APPAUSE-20260917-TRIAL-SMOKE-V1)
 - One controlled POST to the deployed `appause-pro-worker` used only the new
   synthetic fingerprint `b18b6c63e6a7a5301d7ccd3258751ab969a41d68ccb2b9dc6482d4b14b5546c4`.
