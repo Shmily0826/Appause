@@ -34,7 +34,12 @@ import java.util.Calendar
  * Why AndroidViewModel?
  * - We need application context to access the repository singleton.
  */
-class StatsViewModel(
+class StatsViewModel @JvmOverloads constructor(
+    // @JvmOverloads is REQUIRED here: the stats screen creates this VM through
+    // the default AndroidViewModelFactory, which reflectively looks up an
+    // (Application) single-arg constructor. Kotlin default parameters do NOT
+    // generate that constructor, so without this annotation every entry into
+    // the stats screen crashed with NoSuchMethodException (found in 0.5.40/41).
     application: Application,
     // Test seam: lets unit tests inject a fake repository (defaults to the real one).
     repositoryOverride: AppGroupRepository? = null,
