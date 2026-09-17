@@ -11,9 +11,9 @@ package com.appause.android.service
  *     neither the overlay nor the Activity could clear the flag. A short
  *     grace window covers the async Activity launch; past it, a guard with
  *     nothing on screen is stale.
- *  2. An anti-tamper app (e.g. 小红书) hid the attached overlay via
+ *  2. An anti-tamper app could hide a TYPE_APPLICATION_OVERLAY (2038) via
  *     setHideOverlayWindows, so a window WAS attached but never visible.
- *     The hard cap releases even an attached guard.
+ *     The hard cap remains only for that fallback overlay type.
  *
  * Extracted as a pure function so the four outcomes (and their exact
  * boundaries) can be unit-tested without a clock or a WindowManager.
@@ -29,10 +29,9 @@ internal object PauseGuardPolicy {
     const val PAUSE_GUARD_GRACE_MS = 1_500L
 
     /**
-     * Hard cap: never let the guard stick longer than this, even if a window
-     * is "attached but not actually visible". A genuinely visible overlay
-     * returns [GuardAction.KEEP] long before this cap, so the cap only ever
-     * releases a stuck/dead guard.
+     * Hard cap for the legacy 2038 fallback, which target apps may hide while
+     * WindowManager still reports it attached. The primary 2032 overlay and a
+     * visible PauseActivity are real presentation signals and must outlive it.
      */
     const val PAUSE_GUARD_MAX_MS = 30_000L
 
@@ -46,7 +45,7 @@ internal object PauseGuardPolicy {
         /** Nothing on screen and the grace window has elapsed — release. */
         RELEASE_STALE,
 
-        /** The guard has exceeded its max hold — release unconditionally. */
+        /** A hideable 2038 fallback has exceeded its max hold — release. */
         RELEASE_MAX
     }
 
@@ -61,11 +60,14 @@ internal object PauseGuardPolicy {
         elapsedMs: Long,
         overlayAttached: Boolean,
         pauseActivityVisible: Boolean,
+        overlayCanBeHiddenByTarget: Boolean = false,
         graceMs: Long = PAUSE_GUARD_GRACE_MS,
         maxMs: Long = PAUSE_GUARD_MAX_MS
     ): GuardAction = when {
+        pauseActivityVisible -> GuardAction.KEEP
+        overlayAttached && !overlayCanBeHiddenByTarget -> GuardAction.KEEP
         elapsedMs > maxMs -> GuardAction.RELEASE_MAX
-        overlayAttached || pauseActivityVisible -> GuardAction.KEEP
+        overlayAttached -> GuardAction.KEEP
         elapsedMs < graceMs -> GuardAction.KEEP_WITHIN_GRACE
         else -> GuardAction.RELEASE_STALE
     }

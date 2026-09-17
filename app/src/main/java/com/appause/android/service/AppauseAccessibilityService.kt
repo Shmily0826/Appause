@@ -276,7 +276,8 @@ class AppauseAccessibilityService : AccessibilityService() {
                 return when (PauseGuardPolicy.evaluate(
                     elapsedMs = elapsed,
                     overlayAttached = OverlayManager.overlayAttached,
-                    pauseActivityVisible = pauseActivityVisible
+                    pauseActivityVisible = pauseActivityVisible,
+                    overlayCanBeHiddenByTarget = OverlayManager.overlayCanBeHiddenByTarget
                 )) {
                     PauseGuardPolicy.GuardAction.KEEP,
                     PauseGuardPolicy.GuardAction.KEEP_WITHIN_GRACE -> true
@@ -1350,12 +1351,10 @@ class AppauseAccessibilityService : AccessibilityService() {
 
             is PreGroupDecision.SkipSystem -> {
                 decide(decision.diagnosticsReason)
-                // The watchdog deliberately releases pauseShown after 30s,
-                // even when an attached 2032 surface is still present. In
-                // that state a launcher event can reach this normal system
-                // branch instead of the deferred Home confirmation path.
-                // Reuse the same foreground-confirmed dismissal here so Home
-                // cannot leave the stale accessibility window over Launcher.
+                // A confirmed launcher transition can reach this normal system
+                // branch as well as the deferred Home path. Reuse the same
+                // foreground-confirmed dismissal so Home cannot leave an
+                // accessibility window over Launcher.
                 if (homePackages.contains(packageName) &&
                     !closeSystemDialogsReceiverRegistered &&
                     dismissAttachedOverlayForConfirmedHome(

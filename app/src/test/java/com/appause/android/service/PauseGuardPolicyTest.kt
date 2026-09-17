@@ -31,7 +31,7 @@ class PauseGuardPolicyTest {
         assertEquals(
             GuardAction.KEEP,
             PauseGuardPolicy.evaluate(
-                elapsedMs = 10_000L,
+                elapsedMs = PauseGuardPolicy.PAUSE_GUARD_MAX_MS + 1,
                 overlayAttached = false,
                 pauseActivityVisible = true
             )
@@ -78,42 +78,56 @@ class PauseGuardPolicyTest {
         )
     }
 
-    // ---------- Max hold (attached-but-hidden window) ----------
+    // ---------- Max hold (2038 fallback can be attached-but-hidden) ----------
 
     @Test
-    fun `max hold releases even an attached overlay`() {
+    fun `attached overlay stays guarded past the old max hold`() {
         assertEquals(
-            GuardAction.RELEASE_MAX,
+            GuardAction.KEEP,
             PauseGuardPolicy.evaluate(
                 elapsedMs = PauseGuardPolicy.PAUSE_GUARD_MAX_MS + 1,
                 overlayAttached = true,
-                pauseActivityVisible = false
+                pauseActivityVisible = false,
+                overlayCanBeHiddenByTarget = false
             )
         )
     }
 
     @Test
-    fun `max hold boundary is inclusive - exactly the cap is still held`() {
+    fun `hideable overlay is still held exactly at the max boundary`() {
         assertEquals(
             GuardAction.KEEP,
             PauseGuardPolicy.evaluate(
                 elapsedMs = PauseGuardPolicy.PAUSE_GUARD_MAX_MS,
                 overlayAttached = true,
-                pauseActivityVisible = false
+                pauseActivityVisible = false,
+                overlayCanBeHiddenByTarget = true
             )
         )
     }
 
     @Test
-    fun `max hold releases a hidden overlay even before the grace window would matter`() {
-        // The anti-tamper scenario: a window is attached but was hidden.
-        // The cap outranks both the grace window and window presence.
+    fun `max hold releases a hideable 2038 overlay`() {
         assertEquals(
             GuardAction.RELEASE_MAX,
             PauseGuardPolicy.evaluate(
                 elapsedMs = PauseGuardPolicy.PAUSE_GUARD_MAX_MS + 1,
                 overlayAttached = true,
-                pauseActivityVisible = true
+                pauseActivityVisible = false,
+                overlayCanBeHiddenByTarget = true
+            )
+        )
+    }
+
+    @Test
+    fun `visible PauseActivity outranks the 2038 max hold`() {
+        assertEquals(
+            GuardAction.KEEP,
+            PauseGuardPolicy.evaluate(
+                elapsedMs = PauseGuardPolicy.PAUSE_GUARD_MAX_MS + 1,
+                overlayAttached = true,
+                pauseActivityVisible = true,
+                overlayCanBeHiddenByTarget = true
             )
         )
     }

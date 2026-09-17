@@ -110,6 +110,11 @@ class OverlayManager {
         @Volatile
         var overlayAttached: Boolean = false
             private set
+
+        /** True only for the 2038 fallback, which target apps may hide. */
+        @Volatile
+        var overlayCanBeHiddenByTarget: Boolean = false
+            private set
     }
 
     /** The overlay view — null when no overlay is showing. */
@@ -601,6 +606,7 @@ class OverlayManager {
         // anti-tamper apps can cover by re-fronting).
         AppauseAccessibilityService.lastOverlayResult = "overlay_try"
         overlayAttached = false
+        overlayCanBeHiddenByTarget = false
         // Raise the guard so we don't double-trigger while the window attaches.
         AppauseAccessibilityService.pauseShown = true
         AppauseAccessibilityService.pauseTargetPackage = targetPackage
@@ -612,6 +618,8 @@ class OverlayManager {
                 windowManager.addView(overlayHost, params)
                 overlayView = overlayHost
                 overlayWindowManager = windowManager
+                overlayCanBeHiddenByTarget =
+                    usedType == WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                 overlayAttached = true
                 overlayHost.requestFocus()
                 registerStandaloneBackCallback()
@@ -630,6 +638,7 @@ class OverlayManager {
                         windowManager.addView(overlayHost, params)
                         overlayView = overlayHost
                         overlayWindowManager = windowManager
+                        overlayCanBeHiddenByTarget = true
                         overlayAttached = true
                         overlayHost.requestFocus()
                         registerStandaloneBackCallback()
@@ -653,6 +662,7 @@ class OverlayManager {
             overlayView = null
             overlayWindowManager = null
             overlayAttached = false
+            overlayCanBeHiddenByTarget = false
             destroyOverlayLifecycle()
             AppauseAccessibilityService.lastOverlayResult = "fallback_pauseactivity"
             AppLogger.w(TAG, "Overlay addView failed (type=$usedType) — falling back to PauseActivity")
@@ -826,6 +836,7 @@ class OverlayManager {
         overlayView = null
         overlayWindowManager = null
         overlayAttached = false
+        overlayCanBeHiddenByTarget = false
 
         // Cancel any running coroutines (countdown timer, etc.)
         overlayScope?.coroutineContext?.get(Job)?.cancel()

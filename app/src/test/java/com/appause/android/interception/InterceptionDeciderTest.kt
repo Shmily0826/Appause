@@ -1,6 +1,7 @@
 package com.appause.android.interception
 
 import com.appause.android.data.local.AppGroup
+import com.appause.android.service.PauseGuardPolicy
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -293,6 +294,30 @@ class InterceptionDeciderTest {
         val decision = decidePre(
             { it.copy(pauseShown = { true }, pauseTargetPackage = target) }
         )
+        assertTrue(decision is PreGroupDecision.SkipPauseShown)
+        assertEquals("SKIP: cooldown overlay is showing ($target)", decision.diagnosticsReason)
+    }
+
+    @Test
+    fun `2032 pause held past old watchdog still blocks a second intercept`() {
+        val firstOpen = decidePost()
+        assertTrue(firstOpen is PostGroupDecision.Intercept)
+
+        val guardAction = PauseGuardPolicy.evaluate(
+            elapsedMs = PauseGuardPolicy.PAUSE_GUARD_MAX_MS + 1,
+            overlayAttached = true,
+            pauseActivityVisible = false,
+            overlayCanBeHiddenByTarget = false
+        )
+        assertEquals(PauseGuardPolicy.GuardAction.KEEP, guardAction)
+
+        val repeatedTargetEvent = preGroupInput(
+            pauseTargetPackage = target
+        ).copy(
+            pauseShown = { guardAction == PauseGuardPolicy.GuardAction.KEEP }
+        )
+        val decision = InterceptionDecider.decidePreGroup(repeatedTargetEvent)
+
         assertTrue(decision is PreGroupDecision.SkipPauseShown)
         assertEquals("SKIP: cooldown overlay is showing ($target)", decision.diagnosticsReason)
     }
