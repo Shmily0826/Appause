@@ -1,11 +1,38 @@
-# Appause v0.5.40 — 发布说明 (Release Notes)
+# Appause v0.5.41 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.40/Appause-v0.5.40.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.41/Appause-v0.5.41.apk`
 
-> Source note: the one-tap seven-day trial is a current-source change. It is
-> not claimed to be present in the already-tagged v0.5.40 APK until a later
-> release is built and published.
+> Source note: this is the first release built from the current `main`, so it
+> carries the changes made after the v0.5.40 tag (the one-tap seven-day trial
+> among them). The v0.5.40 notes are kept below as the historical record.
+
+---
+
+## 🇨🇳 中文
+
+### 本次更新 (v0.5.41) — 暂停屏窗口叠加修复
+- **版本更新**：版本为 `0.5.41`，Android versionCode 为 `93`；公开 APK 使用 `Appause-v0.5.41.apk`。
+- **修复重复拦截与暂停屏叠加**：在暂停屏显示的看门狗（30 秒）早于倒计时结束时，拦截状态会被提前释放。
+  此后目标应用只要产生一次前台事件就会再次拦截，并叠加一个新的暂停屏，而先前的暂停屏无法再被关闭。
+  目标应用自己切换页面就足以触发，不需要用户做任何操作。现在只要主用的 2032 暂停窗口仍在屏幕上，
+  看门狗不会释放拦截状态。
+- **30 秒硬上限仅保留给 2038 兜底窗口**：该窗口可能被目标应用隐藏，需要上限兜底。因此 HyperOS 上
+  「窗口已挂载但不可见」的既有修复保持不变，没有被回退。
+- **其余改动**：一键七天试用、横屏暂停屏布局、系统 Home/返回/最近任务的导航处理、调试版激活覆盖
+  等自 v0.5.40 标签以来的改动，一并进入本版本。
+
+### 本次更新 (v0.5.41) — English summary
+- Public APK: `Appause-v0.5.41.apk`, package `com.appause.android`, versionCode `93`.
+- Fixed duplicate interception and pause-screen stacking. With a cooldown longer than 30 seconds, the guard
+  watchdog released the interception guard while the countdown was still running; a single foreground event
+  from the target app then produced a second interception and attached a second pause window, leaving the
+  first window impossible to remove. The app switching one of its own pages is enough to trigger it, with no
+  user action required. The guard is now kept for as long as the primary 2032 pause window is attached.
+- The 30-second hard cap now applies only to the hideable 2038 fallback window, so the existing
+  "attached but hidden" fix for HyperOS is preserved rather than regressed.
+- Also included since the v0.5.40 tag: the one-tap seven-day trial, the adaptive landscape pause layout,
+  Home/Back/Recents navigation handling, and the debug-only activation override.
 
 ---
 

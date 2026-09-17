@@ -1186,3 +1186,32 @@ APK contains these post-tag fixes.
 No subjective visual-smoothness measurement is claimed. The physical evidence is
 objective navigation/overlay/intercept evidence, not a claim about the tagged
 v0.5.40 APK; the current source is later than that tag.
+
+## 32. v0.5.41 repeat-interception / pause-overlay stacking fix (2026-09-17)
+
+**Scope:** release `v0.5.41` / versionCode `93`, built from `main` @ `d210197`.
+The defect: the 30 s pause-guard watchdog released the logical guard while the
+primary `TYPE_ACCESSIBILITY_OVERLAY` (2032) was still attached, so with a
+cooldown longer than 30 s the next foreground event ran a second INTERCEPT and
+attached a second overlay, leaving the first window unremovable.
+
+Full analysis, trigger boundary and raw evidence: `docs/REPEAT_INTERCEPTION_STRESS_TEST.md`.
+
+### Gate results
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| `testDebugUnitTest` | **PASS** | 22 suites, **216 tests, 0 failures, 0 errors, 0 skipped**, including the updated `PauseGuardPolicyTest` boundaries and the new `InterceptionDeciderTest` integration case. |
+| `assembleRelease` | **PASS** | `BUILD SUCCESSFUL in 2m 39s`; `aapt2 dump badging` reports `versionCode='93' versionName='0.5.41'`, `minSdk 26`. |
+| Release signing | **PASS** | `apksigner verify --print-certs`: V2 signer `CN=Appause`, SHA-256 `843d4ce0ed3b369b00fd5d22be90bfff454ec2ef5d8d415d6ec15c9489431525` — **byte-identical to the published v0.5.40 APK**, so an in-place upgrade stays valid. |
+| Emulator reproduction | **PASS** | Pre-fix build (9-14 APK), `Medium_Phone` API 37, cooldown 60 s: with **no user action at all** — only Clock opening one of its own config pages — the guard was released at +31 s and a second `INTERCEPT` + second `Overlay shown` followed, with no `Overlay dismissed` between them. Post-fix build: 1 INTERCEPT / 1 overlay, zero watchdog releases (`run-20260917-000356`, `self-event3.log`). |
+| Human-like stress regression | **PASS** | 17 scenarios (S1–S17) on `emulator-5554`; analyzer reported no duplicate interception, no overlay leak and no blocked retry. |
+| Xiaomi physical smoke (this fix) | **NOT TESTED** | The device was used for diagnosis on the pre-fix build only. Its group cooldown is 10 s, which cannot reach the 30 s watchdog, so the physical device could not exercise this defect either way. Emulator results are **not** recorded as device results. |
+
+### Notes
+
+- The countdown reset caused by `AbandonCooldown` (leaving the pause screen
+  mid-countdown restarts the countdown on return) is **intended behaviour** and
+  is deliberately unchanged — see `docs/REPEAT_INTERCEPTION_STRESS_TEST.md` §13.
+- No subjective smoothness claim. Physical-device evidence for this specific fix
+  remains a manual gap to close on a build with a cooldown above 30 s.
