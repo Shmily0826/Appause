@@ -1,11 +1,11 @@
 # Appause 发版清单（Release Checklist）
 
 > 面向"准备给陌生用户使用"的发版流程。每次发 release 前**从上到下过一遍**，
-> 全部勾完才打包。当前公开版本为 v0.5.41 / versionCode 93，改配置后请同步更新。
+> 全部勾完才打包。当前公开版本为 v0.5.42 / versionCode 94，改配置后请同步更新。
 
 ## 1. 版本与构建配置
 
-- [ ] `app/build.gradle.kts`：`versionCode` +1（当前 93 / v0.5.41），`versionName` 按语义更新
+- [ ] `app/build.gradle.kts`：`versionCode` +1（当前 94 / v0.5.42），`versionName` 按语义更新
   - debug flavor 的 `versionNameSuffix = "-debug"` 依赖 **更高的** versionCode 保证共存，勿降
 - [ ] minSdk 26 / targetSdk 未被意外改动；新增依赖在 version catalog（`gradle/libs.versions.toml`），未硬编码版本号
 - [ ] `./gradlew assembleDebug` 与 `./gradlew assembleRelease` 均通过（需 `JAVA_HOME=D:\Dev-Setup\jdk`）

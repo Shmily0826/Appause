@@ -770,3 +770,23 @@
 - Pre-fix reproduction was re-confirmed on a pre-fix build (9-14 APK) on `emulator-5554`: guard released at +31 s with **zero user interaction**, followed by a second INTERCEPT and a second overlay with no `Overlay dismissed` between them. Post-fix runs show 1 INTERCEPT / 1 overlay and zero watchdog releases.
 - Boundary: the physical Xiaomi device was used for diagnosis on the pre-fix build only, and its group cooldown is 10 s, which cannot reach the 30-second watchdog. **Physical smoke for this fix is NOT TESTED and remains a manual gap**; the emulator results are not recorded as device results.
 - Deliberately unchanged: the `AbandonCooldown` countdown reset (leaving the pause screen mid-countdown restarts the countdown on return). This is intended behaviour — it prevents bypassing the wait by leaving and returning — and is recorded as such in `docs/REPEAT_INTERCEPTION_STRESS_TEST.md` §13 so it is not "fixed" later.
+
+## 2026-09-17 (v0.5.42 released — stats-screen crash fix)
+- User report: tapping the "当天的记录" entry crashed the app instantly on **both** builds. Stack from
+  `adb logcat -d -b crash`: `NoSuchMethodException: StatsViewModel.<init> [class android.app.Application]`.
+- Root cause: commit `497b35b` (08-28) added default-valued test-seam parameters to the `StatsViewModel`
+  primary constructor; Kotlin default parameters generate no real `(Application)` constructor, and the
+  stats screen instantiates through the default factory's reflection → crash on every entry since.
+  First public release carrying it: **v0.5.39** (`git tag --contains`). Unit tests were blind because
+  they construct through the 3-arg injection path. Onboarding uses the same pattern but wires an explicit
+  `viewModelFactory` in `NavGraph.kt`, which is why it never crashed.
+- Fix: `@JvmOverloads` on the constructor (one line) + a guard comment; repo-wide scan found no other
+  ViewModel with the hazard. Committed and pushed as `963c5f9`.
+- Verification: `assembleDebug` + `testDebugUnitTest` **216 tests, 0 failures / 0 errors / 0 skipped**;
+  physical device (Xiaomi 2410DPN6CC / HyperOS / Android 16) tapped the Today card → Statistics screen
+  renders normally (143 records, charts, Top Apps), 0 FATAL. Before the fix: 2/2 crashes on both builds.
+- Also triaged the same day: the 10:00–10:14 pause-screen freeze over the lockscreen was attributed to
+  **release + debug accessibility services running simultaneously** (dual-service interference). Single-package
+  TP + lockscreen behaviour remains UNTESTED and is the follow-up smoke item for the user.
+- Release: bumped to `0.5.42 / versionCode 94`; RELEASE_NOTES.md v0.5.42 section (zh + en) added;
+  RELEASE_CHECKLIST.md version references synced; TEST_REPORT.md §33 appended.

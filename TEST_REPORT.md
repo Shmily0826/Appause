@@ -1215,3 +1215,45 @@ Full analysis, trigger boundary and raw evidence: `docs/REPEAT_INTERCEPTION_STRE
   is deliberately unchanged — see `docs/REPEAT_INTERCEPTION_STRESS_TEST.md` §13.
 - No subjective smoothness claim. Physical-device evidence for this specific fix
   remains a manual gap to close on a build with a cooldown above 30 s.
+
+## 33. v0.5.42 stats-screen crash fix (2026-09-17)
+
+### Regression found after the v0.5.41 release
+- User report: opening the Statistics screen ("当天的记录" entry) crashed instantly on **both** the
+  debug and the release build on the physical device. Confirmed 2/2 reproductions, then read the stack
+  from `adb logcat -d -b crash`:
+  `Cannot create an instance of class ...StatsViewModel` →
+  `Caused by: NoSuchMethodException: StatsViewModel.<init> [class android.app.Application]`.
+
+### Root cause
+- Commit `497b35b` (2026-08-28) added two default-valued test-seam parameters
+  (`repositoryOverride`, `isProOverride`) to the `StatsViewModel` primary constructor.
+- Kotlin default parameters do **not** generate a real `(Application)` single-arg constructor in
+  bytecode. The stats screen creates the VM through the default `AndroidViewModelFactory`, which
+  reflectively requires exactly that shape → crash on every stats-screen entry since.
+- The crash first shipped in a public release with **v0.5.39** (`git tag --contains 497b35b`).
+- Why the 216 unit tests were blind: they construct the VM through the 3-arg injection path and never
+  exercise the default-factory reflection.
+- Why onboarding has the same pattern but does not crash: its screen wires an explicit
+  `viewModelFactory` in `NavGraph.kt`; the stats screen used bare `viewModel()`.
+
+### Fix
+- `StatsViewModel` constructor annotated with `@JvmOverloads` (one line), restoring the
+  `(Application)` constructor while keeping the test seams. Guard comment added so the annotation is
+  not removed as "redundant". Repo-wide scan: no other ViewModel has this hazard. Committed as `963c5f9`.
+
+### Verification
+- `assembleDebug` + `testDebugUnitTest`: **216 tests, 0 failures / 0 errors / 0 skipped**.
+- Physical device (Xiaomi 2410DPN6CC / HyperOS / Android 16, debug build): tapped the Today stats
+  card → Statistics screen opens normally, 143 records, weekly bar chart, Overview and Top Apps all
+  render; 0 FATAL exceptions in logcat. Before the fix: crash 2/2 on both builds.
+
+### Release gate (v0.5.42 / versionCode 94)
+- `assembleRelease` + full unit suite run together: BUILD SUCCESSFUL in 4m 24s; 22 suites / 216 tests,
+  0 failures / 0 errors / 0 skipped.
+- `aapt2 dump badging`: `versionCode='94' versionName='0.5.42'`, minSdk 26.
+- `apksigner verify --print-certs`: V2 signer `CN=Appause`, SHA-256 `843d4ce0…431525`, **byte-identical
+  to the published v0.5.41 APK**, so in-place upgrade stays valid.
+- Boundary note: the TP + lockscreen freeze reported by the user on 09-17 10:00–10:14 is attributed to
+  the release + debug dual-accessibility-service interference; single-package TP + lockscreen behaviour
+  remains UNTESTED. The `AbandonCooldown` countdown reset stays intended behaviour, unchanged.

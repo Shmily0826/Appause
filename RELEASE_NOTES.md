@@ -1,11 +1,35 @@
-# Appause v0.5.41 — 发布说明 (Release Notes)
+# Appause v0.5.42 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
-> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.41/Appause-v0.5.41.apk`
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.42/Appause-v0.5.42.apk`
 
-> Source note: this is the first release built from the current `main`, so it
-> carries the changes made after the v0.5.40 tag (the one-tap seven-day trial
-> among them). The v0.5.40 notes are kept below as the historical record.
+> Source note: this release carries the pause-overlay stacking fix shipped in
+> v0.5.41 plus the stats-screen crash fix found after that release. The
+> v0.5.41/v0.5.40 notes are kept below as the historical record.
+
+---
+
+## 🇨🇳 中文
+
+### 本次更新 (v0.5.42) — 统计页闪退修复
+- **版本更新**：版本为 `0.5.42`，Android versionCode 为 `94`；公开 APK 使用 `Appause-v0.5.42.apk`。
+- **修复统计页闪退**：自 v0.5.39 起（8 月 28 日的内部改动引入），任何用户点开「统计」页面都会立即闪退。
+  原因是统计页的 ViewModel 增加了带默认值的测试注入参数后，系统默认工厂无法再通过反射创建它。
+  本次恢复了对默认工厂可见的构造函数，测试注入通道不受影响。已在真机上验证：统计页正常打开，
+  记录、图表与 Top Apps 全部正常渲染。
+- **包含 v0.5.41 的全部修复**：暂停屏窗口叠加（冷却 ≥ 31 秒时，目标应用自己切换页面即可触发重复拦截、
+  旧暂停屏无法关闭）等。
+
+### 本次更新 (v0.5.42) — English summary
+- Public APK: `Appause-v0.5.42.apk`, package `com.appause.android`, versionCode `94`.
+- Fixed the stats-screen crash: since v0.5.39 (introduced by the August 28 internal change), opening the Statistics screen crashed
+  immediately on every device and both builds. Adding default-valued test-seam parameters to the ViewModel
+  constructor stopped the default factory from reflectively instantiating it. The default-factory-visible
+  constructor is restored while the test seams are unchanged. Verified on device: the stats screen opens
+  normally with records, charts, and Top Apps rendering correctly.
+- Also carries everything from v0.5.41: the pause-overlay stacking fix (with a cooldown of 31 seconds or
+  more, the target app switching one of its own pages was enough to trigger duplicate interception and an
+  unremovable pause window), and the other post-v0.5.40 changes.
 
 ---
 
