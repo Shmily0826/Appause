@@ -463,7 +463,7 @@ def scenario_11(d: Path) -> None:
     mark(d, "S11 captured second return")
 
 
-def scenario_12(d: Path) -> None:
+def scenario_12_control(d: Path) -> None:
     """Control case: the same switching, but INSIDE the guard window.
 
     Identical app switching to S11, stopped well before the 30 s watchdog, so
@@ -602,6 +602,9 @@ SCENARIOS = {
     "S10": scenario_10,
     "S11": scenario_11,
     "S12": scenario_12,
+    # Registered separately because this control scenario was shadowed by a
+    # duplicate `scenario_12` definition and silently never ran before.
+    "S12C": scenario_12_control,
     "S13": scenario_13,
     "S14": scenario_14,
     "S15": scenario_15,
