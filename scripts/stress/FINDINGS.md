@@ -68,3 +68,21 @@ If confirmed: A-class (escape-safety path dead on API 34 with predictive
 back opt-in) — likely because findOnBackInvokedDispatcher() is queried
 synchronously right after addView before the ViewRootImpl dispatcher is
 attached, and there is no retry nor any log on the null branch.
+
+## F-06 (C-class, harness/environment discovery) uiautomator dump rebinds the a11y service on this emulator
+P2 chain logcat: every `uiautomator dump` process start is followed within
+~25 ms by "AccessibilityService destroyed" and ~1 s later by a reconnect on
+the SAME PID (11:24:03.5 -> destroyed 03.539 -> connected 04.606, etc.).
+Because onDestroy dismisses a showing overlay, any harness wait_for/tap that
+runs while the pause overlay is up makes the overlay vanish.
+Explains: P2 LEAVE-HOLD-setup FAIL ("Continue button not found") and the
+transient nature of SCREEN-overlay-tappable-after-wake FAIL.
+Impact: NOT a product escape defect by itself (process death dismissal is by
+design per AGENTS.md), but it (a) invalidates any overlay-interacting oracle
+that uses uiautomator on this emulator, (b) is a live demo of the R1 concern:
+a UI-test-like client can force rebinds; companion-static state survives
+(same PID) and must not leave pauseShown/bypass guards stuck. J3-miss-13
+("Bypass started: calendar" with no INTERCEPT) is the leading suspect for a
+guard/bypass leak across a dump-triggered rebind -> dedicated repro pending.
+Workaround for probes: use logcat INTERCEPT + dumpsys window (shell-only)
+instead of uiautomator while the overlay matters.
