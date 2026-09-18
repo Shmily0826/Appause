@@ -1,5 +1,12 @@
 # Appause — Development Progress
 
+## 2026-09-18 — 补充核心安全逻辑单元测试（APPAUSE-20260918-TEST-COV-V1）
+- 为此前零覆盖的分支逻辑补测，仅新增测试代码、未改动生产代码：
+  - `AppGroupRepositoryTest`：跑真实内存 Room（Robolectric），锁定 `findGroupForPackage`（learning 组必须返回 null，永不触发冷却）、`saveGroupWithApps`（新建 vs 编辑 + 全量替换成员）、`deleteOldLaunchRecords`（365 天保留边界）。
+  - `InterceptionInvariantTest`：对纯决策层 `InterceptionDecider` / `BurstTracker` 做定种子的随机事件不变量测试（关闭/自身/临时通行证安全门恒定优先；未分组永不拦截；≤2 真实 App 永不触发 burst 抑制）。与既有逐例回归测试互补、不重复。
+- 发现并记录一处真实优先级语义：临时通行证判定位于 stale-cancelled 守卫（步骤 2.5）之后，故新增用例把该轴中性化来精确断言通行证对 bypass/session/system/pause/dedup 的压制关系。
+- 验证：`testDebugUnitTest` 全量 **BUILD SUCCESSFUL**（含新增 13 个用例，0 失败）。未提交、未推送、未发布。
+
 ## 2026-09-18 — 落地页分享元信息与 OG 卡片（APPAUSE-20260918-LANDING-OG-V1）
 - 背景：线上落地页（GitHub Pages，legacy 构建，源是 main 根目录的 `index.html`）此前完全没有社交/SEO 元信息：
   没有 favicon、没有 `og:` / `twitter:` 卡片、没有 canonical。分享到 Reddit / X / HN / 小红书时是裸链接，没有预览图。
