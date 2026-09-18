@@ -86,3 +86,56 @@ a UI-test-like client can force rebinds; companion-static state survives
 guard/bypass leak across a dump-triggered rebind -> dedicated repro pending.
 Workaround for probes: use logcat INTERCEPT + dumpsys window (shell-only)
 instead of uiautomator while the overlay matters.
+
+---
+
+# Chain-1 (verify-A..E, 11:28-11:36) outcome updates
+
+## F-03 (UPDATE: A-class status UNDER RECHECK, likely B/C artifact)
+verify-A text oracle labeled every round NO-CARD while screenshots showed the
+red card -> the polling loop's uiautomator dumps themselves destroy+rebind
+the service (F-06), and the screenshot is taken right after such a dump, i.e.
+inside the genuine ~1 s DISCONNECTED window. The sticky-card claim therefore
+needs one dump-free confirmation: f03_recheck.py (wait for the connect log,
+screenshot at +4 s / +9 s after an OFF->ON rebind while Home is open).
+Classification decision deferred to that result.
+
+## F-05 (UPDATE: repro CONFIRMED 3/3, root cause narrowed)
+f05_back_repro.py verify-B: KEYCODE_BACK with overlay attached -> window
+still attached after 5 s in 3/3 attempts. NEW runtime signal from back0
+logcat: the Back keypress produced `AutofillManagerService.onBackKeyPressed`
++ a CLOSE transition of the DESKCLOCK task (home to front) while the appause
+2032 window stayed attached -> the overlay window does not receive/route
+Back at all; the key falls through to the app task below. Combined with code
+review: `overlayHost.requestFocus()` is a no-op (plain FrameLayout is not
+focusable-in-touch-mode), and registerStandaloneBackCallback has no retry /
+no null-branch log. Next: instrument all three back paths with debug logs,
+rebuild, rerun f05 with the fixed focus probe -> pin dispatcher-null vs
+window-focus, then minimal fix + JVM regression test.
+
+## F-07 (B-class, FIXED) P3 arm_pass raced the post-reset service re-register
+verify-E: all three P3 probes died at `arm_pass: no intercept`; the saved
+logcat shows 'AccessibilityService connected and running' ~20 ms AFTER the
+monkey launch — the window event was lost, and re-monkeying an already
+foreground app emits no new event. Fixed in p3_pass_expiry.py: arm_pass now
+waits for the connect log, returns to Home, and retries up to 3x; main()
+seeds its own 'P3Pass' group instead of relying on leftover groups.
+
+## F-08 (B-class, FIXED) focus probe used a key that no longer exists on API 34
+`dumpsys input | grep mCurrentFocus` always empty (format is now a
+`FocusedWindows:` list) -> verify-B silently lost the focus signal.
+f05_back_repro.py now reads `dumpsys window` mCurrentFocus AND the
+FocusedWindows section of `dumpsys input`.
+
+## J3-miss-13 (UPDATE: D-class flake, F-06-related)
+verify-C reran the alternating matrix 12/12 rounds with zero misses. The
+single calendar miss in the 30-round run matches the F-06 rebind window
+("Bypass started" without INTERCEPT). Not product-fixable evidence; logged
+as flake with known mechanism.
+
+## LEAVE-HOLD (UPDATE: B/C environment, superseded by F-07 pattern)
+verify-D failed identically ("Continue button not found"): same race as
+F-07 but on the tap side — uiautomator dump during the tap sequence rebinds
+the service and onDestroy dismisses the overlay. Needs the same
+connect-wait + retry treatment inside p2_lifecycle_chaos.py before any
+product conclusion can be drawn from LEAVE-HOLD.

@@ -37,8 +37,13 @@ TARGET = "com.google.android.deskclock"
 
 
 def current_focus() -> str:
-    out = adb_shell("dumpsys input | grep -m2 mCurrentFocus")
-    return out.strip() or "(no mCurrentFocus line)"
+    # verify-B lesson: API 34 `dumpsys input` no longer has an `mCurrentFocus`
+    # key (it prints a `FocusedWindows:` list), so the old grep always came
+    # back empty and the focus signal was silently lost. Read both surfaces.
+    win = adb_shell("dumpsys window | grep -E 'mCurrentFocus|mFocusedApp' | head -3")
+    inp = adb_shell("dumpsys input | sed -n '/FocusedWindows:/,+6p'")
+    out = f"window:[{win.strip()}] input:[{inp.strip()}]"
+    return out if win.strip() or inp.strip() else "(no focus line in window/input dumps)"
 
 
 def overlay_shown() -> bool:

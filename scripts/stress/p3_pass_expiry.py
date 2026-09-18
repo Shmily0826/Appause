@@ -34,8 +34,10 @@ from campaign_lib import (
     expect_intercept,
     go_home,
     logcat_clear,
+    logcat_match,
     open_app,
     reset_appause,
+    seed_pause_group,
     tap,
 )
 
@@ -73,20 +75,31 @@ def set_expiry(local: Path, new_ms: int) -> bool:
 
 
 def arm_pass(ev: Evidence) -> bool:
-    """Intercept target A and take the 1-minute Temporary Pass via UI."""
-    logcat_clear()
-    open_app(TARGET_A)
-    if not expect_intercept(TARGET_A):
-        ev.mark("arm_pass: no intercept")
-        return False
-    if not tap("Temporary pass", timeout=5):
-        ev.mark("arm_pass: 'Temporary pass' button missing")
-        return False
-    if not tap("Use for 1 min", timeout=5):
-        ev.mark("arm_pass: 'Use for 1 min' option missing")
-        return False
-    time.sleep(1.5)
-    return True
+    """Intercept target A and take the 1-minute Temporary Pass via UI.
+
+    verify-E showed the naive version failing: after reset the service is
+    still re-registering when the launch fires, so the window event is lost
+    and a re-monkey of an already-foreground app generates no new event.
+    Retrying must therefore always leave to Home first, and wait for the
+    connect log before each attempt.
+    """
+    for attempt in range(3):
+        logcat_clear()
+        logcat_match(r"AccessibilityService connected and running", timeout=20)
+        go_home()
+        time.sleep(1.5)
+        if not expect_intercept(TARGET_A):
+            ev.mark(f"arm_pass attempt {attempt}: no intercept")
+            continue
+        if not tap("Temporary pass", timeout=5):
+            ev.mark(f"arm_pass attempt {attempt}: 'Temporary pass' button missing")
+            continue
+        if not tap("Use for 1 min", timeout=5):
+            ev.mark(f"arm_pass attempt {attempt}: 'Use for 1 min' option missing")
+            continue
+        time.sleep(1.5)
+        return True
+    return False
 
 
 def probe_clean_pass(ev: Evidence) -> bool:
@@ -153,6 +166,8 @@ def main() -> int:
     parser.add_argument("--evidence", default=str(Path(__file__).parent / "evidence"))
     args = parser.parse_args()
     ev = Evidence(Path(args.evidence), "p3-pass")
+    # Own group so arming never depends on groups left by earlier probes.
+    seed_pause_group("P3Pass", [TARGET_A], 2)
     mapping = {"CLEAN": probe_clean_pass, "EXPIRED": probe_expired_reopen,
                "WAKE": probe_wake_rebuild}
     for name in args.probes.split(","):
