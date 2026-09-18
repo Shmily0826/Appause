@@ -1,9 +1,9 @@
 # Architecture Reconstruction — Appause
 
 > **Scope**: 基于当前真实 implementation 反向还原的系统架构快照（read-only reconstruction，非 review）。
-> **基准**: branch `main` @ `4719c28`（2026-09-17，`docs: reconcile v0.5.42 status and backlog`），versionName `0.5.42` / versionCode `94`，`com.appause.android`（debug 后缀 `.debug`）。
-> **注意**: 本快照以当前 HEAD 源码与已记录的验证证据为准；工作区另有两个 pre-existing 未跟踪用户文件，未纳入实现判断。
-> **更新日期**: 2026-09-17。生产 Worker 的线上 bundle 与当前 HEAD 的精确相等性未被证明。
+> **基准**: branch `main` @ `688598b`（2026-09-18，当前源码快照），versionName `0.5.43` / versionCode `95`，`com.appause.android`（debug 后缀 `.debug`）。
+> **注意**: 本快照以当前 HEAD 源码与已记录的验证证据为准；工作区另有一个 pre-existing 未跟踪用户文件，未纳入实现判断。
+> **更新日期**: 2026-09-18。生产 Worker 的线上 bundle 与当前 HEAD 的精确相等性未被证明。
 
 ---
 
@@ -231,30 +231,30 @@ sequenceDiagram
 
 | 验证层级 | 已有证据 | 能证明什么 / 不能证明什么 |
 |---|---|---|
-| Source / current HEAD | `main` @ `4719c28`；`HomeScreen` 只在 `entitlement=FREE` 显示 CTA，点击只导航到 Pro；`ProState` 负责试用 POST、JWT 验证与持久化 | 当前源码的架构与行为；不等于线上 bundle |
-| Local deterministic | Worker suite 31 checks + RS256 interop；v0.5.42 记录的 focused Android tests 与 `assembleDebug` PASS | 本地 handler、DO、验签和 Android 逻辑；不等于真实 Cloudflare 资源或线上请求 |
+| Source / current HEAD | `main` @ `688598b`；`HomeScreen` 只在 `entitlement=FREE` 显示 CTA，点击只导航到 Pro；`ProState` 负责试用 POST、JWT 验证与持久化，并接受重新签发但仍在有效七天窗口内的试用重试 token | 当前源码的架构与行为；不等于线上 bundle |
+| Local deterministic | Worker suite 31 checks + RS256 interop；v0.5.43 记录的 focused Android tests 与 `assembleDebug` PASS | 本地 handler、DO、验签和 Android 逻辑；不等于真实 Cloudflare 资源或线上请求 |
 | Emulator | API 37 `Medium_Phone` 的 2032 overlay、看门狗与人类化 stress evidence PASS | Android 模拟器行为；不等于物理设备 |
 | Physical device | Xiaomi 2410DPN6CC / HyperOS / Android 16 的统计页、Home/Recents 及单服务 Temporary Pass 锁屏过期验证有 objective ADB/logcat/WindowManager evidence | 物理设备特定路径；没有试用客户端 UI 的物理设备端到端证据，也没有 Xiaomi exact-30s watchdog 证据 |
-| Production | Worker `appause-pro-worker` 的当前 100% deployment metadata 指向 version `4af734fe-1bd8-41da-93c9-9c03d5c2f4ed`（2026-09-11）。2026-09-17 对 `https://appause-pro-worker.rng2018520.workers.dev/api/trial/start` 使用 synthetic fingerprint `b18b6c63e6a7a5301d7ccd3258751ab969a41d68ccb2b9dc6482d4b14b5546c4`：首次 POST HTTP 200 并返回 token；同 fingerprint 重试 HTTP 200、`alreadyStarted=true`、`newlyStarted=false`。响应 `activatedAt=1789644428946`、`expiresAt=1790249228946`，窗口 `604800000 ms`；JWT `tier=pro`、`trial=true`、`device` 匹配、RS256 签名用仓库 production PEM 验证通过，`exp` 与 response expiry 对齐。 | 线上 endpoint、DO 创建与 Worker 幂等行为；不能证明线上 bundle 与当前 HEAD 精确相等。重复请求 token 的 `iat=1789644459` 是重签时刻，而 response 的 `activatedAt` 保持首次时刻（`floor=1789644428`）；当前 Android 严格要求两者相等，因此重复响应会被客户端判为 `token_verify_failed`，这是尚未修复的跨层 gap |
+| Production | **历史 smoke（2026-09-17）**：Worker `appause-pro-worker` 的当时 100% deployment metadata 指向 version `4af734fe-1bd8-41da-93c9-9c03d5c2f4ed`（2026-09-11）。对 `https://appause-pro-worker.rng2018520.workers.dev/api/trial/start` 使用 synthetic fingerprint `b18b6c63e6a7a5301d7ccd3258751ab969a41d68ccb2b9dc6482d4b14b5546c4`：首次 POST HTTP 200 并返回 token；同 fingerprint 重试 HTTP 200、`alreadyStarted=true`、`newlyStarted=false`。响应 `activatedAt=1789644428946`、`expiresAt=1790249228946`，窗口 `604800000 ms`；JWT `tier=pro`、`trial=true`、`device` 匹配、RS256 签名用仓库 production PEM 验证通过，`exp` 与 response expiry 对齐。 | 证明历史线上 endpoint、DO 创建与 Worker 幂等行为；不能证明线上 bundle 与当前 HEAD 精确相等。重复请求 token 的新 `iat` 与首次 `activatedAt` 不同，已由 v0.5.43 Android retry compatibility 接受，同时保留签名、设备绑定、tier、expiry 与七天窗口校验 |
 
-生产 smoke 只创建了这一条 synthetic trial record；未使用真实设备 fingerprint，未发送第三次请求，未部署或修改生产配置。
+上述历史生产 smoke 只创建了这一条 synthetic trial record；未使用真实设备 fingerprint，未发送第三次请求，未部署或修改生产配置。
 
 ## P. Unknown / Ambiguous Areas
 
 - **SOURCE_OF_TRUTH_AMBIGUOUS（轻微）**：UsageStats 在现行决策中的确切权重——manifest 注释与 v0.5.24 实现口径不一；判定为「poller 佐证、事件为准」，但 `ForegroundChecker` 对受控 app 是否完全旁路未逐行确认（LIKELY）。
 - `Converters.kt` 为占位（CONFIRMED 空置）。
 - Worker `handleUnbind` 的具体限额/频率限制未深入（UNKNOWN）。
-- 当前工作区只有两个 pre-existing 未跟踪用户文件；本次未分析或修改其内容。
+- 当前工作区只有一个 pre-existing 未跟踪用户文件；本次未分析或修改其内容。
 - Re-remind 的 wall-clock / 切换暂停语义由 ARCHITECTURE.md §6.4 + 代码交叉确认，但进程死亡中断会话等边界场景未验证（LIKELY）。
-- 生产 Worker 的 exact bundle/source 与当前 HEAD 的相等性未证明；线上重复试用 token 的 `iat` 与首次 `activatedAt` 不一致，需单独决定源码修复与后续部署。
+- 生产 Worker 的 exact bundle/source 与当前 HEAD 的相等性未证明；历史线上重复试用 token 的 `iat` 与首次 `activatedAt` 不一致，但 v0.5.43 Android 已兼容该重试形态并继续执行完整校验。
 
-## Q. Documentation Drift（截至 2026-09-17）
+## Q. Documentation Drift（截至 2026-09-18）
 
 | 文档 | 状态 |
 |---|---|
-| `README.md` | **ACCURATE**：当前公开版本为 v0.5.42 / versionCode 94，并描述了当前试用入口与本地验签语义 |
-| `INSTALL.md` | **ACCURATE**：当前公开 APK 为 `Appause-v0.5.42.apk`，权限与覆盖安装说明与当前产品一致 |
-| `worker/README.md` | **ACCURATE**：试用 endpoint 与 v0.5.42 production verification-key 说明已同步；部署仍是独立操作 |
+| `README.md` | **ACCURATE**：当前公开版本为 v0.5.43 / versionCode 95，并描述了当前试用入口、重试兼容与本地验签语义 |
+| `INSTALL.md` | **ACCURATE**：当前公开 APK 为 `Appause-v0.5.43.apk`，权限与覆盖安装说明与当前产品一致 |
+| `worker/README.md` | **ACCURATE**：试用 endpoint 与 v0.5.43 production verification-key 说明已同步；部署仍是独立操作 |
 | `ARCHITECTURE.md` | **PARTIALLY STALE**：① §8 "Phase 0 ← Current" 明显过期；② §4 entity 表缺大量列（re-remind 系列、reason 等）；③ §4.4 DataStore 只列 2 个 key，实际 15+；④ §6.2 bypass 模型已被 §6.4 session 模型取代（§6.4 本身 ACCURATE）；⑤ 目录结构缺 `interception/`（BurstTracker、InterceptionDecider）、`diagnostics/` 等；⑥ `PauseAlarmReceiver` 在目录树中注释为 "schedule re-remind"，实际主要是兜底拉 PauseActivity |
 | `AGENTS.md` | **ACCURATE**（2032/2038 优先级、debug 诊断页约束与代码一致） |
 | `docs/overseas-route.md` | **规划态**（LS 未接入代码，文档已标注） |
