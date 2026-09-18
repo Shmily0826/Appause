@@ -48,15 +48,30 @@ TARGET_A = "com.google.android.deskclock"
 HOME_HEALTHY = "Service active"
 HOME_UNVERIFIED = "not confirmed yet"
 HOME_BLOCKING_BULLET = "detect the foreground app"
+HOME_MARKERS = (HOME_HEALTHY, HOME_UNVERIFIED, HOME_BLOCKING_BULLET)
+
+
+def dump_home_text() -> str:
+    open_app(APPAUSE)
+    time.sleep(1.5)
+    return " ".join(
+        n.get("text", "") + "|" + n.get("content-desc", "") for n in nodes()
+    )
 
 
 def home_card_state(ev: Evidence, tag: str) -> str:
-    """Classify the home status/setup card from visible UI text."""
-    open_app(APPAUSE)
-    time.sleep(1.5)
-    text = " ".join(
-        n.get("text", "") + "|" + n.get("content-desc", "") for n in nodes()
-    )
+    """Classify the home status/setup card from visible UI text.
+
+    Compose renders ~1-2 s after the activity resumes; a single early dump
+    reads an empty tree and would mislabel the card, so poll until a known
+    marker appears (max ~8 s).
+    """
+    text = ""
+    for _ in range(8):
+        text = dump_home_text()
+        if any(marker in text for marker in HOME_MARKERS):
+            break
+        time.sleep(1.0)
     if HOME_HEALTHY in text:
         state = "HEALTHY"
     elif HOME_BLOCKING_BULLET in text and HOME_UNVERIFIED not in text:
