@@ -1,20 +1,25 @@
 """Generate the social share card (Open Graph / Twitter) and favicon assets.
 
-Output:
+Output (English):
   images/og-card.png            1200x630  social preview
   images/favicon-32.png          32x32    browser tab icon
   images/apple-touch-icon.png   180x180   iOS home screen icon
 
+Output (Chinese, --lang zh):
+  images/og-card-zh.png         1200x630  social preview
+
 The card matches the landing page palette (Cobalt theme from index.html) and
-uses real app captures from images/screenshots/en/, so sharing the link shows
-the actual product rather than a mock. The version string is read from
+uses real app captures from images/screenshots/<lang>/, so sharing the link
+shows the actual product rather than a mock. The version string is read from
 app/build.gradle.kts, so re-run this after every release:
 
-    python scripts/make_og_card.py
+    python scripts/make_og_card.py           # English card + icons
+    python scripts/make_og_card.py --lang zh # Chinese card
 """
 
 from __future__ import annotations
 
+import argparse
 import math
 import re
 from pathlib import Path
@@ -23,16 +28,48 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
 IMAGES = ROOT / "images"
-SCREENSHOTS = IMAGES / "screenshots" / "en"
 
 CANVAS = (1200, 630)
 
 # Windows system fonts. Segoe UI matches the landing page's font stack
 # ("Segoe UI Variable Display" falls back to Segoe UI), Consolas stands in for
-# the utility/mono face used by the page.
+# the utility/mono face used by the page. Microsoft YaHei covers Chinese.
 FONT_SEMIBOLD = Path("C:/Windows/Fonts/seguisb.ttf")
 FONT_REGULAR = Path("C:/Windows/Fonts/segoeui.ttf")
 FONT_MONO = Path("C:/Windows/Fonts/consola.ttf")
+FONT_CJK_BOLD = Path("C:/Windows/Fonts/msyhbd.ttc")
+FONT_CJK_REGULAR = Path("C:/Windows/Fonts/msyh.ttc")
+
+# Per-language copy. Chinese wording follows the app's own values-zh strings
+# (分组 / 冷却 / 再次提醒 / 自定义提示) rather than a literal translation.
+COPY = {
+    "en": {
+        "shot": Path("screenshots/en/pause.png"),
+        "output": "og-card.png",
+        "fonts": (FONT_SEMIBOLD, FONT_REGULAR, FONT_MONO),
+        "label": "AN INTENTIONAL OPENING STARTS HERE",
+        "label_tracking": 2.4,
+        "headline": "Put intention between tap and scroll.",
+        "headline_fit": "Put intention between",
+        "body": (
+            "Appause interrupts distracting app openings at the moment of action, "
+            "so continuing becomes a decision you make on purpose."
+        ),
+        "alt": "Appause pause screen asking for a reason before a selected app opens",
+    },
+    "zh": {
+        "shot": Path("screenshots/zh/pause.png"),
+        "output": "og-card-zh.png",
+        "fonts": (FONT_CJK_BOLD, FONT_CJK_REGULAR, FONT_CJK_REGULAR),
+        "label": "每 一 次 打 开 都 可 以 是 一 次 选 择",
+        "label_tracking": 0.0,
+        "headline": "在点开和下滑之间，放一个你的决定。",
+        "headline_fit": "在点开和下滑之间，",
+        "body": "Appause 在你打开分心应用的那一刻插入一次停顿，让「继续」重新成为你自己做的决定。",
+        "alt": "Appause 停顿屏：在选定应用打开前先问你为什么",
+    },
+}
+
 
 
 # --------------------------------------------------------------------------
@@ -128,10 +165,24 @@ def tracked_text(draw: ImageDraw.ImageDraw, xy: tuple[int, int], text: str,
 
 
 def wrap(text: str, font: ImageFont.FreeTypeFont, max_width: float) -> list[str]:
-    """Greedy word wrap measured with real font metrics."""
+    """Greedy wrap measured with real font metrics.
+
+    Chinese has no spaces, so a "word" can be far wider than one line. Tokens
+    that do not fit on their own fall back to character-level breaking, which
+    makes the same function usable for both languages.
+    """
     lines: list[str] = []
     current = ""
     for word in text.split():
+        if font.getlength(word) > max_width:
+            # CJK run: break it character by character.
+            for char in word:
+                if font.getlength(current + char) > max_width and current:
+                    lines.append(current)
+                    current = char
+                else:
+                    current += char
+            continue
         candidate = f"{current} {word}".strip()
         if font.getlength(candidate) <= max_width or not current:
             current = candidate
@@ -173,7 +224,10 @@ def content_crop(img: Image.Image, padding: int = 32) -> Image.Image:
     return img.crop((0, 0, width, bottom))
 
 
-def build_card() -> Image.Image:
+def build_card(lang: str) -> Image.Image:
+    copy = COPY[lang]
+    font_head, font_body, font_util = copy["fonts"]
+
     canvas = Image.new("RGBA", CANVAS, PAPER + (255,))
 
     margin = 72
@@ -183,7 +237,7 @@ def build_card() -> Image.Image:
     # ---- right stage: tinted panel holding the signature pause screen -----
     # The panel is sized to the capture plus even padding, so the shot is never
     # cropped further and the copy column gets a fixed width.
-    shot = content_crop(Image.open(SCREENSHOTS / "pause.png").convert("RGBA"))
+    shot = content_crop(Image.open(IMAGES / copy["shot"]).convert("RGBA"))
     pad = 32
     shot_h = 608 - 58 - pad * 2
     shot_w = round(shot_h * shot.width / shot.height)
@@ -209,43 +263,50 @@ def build_card() -> Image.Image:
     icon = rounded(load_icon(), 12).resize((52, 52), Image.LANCZOS)
     canvas.alpha_composite(icon, (margin, 66))
     draw.text((margin + 68, 74), "Appause",
-              font=ImageFont.truetype(str(FONT_SEMIBOLD), 34), fill=INK)
+              font=ImageFont.truetype(str(font_head), 34), fill=INK)
 
     # ---- label ------------------------------------------------------------
     tracked_text(
         draw,
         (margin, 186),
-        "AN INTENTIONAL OPENING STARTS HERE",
-        ImageFont.truetype(str(FONT_SEMIBOLD), 19),
+        copy["label"],
+        ImageFont.truetype(str(font_head), 19),
         ACCENT_DEEP,
-        2.4,
+        copy["label_tracking"],
     )
 
     # ---- headline ---------------------------------------------------------
-    headline = "Put intention between tap and scroll."
-    head_font = fit_font(FONT_SEMIBOLD, "Put intention between", text_max, 76)
-    head_lines = wrap(headline, head_font, text_max)
-    y = 244
+    # Chinese glyphs are roughly one em wide, so the same column fits far fewer
+    # characters per line. Both the start size and the line height differ.
+    is_zh = lang == "zh"
+    head_start = 64 if is_zh else 76
+    head_lead = 1.22 if is_zh else 1.02
+    head_y = 226 if is_zh else 244
+    body_size = 22 if is_zh else 25
+    body_lead = 33 if is_zh else 35
+
+    head_font = fit_font(font_head, copy["headline_fit"], text_max, head_start)
+    head_lines = wrap(copy["headline"], head_font, text_max)
+    y = head_y
     for line in head_lines:
         draw.text((margin, y), line, font=head_font, fill=INK)
-        y += round(head_font.size * 1.02)
+        y += round(head_font.size * head_lead)
 
     # ---- supporting copy --------------------------------------------------
-    body_font = ImageFont.truetype(str(FONT_REGULAR), 25)
-    body_lines = wrap(
-        "Appause interrupts distracting app openings at the moment of action, so continuing "
-        "becomes a decision you make on purpose.",
-        body_font,
-        text_max,
-    )
+    body_font = ImageFont.truetype(str(font_body), body_size)
+    body_lines = wrap(copy["body"], body_font, text_max)
     y += 16
     for line in body_lines:
         draw.text((margin, y), line, font=body_font, fill=INK_SOFT)
-        y += 35
+        y += body_lead
 
     # ---- footer facts -----------------------------------------------------
-    mono = ImageFont.truetype(str(FONT_MONO), 18)
-    facts = f"v{version}  \u00b7  Android 8.0+  \u00b7  no account required  \u00b7  MIT"
+    mono = ImageFont.truetype(str(font_util), 18)
+    facts = (
+        f"v{version}  \u00b7  Android 8.0+  \u00b7  no account required  \u00b7  MIT"
+        if lang == "en"
+        else f"v{version}  \u00b7  Android 8.0 及以上  \u00b7  无需注册账号  \u00b7  MIT 开源"
+    )
     draw.text((margin, 546), facts, font=mono, fill=INK_SOFT)
 
     # Guard rails: the copy must stay in its column and above the footer.
@@ -257,14 +318,31 @@ def build_card() -> Image.Image:
         font = head_font if line in head_lines else body_font
         if font.getlength(line) > text_max:
             raise SystemExit(f"line overflows the copy column: {line!r}")
+    # An orphan line (a lone full stop, a stray syllable) means the column is
+    # too narrow for the chosen size, so fail instead of shipping it.
+    for label, lines in (("headline", head_lines), ("body", body_lines)):
+        if len(lines) > 1 and len(lines[-1].strip()) < 3:
+            raise SystemExit(f"{label} leaves an orphan final line: {lines!r}")
 
     return canvas.convert("RGB")
 
 
 def main() -> None:
-    card = build_card()
-    card.save(IMAGES / "og-card.png", optimize=True)
-    print(f"wrote images/og-card.png {card.size}")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--lang",
+        choices=sorted(COPY),
+        default="en",
+        help="which card to render (icons are only written for --lang en)",
+    )
+    args = parser.parse_args()
+
+    card = build_card(args.lang)
+    card.save(IMAGES / COPY[args.lang]["output"], optimize=True)
+    print(f"wrote images/{COPY[args.lang]['output']} {card.size}")
+
+    if args.lang != "en":
+        return
 
     icon = load_icon()
     icon.resize((32, 32), Image.LANCZOS).save(IMAGES / "favicon-32.png", optimize=True)
