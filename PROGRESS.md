@@ -1,5 +1,19 @@
 # Appause — Development Progress
 
+## 2026-09-18 — 落地页分享元信息与 OG 卡片（APPAUSE-20260918-LANDING-OG-V1）
+- 背景：线上落地页（GitHub Pages，legacy 构建，源是 main 根目录的 `index.html`）此前完全没有社交/SEO 元信息：
+  没有 favicon、没有 `og:` / `twitter:` 卡片、没有 canonical。分享到 Reddit / X / HN / 小红书时是裸链接，没有预览图。
+- 新增 `scripts/make_og_card.py`：从 `app/build.gradle.kts` 读 `versionName`（发版后重跑一次即可），
+  用 `index.html` 里同一套 oklch 调色板生成 1200x630 分享卡，并输出 32x32 favicon 与 180x180 apple-touch-icon。
+  卡面用 `images/screenshots/en/pause.png` 真实抓图（不是 mock）：原图 1080x2400 里界面只占上方约 66%，
+  脚本按"最后一行非白像素"自动裁掉空白带，让暂停屏的理由按钮在分享尺寸下仍然可读。
+- 脚本内置越界断言：文案不得溢出其栏宽、不得撞到页脚行、页脚事实行不得侵入截图舞台，构图失衡会直接报错而不是静默生成废图。
+- `index.html` 的 `<head>` 注入：`rel="canonical"`、`rel="icon"`、`apple-touch-icon`、10 个 `og:` 与 5 个
+  `twitter:`（`summary_large_image`），`og:image` 指向 `https://shmily0826.github.io/Appause/images/og-card.png`。
+- 验证：本地 127.0.0.1 静态服务器实渲染，页面布局未受影响，控制台 0 error / 0 warning；资源路径与尺寸断言通过；文案零 em-dash。
+- 未做：未提交、未推送，所以**线上目前还没有这些 meta**，push 后才生效。
+- 待决：落地页的 Pro / 7 天试用文案（用户要求先讨论再动）。
+
 ## 2026-09-18 — ViewModel 默认工厂契约门禁（APPAUSE-20260918-VM-FACTORY-GATE-V1）
 - 背景：v0.5.42 修掉的 `StatsViewModel` 崩溃（v0.5.39 起每个用户点统计必崩）不是孤例，而是一整类缺陷：
   Kotlin 默认参数不生成 `(Application)` 单参构造，而 Compose 的裸 `viewModel()` 走
