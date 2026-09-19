@@ -347,3 +347,28 @@ P2b: session-holds PASS, rearm FAIL(F-16c), USAGEON-control FAIL(confirms B).
 verify-AD chain (P4+P6 REMOVE/MIGRATE + P2b rerun, then R1 probes A/B/C for the
 F-03 sticky-card dump-free recheck, then P8 random walk seed=20260919 steps=60)
 runs under evidence/verify-AD/; results append below when it completes.
+
+## F-17 (P4 EXACT/AAY STILL FAIL AFTER PURGE — root-cause chain, B-class seed suspect)
+verify-AD p4 re-run: EXACT/AWAY still "no Re-remind line" even with purge +
+correct group attribution (logcat proves INTERCEPT group=P4ReRemind cooldown=5s,
+DB row proves reRemindMinutes=1). Standalone diagnostics (evidence/verify-AD/p4x):
+Session start fires, but NO "Scheduling re-remind loop" at all ->
+ReRemindSchedulePolicy.request() returned null -> proStatus != UNLOCKED (fails
+CLOSED silently by design: minutes>0 && proStatus==UNLOCKED required).
+Ruled out: override store (shared_prefs has ONLY appause_locale_prefs.xml, no
+appause_debug_activation.xml -> None); DEBUG entitlement path requires
+settings.isProDebug==true, i.e. DataStore boolean "pro_unlocked".
+=> Prime suspect: the seeded 0x18-varint entry is NOT the shape DataStore's
+PreferenceData uses for `boolean` (our own parser reading it back proves
+nothing about androidx's schema), and/or the exception inside
+runCatching{isPro.first()} is silently swallowed -> UNKNOWN -> fail-closed.
+The F-12 CorruptionException sentinel CANNOT see this (runCatching eats it).
+This is a HARNESS seed defect at worst (B); the product behaved as designed.
+CAUTION: p4x + a home-dump during the verify-AD chain may have polluted the
+chain's P6-REMOVE round (purged mid-flight) — that round is void if it FAILs;
+a clean P6 REMOVE/MIGRATE re-run or a remaining-gap note closes it.
+Device-only next step deferred: UI unlock path ("Unlock (debug)" label +
+scroll) is the authoritative seed alternative.
+
+## verify-AD chain results (appended when bcuivopmb completes)
+TBD
