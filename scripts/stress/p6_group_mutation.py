@@ -31,6 +31,7 @@ from campaign_lib import (
     logcat_match,
     open_app,
     db,
+    purge_all_groups,
     reset_appause,
     seed_pause_group,
     set_group_field,
@@ -155,6 +156,9 @@ def main() -> int:
     parser.add_argument("--evidence", default="evidence/p6-mutation")
     args = parser.parse_args()
     ev = Evidence(Path(args.evidence), f"p6-{time.strftime('%H%M%S')}")
+    # verify-AC: groups persist across probes; a stale group owning the same
+    # app mis-attributes INTERCEPT lines to the wrong cooldown.
+    purge_all_groups()
     for name in args.probes.split(","):
         PROBES[name.strip().upper()](ev)
     code = ev.finish()

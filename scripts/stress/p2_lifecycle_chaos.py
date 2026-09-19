@@ -71,18 +71,24 @@ def tap_overlay(ev: Evidence, xy, marker: str) -> bool:
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline and not appause_overlay_attached():
         time.sleep(0.3)
-    for attempt in range(len(points) * 2):
+    # verify-AC: Continue stays DISABLED until the group countdown finishes
+    # (P6Main cooldown=20 -> every tap in a 4-attempt/7s window was a no-op),
+    # so retry by wall-clock for long enough to cover a 20 s cooldown.
+    tap_deadline = time.monotonic() + 28
+    attempt = 0
+    while time.monotonic() < tap_deadline:
         time.sleep(2.0 if attempt == 0 else 1.5)
         x, y = points[attempt % len(points)]
         adb_shell(f"input tap {x} {y}")
-        hit = logcat_match(marker, timeout=4)
+        hit = logcat_match(marker, timeout=2)
         if hit is not None:
             ev.mark(f"overlay tap ok (attempt {attempt + 1} at {x},{y}): {hit.strip()}")
             return True
         if not appause_overlay_attached():
             ev.mark(f"tap at {(x, y)} detached the overlay without {marker!r}")
             return False
-    ev.mark(f"taps at {points} produced no {marker!r}")
+        attempt += 1
+    ev.mark(f"taps at {points} produced no {marker!r} in {attempt} attempts")
     return False
 
 

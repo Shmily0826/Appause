@@ -304,6 +304,20 @@ def db(sql: str) -> str:
     return adb_shell(f"run-as {APPAUSE} sqlite3 databases/appause.db \"{sql}\"")
 
 
+def purge_all_groups() -> None:
+    """Delete ALL campaign groups + memberships from Room.
+
+    verify-AC lesson: groups persist across batteries (reset_appause keeps
+    app data), so a target app can silently belong to several groups and the
+    service may attribute an interception to a stale one (wrong cooldown /
+    reRemind=0 -> P4 "no CLOCK START", P6 overlay layout surprises).
+    Probes that reason about *the* matching group must start from zero.
+    Only campaign-seeded rows exist on this AVD, so a full wipe is safe.
+    """
+    db("DELETE FROM group_apps;")
+    db("DELETE FROM app_groups;")
+
+
 def seed_pause_group(name: str, packages: list[str], cooldown_seconds: int) -> bool:
     """Create a PAUSE group directly in Room's SQLite file.
 

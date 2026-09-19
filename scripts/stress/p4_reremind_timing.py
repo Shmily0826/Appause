@@ -32,6 +32,7 @@ from campaign_lib import (
     logcat_clear,
     logcat_match,
     open_app,
+    purge_all_groups,
     reset_appause,
     seed_pause_group,
     set_group_field,
@@ -109,6 +110,10 @@ def ts(line: str) -> float | None:
 
 
 def setup_group() -> None:
+    # verify-AC: deskclock lingered in stale groups (P3Pass/P6Main, reRemind=0)
+    # and the service attributed the intercept to one of them -> no CLOCK
+    # START at all. Start from a clean group table.
+    purge_all_groups()
     seed_pause_group(GROUP, [TARGET], 5)
     set_group_field(GROUP, "reRemindMinutes", "1")
     set_group_field(GROUP, "reRemindCooldownSeconds", "5")

@@ -35,6 +35,7 @@ from campaign_lib import (
     go_home,
     logcat_clear,
     logcat_match,
+    purge_all_groups,
     reset_appause,
     seed_pause_group,
 )
@@ -71,6 +72,10 @@ def run_sequence(ev: Evidence, tag: str) -> tuple[bool, bool]:
     time.sleep(8)
     holds = expect_no_intercept(TARGET)
     ev.mark(f"{tag}-session: no re-intercept during grace = {holds}")
+    # expect_no_intercept leaves the target in the foreground; a monkey launch
+    # while already foreground no-ops (F-07) and fakes a rearm FAIL.
+    go_home()
+    time.sleep(2)
     leave = logcat_match("Leave cooldown started", timeout=5)
     ev.mark(f"{tag}-leave-timer line: {leave or 'NONE (within 180s window)'}")
     remaining = WAIT_AFTER_GRACE - 8 - 6  # waits already spent since Home
@@ -87,6 +92,7 @@ def main() -> int:
 
     ev = Evidence(Path(args.evidence), f"p2b-{time.strftime('%H%M%S')}")
     try:
+        purge_all_groups()  # verify-AC: stale groups hijack the intercept
         if not seed_pause_group(GROUP, [TARGET], 5):
             ev.verdict("P2b-seed", False, "group seeding failed")
             return ev.finish()
