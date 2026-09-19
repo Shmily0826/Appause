@@ -38,6 +38,7 @@ from campaign_lib import (
     expect_intercept,
     expect_no_intercept,
     go_home,
+    logcat_clear,
     reset_appause,
     seed_pause_group,
 )
@@ -53,13 +54,22 @@ def device_now_ms() -> int:
 
 
 # ── minimal androidx-DataStore Preferences protobuf editor ─────────────────
-# Wire shape (androidx.datastore.preferences.core):
-#   PreferenceMap   { repeated Preference preferences = 1; }
-#   Preference      { string key = 1; PreferenceValue value = 2; }
-#   PreferenceValue { StringList stringList = 7; }
-#   StringList      { repeated string items = 1; }
+# Wire shape (androidx.datastore.preferences.core, verified against the
+# generated PreferencesProto classes in the 1.1.2 artifacts):
+#   PreferenceMap { map<string, Value> preferences = 1; }   (map entry: key=1, value=2)
+#   Value         { oneof known_value_types {
+#                     bytes=1; string=2; boolean=3; integer=4;
+#                     long=5; string_set=6; float=7; double=8 } }
+#   StringList    { repeated string str = 1; }
 # We only ever touch the `temporary_passes` Preference; every other field is
 # copied byte-for-byte, so the rewrite cannot corrupt unrelated settings.
+#
+# F-12 lesson (verify-Y run): encoding the string-set as field 7 (float)
+# makes the real serializer throw
+#   CorruptionException: Value not set.  (PreferencesSerializer.addProtoEntryToPreferences)
+# which surfaces as `Error in handleForegroundChange` on every event —
+# interception goes fully silent and CLEAN-PASS becomes a FALSE PASS.
+# The field number must be exactly 6.
 
 def _varint(n: int) -> bytes:
     out = bytearray()
@@ -112,7 +122,7 @@ def _parse_fields(buf: bytes) -> list[tuple[int, int, bytes]]:
 
 def set_string_list(prefs_bytes: bytes, key: str, values: list[str]) -> bytes:
     """Replace (or append) one string-set preference; other entries verbatim."""
-    desired_value = _tlv(7, b"".join(_tlv(1, v.encode()) for v in values))
+    desired_value = _tlv(6, b"".join(_tlv(1, v.encode()) for v in values))
     desired_pref = _tlv(1, key.encode()) + _tlv(2, desired_value)
     out = bytearray()
     replaced = False
@@ -171,11 +181,19 @@ def seed_pass(ev: Evidence, expiry_ms: int) -> bool:
     patched = set_string_list(data, PASSES_KEY, [entry])
     local.write_bytes(patched)
     write_prefs(local)
+    logcat_clear()
     reset_appause()
     time.sleep(2)
     # Confirm the store survived the restart by re-reading it.
     check = read_prefs(ev.dir / "prefs_check.pb")
     ok = entry.encode() in check
+    # F-12 guard: the byte-level check can pass while the real androidx
+    # serializer REJECTS the file (CorruptionException -> every foreground
+    # event errors in handleForegroundChange -> interception silently dies
+    # and CLEAN-PASS becomes a FALSE PASS). Treat corruption as a bad seed.
+    if ok and "CorruptionException" in adb("logcat", "-d", "-s", "AppauseA11yService:E"):
+        ev.mark("seed_pass: DataStore CorruptionException after seed — file rejected by real serializer")
+        ok = False
     ev.mark(f"seed_pass expiry={expiry_ms} verified={ok}")
     return ok
 

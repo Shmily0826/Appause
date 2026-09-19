@@ -234,3 +234,25 @@ recovers after process death; "Session start" needed attempt 2, matching
 F-11). Both LEAVE setups logged 'Leave cooldown started for' as expected —
 the G6 service-level coverage gap named in the campaign brief is closed at
 emulator level; HyperOS/OEM behaviour remains device-only.
+
+## F-12 (B-class, FIXED) p3 seeded a DataStore file the real serializer rejects
+verify-X and verify-Y (evidence/verify-X, evidence/verify-Y). Two independent harness bugs:
+1. PREFS path: the file lives at
+   `/data/data/com.appause.android.debug/files/datastore/settings.preferences_pb`
+   (found via `run-as ls -R`); the old `.../datastore/...` path made every seed read 0 bytes
+   (verified=False). Fixed in b84ab30.
+2. Wire format: string-set PreferenceValue is proto field **6** (`string_set`), not 7
+   (7 is `float`; verified against PreferencesProto classes in the 1.1.2 gradle artifacts).
+   Encoding it as field 7 makes `PreferencesSerializer.addProtoEntryToPreferences` throw
+   `CorruptionException: Value not set.` on every DataStore read. Symptom chain:
+   `Error in handleForegroundChange for <pkg>` (E) on EVERY foreground event -> interception
+   goes fully silent -> EXPIRED/WAKE FAIL and, worse, CLEAN-PASS was a FALSE PASS.
+   The launcher-focused activity.txt in verify-Y was not a launch failure: the target WAS
+   launched (logcat shows 'Event received: package=com.google.android.deskclock') but the
+   decision crashed before showing any overlay.
+Classification: B (harness). Product behaved acceptably: exception caught per-event, no
+crash/ANR, service stayed alive; DataStore only self-repairs on the next app write.
+Device state repaired by rewriting temporary_passes with field 6 and health-checking
+interception (PASS). seed_pass now has a corruption sentinel (grep CorruptionException in
+service logcat after restart) so a future bad seed can never produce a false PASS.
+Real p3 verdicts come from verify-Z only.
