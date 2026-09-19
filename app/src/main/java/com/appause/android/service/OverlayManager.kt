@@ -87,6 +87,11 @@ private class StandaloneOverlayHost(
     private val backBridge: StandaloneBackBridge
 ) : FrameLayout(context) {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.keyCode == KeyEvent.KEYCODE_BACK) {
+            // F-05 diagnostic: presence of this line proves the overlay window
+            // actually receives key events (i.e. holds input focus).
+            AppLogger.d("OverlayHost", "dispatchKeyEvent BACK action=${event.action}")
+        }
         if (event.keyCode == KeyEvent.KEYCODE_BACK && event.action == KeyEvent.ACTION_UP) {
             backBridge.dispatch()
             return true
@@ -373,14 +378,23 @@ class OverlayManager {
 
         fun registerStandaloneBackCallback() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                overlayHost.findOnBackInvokedDispatcher()?.let { dispatcher ->
-                    val callback = OnBackInvokedCallback { standaloneBackBridge.dispatch() }
+                val dispatcher = overlayHost.findOnBackInvokedDispatcher()
+                if (dispatcher == null) {
+                    // F-05 diagnostic: this branch used to be silent — a null
+                    // dispatcher here means predictive Back never reaches the overlay.
+                    PersistentLog.log(context, "Overlay", "backCB dispatcher=NULL")
+                } else {
+                    val callback = OnBackInvokedCallback {
+                        PersistentLog.log(context, "Overlay", "backCB FIRED")
+                        standaloneBackBridge.dispatch()
+                    }
                     dispatcher.registerOnBackInvokedCallback(
                         OnBackInvokedDispatcher.PRIORITY_OVERLAY,
                         callback
                     )
                     overlayBackDispatcher = dispatcher
                     overlayBackCallback = callback
+                    PersistentLog.log(context, "Overlay", "backCB registered")
                 }
             }
         }
