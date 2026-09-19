@@ -43,7 +43,7 @@ from campaign_lib import (
 )
 
 TARGET_A = "com.google.android.deskclock"
-PREFS = "/data/data/com.appause.android.debug/datastore/settings.preferences_pb"
+PREFS = "/data/data/com.appause.android.debug/files/datastore/settings.preferences_pb"
 PASSES_KEY = "temporary_passes"
 
 
