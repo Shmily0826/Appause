@@ -36,9 +36,8 @@ from campaign_lib import (
     adb,
     adb_shell,
     expect_intercept,
+    expect_no_intercept,
     go_home,
-    logcat_clear,
-    open_app,
     reset_appause,
     seed_pause_group,
 )
@@ -46,6 +45,11 @@ from campaign_lib import (
 TARGET_A = "com.google.android.deskclock"
 PREFS = "/data/data/com.appause.android.debug/datastore/settings.preferences_pb"
 PASSES_KEY = "temporary_passes"
+
+
+def device_now_ms() -> int:
+    """Expiry is compared against the DEVICE clock in the service — seed with it."""
+    return int(adb_shell("date +%s").strip()) * 1000
 
 
 # ── minimal androidx-DataStore Preferences protobuf editor ─────────────────
@@ -88,9 +92,9 @@ def _parse_fields(buf: bytes) -> list[tuple[int, int, bytes]]:
     out = []
     pos = 0
     while pos < len(buf):
+        key_start = pos
         key, pos = _read_varint(buf, pos)
         fno, wt = key >> 3, key & 7
-        start = pos - _key_len(buf, pos)
         if wt == 0:
             _, pos = _read_varint(buf, pos)
         elif wt == 2:
@@ -102,16 +106,8 @@ def _parse_fields(buf: bytes) -> list[tuple[int, int, bytes]]:
             pos += 8
         else:
             raise ValueError(f"unsupported wire type {wt}")
-        out.append((fno, wt, buf[start:pos]))
+        out.append((fno, wt, buf[key_start:pos]))
     return out
-
-
-def _key_len(buf: bytes, end: int) -> int:
-    # length of the varint key that ends at `end`
-    i = end
-    while i > 0 and buf[i - 1] & 0x80:
-        i -= 1
-    return end - (i - 1)
 
 
 def set_string_list(prefs_bytes: bytes, key: str, values: list[str]) -> bytes:
@@ -140,9 +136,10 @@ def set_string_list(prefs_bytes: bytes, key: str, values: list[str]) -> bytes:
 
 
 def _payload_len(raw: bytes) -> int:
-    # raw = header varint + length varint + payload
-    ln, p = _read_varint(raw, 1)
-    return len(raw) - p if ln == len(raw) - p else len(raw) - p
+    # raw = key varint + length varint + payload; skip both varints properly.
+    _, p = _read_varint(raw, 0)
+    _, p = _read_varint(raw, p)
+    return len(raw) - p
 
 
 # ── device I/O ─────────────────────────────────────────────────────────────
@@ -187,16 +184,14 @@ def seed_pass(ev: Evidence, expiry_ms: int) -> bool:
 
 def probe_clean_pass(ev: Evidence) -> None:
     reset_appause()
-    now = int(time.time() * 1000)
+    now = device_now_ms()
     if not seed_pass(ev, now + 5 * 60_000):
         ev.verdict("P3-clean-pass", False, "pass not seeded")
         return
-    go_home()
-    time.sleep(2)
-    logcat_clear()
-    open_app(TARGET_A)
-    time.sleep(6)
-    hit = expect_intercept(TARGET_A, timeout=2)
+    # Deterministic launch + settle window; PASS = target stays foreground
+    # with no 'Overlay shown' marker (cooldown is 2s, so a broken pass
+    # would have intercepted by now).
+    hit = not expect_no_intercept(TARGET_A, settle=8)
     go_home()
     ev.verdict("P3-clean-pass-suppresses", not hit,
                "intercepted while pass active" if hit else "")
@@ -211,12 +206,10 @@ def probe_clean_pass(ev: Evidence) -> None:
 
 def probe_expired_reopen(ev: Evidence) -> None:
     reset_appause()
-    now = int(time.time() * 1000)
+    now = device_now_ms()
     if not seed_pass(ev, now - 60_000):
         ev.verdict("P3-expired-reopen", False, "pass not seeded")
         return
-    logcat_clear()
-    open_app(TARGET_A)
     hit = expect_intercept(TARGET_A, timeout=20)
     go_home()
     ev.verdict("P3-expired-reopen", bool(hit),
@@ -225,17 +218,13 @@ def probe_expired_reopen(ev: Evidence) -> None:
 
 def probe_wake_rebuild(ev: Evidence) -> None:
     reset_appause()
-    now = int(time.time() * 1000)
+    now = device_now_ms()
     # Seed ~40s ahead; the restart inside seed_pass exercises the
     # onServiceConnected wake rebuild, and expiry fires while we sit in the app.
     if not seed_pass(ev, now + 40_000):
         ev.verdict("P3-wake-rebuild", False, "pass not seeded")
         return
-    logcat_clear()
-    open_app(TARGET_A)
-    time.sleep(3)
-    hit_early = expect_intercept(TARGET_A, timeout=2)
-    if hit_early:
+    if not expect_no_intercept(TARGET_A, settle=6):
         go_home()
         ev.verdict("P3-wake-rebuild", False, "intercepted before expiry")
         return
@@ -243,8 +232,6 @@ def probe_wake_rebuild(ev: Evidence) -> None:
     time.sleep(50)
     go_home()
     time.sleep(2)
-    logcat_clear()
-    open_app(TARGET_A)
     hit = expect_intercept(TARGET_A, timeout=20)
     go_home()
     ev.verdict("P3-wake-rebuild", bool(hit),
