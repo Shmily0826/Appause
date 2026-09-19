@@ -51,7 +51,13 @@ def fatal_count() -> int:
 
 
 def overlay_count() -> int:
-    out = adb_shell(f"dumpsys window windows | grep -c '{APPAUSE}'").strip()
+    # F-18 (B-class oracle fix): the old `grep -c <package>` counted every
+    # line containing the package name — several per window, plus Appause's
+    # own MainActivity window after a 'settings' step — reporting phantom
+    # "stacking". Count only appause windows whose type is 2032 (pause overlay).
+    out = adb_shell(
+        "dumpsys window windows | grep -A1 'Window .*com\\.appause' | grep -c 'type=2032'"
+    ).strip()
     return int(out) if out.isdigit() else 0
 
 

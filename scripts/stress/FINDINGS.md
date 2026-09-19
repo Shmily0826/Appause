@@ -371,4 +371,34 @@ Device-only next step deferred: UI unlock path ("Unlock (debug)" label +
 scroll) is the authoritative seed alternative.
 
 ## verify-AD chain results (appended when bcuivopmb completes)
-TBD
+P2b (post-F-16c fix): FULL PASS 2/2 with usage access DENIED — session-holds
+across Home AND re-arm after the 180 s grace (leave-timer line "Leave cooldown
+started for deskclock (180s)" now logged; go_home-after-holds restored the
+launch oracle). The TEST_REPORT "usage-access mismatch" question is CLOSED:
+grace/session bookkeeping does not depend on usage stats. (emulator only)
+P6 REMOVE setup FAIL + MIGRATE FAIL(line=None): VOID rounds — my concurrent
+p4x diagnostic purged P6Main/P6Alt mid-probe (lesson recorded in F-17 CAUTION:
+never touch device state while a chain runs). DELETE+COOLDOWN remain proven
+2/2 across batteries. REMOVE/MIGRATE: no clean verdict yet -> remaining gap
+(one rerun of `p6_group_mutation.py --probes REMOVE,MIGRATE` needed, ~8 min).
+P4 EXACT/AWAY: still FAIL, root cause = F-17 (seed fail-closed at the Pro
+gate), NOT a product timing defect; RESTART PASS again.
+R1 (F-03 dump-free recheck): F-03 CLOSED as B/C artifact — with the fixed
+polling oracle, Home shows NO red card at immediate+afterbind in ALL 3 OFF->ON
+rebind rounds (A0..A2), rebind-recovers PASS 3/3, and interception works
+after every rebind (C0/C1 PASS). The earlier "sticky red card" screenshots
+were captured inside the genuine ~1 s DISCONNECTED window that the harness's
+own uiautomator dumps provoked (F-06). Zero A-class product defects confirmed
+campaign-wide.
+## F-18 (B-class, FIXED) P8 overlay_count oracle over-counted -> phantom "stacking"
+verify-AD: 11/60 walk steps flagged "3|5 appause windows attached (stacking)".
+Triage: EVERY saved violation dump (step2/19/28/29...) contained exactly ONE
+appause window header, type=2032, different hash per step (overlays rotate,
+never stack), and the walk never crashed or ANRed. Root cause: the oracle was
+`dumpsys window windows | grep -c 'com.appause'` — grep -c counts LINES, and
+a window dumps its package name on several lines (header + mActivityRecord/
+surface lines), plus Appause's own MainActivity window after any 'settings'
+step (step 1 was settings). Fixed to count only appause windows whose token
+line carries type=2032. Replay with the SAME seed 20260919, 60 steps:
+PASS 60/60 (verify-AE). Conclusion: no overlay-stacking product defect;
+P8 CLOSED. (emulator-only evidence)
