@@ -295,3 +295,55 @@ API34 emulator; interception works again without manual rebind. This is emulator
 evidence ONLY — HyperOS/MIUI may kill or defer the service at boot and must still be
 verified on the physical device by the user. The 13:33–13:34 lines in the same log are
 from the aborted unpinned-serial attempt (F-13) and are superseded.
+
+---
+
+# Chain2 (verify-AC/AD, 13:50-14:17) — P4/P6/P2b harness root-causes
+
+## F-15 (B-class, FIXED) Pro unlock unreachable via UI tap; deterministic DataStore seed instead
+Two stacked causes made every UI-path unlock fail in chain1:
+1. The debug Pro button text is "Unlock (debug)"; p4's pattern was
+   "Unlock Pro|解锁 Pro" and never matched (proof: scripts/stress/campaign.xml
+   dump shows the real label). 
+2. Even matching, the button sits below the fold of the Pro screen.
+Fix: p3's verified raw-proto codec gained `set_bool()` (Value.boolean = field 3
+`bool_value`, WIRE_TYPE_VARINT -> bytes `0x18 0x01`), and p4 `unlock_pro()` now
+force-stops, seeds `pro_unlocked=true` directly into settings.preferences_pb,
+restarts, and re-reads to verify + greps CorruptionException (F-12 sentinel).
+Live-verified twice (13:54, 14:00 runs): `_has_bool` confirms and the re-remind
+Pro gate at AppauseAccessibilityService.kt:1973 (`proState.isPro.first()`) opens.
+
+## F-16 (B-class, FIXED x2) overlay geometry + stale-group pollution broke setup preconditions
+a) **Pro-layout displacement + Continue-disabled-during-countdown.** With Pro
+   seeded, the overlay gains reason chips + "Temporary pass", shifting Continue
+   1646 -> ~1545 and Cancel 1788 -> ~1663 (the free-layout Cancel point hits
+   "Temporary pass" on the Pro layout — hence Pro candidates FIRST). Chain2
+   screenshots showed P6 REMOVE/MIGRATE setup FAIL: taps landed but NOTHING
+   happened for the full 4-attempt window — because Continue stays DISABLED
+   until the group countdown finishes (P6Main cooldown=20s), so 7s of retries
+   can never succeed (DELETE's Cancel works mid-countdown; only Continue gates).
+   CONTINUE_XY/CANCEL_XY are now candidate lists (Pro-first) and tap_overlay
+   retries by wall-clock for 28s, confirming via the "Session start"/"Overlay
+   dismissed" logcat marker (commit 62c5d24 + 11a4761).
+b) **Stale-group misattribution.** Groups persist across batteries
+   (reset_appause keeps app data); deskclock ended up in 7 simultaneous groups,
+   so INTERCEPT lines were attributed to a reRemind=0 group -> P4 "no CLOCK
+   START" despite "Session start" logging fine, and any cooldown oracle could
+   read the wrong group. Fix: `purge_all_groups()` (DELETE group_apps +
+   app_groups — only campaign rows exist on this AVD) at the start of P4/P6/P2b
+   batteries (11a4761).
+c) **P2b foreground no-op.** USAGEOFF-rearm FAILED and the USAGEON control
+   FAILED identically (=> not usage-access dependence, B-class per the script's
+   own design); "Leave cooldown started" NONE in both arms was the tell that
+   the leave transition never registered: expect_no_intercept RE-LAUNCHES the
+   target, leaving it foreground, so the post-grace monkey launch no-ops
+   (F-07). Fix: go_home() after the session-holds check (11a4761).
+   USAGEOFF-session-holds PASS stays valid (bypass across Home works with
+   GET_USAGE_STATS denied).
+## Chain2 verdict ledger (pre-fix, superseded where re-run)
+P4: PRO-UNLOCK PASS(seed), EXACT FAIL(F-16b), AWAY FAIL(F-16b), RESTART PASS.
+P6: DELETE PASS, COOLDOWN PASS, REMOVE setup FAIL(F-16a), MIGRATE setup FAIL(F-16a).
+P2b: session-holds PASS, rearm FAIL(F-16c), USAGEON-control FAIL(confirms B).
+verify-AD chain (P4+P6 REMOVE/MIGRATE + P2b rerun, then R1 probes A/B/C for the
+F-03 sticky-card dump-free recheck, then P8 random walk seed=20260919 steps=60)
+runs under evidence/verify-AD/; results append below when it completes.
