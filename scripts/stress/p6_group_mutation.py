@@ -151,7 +151,7 @@ def main() -> int:
     args = parser.parse_args()
     ev = Evidence(Path(args.evidence), f"p6-{time.strftime('%H%M%S')}")
     for name in args.probes.split(","):
-        PROBES(name.strip().upper())(ev)
+        PROBES[name.strip().upper()](ev)
     code = ev.finish()
     print("results:", ev.dir)
     return code
