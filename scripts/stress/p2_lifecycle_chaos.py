@@ -29,36 +29,82 @@ from campaign_lib import (
     adb_shell,
     appause_overlay_attached,
     expect_intercept,
+    foreground_package,
     go_home,
     key,
+    launch_from_home,
     logcat_clear,
-    open_app,
+    logcat_match,
     reset_appause,
     screenshot,
     service_bound,
     set_group_field,
     start_service_via_settings,
-    tap,
-    wait_for,
     wait_for_boot,
 )
 
 TARGET_A = "com.google.android.deskclock"
 GRACE_SECONDS = 180  # LEAVE_COOLDOWN_MS in the service
 
+# verify-V lesson: uiautomator dumps never see the 2032 overlay content and
+# transiently kill the service (F-06), so overlay buttons must be tapped at
+# fixed coordinates. Geometry below is for this 1080x2340 AVD only.
+CONTINUE_XY = (540, 1646)
+CANCEL_XY = (540, 1788)
+
+
+def tap_overlay(ev: Evidence, xy: tuple[int, int], marker: str) -> bool:
+    """Wait for the overlay to actually render, then blind-tap a button.
+
+    verify-V lesson: a single tap 1s after window attach reliably MISSES on
+    this emulator — the Compose button is not hit-testable yet (proven A/B:
+    same tap a few seconds later fires the marker). Retry until the logcat
+    marker lands; a real user's reaction time always exceeds this window.
+    """
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline and not appause_overlay_attached():
+        time.sleep(0.3)
+    for attempt in range(4):
+        time.sleep(2.0 if attempt == 0 else 1.5)
+        adb_shell(f"input tap {xy[0]} {xy[1]}")
+        hit = logcat_match(marker, timeout=4)
+        if hit is not None:
+            ev.mark(f"overlay tap ok (attempt {attempt + 1}): {hit.strip()}")
+            return True
+        if not appause_overlay_attached():
+            ev.mark(f"tap at {xy} detached the overlay without {marker!r}")
+            return False
+    ev.mark(f"tap at {xy} produced no {marker!r} in 4 attempts")
+    return False
+
 
 def arm_session(ev: Evidence, tag: str) -> bool:
     """Intercept the target and tap Continue so a session becomes active."""
-    logcat_clear()
-    open_app(TARGET_A)
     if not expect_intercept(TARGET_A):
         ev.mark(f"{tag}: setup intercept missing")
         return False
-    if not tap("Continue", timeout=5):
-        ev.mark(f"{tag}: Continue button not found")
+    if not tap_overlay(ev, CONTINUE_XY, rf"Session start: {TARGET_A}"):
+        ev.mark(f"{tag}: Continue tap did not start a session")
         return False
-    time.sleep(1.5)
+    time.sleep(1.0)
     return True
+
+
+def leave_and_return(ev: Evidence, tag: str, away_seconds: float) -> bool:
+    """Home (starts the leave-timer), wait, come back. True = re-intercepted."""
+    logcat_clear()
+    go_home()
+    started = logcat_match(rf"Leave cooldown started for {TARGET_A}", timeout=8)
+    ev.mark(f"{tag}: leave-timer started: {bool(started)}")
+    time.sleep(away_seconds)
+    logcat_clear()
+    if not launch_from_home(TARGET_A):
+        ev.mark(f"{tag}: return launch FAILED (B-class harness)")
+        raise SystemExit(2)
+    time.sleep(8)  # give a (wrong) re-intercept time to appear
+    re_hit = appause_overlay_attached() or logcat_match(
+        rf"Overlay shown for {TARGET_A}", timeout=0.1) is not None
+    return bool(re_hit)
 
 
 def probe_leave_hold(ev: Evidence) -> None:
@@ -66,12 +112,7 @@ def probe_leave_hold(ev: Evidence) -> None:
     if not arm_session(ev, "LEAVE-HOLD"):
         ev.verdict("LEAVE-HOLD-setup", False)
         return
-    go_home()
-    time.sleep(20)  # well inside the 3-min grace window
-    logcat_clear()
-    open_app(TARGET_A)
-    time.sleep(8)  # give a (wrong) re-intercept time to appear
-    re_hit = appause_overlay_attached()
+    re_hit = leave_and_return(ev, "LEAVE-HOLD", 20)  # well inside the grace window
     ev.verdict("LEAVE-HOLD-return-in-grace-no-reintercept", not re_hit,
                "overlay re-appeared inside grace window" if re_hit else "")
     go_home()
@@ -82,16 +123,14 @@ def probe_leave_expire(ev: Evidence) -> None:
     if not arm_session(ev, "LEAVE-EXPIRE"):
         ev.verdict("LEAVE-EXPIRE-setup", False)
         return
-    go_home()
-    time.sleep(GRACE_SECONDS + 15)
-    ev.verdict("LEAVE-EXPIRE-rearm-after-grace", bool(expect_intercept(TARGET_A, timeout=15)))
+    re_hit = leave_and_return(ev, "LEAVE-EXPIRE", GRACE_SECONDS + 15)
+    ev.verdict("LEAVE-EXPIRE-rearm-after-grace", re_hit,
+               "" if re_hit else "cooldown did NOT re-arm after grace expired")
     go_home()
 
 
 def probe_screen(ev: Evidence) -> None:
     reset_appause()
-    logcat_clear()
-    open_app(TARGET_A)
     if not expect_intercept(TARGET_A):
         ev.verdict("SCREEN-setup", False)
         return
@@ -104,16 +143,20 @@ def probe_screen(ev: Evidence) -> None:
     still = appause_overlay_attached()
     ev.verdict("SCREEN-overlay-survives-off-on", still)
     if still:
-        ev.verdict("SCREEN-overlay-tappable-after-wake",
-                   bool(tap("Cancel", timeout=5)))
+        # Cancel must dismiss the overlay AND land on the launcher.
+        adb_shell(f"input tap {CANCEL_XY[0]} {CANCEL_XY[1]}")
+        time.sleep(2.5)
+        gone = not appause_overlay_attached()
+        home = foreground_package() not in ("", TARGET_A)
+        ev.verdict("SCREEN-overlay-tappable-after-wake", gone and home,
+                   f"gone={gone} left-target={home}")
     go_home()
 
 
 def probe_fstop(ev: Evidence) -> None:
     reset_appause()
-    logcat_clear()
-    open_app(TARGET_A)
-    expect_intercept(TARGET_A)
+    if not expect_intercept(TARGET_A):
+        ev.mark("FSTOP: initial intercept missing")
     # Kill the whole app mid-overlay: the overlay window dies with the process.
     adb_shell("am force-stop " + APPAUSE)
     time.sleep(2)
@@ -126,8 +169,6 @@ def probe_fstop(ev: Evidence) -> None:
     # Short cooldown so the reopen re-intercepts deterministically.
     set_group_field("Campaign", "cooldownSeconds", "5")
     time.sleep(7)
-    logcat_clear()
-    open_app(TARGET_A)
     ok = bool(expect_intercept(TARGET_A, timeout=15))
     set_group_field("Campaign", "cooldownSeconds", "20")
     ev.verdict("FSTOP-intercept-recovers-after-kill", ok)
@@ -143,8 +184,6 @@ def probe_reboot(ev: Evidence) -> None:
     time.sleep(25)  # let SystemServer bind accessibility services
     bound = service_bound()
     ev.mark(f"REBOOT: service bound after boot with no UI interaction: {bound}")
-    logcat_clear()
-    open_app(TARGET_A)
     ok = bound and bool(expect_intercept(TARGET_A, timeout=25))
     ev.verdict("REBOOT-interception-works-after-boot", ok)
     go_home()
