@@ -213,7 +213,7 @@ def main() -> int:
         return 1
     ev.verdict("P4-PRO-UNLOCK", True)
     for name in args.probes.split(","):
-        PROBES(name.strip().upper())(ev)
+        PROBES[name.strip().upper()](ev)
     code = ev.finish()
     print("results:", ev.dir)
     return code
