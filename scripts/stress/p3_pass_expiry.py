@@ -148,12 +148,15 @@ def set_string_list(prefs_bytes: bytes, key: str, values: list[str]) -> bytes:
 def set_bool(prefs_bytes: bytes, key: str, value: bool) -> bytes:
     """Replace (or append) one boolean preference; other entries verbatim.
 
-    Value.boolean is oneof field 3 with VARINT wire type (0), unlike the
-    length-delimited types _tlv() emits: tag byte = (3<<3)|0 = 0x18.
+    F-21: Value.boolean is oneof field 1 with VARINT wire type (0) — verified
+    against the bytes the app itself writes (pro_unlocked -> 0x12 0x02 0x08
+    0x01). The old code used field 3 (tag 0x18), which the androidx serializer
+    reads as an INTEGER, so the next typed read crashed the app
+    ("Integer cannot be cast to Boolean", the F-19 signature).
     Used by P4 to seed pro_unlocked without the UI tap path (F-11: some
     Appause screens dump text-empty nodes, so dump-driven tapping is blind).
     """
-    desired_value = b"\x18" + _varint(1 if value else 0)
+    desired_value = b"\x08" + _varint(1 if value else 0)
     desired_pref = _tlv(1, key.encode()) + _tlv(2, desired_value)
     out = bytearray()
     replaced = False

@@ -480,3 +480,41 @@ from every emulator row in this file.
   6. A temporary pass got granted mid-navigation (tap landed on Continue after
      countdown layout shift) -> "SKIP: temporary pass active" decisions are
      correct behavior; wait out the 5-min pass before re-arm probes.
+
+## F-21 (B-class harness, FIXED) attribution of the 14:39 "Appause Debug keeps stopping" dump
+
+Context: at close-out the worktree had a dirty `scripts/stress/campaign.xml`
+(mtime 14:39, device-session hours) showing the crash dialog
+"Appause Debug keeps stopping" over the debug app home screen — previously
+unattributable because the DEVICE reboot wiped its crash buffer.
+
+Attribution (DEVICE evidence vs EMULATOR evidence kept separate):
+- Real phone (6036d5b): `dumpsys dropbox` has ZERO appause entries for
+  2026-09-19 — the device never crashed during D1..D4. Today's device
+  tombstones are all com.apkpure.aegon (unrelated). The only appause
+  data_app_crash records on device are 09-17/18 v92 StatsViewModel (already
+  fixed in 0.5.42).
+- Emulator (emulator-5554): dropbox data_app_crash at 14:28, 14:30, 14:31,
+  14:32, 14:33 and 15:22, process com.appause.android.debug v95, stack
+  `ClassCastException: Integer cannot be cast to Boolean` at
+  SettingsDataStore map$13 (pro_unlocked typed read) — the exact F-19
+  signature. campaign.xml is a campaign_lib dump (default serial
+  emulator-5554) of THAT screen.
+
+Root cause (code-level): p3_pass_expiry.set_bool encoded Value.boolean as
+oneof field 3 (tag 0x18). The app's own writes prove it is field 1 (tag
+0x08, e.g. `12 02 08 01`). Field 3 deserializes as an Int32 wrapper, so the
+next typed read crashed the process. p4._has_bool checked the same wrong tag,
+so the byte-level sentinel passed while the app crashed (the F-12 sentinel
+only covered CorruptionException = parse failure, not CCE = typed-read
+mismatch). This is the mechanism behind F-19; the seed path still carried it.
+
+Fix (harness only, no product code): set_bool + _has_bool now use tag 0x08.
+Verification (EMULATOR):
+1. Byte-level: fixed set_bool(cur,"pro_unlocked",True) == app-written file
+   bytes exactly; False round-trip reads back via _has_bool. PASS
+2. E2E: seed False -> cold start -> alive, no new appause-crash.log entry,
+   prefs intact; seed True -> cold start -> same. PASS (Pro left unlocked)
+3. py_compile p3+p4. PASS
+Device: NOT applicable (never crashed). campaign.xml left dirty in the
+worktree as the original evidence; not committed.

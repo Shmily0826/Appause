@@ -51,7 +51,8 @@ AWAY_RE = "re-checking soon"
 
 
 def _has_bool(buf: bytes, key: str, value: bool) -> bool:
-    want = b"\x18" + (b"\x01" if value else b"\x00")
+    # F-21: boolean is Value oneof field 1 (tag 0x08), not field 3 (0x18).
+    want = b"\x08" + (b"\x01" if value else b"\x00")
     for fno, wt, raw in _parse_fields(buf):
         if fno == 1 and wt == 2:
             payload = raw[len(raw) - _payload_len(raw):]
