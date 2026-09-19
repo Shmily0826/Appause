@@ -267,3 +267,31 @@ This also invalidated nothing earlier (verify-Z finished at 13:29, phone joined
 after), but the campaign MUST be safe against this by construction: campaign_lib,
 ui_stress and uinav now pin every adb/ sub-process call to
 APPAUSE_CAMPAIGN_SERIAL (default emulator-5554). Commit b7813b8.
+
+## F-14 (D-class flake + B-class oracle note) verify-Z REC-BURST FAIL does not reproduce
+verify-Z p7 REC-BURST reported FAIL: after an 8x KEYCODE_APP_SWITCH storm the
+harness saw "no focused window 15s", overlay attach-check flapped, and the
+Appause pid changed 11981 -> 12696 with NO FATAL/ANR/"has died" in any dump —
+an A-class "silent process death" candidate. Targeted repro (p7_rec_repro.py,
+verify-AA, 2 runs): during the identical storm `mCurrentFocus` STAYS on the
+Appause overlay window the whole time, `appause_overlay_attached()` stays True,
+and the pid is stable 13081 -> 13081 in both runs; run{1,2}.deathlines.txt are
+empty (zero Kill/ANR/Fatal/Start-proc matches). Verdict REC-REPRO-NO-SILENT-DEATH: PASS.
+Classification: D-class flake for the process restart (unreproduced 2/2; the one
+observed restart was followed by correct intercept+dismiss behavior anyway), plus a
+B-class oracle limitation to remember: foreground_package() deliberately ignores
+com.appause.android.debug, so while the overlay legitimately HOLDS focus during a
+recents storm the "no focused window" timeout fires even though nothing is stuck.
+A user-visible stuck state would need ovl=False AND no app-package focus; future
+P7 verdicts must check that pair before calling FAIL. No product change.
+Evidence: evidence/verify-AA/p7-rec-repro/ (actions.log, run*.focus.txt, results.json).
+
+## P5 (persistence, emulator-only) closed: reinstall + reboot data + interception all PASS
+verify-AA clean re-run (post-F-13): P5-reinstall-data PASS, P5-reinstall-interception
+PASS (service auto-bound 0.2s after `install -r -t`), P5-reboot-data PASS (boot
+completed 50s, prefs md5 identical 38bb4be0), P5-reboot-interception PASS (auto-bound
+0.4s). 4/4 PASS. DataStore + Room survive same-versionCode reinstall and reboot on
+API34 emulator; interception works again without manual rebind. This is emulator
+evidence ONLY — HyperOS/MIUI may kill or defer the service at boot and must still be
+verified on the physical device by the user. The 13:33–13:34 lines in the same log are
+from the aborted unpinned-serial attempt (F-13) and are superseded.
