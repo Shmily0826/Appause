@@ -182,3 +182,55 @@ verify-N/O/P/Q/R/S closed the investigation on the API-34 emulator:
    campaign). Gesture-navigation Back and key-filter behaviour on HyperOS
    remain the top device-only verification item; the kept diagnostics
    (PersistentLog backCB markers) are exactly what a device session needs.
+
+## F-09 (B-class, FIXED) foreground_package() silently dead on this image
+`dumpsys window windows` no longer prints mCurrentFocus on this API-34 build
+(grep count 0 — verified 00:53 verify-T), so the old command made
+foreground_package() return '' for EVERY caller: expect_intercept's live-window
+branch, expect_no_intercept, and the new launch_from_home confirmation all
+degraded silently. Fixed in campaign_lib to grep the top-level `dumpsys window`
+section instead. Evidence: manual step-through showing '' while deskclock was
+visibly foreground.
+
+## F-10 (B-class harness + C-class environment) overlay buttons unreachable via uiautomator; coordinate taps work
+Two-part discovery while arming G6 sessions (verify-U/verify-V):
+1. A `uiautomator dump` taken while the 2032 pause overlay is up returns the
+   TARGET APP's tree (15 deskclock nodes, zero pause-screen nodes) and the
+   overlay is gone immediately after — the dump kills the pause (F-06 family,
+   C-class emulator behaviour). tap("Continue") can therefore never work here.
+2. Replacement oracle that is dump-free and deterministic: wait for
+   appause_overlay_attached(), sleep 1.0s (the first Compose frame lands AFTER
+   window attach — a screenshot taken at attach time shows the target app
+   still, overlay_shot.png), then `input tap` at fixed coordinates measured
+   from a screencap (Continue = 540,1646 on this 1080x2340 AVD). The tap fired
+   the real product handler: logcat 'Session start: com.google.android.deskclock'
+   appeared, overlay detached, deskclock stayed foreground (bypass active).
+   Cancel coordinate = 540,1788.
+Consequence: p2_lifecycle_chaos LEAVE-*/SCREEN now use tap_overlay(); the
+S-scenario taps that "passed" before were passing via absence-of-node
+short-circuits, not real button hits — flagged for re-audit of any journey
+that claims to have tapped an overlay button.
+
+## F-11 (B/C-class, FIXED) coordinate tap at attach+1s reliably misses the Compose button
+verify-V: SCREEN and FSTOP passed, but both LEAVE setups died with "tap at
+(540,1646) produced no 'Session start' within 6s". Controlled A/B on the same
+interception (00:06): tap 1.0s after appause_overlay_attached() -> no marker,
+overlay stayed up; the SAME tap a few seconds later -> logcat
+'Session start: com.google.android.deskclock', overlay detached. So the
+F-10 recipe's 1.0s settle is not enough for the button to become
+hit-testable on this slow AVD (first FRAME renders ~1s after attach, but
+Compose touch slop/layout settles later). Not a product defect: a human
+reaction time always exceeds this window. Fix: tap_overlay() now retries up
+to 4 taps (2.0s then 1.5s apart) and re-checks attachment between attempts;
+verified by the verify-W re-run of LEAVE-HOLD/LEAVE-EXPIRE.
+
+## G6 result (emulator, verify-V + verify-W) leave-timer/reArm — PASS both sides
+With tap_overlay retry in place, all four P2 lifecycle probes pass
+deterministically on emulator-5554 (NOT real-device validation):
+LEAVE-HOLD (return 20s into the 180s grace -> no re-intercept),
+LEAVE-EXPIRE (return at grace+15s -> cooldown re-armed, pause shown again),
+SCREEN (overlay survives off/on and stays tappable), FSTOP (interception
+recovers after process death; "Session start" needed attempt 2, matching
+F-11). Both LEAVE setups logged 'Leave cooldown started for' as expected —
+the G6 service-level coverage gap named in the campaign brief is closed at
+emulator level; HyperOS/OEM behaviour remains device-only.
