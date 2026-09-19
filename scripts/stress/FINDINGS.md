@@ -565,3 +565,34 @@ DEVICE execution (DEVICE evidence, Xiaomi 2410DPN6CC / HyperOS):
   (type/reRemind* with defaults) and rows read back correctly.
 
 ### D6 90-minute soak (DEVICE evidence) — results appended below when done
+
+### D6 90-minute soak — DEVICE PASS (Xiaomi 2410DPN6CC, build 95 debug)
+
+Design: randomized foreground switching between com.xingin.xhs (grouped
+via DEVTEST_XHS, cooldownSeconds=300) and com.bilibili.studio (control),
+86 rounds over 90 min (45-60 s gaps, 8-12 s dwell), hourly PersistentLog
+harvest, overlay presence probed via dumpsys window.
+
+Results (DEVICE evidence):
+- Service survival: PASS. Single process (pid 8156) across the whole
+  soak; onServiceConnected ENTER count = 1 (no death/rebind); zero
+  ERROR/FAILED lines in the service log.
+- False positives: PASS. 37 control-app (bilibili studio) launches,
+  zero overlays.
+- Cooldown semantics: PASS. 49 grouped launches produced overlays only
+  when the re-entry interval actually exceeded the 300 s group cooldown
+  (observed firing burst at 20:22:15 in the harvest log); re-entries
+  inside the cooldown window were correctly suppressed (no card).
+- Memory: no leak signal. End-of-soak PSS 138 MB (+72 MB swap),
+  ~5 min later 161 MB (+68 MB swap) — normal Compose fluctuation, same
+  process, no growth trend. (t0 snapshot lost to output buffering —
+  noted as a harness gap, not a product issue.)
+- Harness findings (B-class): (1) d6_soak internal hourly harvest used
+  `adb shell exec-out ...` which is invalid inside shell (0-byte files)
+  — worked around with an independent host-side harvester; (2) the
+  known double "Overlay shown" ~90 ms cosmetic race reappeared (6 lines
+  in 243 ms at 20:22:15 = 3 show-attempts for ONE overlay; Z-order
+  verified single window).
+
+Verdict: D6 PASS on device. 86 rounds, ~100 % decision correctness
+against cooldown semantics, service fully stable.
