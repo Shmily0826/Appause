@@ -127,6 +127,32 @@ def open_app(package: str) -> None:
     adb_shell(f"monkey -p {package} 1 >/dev/null 2>&1")
 
 
+def launch_from_home(package: str, attempts: int = 3) -> bool:
+    """Deterministic 'put the target in foreground' for interception probes.
+
+    F-07 / verify-Q lessons: monkey launches can silently no-op (exit 0, app
+    never starts), and am-starting an ALREADY-foreground app emits no window
+    state event, so the a11y interceptor never sees an entry. Always Home
+    first, then explicit component launch, and confirm foreground.
+    Returns False when the app never came up (harness failure, not product).
+    """
+    out = adb_shell(f"cmd package resolve-activity --brief {package} | tail -1")
+    component = next((ln.strip() for ln in out.splitlines() if "/" in ln), "")
+    for _ in range(attempts):
+        go_home()
+        time.sleep(1.2)
+        if component:
+            adb_shell(f"am start -n {component}")
+        else:
+            open_app(package)
+        time.sleep(1.0)
+        # A live Appause overlay also proves the entry happened — it steals
+        # window focus, so demanding fg==package fights the product itself.
+        if foreground_package() == package or appause_overlay_attached():
+            return True
+    return False
+
+
 def key(code: str) -> None:
     adb_shell(f"input keyevent {code}")
 
@@ -140,8 +166,13 @@ def focused_window() -> str:
 
 
 def foreground_package() -> str:
-    """Package owning the focused window, '' when unknown/launcher."""
-    out = adb_shell("dumpsys window windows | grep -E 'mCurrentFocus|FocusedWindow'")
+    """Package owning the focused window, '' when unknown/launcher.
+
+    verify-T lesson: on this API-34 image `dumpsys window windows` no longer
+    prints mCurrentFocus at all (grep count 0) — only the top-level
+    `dumpsys window` section does, so the old command silently returned ''.
+    """
+    out = adb_shell("dumpsys window | grep mCurrentFocus")
     match = re.search(r"u0\s+([a-zA-Z0-9._]+)/", out)
     return match.group(1) if match else ""
 
@@ -229,7 +260,11 @@ def logcat_match(pattern: str, timeout: float = 15.0, tags: tuple[str, ...] = (
 def expect_intercept(package: str, timeout: float = 20.0) -> str | None:
     """PASS oracle for 'the target got paused': overlay log line OR live window."""
     logcat_clear()
-    open_app(package)
+    if not launch_from_home(package):
+        # Distinguish B-class (app never came up -> nothing to intercept)
+        # from A-class (foreground entry happened, no pause appeared).
+        print(f"[harness] expect_intercept: launch of {package} FAILED (B-class setup)")
+        return None
     deadline = time.time() + timeout
     while time.time() < deadline:
         line = logcat_match(rf"Overlay shown for {re.escape(package)}", timeout=0.1)
@@ -247,7 +282,9 @@ def expect_intercept(package: str, timeout: float = 20.0) -> str | None:
 def expect_no_intercept(package: str, settle: float = 6.0) -> bool:
     """PASS oracle for 'must NOT be intercepted': target stays foreground."""
     logcat_clear()
-    open_app(package)
+    if not launch_from_home(package):
+        print(f"[harness] expect_no_intercept: launch of {package} FAILED (B-class setup)")
+        return False
     time.sleep(settle)
     shown = logcat_match(r"Overlay shown for", timeout=0.1)
     front = foreground_package()
