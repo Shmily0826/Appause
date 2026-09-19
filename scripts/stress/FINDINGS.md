@@ -431,3 +431,52 @@ P4 RESTART was already PASS x2. P4 fully CLOSED.
 P6 REMOVE PASS (no intercept after mid-session removal) and
 P6 MIGRATE PASS (new group's cooldown=3s used on re-attribution) -> all four
 P6 probes green. Remaining A-class candidates: NONE.
+
+## DEVICE session (Xiaohongshu/HyperOS, 2026-09-19 PM) — D1..D4 real-device results
+Device: Xiaomi 2410DPN6CC, Android 16 HyperOS, serial 6036d5b, 3-key nav.
+Debug APK (build 95, campaign HEAD) installed alongside release. Group
+DEVTEST_XHS (cooldown 300s, reRemind off) seeded via pull->host sqlite3->push
+(device sandbox denies sqlite3). All evidence below is REAL-DEVICE, distinct
+from every emulator row in this file.
+- D1 PASS: pause overlay (type=2032, owner com.appause.android.debug) renders
+  fully over 小红书 despite its setHideOverlayWindows anti-tamper: window is
+  #1 in Z-order, mCurrentFocus=overlay, screenshot shows icon+countdown+CTA
+  (EVIDENCE_D1_overlay_over_xhs.png). Cancel -> overlay removed, focus=launcher.
+- D2 PASS: 3x HyperOS OFF->ON rebind through the UI dialogs (Turn-off confirm +
+  Danger checkbox + countdown OK). After each rebind: service RUNNING, events
+  flowing, interception recovered (overlays at 16:37/17:06). No sticky red
+  card: home card tracked Finish setup -> Setup complete -> Service active
+  correctly; the transient "usage access pending" was REAL (appops showed
+  GET_USAGE_STATS back to default after the toggle cycles), i.e. honest
+  reporting, not F-03/R1 recurrence. (emulator-side F-03 stays CLOSED; this is
+  the device-side verdict.)
+- D3 PASS (3-key): 4/4 BACK presses on the live overlay logged `backCB FIRED`
+  -> overlay dismissed -> focus=launcher (16:26:40, 16:39:56, 17:23:53, plus
+  the 16:53:06 trial). PASS (gesture nav): with navigation_mode=2, edge-swipe
+  back does NOT dismiss the overlay (user manual swipe + adb injection both
+  no-op; no backCB FIRED) -> no accidental escape path. NOTE: adb `input
+  swipe/motionevent` cannot trigger system edge gestures on this device
+  (needs developer-option "USB debugging (Security settings)"), so the
+  gesture verdict rests on the user's manual swipe.
+- D4 PASS: `adb reboot` -> boot_completed in ~30s; enabled_accessibility_services
+  SURVIVED reboot (UI-granted persists; adb-written does not); process
+  auto-started (pid 12092) with AccessibilityService.onCreate +
+  onServiceConnected SETUP OK + startForeground OK before any user launch;
+  events flowed; PAUSE decision observed 17:33:24 post-boot. HyperOS kill
+  policy did NOT block autostart for an a11y service with battery-unrestricted.
+- Device-environment findings (harness knowledge, not product defects):
+  1. `am force-stop <pkg>` silently REMOVES the pkg's a11y grant on HyperOS
+     (settings rewritten; must re-enable via UI). Never force-stop between
+     probes; prefer pull/edit/push with the app killed only when re-granting.
+  2. MIUI suppresses third-party logcat entirely -> PersistentLog
+     files/appause-service.log is the reliable oracle.
+  3. `uiautomator dump` -> "null root node" (Security-settings toggle off);
+     drive via screencap + taps (image 900x1956 -> device x1.2).
+  4. PersistentLog file TRIMS oldest lines -> count-based oracles unreliable;
+     use tail or dumpsys window presence instead.
+  5. Two "Overlay shown" log lines ~90ms apart appeared twice (17:06:38,
+     17:22:42) while visually one overlay — event+poller double-show race,
+     cosmetic only (B, same window reused; no stacking seen in P8 or Z-order).
+  6. A temporary pass got granted mid-navigation (tap landed on Continue after
+     countdown layout shift) -> "SKIP: temporary pass active" decisions are
+     correct behavior; wait out the 5-min pass before re-arm probes.
