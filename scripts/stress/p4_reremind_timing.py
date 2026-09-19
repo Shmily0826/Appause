@@ -46,21 +46,33 @@ FIRED_RE = "Re-remind fired"
 AWAY_RE = "re-checking soon"
 
 
+def scroll_to_unlock() -> bool:
+    # The debug "Unlock Pro" card sits at the bottom of the Pro screen; the
+    # dump-based tap() only sees what is scrolled into the viewport.
+    for _ in range(4):
+        if tap("Unlock Pro|解锁 Pro", timeout=2):
+            return True
+        adb_shell("input swipe 540 1600 540 500 300")
+        time.sleep(0.8)
+    return False
+
+
 def unlock_pro(ev: Evidence) -> bool:
     """Re-remind only schedules when proState.isPro (debug toggle persists
     in DataStore across force-stop, so once per run is enough)."""
-    if tap("Unlock Pro|解锁 Pro", timeout=4):
-        ev.mark("P4: Pro unlocked from current screen")
-        return True
     open_app(APPAUSE)
+    if scroll_to_unlock():
+        ev.mark("P4: Pro unlocked from current screen")
+        go_home()
+        return True
     if not wait_for("Settings|设置", timeout=10):
         ev.mark("P4: Settings entry not found for Pro unlock")
         return False
     tap("Settings|设置", timeout=4)
-    if not tap("Pro", timeout=5):
+    if not tap("升级 Pro|Upgrade Pro|Pro", timeout=5):
         ev.mark("P4: Pro row not found in Settings")
         return False
-    ok = tap("Unlock Pro|解锁 Pro", timeout=5)
+    ok = scroll_to_unlock()
     ev.mark(f"P4: Pro unlock via Settings->Pro = {ok}")
     go_home()
     return ok
