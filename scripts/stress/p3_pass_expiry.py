@@ -145,6 +145,37 @@ def set_string_list(prefs_bytes: bytes, key: str, values: list[str]) -> bytes:
     return bytes(out)
 
 
+def set_bool(prefs_bytes: bytes, key: str, value: bool) -> bytes:
+    """Replace (or append) one boolean preference; other entries verbatim.
+
+    Value.boolean is oneof field 3 with VARINT wire type (0), unlike the
+    length-delimited types _tlv() emits: tag byte = (3<<3)|0 = 0x18.
+    Used by P4 to seed pro_unlocked without the UI tap path (F-11: some
+    Appause screens dump text-empty nodes, so dump-driven tapping is blind).
+    """
+    desired_value = b"\x18" + _varint(1 if value else 0)
+    desired_pref = _tlv(1, key.encode()) + _tlv(2, desired_value)
+    out = bytearray()
+    replaced = False
+    for fno, wt, raw in _parse_fields(prefs_bytes):
+        if fno == 1 and wt == 2:
+            inner = _parse_fields(raw[len(raw) - _payload_len(raw):])
+            k = ""
+            for f2, w2, r2 in inner:
+                if f2 == 1 and w2 == 2:
+                    ln, p = _read_varint(r2, 1)
+                    k = r2[p:p + ln].decode()
+            if k == key:
+                if not replaced:
+                    out += _tlv(1, desired_pref)
+                    replaced = True
+                continue
+        out += raw
+    if not replaced:
+        out += _tlv(1, desired_pref)
+    return bytes(out)
+
+
 def _payload_len(raw: bytes) -> int:
     # raw = key varint + length varint + payload; skip both varints properly.
     _, p = _read_varint(raw, 0)

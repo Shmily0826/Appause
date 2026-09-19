@@ -25,6 +25,7 @@ from pathlib import Path
 from campaign_lib import (
     APPAUSE,
     Evidence,
+    adb,
     adb_shell,
     expect_intercept,
     go_home,
@@ -34,9 +35,11 @@ from campaign_lib import (
     reset_appause,
     seed_pause_group,
     set_group_field,
-    tap,
-    wait_for,
 )
+# F-10: blind overlay taps proven on this AVD (1080x2340).
+from p2_lifecycle_chaos import CONTINUE_XY, tap_overlay
+# p3 owns the verified raw-proto DataStore codec (F-12 wire-type lessons).
+from p3_pass_expiry import _parse_fields, _payload_len, _read_varint, read_prefs, set_bool, write_prefs
 
 TARGET = "com.google.android.deskclock"
 GROUP = "P4ReRemind"
@@ -46,35 +49,54 @@ FIRED_RE = "Re-remind fired"
 AWAY_RE = "re-checking soon"
 
 
-def scroll_to_unlock() -> bool:
-    # The debug "Unlock Pro" card sits at the bottom of the Pro screen; the
-    # dump-based tap() only sees what is scrolled into the viewport.
-    for _ in range(4):
-        if tap("Unlock Pro|解锁 Pro", timeout=2):
-            return True
-        adb_shell("input swipe 540 1600 540 500 300")
-        time.sleep(0.8)
+def _has_bool(buf: bytes, key: str, value: bool) -> bool:
+    want = b"\x18" + (b"\x01" if value else b"\x00")
+    for fno, wt, raw in _parse_fields(buf):
+        if fno == 1 and wt == 2:
+            payload = raw[len(raw) - _payload_len(raw):]
+            k = v = None
+            for f2, w2, r2 in _parse_fields(payload):
+                if f2 == 1 and w2 == 2:
+                    ln, p = _read_varint(r2, 1)
+                    k = r2[p:p + ln]
+                elif f2 == 2 and w2 == 2:
+                    v = r2[len(r2) - _payload_len(r2):]
+            if k == key.encode() and v == want:
+                return True
     return False
 
 
 def unlock_pro(ev: Evidence) -> bool:
-    """Re-remind only schedules when proState.isPro (debug toggle persists
-    in DataStore across force-stop, so once per run is enough)."""
-    open_app(APPAUSE)
-    if scroll_to_unlock():
-        ev.mark("P4: Pro unlocked from current screen")
-        go_home()
-        return True
-    if not wait_for("Settings|设置", timeout=10):
-        ev.mark("P4: Settings entry not found for Pro unlock")
+    """Re-remind only schedules when proState.isPro.
+
+    F-11: the Pro screen's buttons are invisible to uiautomator dumps on this
+    AVD (nodes come back text-empty), so the UI toggle path cannot be driven
+    unattended. Seed the same preference the toggle writes —
+    SettingsDataStore PRO_UNLOCKED_KEY ("pro_unlocked") — while the process is
+    force-stopped, then cold-restart so DataStore reads it from disk.
+    Persists across force-stop, so once per run is enough.
+    """
+    adb_shell("am force-stop " + APPAUSE)
+    local = ev.dir / "prefs_pro_seed.pb"
+    try:
+        data = read_prefs(local)
+    except Exception as exc:  # noqa: BLE001
+        ev.mark(f"P4: pro seed read failed: {exc}")
         return False
-    tap("Settings|设置", timeout=4)
-    if not tap("升级 Pro|Upgrade Pro|Pro", timeout=5):
-        ev.mark("P4: Pro row not found in Settings")
-        return False
-    ok = scroll_to_unlock()
-    ev.mark(f"P4: Pro unlock via Settings->Pro = {ok}")
-    go_home()
+    local.write_bytes(set_bool(data, "pro_unlocked", True))
+    write_prefs(local)
+    logcat_clear()
+    reset_appause()
+    time.sleep(2)
+    check = read_prefs(ev.dir / "prefs_pro_check.pb")
+    ok = _has_bool(check, "pro_unlocked", True)
+    # F-12 sentinel: a byte-level round-trip can pass while the real androidx
+    # serializer rejects the file — that would kill the service loop and turn
+    # every P4 probe into a false result.
+    if ok and "CorruptionException" in adb("logcat", "-d", "-s", "AppauseA11yService:E"):
+        ev.mark("P4: DataStore CorruptionException after pro seed")
+        ok = False
+    ev.mark(f"P4: pro_unlocked seeded = {ok}")
     return ok
 
 
@@ -93,10 +115,9 @@ def setup_group() -> None:
 
 
 def tap_continue(ev: Evidence) -> bool:
-    if not tap("Continue", timeout=10):
-        ev.mark("P4: Continue button not found (overlay vanished? see F-06)")
-        return False
-    return True
+    # F-10: the overlay is invisible to uiautomator — blind-tap and confirm
+    # the "Session start" marker instead of hunting a node.
+    return tap_overlay(ev, CONTINUE_XY, rf"Session start: {TARGET}")
 
 
 def p_exact(ev: Evidence) -> None:

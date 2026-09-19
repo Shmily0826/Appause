@@ -34,8 +34,10 @@ from campaign_lib import (
     reset_appause,
     seed_pause_group,
     set_group_field,
-    tap,
 )
+# F-10/F-11: overlay buttons are invisible to uiautomator on this emulator —
+# reuse the proven blind-coordinate tap with logcat-marker confirmation.
+from p2_lifecycle_chaos import CANCEL_XY, CONTINUE_XY, tap_overlay
 
 A = "com.google.android.deskclock"
 B = "com.google.android.calendar"
@@ -57,7 +59,7 @@ def start_session(ev: Evidence, pkg: str) -> bool:
     if not expect_intercept(pkg):
         ev.mark(f"P6: no initial intercept for {pkg}")
         return False
-    if not tap("Continue", timeout=10):
+    if not tap_overlay(ev, CONTINUE_XY, rf"Session start: {pkg}"):
         ev.mark(f"P6: Continue not tappable for {pkg}")
         return False
     return True
@@ -113,7 +115,7 @@ def m_delete_during_overlay(ev: Evidence) -> None:
     db(f"DELETE FROM group_apps WHERE groupId={gid};")
     db(f"DELETE FROM app_groups WHERE id={gid};")
     time.sleep(3)  # overlay stays up; countdown state lives in the view
-    if not tap("Cancel", timeout=8):
+    if not tap_overlay(ev, CANCEL_XY, "Overlay dismissed"):
         ev.mark("MUT-DELETE: Cancel untappable after group delete (F-06 rebind?)")
     go_home()
     time.sleep(1)
