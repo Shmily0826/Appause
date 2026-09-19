@@ -31,12 +31,17 @@ SERVICE_COMPONENT = f"{APPAUSE}/com.appause.android.service.AppauseAccessibility
 LAUNCHER_HINTS = ("com.google.android.apps.nexuslauncher", "launcher", "Launcher")
 
 ADB_BIN = os.environ.get("ADB", "adb")
+# Every campaign command MUST target the disposable emulator. Hard-pinned so
+# that connecting a real phone (operation on it is explicitly out of scope)
+# can never silently redirect a storm/reinstall/reboot probe.
+SERIAL = os.environ.get("APPAUSE_CAMPAIGN_SERIAL", "emulator-5554")
+
 REMOTE_XML = "/sdcard/campaign.xml"
 
 
 def adb(*args: str, check: bool = False) -> str:
     proc = subprocess.run(
-        [ADB_BIN, *args], capture_output=True, text=True,
+        [ADB_BIN, "-s", SERIAL, *args], capture_output=True, text=True,
         encoding="utf-8", errors="replace",
     )
     if check and proc.returncode != 0:
@@ -67,7 +72,7 @@ def nodes() -> list[dict]:
     adb_shell(f"uiautomator dump {REMOTE_XML} >/dev/null")
     local = Path(os.environ.get("CAMPAIGN_TMP", ".")) / "campaign.xml"
     local.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run([ADB_BIN, "pull", REMOTE_XML, str(local)], capture_output=True)
+    subprocess.run([ADB_BIN, "-s", SERIAL, "pull", REMOTE_XML, str(local)], capture_output=True)
     try:
         root = ET.parse(local)
     except Exception:
@@ -361,7 +366,7 @@ def grant_runtime_permissions() -> None:
 
 
 def screenshot(path: Path) -> None:
-    proc = subprocess.run([ADB_BIN, "exec-out", "screencap", "-p"], capture_output=True)
+    proc = subprocess.run([ADB_BIN, "-s", SERIAL, "exec-out", "screencap", "-p"], capture_output=True)
     if proc.returncode == 0 and proc.stdout:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(proc.stdout)

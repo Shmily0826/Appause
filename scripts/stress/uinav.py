@@ -28,14 +28,14 @@ LOCAL_XML = Path(__file__).parent / "evidence" / "uinav.xml"
 
 def adb(*args: str) -> str:
     return subprocess.run(
-        ["adb", *args], capture_output=True, text=True, encoding="utf-8", errors="replace"
+        ["adb", "-s", "emulator-5554", *args], capture_output=True, text=True, encoding="utf-8", errors="replace"
     ).stdout
 
 
 def dump() -> list[dict]:
     """Dump the current window and return every labelled node."""
     adb("shell", "uiautomator", "dump", REMOTE_XML)
-    subprocess.run(["adb", "pull", REMOTE_XML, str(LOCAL_XML)],
+    subprocess.run(["adb", "-s", "emulator-5554", "pull", REMOTE_XML, str(LOCAL_XML)],
                    capture_output=True)
     if not LOCAL_XML.exists():
         return []

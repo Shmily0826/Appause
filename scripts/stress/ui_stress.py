@@ -69,12 +69,15 @@ LOGCAT_TAGS = (
 # The emulator SDK's platform-tools is usually not on PATH, so allow an
 # override:  ADB=/path/to/adb.exe python ui_stress.py
 ADB_BIN = os.environ.get("ADB", "adb")
+# Pin ALL traffic to the disposable emulator; a connected real phone must never
+# be silently targeted (serial ambiguity also breaks commands outright).
+SERIAL = os.environ.get("APPAUSE_CAMPAIGN_SERIAL", "emulator-5554")
 
 
 def adb(*args: str, check: bool = False) -> str:
     """Run one adb command and return stdout."""
     proc = subprocess.run(
-        [ADB_BIN, *args], capture_output=True, text=True, encoding="utf-8", errors="replace"
+        [ADB_BIN, "-s", SERIAL, *args], capture_output=True, text=True, encoding="utf-8", errors="replace"
     )
     if check and proc.returncode != 0:
         raise RuntimeError(f"adb {' '.join(args)} failed: {proc.stderr.strip()}")
@@ -148,7 +151,7 @@ def lock_and_unlock() -> None:
 
 def screenshot(path: Path) -> None:
     """Save a screenshot. Uses exec-out so no device temp file is needed."""
-    proc = subprocess.run([ADB_BIN, "exec-out", "screencap", "-p"], capture_output=True)
+    proc = subprocess.run([ADB_BIN, "-s", SERIAL, "exec-out", "screencap", "-p"], capture_output=True)
     if proc.returncode == 0 and proc.stdout:
         path.write_bytes(proc.stdout)
 
@@ -224,7 +227,7 @@ class Capture:
         # LATER runs into this run's evidence file.
         tag_filters = [f"{t}:D" for t in LOGCAT_TAGS] + ["*:S"]
         self.proc = subprocess.Popen(
-            [ADB_BIN, "logcat", "-v", "epoch", *tag_filters],
+            [ADB_BIN, "-s", SERIAL, "logcat", "-v", "epoch", *tag_filters],
             stdout=(self.directory / "logcat.txt").open("wb"),
             stderr=subprocess.DEVNULL,
         )
