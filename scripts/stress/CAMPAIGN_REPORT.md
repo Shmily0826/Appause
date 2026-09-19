@@ -6,14 +6,21 @@ device: disposable AVD `Appause_Campaign_API34` (emulator-5554).
 
 **EVERY result here is emulator evidence. None of it is physical-device
 (Xiaomi/HyperOS) validation.** Nothing was pushed, merged, tagged or released;
-zero paid external API traffic; no real-device operations.
+zero paid external API traffic; real-device operations were performed later
+in a separate, user-authorized session (D1-D4 below, marked DEVICE evidence).
 
 ## Status
 
-**COMPLETE WITH REMAINING DEVICE-ONLY GAPS** — verify-AD/AE landed:
+**COMPLETE — emulator side closed; real-device D1–D4 landed (2026-09-19 PM,
+Xiaomi 2410DPN6CC / HyperOS Android 16)** — verify-AD/AE:
 P2b CLOSED PASS, F-03 CLOSED (B/C), P8 CLOSED PASS after F-18 harness fix,
 P4 CLOSED PASS (UI unlock; EXACT delta 55.0 s) and P6 CLOSED PASS 4/4 after
 the F-17/F-19/F-20 harness fixes.
+Device session: D1 PASS (2032 overlay fully visible over 小红书 anti-tamper),
+D2 PASS (3x HyperOS a11y rebind, no sticky card, interception recovers),
+D3 PASS (3-key Back: 4/4 backCB->dismiss->launcher; gesture Back: cannot
+dismiss the overlay — no escape path), D4 PASS (reboot: grant persists,
+service auto-binds and foregrounds in ~30 s, PAUSE fires post-boot).
 Zero A-class product defects confirmed; no product behaviour changed.
 
 ## Acceptance criteria mapping
@@ -76,10 +83,11 @@ change; no refactoring.
 
 ## Remaining gaps
 
-**Xiaomi/HyperOS device-only (never reachable from this campaign):** overlay
-visibility over anti-tamper apps (小红书 setHideOverlayWindows), boot-kill /
-autostart policy, real-device a11y rebind behaviour, gesture-nav Back, and the
-~1.3 s focus-acquisition window (F-05 note 5).
+**Device-only items — RESOLVED by the 2026-09-19 PM real-device session**
+(see FINDINGS.md "DEVICE session"): 2032 overlay visible over 小红书
+setHideOverlayWindows; a11y rebind x3 clean; 3-key and gesture Back verdicts;
+reboot autostart PASS. Still not covered on device: the ~1.3 s
+focus-acquisition window (F-05 note 5) and long soak (P9 remains emulator).
 **Production-Worker-only:** real license JWT redeem (G3) — Pro state was
 locally seeded via DataStore, which exercises the gate but not activation.
 **Emulator-infeasible:** 2038 → PauseActivity fallback chain (2032 always
