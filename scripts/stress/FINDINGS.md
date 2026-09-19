@@ -402,3 +402,32 @@ step (step 1 was settings). Fixed to count only appause windows whose token
 line carries type=2032. Replay with the SAME seed 20260919, 60 steps:
 PASS 60/60 (verify-AE). Conclusion: no overlay-stacking product defect;
 P8 CLOSED. (emulator-only evidence)
+
+## F-17 CLOSED + F-19 (B-class, harness; with one product-fragility NOTE) verify-AE
+Closed the two remaining emulator-side gaps in one chain:
+- UI unlock works: debug Pro page "Unlock (debug)" button (label differs from
+  strings.xml; found live via uiautomator at 540,1490 after scrolling) calls
+  settings.setProUnlocked(true) through DataStore itself; state line flipped
+  to "Effective: REAL (licensed state: DEBUG)".
+- F-19, root cause of F-17: launching Appause with the raw-seeded
+  "pro_unlocked" entry produced FATAL `ClassCastException: Integer cannot be
+  cast to Boolean` in SettingsDataStore's map (crash buffer 15:22) — the p3
+  set_bool wire shape is read back by androidx as an INT, so (a) the Pro gate
+  never saw true (fail-closed by design), and (b) the mismatched type CRASHES
+  the app on every launch. Both sides are harness-caused (only a raw writer
+  can produce this), classified B. PRODUCT NOTE (not fixed, per scope rules):
+  a malformed-type preference entry is not defended against in the
+  SettingsDataStore flow map — unreachable for real users, but worth knowing;
+  the corrupt entry was surgically dropped from the proto rather than pm
+  clear. F-17 seed path in p4 stays available but --unlock ui is the
+  authoritative mode from now on.
+- F-20 (B, fixed): p_exact polled `logcat -d` (default MM-DD format) while
+  ts() requires epoch seconds -> start/fired always None -> "no CLOCK START"
+  no matter what; fixed with `logcat -d -v epoch`.
+Results (verify-AE-p4ui / verify-AE-p6, emulator only):
+P4 EXACT PASS continue->pop delta = 55.0s (design 60-5s; G5 time math OK);
+P4 AWAY PASS x2 (re-checking-soon tick + pop within 15s of return);
+P4 RESTART was already PASS x2. P4 fully CLOSED.
+P6 REMOVE PASS (no intercept after mid-session removal) and
+P6 MIGRATE PASS (new group's cooldown=3s used on re-attribution) -> all four
+P6 probes green. Remaining A-class candidates: NONE.

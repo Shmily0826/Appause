@@ -137,7 +137,10 @@ def p_exact(ev: Evidence) -> None:
     fired = None
     deadline = time.monotonic() + 130
     while time.monotonic() < deadline:
-        lines = adb_shell("logcat -d | grep -E 'Re-remind (CLOCK START|fired)'")
+        # -v epoch: ts() below parses the FIRST field as epoch seconds; the
+        # default "MM-DD HH:MM:SS.mmm" format silently yielded None and made
+        # this probe unable to pass even when CLOCK START fired (B-class).
+        lines = adb_shell("logcat -d -v epoch | grep -E 'Re-remind (CLOCK START|fired)'")
         for line in lines.splitlines():
             if "CLOCK START" in line and start is None:
                 start = ts(line)
@@ -210,9 +213,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--probes", default="EXACT,AWAY,RESTART")
     parser.add_argument("--evidence", default="evidence/p4-reremind")
+    # F-17: the raw set_bool seed is mis-encoded (androidx reads it as Int ->
+    # CCE crash). `--unlock ui` assumes Pro was unlocked through the debug
+    # Pro-page "Unlock (debug)" button, which writes the key via DataStore.
+    parser.add_argument("--unlock", choices=["seed", "ui"], default="seed")
     args = parser.parse_args()
     ev = Evidence(Path(args.evidence), f"p4-{time.strftime('%H%M%S')}")
-    if not unlock_pro(ev):
+    if args.unlock == "ui":
+        logcat_clear()
+        ev.mark("P4: Pro unlocked via debug UI (F-17 close-out, no raw seed)")
+    elif not unlock_pro(ev):
         ev.verdict("P4-PRO-UNLOCK", False, "re-remind needs Pro; aborting")
         print("results:", ev.dir)
         return 1
