@@ -596,3 +596,41 @@ Results (DEVICE evidence):
 
 Verdict: D6 PASS on device. 86 rounds, ~100 % decision correctness
 against cooldown semantics, service fully stable.
+
+## F-22 (B-class, FIXED) P9 "intercept MISSING every 2nd cycle" = blind-tap layout drift, not a product miss
+verify-AF (post-campaign P9 run): first 125-cycle attempt logged a real
+foreground-in-target-with-no-overlay dump (cycle3/5/7/9.miss.png shows
+DeskClock resumed, a11y service bound, zero 2032 windows) exactly every
+other cycle, each "recovered after reset". Root cause: this AVD now renders
+the FREE overlay layout (pro_unlocked evidently lost when the campaign
+surgically dropped the corrupt F-19 prefs entry), but CANCEL_XY keeps the
+verify-AC "Pro layout FIRST" order — so the first candidate (540,1663) is
+the FREE layout's CONTINUE button. tap_overlay's success marker
+"Overlay dismissed" is logged by EVERY dismiss path (OverlayManager
+dismiss()), so a Continue tap looked like a successful Cancel; the started
+session then LEGITIMATELY suppressed the next launch (G6 hold), which the
+harness scored as "intercept MISSING". Classification B (harness oracle
+ambiguity) — product behavior verified correct by the miss dumps.
+Fix: Cancel is now proven from Room (`app_launch_records.action =
+'cancelled'` for the package via run-as sqlite3), never from the bare
+dismiss marker; P9 taps only the FREE Cancel point (540,1788) and a
+'proceeded' row triggers a logged B-class mis-tap + state reset; Continue
+stays proven by the unique "Session start: <pkg>" marker. Same fix applied
+to the new p10_mixed_journeys.py. 3-cycle smoke after fix: PASS 3/3 with
+room_cancelled=3. (emulator-only evidence)
+
+## F-23 (B-class, FIXED x2) P10-J4 seed_pass verified=False + P9 PSS trend-gate cold-baseline artifact
+(1) After the D5 data wipe the app never wrote DataStore again, so the
+`files/datastore/` DIRECTORY does not exist; p3 write_prefs' bare
+`run-as cp` silently failed and seed_pass verified False (J4 FAIL on the
+first p10 run). Fix: `mkdir -p files/datastore` before cp. J4 retest:
+PASS (pass suppresses 3 in/out re-entries, interception re-arms after
+natural expiry, Cancel Room-verified).
+(2) The P9 `trend < 40%` gate compares final PSS against the COLD baseline
+taken right after force-stop (pre-JIT-warmup). 125-cycle evidence:
+74 MB cold -> 114 (c10) -> 124 (c20) -> 114 (c110) -> 113 (final): a warmup
+plateau, not growth — zero leak, single PID, FATAL=0, ANR=0, but the gate
+scored FAIL at +52%. Fix: measure the trend against the warmed cycle-10
+baseline. Run2 remains valid evidence for the interception loop itself
+(125/125 Room-verified cancels); run3 re-scores the whole battery under
+the corrected gate. (emulator-only evidence)

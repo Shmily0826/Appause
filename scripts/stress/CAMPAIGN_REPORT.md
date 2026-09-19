@@ -48,7 +48,8 @@ Zero A-class product defects confirmed; no product behaviour changed.
 | P6 | group mutation mid-session | CLOSED PASS 4/4 — clean verify-AE re-run: REMOVE (no intercept after mid-session removal) + MIGRATE (new group cooldown used); DELETE + COOLDOWN proven twice earlier |
 | P7 | escape-safety storms with watchdog | PASS; REC-BURST death = D-class flake 2/2 repro clean (F-14) |
 | P8 | seeded random walk (replayable, shrinkable) | PASS 60/60 seed=20260919 (verify-AE) after F-18 B-class oracle fix; the 11 "stacking" violations were the counter matching every package-name line in `dumpsys window windows` (MainActivity + multi-line windows); every saved violation dump held exactly ONE type=2032 overlay |
-| P9 | 100+ cycle long stress | script `p9_long_cycle.py` ready; NOT RUN (turn budget) → remaining gap |
+| P9 | 100+ cycle long stress | **RUN 2026-09-19 (verify-AF): PASS 125/125** intercept→Cancel→detach→home cycles, every cycle Room-verified `action='cancelled'` (125 rows), single PID across the run, FATAL=0 ANR=0, service bound at end, zero overlay residue/stacking, PSS plateau 110–117 MB (−8% vs warmed baseline). Two harness defects found+fixed en route: F-22 (dismiss-marker ambiguity), F-23 (cold-baseline PSS gate + missing datastore dir). Run3 = evidence/p9-125-run3 |
+| P10 | mixed real-user journeys (5 scripted, replayable) | PASS 5/5 (verify-AF): J1 multi-target session isolation (A-cancel→normal→B-continue→page-switch→A still intercepts→B still held), J2 session+Recents+grace, J3 notification-shade during countdown then re-intercept+Cancel, J4 temp-pass 3× re-entries quiet then re-arm after expiry (PASS after F-23 fix), J5 cooldown 120→1 mutation effective on next entry (Continue live in 6 s) — evidence/p10-run1 + p10-j4-retest |
 | P10 | adversarial review vs runtime evidence | folded into FINDINGS ledger; no lifecycle-race/G3/parallel defect survived evidence |
 
 ## Findings ledger (classification, one line each — full text FINDINGS.md)
@@ -71,6 +72,7 @@ Zero A-class product defects confirmed; no product behaviour changed.
   malformed preference entries in the SettingsDataStore flow map — unreachable
   for real users.
 - F-14 D flake + oracle note · J3-miss-13 D flake
+- F-22, F-23 B harness (P9/P10 session: dismiss-marker ambiguity → Room oracle; PSS cold-baseline gate; datastore dir mkdir) — both fixed, full text FINDINGS.md
 
 ## Product-code delta on this branch
 
@@ -92,8 +94,8 @@ focus-acquisition window (F-05 note 5) and long soak (P9 remains emulator).
 locally seeded via DataStore, which exercises the gate but not activation.
 **Emulator-infeasible:** 2038 → PauseActivity fallback chain (2032 always
 attaches here).
-**Not run:** P9 long-running 100-cycle stress (script ready), Room migrations
-2–5 (no schema JSONs exist).
+**Not run:** Room migrations
+2–5 (no schema JSONs exist). (P9 ran and PASSED 2026-09-19, verify-AF.)
 **Emulator-side re-runs:** ALL CLOSED in verify-AE (P4 via UI unlock, P6
 REMOVE/MIGRATE clean run) — no emulator-side gaps remain open.
 **Housekeeping:** `scripts/stress/campaign.xml` stays uncommitted (scratch UI

@@ -199,6 +199,10 @@ def read_prefs(local: Path) -> bytes:
 def write_prefs(local: Path) -> None:
     tmp = "/data/local/tmp/prefs_pb"
     adb("push", str(local), tmp)
+    # F-23 (B): after a data wipe the files/datastore/ DIRECTORY may not exist
+    # yet (DataStore creates it only on first app-side write) — a bare cp then
+    # fails silently and seed_pass verifies False.
+    adb_shell(f"run-as {APPAUSE} mkdir -p files/datastore")
     adb_shell(f"run-as {APPAUSE} cp {tmp} {PREFS}")
 
 
