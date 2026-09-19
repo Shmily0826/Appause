@@ -50,7 +50,7 @@ pending process evidence should render UNVERIFIED, not blocking-red).
 ## F-04 (watch) Diagnostics screen renders Chinese-only regardless of app language
 Debug-flavor only; no end-user impact; not fixing without further evidence.
 
-## F-05 (A-class CANDIDATE, repro pending) Back key does not dismiss pause overlay
+## F-05 (RESOLVED — see FINAL section below) Back key does not dismiss pause overlay
 P1 J2: overlay shown for deskclock (2032), `input keyevent KEYCODE_BACK`,
 +1.5 s → dumpsys still lists the appause 2032 window (FAIL screenshot +
 window dump in evidence/probes-20260919/p1-journey/).
@@ -100,7 +100,7 @@ needs one dump-free confirmation: f03_recheck.py (wait for the connect log,
 screenshot at +4 s / +9 s after an OFF->ON rebind while Home is open).
 Classification decision deferred to that result.
 
-## F-05 (UPDATE: repro CONFIRMED 3/3, root cause narrowed)
+## F-05 (UPDATE, superseded by FINAL section at bottom) repro CONFIRMED 3/3, root cause narrowed
 f05_back_repro.py verify-B: KEYCODE_BACK with overlay attached -> window
 still attached after 5 s in 3/3 attempts. NEW runtime signal from back0
 logcat: the Back keypress produced `AutofillManagerService.onBackKeyPressed`
@@ -139,3 +139,46 @@ F-07 but on the tap side — uiautomator dump during the tap sequence rebinds
 the service and onDestroy dismisses the overlay. Needs the same
 connect-wait + retry treatment inside p2_lifecycle_chaos.py before any
 product conclusion can be drawn from LEAVE-HOLD.
+## F-05 (FINAL: reclassified B-class harness timing artifact — no product fix; fix code reverted)
+verify-N/O/P/Q/R/S closed the investigation on the API-34 emulator:
+
+1. ROOT CAUSE (measured, verify-N + focus timing): the 2032 overlay window
+   becomes the InputDispatcher focused window ~1.2-1.7 s AFTER addView
+   (attached at +0.47 s, input focus at +1.73 s in the instrumented run).
+   A KEYCODE_BACK injected before that instant is routed to the blocked app
+   below — which is exactly what the original f05_back_repro did (it pressed
+   Back ~0.5-1.5 s after attachment), so the "6/6 deterministic FAIL" was a
+   harness timing artifact (B-class), not a steady-state product defect.
+2. STEADY-STATE BEHAVIOUR IS CORRECT: once the overlay holds input focus,
+   injected BACK fires the OnBackInvokedCallback (persistent log marker
+   "backCB FIRED"), the overlay dismisses within 0.5 s, and this reproduces
+   3/3 (verify-S on the reverted APK) in BOTH navigation modes
+   (navigation_mode=0 and =2, verify-N A/B probe).
+3. KEY-FILTER FIX ATTEMPT WAS INEFFECTIVE HERE (C-class data point):
+   with XML flagRequestFilterKeyEvents compiled into the APK (verified via
+   aapt dump: android:accessibilityFlags=0x20) AND runtime
+   serviceInfo.flags=32 logged on every connect, `dumpsys accessibility`
+   still reported capabilities=0 and AccessibilityService.onKeyEvent NEVER
+   fired (0 markers across verify-L + verify-N). FLAG_REQUEST_FILTER_KEY_
+   EVENTS therefore did not take effect on this emulator image; the
+   onKeyEvent/activeBackBridge/XML/PauseActivity plumbing was fully reverted
+   (OverlayKeyPressPolicyTest deleted with it). OverlayManager keeps only
+   the F-05 diagnostic logging (backCB registered/FIRED/dispatcher=NULL,
+   OverlayHost dispatchKeyEvent BACK), which is what produced this
+   evidence chain.
+4. HARNESS FIXES (B-class): f05_back_repro.py now (a) launches the target
+   with explicit `am start -n` because `monkey -p <pkg> 1` silently stopped
+   launching it after reinstalls (same failure family as F-07), (b) retries
+   the home->target transition up to 3x to survive the post-reset rebind
+   race, and (c) waits for real INPUT focus (dumpsys input FocusedWindows)
+   before injecting Back, logging the focus latency it measures.
+5. RESIDUAL PRODUCT NOTE (minor, emulator-measured): during the ~1.3 s
+   focus-acquisition window a Back press goes to the blocked app instead of
+   the overlay (app usually exits to home, which then dismisses the overlay
+   via target-leave, so the user still escapes; countdown input is
+   unaffected — touch goes to the overlay immediately). Not enough of a
+   defect to change the window type/flags for; documented only.
+6. REAL-DEVICE STATUS: NOT TESTED (no Xiaomi/HyperOS device in this
+   campaign). Gesture-navigation Back and key-filter behaviour on HyperOS
+   remain the top device-only verification item; the kept diagnostics
+   (PersistentLog backCB markers) are exactly what a device session needs.

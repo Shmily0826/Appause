@@ -52,8 +52,20 @@ def overlay_shown() -> bool:
     # 11:24:03/11:24:22 in the P2 chain), which dismisses the overlay via
     # onDestroy and would destroy the exact window we want to test Back on.
     # logcat INTERCEPT + dumpsys window are shell-only and non-invasive.
-    open_app(TARGET)
-    if not expect_intercept(TARGET, timeout=15):
+    # verify-Q/R lesson: right after reset_appause the first am start can be
+    # missed (service still rebinding / target already foreground from a prior
+    # failed attempt, and a failed attempt returns before its go_home).
+    # Retry a clean home→target transition up to 3 times.
+    for _ in range(3):
+        # verify-Q lesson: `monkey -p <pkg> 1` silently stopped launching the
+        # target on this emulator, so the repro saw "overlay never shown".
+        # Explicit am start is deterministic (used by f05_navmode_ab 6/6).
+        go_home()
+        time.sleep(1.5)
+        adb_shell("am start -n com.google.android.deskclock/com.android.deskclock.DeskClock")
+        if expect_intercept(TARGET, timeout=12):
+            break
+    else:
         return False
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
@@ -61,6 +73,21 @@ def overlay_shown() -> bool:
             return True
         time.sleep(0.3)
     return False
+
+
+def wait_input_focus(timeout: float = 10.0) -> float | None:
+    # verify-N lesson (F-05 root cause): the 2032 overlay window becomes the
+    # InputDispatcher focused window only ~1.2-1.7 s AFTER addView returns.
+    # A BACK injected before that instant is routed to the blocked app below,
+    # which is why the original repro "failed" 6/6. Real steady-state Back is
+    # handled by the overlay. Wait for actual input focus before testing.
+    started = time.monotonic()
+    while time.monotonic() - started < timeout:
+        f = adb_shell("dumpsys input | sed -n '/FocusedWindows:/,+3p'")
+        if "appause" in f:
+            return time.monotonic() - started
+        time.sleep(0.1)
+    return None
 
 
 def one_attempt(ev: Evidence, idx: int) -> None:
@@ -71,6 +98,12 @@ def one_attempt(ev: Evidence, idx: int) -> None:
         return
     focus_before = current_focus()
     ev.mark(f"{tag}: focus while overlay shown: {focus_before}")
+    focus_lat = wait_input_focus()
+    if focus_lat is None:
+        ev.verdict(f"{tag}: overlay gained input focus", False,
+                   "no focus within 10s")
+        return
+    ev.mark(f"{tag}: overlay gained INPUT focus after {focus_lat:.2f}s")
     attached_before = appause_overlay_attached()
     ev.mark(f"{tag}: dumpsys says attached={attached_before}")
     logcat_clear()
