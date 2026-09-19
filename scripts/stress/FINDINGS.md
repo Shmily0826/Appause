@@ -518,3 +518,50 @@ Verification (EMULATOR):
 3. py_compile p3+p4. PASS
 Device: NOT applicable (never crashed). campaign.xml left dirty in the
 worktree as the original evidence; not committed.
+
+## DEVICE session #2 (2026-09-19 evening, TASK APPAUSE-20260919-1835) — D5 upgrade/migrations + D6 soak
+
+### D5 Room-migration upgrade test — CLOSED (previously "untestable")
+
+Premise corrections found during execution:
+- GitHub release APKs cannot cover migrations 1_2..3_4: the oldest tagged
+  release (v0.3.9) already ships DB version 4. Only 4_5 and 5_6 are
+  reachable by real users.
+- The device's RELEASE app is already 0.5.43 (= main versionCode 95) and
+  cannot be downgraded for an upgrade test: release builds are not
+  debuggable (no run-as backup path), so user data would be at risk.
+  => pivoted to the DEBUG package (disposable data, run-as available).
+- Historical debug builds use applicationId com.appause.android (no
+  ".debug" suffix existed before 0.5.x); built them with a temporary
+  applicationId patch to install side-by-side with the user's release.
+- 0ce84ba (DB1) is data-layer-only: its UI never opens Room, so no DB1
+  artifact is producible by running the app -> chain starts at v2 (DB2).
+- bc1113d (the DB3->4 bump commit) does not compile (HomeViewModel
+  isRunning unresolved); tag v0.3.14 (DB4) used as the DB4 representative.
+
+EMULATOR rehearsal (EMULATOR evidence, not device):
+- Full install chain v2->v3->v4->v5->v6->v95main on emulator-5554: every
+  hop PASS — user_version advances 2->3->4->5->6->6, seeded group
+  D5CHAIN_GRP + member survive, PRAGMA integrity_check ok, app alive.
+
+DEVICE execution (DEVICE evidence, Xiaomi 2410DPN6CC / HyperOS):
+- HyperOS revokes USB-install permission after EACH successful install
+  (INSTALL_FAILED_USER_RESTRICTED on the next), so a 7-install chain is
+  impractical. Redesigned as ONE install + DB-file injection:
+- Installed v95main (build 95 debug) once; then:
+  - Scenario A: pushed seeded DB2 (user_version=2, D5CHAIN_GRP present)
+    via run-as, cold launch -> device ran migrations 2->3->4->5->6.
+    RESULT PASS: user_version=6, group+member survived, integrity ok,
+    app alive.
+  - Scenario B: pushed seeded DB4 -> device ran 4->5->6 (the only path
+    real users can hit). RESULT PASS: same checks.
+- D5c post-migration behavior: seeded DEVTEST_XHS group
+  (cooldownSeconds=300) into the migrated DB; debug a11y granted via UI;
+  live interception of com.xingin.xhs confirmed on device (pause card
+  with 297 s countdown rendered over rednote; Cancel -> launcher).
+  Release a11y temporarily disabled to keep the soak measurement clean
+  (restored at session end per task spec).
+- Room schema evidence: post-migration app_groups carries all v6 columns
+  (type/reRemind* with defaults) and rows read back correctly.
+
+### D6 90-minute soak (DEVICE evidence) — results appended below when done
