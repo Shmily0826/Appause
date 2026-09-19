@@ -256,3 +256,14 @@ Device state repaired by rewriting temporary_passes with field 6 and health-chec
 interception (PASS). seed_pass now has a corruption sentinel (grep CorruptionException in
 service logcat after restart) so a future bad seed can never produce a false PASS.
 Real p3 verdicts come from verify-Z only.
+
+## F-13 (B-class, FIXED) harness left adb serial unpinned; real phone connected mid-campaign
+verify-AA (aborted+relaunched): at ~13:33 `adb devices` showed BOTH the emulator
+and a physical device (6036d5b). Every campaign script invoked adb WITHOUT `-s`,
+so all commands failed with "more than one device" (p5 snapshots came back empty;
+repro assert-failed on reset_appause). No command executed on the phone — adb
+refuses ambiguous targets outright — so no real-device operation occurred.
+This also invalidated nothing earlier (verify-Z finished at 13:29, phone joined
+after), but the campaign MUST be safe against this by construction: campaign_lib,
+ui_stress and uinav now pin every adb/ sub-process call to
+APPAUSE_CAMPAIGN_SERIAL (default emulator-5554). Commit b7813b8.
