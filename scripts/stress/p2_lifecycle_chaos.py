@@ -49,32 +49,40 @@ GRACE_SECONDS = 180  # LEAVE_COOLDOWN_MS in the service
 # verify-V lesson: uiautomator dumps never see the 2032 overlay content and
 # transiently kill the service (F-06), so overlay buttons must be tapped at
 # fixed coordinates. Geometry below is for this 1080x2340 AVD only.
-CONTINUE_XY = (540, 1646)
-CANCEL_XY = (540, 1788)
+# verify-AC lesson: with Pro unlocked the overlay gains reason chips +
+# "Temporary pass", shifting Continue/Cancel UP ~100px (see MUT-REMOVE
+# screenshot) — so each button carries a candidate list, tried in order.
+# Pro layout FIRST: pro_unlocked now persists on this AVD, and the free-layout
+# Cancel position (1788) would hit "Temporary pass" on the Pro layout.
+CONTINUE_XY = [(540, 1545), (540, 1646)]
+CANCEL_XY = [(540, 1663), (540, 1788)]
 
 
-def tap_overlay(ev: Evidence, xy: tuple[int, int], marker: str) -> bool:
+def tap_overlay(ev: Evidence, xy, marker: str) -> bool:
     """Wait for the overlay to actually render, then blind-tap a button.
 
     verify-V lesson: a single tap 1s after window attach reliably MISSES on
     this emulator — the Compose button is not hit-testable yet (proven A/B:
     same tap a few seconds later fires the marker). Retry until the logcat
     marker lands; a real user's reaction time always exceeds this window.
+    `xy` is a list of candidate points (free vs Pro overlay layouts).
     """
+    points = [xy] if isinstance(xy, tuple) else list(xy)
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline and not appause_overlay_attached():
         time.sleep(0.3)
-    for attempt in range(4):
+    for attempt in range(len(points) * 2):
         time.sleep(2.0 if attempt == 0 else 1.5)
-        adb_shell(f"input tap {xy[0]} {xy[1]}")
+        x, y = points[attempt % len(points)]
+        adb_shell(f"input tap {x} {y}")
         hit = logcat_match(marker, timeout=4)
         if hit is not None:
-            ev.mark(f"overlay tap ok (attempt {attempt + 1}): {hit.strip()}")
+            ev.mark(f"overlay tap ok (attempt {attempt + 1} at {x},{y}): {hit.strip()}")
             return True
         if not appause_overlay_attached():
-            ev.mark(f"tap at {xy} detached the overlay without {marker!r}")
+            ev.mark(f"tap at {(x, y)} detached the overlay without {marker!r}")
             return False
-    ev.mark(f"tap at {xy} produced no {marker!r} in 4 attempts")
+    ev.mark(f"taps at {points} produced no {marker!r}")
     return False
 
 

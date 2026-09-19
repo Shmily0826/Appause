@@ -91,10 +91,13 @@ def m_migrate(ev: Evidence) -> None:
     g1, g2 = group_id(G1), group_id(G2)
     db(f"UPDATE group_apps SET groupId={g2} WHERE packageName='{A}';")
     go_home()
-    time.sleep(1)
+    # verify-AC: re-entry within the 180 s leave grace after Continue must
+    # NOT re-intercept (P2b semantics) — the old immediate expect_intercept
+    # was a wrong oracle (line=None FAIL). Wait out the grace, THEN re-enter.
+    time.sleep(185)
     logcat_clear()
     open_app(A)
-    hit = expect_intercept(A, timeout=12)
+    hit = expect_intercept(A, timeout=20)
     line = logcat_match(r"INTERCEPT: .*cooldown=\d+s", timeout=0.1)
     correct_cd = bool(line and "cooldown=3s" in line)
     ev.verdict("MUT-MIGRATE-new-cooldown-used", hit and correct_cd,

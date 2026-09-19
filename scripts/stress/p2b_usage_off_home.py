@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import time
+from pathlib import Path
 
 from campaign_lib import (
     APPAUSE,
@@ -84,7 +85,7 @@ def main() -> int:
     parser.add_argument("--evidence", default="evidence/p2b")
     args = parser.parse_args()
 
-    ev = Evidence(args.evidence, "p2b-usageoff")
+    ev = Evidence(Path(args.evidence), f"p2b-{time.strftime('%H%M%S')}")
     try:
         if not seed_pause_group(GROUP, [TARGET], 5):
             ev.verdict("P2b-seed", False, "group seeding failed")
