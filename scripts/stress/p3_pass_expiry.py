@@ -3,26 +3,30 @@
 The service reads `temporary_passes` ("pkg|absoluteExpiryMillis") from the
 DataStore file at startup, so we can move the expiry boundary precisely by:
 
-  1. arming a 1-minute pass through the real overlay UI,
-  2. force-stopping Appause (so no in-memory DataStore cache overwrites us),
-  3. rewriting the expiry timestamp in the preferences file (same 13-digit
-     width -> byte-safe replace) and pushing it back via run-as,
-  4. restarting and asserting behaviour at/after expiry.
+  1. seeding the pass entry directly into settings.preferences_pb with a
+     small protobuf-wire editor (add/replace the string-set key),
+  2. doing this while Appause is force-stopped (no in-memory cache overwrite),
+  3. restarting the service — onServiceConnected then re-reads the store and
+     rebuilds the expiry wake, which is the very path under test.
+
+Why not arm through the overlay UI (first attempt, verify-F/G): the
+"Temporary pass" link only renders AFTER the cooldown finishes, and every
+uiautomator dump kills the a11y service on this emulator within ~25 ms (F-06,
+C-class) — so the chooser never survives to receive the second tap. The
+single-tap UI flow stays un-testable here; real-device coverage is a listed
+remaining gap.
 
 Probes:
-  EXPIRED-REOPEN   expiry rewritten to the past -> first open of the target
-                   after restart MUST intercept again.
-  WAKE-REBUILD     expiry rewritten ~25 s ahead with Appause running -> when
-                   it expires while the target is open in background state,
-                   the expiry wake path (scheduled job) must re-arm: the
-                   next open intercepts without touching Appause UI.
-  CLEAN-PASS       control: an active pass must suppress interception.
+  CLEAN-PASS     future expiry -> interception must be suppressed.
+  EXPIRED-REOPEN expiry in the past -> first open after restart intercepts.
+  WAKE-REBUILD   expiry ~40 s ahead -> stay in target across expiry, leave and
+                 re-enter; the rebuilt wake must have re-armed interception.
 """
 from __future__ import annotations
 
 import argparse
 import base64
-import re
+import struct
 import time
 from pathlib import Path
 
@@ -34,17 +38,114 @@ from campaign_lib import (
     expect_intercept,
     go_home,
     logcat_clear,
-    logcat_match,
     open_app,
     reset_appause,
     seed_pause_group,
-    tap,
 )
 
 TARGET_A = "com.google.android.deskclock"
 PREFS = "/data/data/com.appause.android.debug/datastore/settings.preferences_pb"
-PASS_RE = rb"com\.google\.android\.deskclock\|\d{13}"
+PASSES_KEY = "temporary_passes"
 
+
+# ── minimal androidx-DataStore Preferences protobuf editor ─────────────────
+# Wire shape (androidx.datastore.preferences.core):
+#   PreferenceMap   { repeated Preference preferences = 1; }
+#   Preference      { string key = 1; PreferenceValue value = 2; }
+#   PreferenceValue { StringList stringList = 7; }
+#   StringList      { repeated string items = 1; }
+# We only ever touch the `temporary_passes` Preference; every other field is
+# copied byte-for-byte, so the rewrite cannot corrupt unrelated settings.
+
+def _varint(n: int) -> bytes:
+    out = bytearray()
+    while True:
+        b = n & 0x7F
+        n >>= 7
+        out.append(b | (0x80 if n else 0))
+        if not n:
+            return bytes(out)
+
+
+def _read_varint(buf: bytes, pos: int) -> tuple[int, int]:
+    val = 0
+    shift = 0
+    while True:
+        b = buf[pos]
+        pos += 1
+        val |= (b & 0x7F) << shift
+        if not (b & 0x80):
+            return val, pos
+        shift += 7
+
+
+def _tlv(field: int, payload: bytes) -> bytes:
+    return _varint((field << 3) | 2) + _varint(len(payload)) + payload
+
+
+def _parse_fields(buf: bytes) -> list[tuple[int, int, bytes]]:
+    """Returns (field_no, wire_type, raw) with raw INCLUDING the header."""
+    out = []
+    pos = 0
+    while pos < len(buf):
+        key, pos = _read_varint(buf, pos)
+        fno, wt = key >> 3, key & 7
+        start = pos - _key_len(buf, pos)
+        if wt == 0:
+            _, pos = _read_varint(buf, pos)
+        elif wt == 2:
+            ln, pos = _read_varint(buf, pos)
+            pos += ln
+        elif wt == 5:
+            pos += 4
+        elif wt == 1:
+            pos += 8
+        else:
+            raise ValueError(f"unsupported wire type {wt}")
+        out.append((fno, wt, buf[start:pos]))
+    return out
+
+
+def _key_len(buf: bytes, end: int) -> int:
+    # length of the varint key that ends at `end`
+    i = end
+    while i > 0 and buf[i - 1] & 0x80:
+        i -= 1
+    return end - (i - 1)
+
+
+def set_string_list(prefs_bytes: bytes, key: str, values: list[str]) -> bytes:
+    """Replace (or append) one string-set preference; other entries verbatim."""
+    desired_value = _tlv(7, b"".join(_tlv(1, v.encode()) for v in values))
+    desired_pref = _tlv(1, key.encode()) + _tlv(2, desired_value)
+    out = bytearray()
+    replaced = False
+    for fno, wt, raw in _parse_fields(prefs_bytes):
+        if fno == 1 and wt == 2:
+            inner = _parse_fields(raw[len(raw) - _payload_len(raw):])
+            k = ""
+            for f2, w2, r2 in inner:
+                if f2 == 1 and w2 == 2:
+                    ln, p = _read_varint(r2, 1)
+                    k = r2[p:p + ln].decode()
+            if k == key:
+                if not replaced:
+                    out += _tlv(1, desired_pref)
+                    replaced = True
+                continue  # drop duplicates
+        out += raw
+    if not replaced:
+        out += _tlv(1, desired_pref)
+    return bytes(out)
+
+
+def _payload_len(raw: bytes) -> int:
+    # raw = header varint + length varint + payload
+    ln, p = _read_varint(raw, 1)
+    return len(raw) - p if ln == len(raw) - p else len(raw) - p
+
+
+# ── device I/O ─────────────────────────────────────────────────────────────
 
 def read_prefs(local: Path) -> bytes:
     # base64 round-trip: adb shell text mode corrupts raw binary bytes.
@@ -60,104 +161,94 @@ def write_prefs(local: Path) -> None:
     adb_shell(f"run-as {APPAUSE} cp {tmp} {PREFS}")
 
 
-def set_expiry(local: Path, new_ms: int) -> bool:
-    data = local.read_bytes()
-    m = re.search(PASS_RE, data)
-    if not m:
+def seed_pass(ev: Evidence, expiry_ms: int) -> bool:
+    """Write a temporary_passes entry with Appause stopped, then restart."""
+    adb_shell("am force-stop " + APPAUSE)
+    local = ev.dir / "prefs_seed.pb"
+    try:
+        data = read_prefs(local)
+    except Exception as exc:  # noqa: BLE001
+        ev.mark(f"seed_pass read failed: {exc}")
         return False
-    old = m.group(0)
-    pkg = old.split(b"|")[0]
-    new = pkg + b"|" + str(new_ms).encode()
-    if len(new) != len(old):
-        return False  # keep byte width identical
-    local.write_bytes(data.replace(old, new))
-    return True
-
-
-def arm_pass(ev: Evidence) -> bool:
-    """Intercept target A and take the 1-minute Temporary Pass via UI.
-
-    verify-E showed the naive version failing: after reset the service is
-    still re-registering when the launch fires, so the window event is lost
-    and a re-monkey of an already-foreground app generates no new event.
-    Retrying must therefore always leave to Home first, and wait for the
-    connect log before each attempt.
-    """
-    for attempt in range(3):
-        logcat_clear()
-        logcat_match(r"AccessibilityService connected and running", timeout=20)
-        go_home()
-        time.sleep(1.5)
-        if not expect_intercept(TARGET_A):
-            ev.mark(f"arm_pass attempt {attempt}: no intercept")
-            continue
-        if not tap("Temporary pass", timeout=5):
-            ev.mark(f"arm_pass attempt {attempt}: 'Temporary pass' button missing")
-            continue
-        if not tap("Use for 1 min", timeout=5):
-            ev.mark(f"arm_pass attempt {attempt}: 'Use for 1 min' option missing")
-            continue
-        time.sleep(1.5)
-        return True
-    return False
-
-
-def probe_clean_pass(ev: Evidence) -> bool:
+    entry = f"{TARGET_A}|{expiry_ms}"
+    patched = set_string_list(data, PASSES_KEY, [entry])
+    local.write_bytes(patched)
+    write_prefs(local)
     reset_appause()
-    if not arm_pass(ev):
-        return ev.verdict("P3-clean-pass", False)
+    time.sleep(2)
+    # Confirm the store survived the restart by re-reading it.
+    check = read_prefs(ev.dir / "prefs_check.pb")
+    ok = entry.encode() in check
+    ev.mark(f"seed_pass expiry={expiry_ms} verified={ok}")
+    return ok
+
+
+# ── probes ─────────────────────────────────────────────────────────────────
+
+def probe_clean_pass(ev: Evidence) -> None:
+    reset_appause()
+    now = int(time.time() * 1000)
+    if not seed_pass(ev, now + 5 * 60_000):
+        ev.verdict("P3-clean-pass", False, "pass not seeded")
+        return
     go_home()
-    time.sleep(3)
+    time.sleep(2)
     logcat_clear()
     open_app(TARGET_A)
     time.sleep(6)
     hit = expect_intercept(TARGET_A, timeout=2)
     go_home()
-    return ev.verdict("P3-clean-pass-suppresses", not hit,
-                      "intercepted while pass active" if hit else "")
-
-
-def probe_expired_reopen(ev: Evidence) -> bool:
-    reset_appause()
-    if not arm_pass(ev):
-        return ev.verdict("P3-expired-reopen", False, "pass not armed")
-    go_home()
-    local = ev.dir / "prefs_expired.pb"
+    ev.verdict("P3-clean-pass-suppresses", not hit,
+               "intercepted while pass active" if hit else "")
+    # cleanup: drop the seeded pass so later probes start clean
     adb_shell("am force-stop " + APPAUSE)
-    read_prefs(local)
-    if not set_expiry(local, int(time.time() * 1000) - 60_000):
-        return ev.verdict("P3-expired-reopen", False, "no pass entry in DataStore")
+    local = ev.dir / "prefs_clear.pb"
+    data = read_prefs(local)
+    local.write_bytes(set_string_list(data, PASSES_KEY, []))
     write_prefs(local)
-    # Restart the service so it re-reads the rewritten store.
-    adb_shell(f"settings put secure enabled_accessibility_services ''")
-    time.sleep(1)
     reset_appause()
+
+
+def probe_expired_reopen(ev: Evidence) -> None:
+    reset_appause()
+    now = int(time.time() * 1000)
+    if not seed_pass(ev, now - 60_000):
+        ev.verdict("P3-expired-reopen", False, "pass not seeded")
+        return
     logcat_clear()
     open_app(TARGET_A)
     hit = expect_intercept(TARGET_A, timeout=20)
     go_home()
-    return ev.verdict("P3-expired-reopen", bool(hit),
-                      "expired pass still suppresses interception" if not hit else "")
+    ev.verdict("P3-expired-reopen", bool(hit),
+               "expired pass still suppresses interception" if not hit else "")
 
 
-def probe_wake_rebuild(ev: Evidence) -> bool:
+def probe_wake_rebuild(ev: Evidence) -> None:
     reset_appause()
-    if not arm_pass(ev):
-        return ev.verdict("P3-wake-rebuild", False, "pass not armed")
-    # Leave the target open, then rewrite expiry to +25s in the future.
-    # NOTE: the running process caches DataStore, so instead of file surgery
-    # this probe uses the natural 60s expiry: stay in the app, wait it out,
-    # then leave & re-enter — expiry must have re-armed interception.
-    ev.mark("P3-wake-rebuild: waiting out the real 60s pass while app open")
-    time.sleep(75)
+    now = int(time.time() * 1000)
+    # Seed ~40s ahead; the restart inside seed_pass exercises the
+    # onServiceConnected wake rebuild, and expiry fires while we sit in the app.
+    if not seed_pass(ev, now + 40_000):
+        ev.verdict("P3-wake-rebuild", False, "pass not seeded")
+        return
+    logcat_clear()
+    open_app(TARGET_A)
+    time.sleep(3)
+    hit_early = expect_intercept(TARGET_A, timeout=2)
+    if hit_early:
+        go_home()
+        ev.verdict("P3-wake-rebuild", False, "intercepted before expiry")
+        return
+    ev.mark("wake-rebuild: inside target, waiting past expiry")
+    time.sleep(50)
     go_home()
     time.sleep(2)
     logcat_clear()
     open_app(TARGET_A)
     hit = expect_intercept(TARGET_A, timeout=20)
     go_home()
-    return ev.verdict("P3-wake-rebuild", bool(hit),
-                      "no re-arm after natural expiry while app was open" if not hit else "")
+    ev.verdict("P3-wake-rebuild", bool(hit),
+               "no re-arm after natural expiry while app was open" if not hit else "")
 
 
 def main() -> int:
@@ -166,7 +257,7 @@ def main() -> int:
     parser.add_argument("--evidence", default=str(Path(__file__).parent / "evidence"))
     args = parser.parse_args()
     ev = Evidence(Path(args.evidence), "p3-pass")
-    # Own group so arming never depends on groups left by earlier probes.
+    # Own group so probes never depend on groups left by earlier runs.
     seed_pause_group("P3Pass", [TARGET_A], 2)
     mapping = {"CLEAN": probe_clean_pass, "EXPIRED": probe_expired_reopen,
                "WAKE": probe_wake_rebuild}
