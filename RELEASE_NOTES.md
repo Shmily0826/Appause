@@ -1,6 +1,31 @@
-# Appause v0.5.43 — 发布说明 (Release Notes)
+# Appause v0.5.44 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.44/Appause-v0.5.44.apk`
+
+> Source note: this release carries the pause-overlay Home-escape fix (found and
+> verified on HyperOS during the Goal-B device safety acceptance). The v0.5.43
+> and earlier notes are kept below as the historical record.
+
+---
+
+## 🇨🇳 中文
+
+### 本次更新 (v0.5.44) — 暂停卡片遮挡桌面修复
+- **版本更新**：版本为 `0.5.44`，Android versionCode 为 `96`；公开 APK 使用 `Appause-v0.5.44.apk`。
+- **修复桌面遮挡**：暂停卡片出现时按 Home 回到桌面，卡片可能一直悬浮在桌面上，需要再滑一下才能消失。
+  现在按一次 Home 即可干净回到桌面，卡片不再残留；重新打开应用会照常拦截。已在小米 HyperOS 真机验证。
+
+### 本次更新 (v0.5.44) — English summary
+- Public APK: `Appause-v0.5.44.apk`, package `com.appause.android`, versionCode `96`.
+- Fixed the pause overlay lingering over the launcher: pressing Home while the pause card was showing
+  could leave it floating above the Home screen until another gesture cleared it. One Home press now
+  dismisses it cleanly, and re-entering the app intercepts as normal. Verified on a Xiaomi HyperOS device.
+
+---
+
+# Appause v0.5.43 — 发布说明 (Release Notes)
+
 > 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.43/Appause-v0.5.43.apk`
 
 > Source note: this release carries the Pro trial retry compatibility fix. The

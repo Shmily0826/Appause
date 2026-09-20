@@ -1270,3 +1270,26 @@ Full analysis, trigger boundary and raw evidence: `docs/REPEAT_INTERCEPTION_STRE
 
 This physical result closes the single-package Temporary Pass + lockscreen lifecycle gap. It does not
 prove that dual AccessibilityService interference caused the earlier freeze; that remains unproven.
+
+## 35. F-27 Home-escape fix: release-build device re-verification + v0.5.44 RC gates (2026-09-21)
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| F-27 fix in signed release build on HyperOS | **PASS** | `assembleRelease` from main@d2d2aea, versionCode 95 / v0.5.43, cert SHA-1 99f2dadb…0816; `adb install -r` over the user's existing release (same signature, data kept; MIUI reinstall did NOT revoke appops trio or a11y binding). `scripts/stress/release_smoke.py` 8/8 PASS on Xiaomi 2410DPN6CC: xhs+bili intercept, ONE Home press dismisses the 2032 card and focus returns to com.miui.home (the exact F-27 symptom), re-arm on relaunch, APP_SWITCH→Recents leaves no overlay residue, zero residual windows. Oracles are window/focus-only (release non-debuggable: no plog/Room); Continue/Cancel never tapped, user's "social media" group data untouched. |
+| v0.5.44 RC gates | **PASS** | versionCode 96 / versionName 0.5.44; `testDebugUnitTest` 235 tests 0 failures; `assembleDebug` + `assembleRelease` BUILD SUCCESSFUL incl. lintVitalRelease; §2 secret scan: no keystore/.dev.vars ever committed, `canRetrieveWindowContent=false`. |
+| Final named artifact | **PASS** | `python scripts/make_release.py` → `output/Appause-v0.5.44.apk`; apksigner V2 verifies with release cert; aapt badging `com.appause.android 96/0.5.44`. Diff vs the device-verified 95 build is version metadata only. |
+| Install final RC file + user-path smoke | **NOT TESTED** | Checklist §6 manual-install item pending; recommended before publishing (≈5 min phone time, same code path already device-verified). |
+| Website/README/INSTALL v0.5.44 sync | **NOT DONE** | Update at publish time together with the GitHub Release + tag. |
+
+## 36. Release Readiness: RC 0.5.44 emulator suite + on-device auto batch (2026-09-21)
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Emulator 95->96 upgrade data keep (Room group + DataStore md5) | **PASS** | release_emu_check v2, evidence/release-emu/emu2-*: u-data-kept, u-intercept-96, u-cancel-95 & u-continue-96 proven via Room rows. |
+| Emulator RC fresh install + onboarding (language, pre-grant denied page, battery step) | **PASS** | f-1/f-2/ob-battery screenshots; f-fresh-onboarding, f-onboarding-through-battery. |
+| Emulator reboot: auto a11y rebind, persistence, interception, HOME dismiss | **PASS** | r-auto-rebind=True (no adb help), r-data-persist, r-intercept, r-home-dismiss 5.7 s; exact-header re-probe <3 s. |
+| v1-run 7 FAILs | **B-class (harness)** | Same-value `settings put` fires no change event -> release service never rebinds after force-stop (fix: clear "" then put); loose `grep com.appause.android` window oracle matched .debug/Activity windows -> false intercept (fix: exact header `com.appause.android}`). No product defect. |
+| On-device RC 96 overwrite over user's real 95 | **PASS** | d9_release_final install: versionCode 95->96, appops trio + deviceidle whitelist survive, user groups render unchanged (rc96-home.png), Service active. |
+| On-device intercept latency + adb-HOME dismiss (RC, charging) | **PASS** | xhs 0.34 s / bili 0.30 s; home-dismiss both, zero residual windows. |
+| On-device real-finger gestures + 10-min idle F-26 release probe | **NOT TESTED** | Awaiting the single user batch (GOAL_R_MANUAL.md R-C/R-D). |
+| Health-report false alarm under emulator bind churn (KI-1) | **FAIL (conservative direction, non-blocking)** | After heavy adb settings-put churn: release service demonstrably live (2032 intercepts at 0.3-0.6 s, no crash logs) while in-app status pages persistently read "Needs recovery" (_processState stuck DISCONNECTED). Never observed on the physical HyperOS device (health UI correct there); error direction is a safe false-alarm, self-heals via the guided recovery loop. Follow-up hardening proposed: derive liveness from the onAccessibilityEvent stream, not bind callbacks alone. |
