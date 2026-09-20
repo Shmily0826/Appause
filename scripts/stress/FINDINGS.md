@@ -634,3 +634,88 @@ scored FAIL at +52%. Fix: measure the trend against the warmed cycle-10
 baseline. Run2 remains valid evidence for the interception loop itself
 (125/125 Room-verified cancels); run3 re-scores the whole battery under
 the corrected gate. (emulator-only evidence)
+
+## Goal-B Phase B (2026-09-20, emulator->device session): HyperOS freeze blocks timely interception; harness fixes landed
+Phase B started on the phone (6036d5b) after Phase A tooling (device_lib /
+goalb_seed / d7 / d8). Findings, all DEVICE evidence:
+- F-24 (B, FIXED x4) harness corrections discovered the hard way:
+  (1) HyperOS `dumpsys window windows` puts the mToken/type line ~9 rows
+      below the window header — the emulator-style 3-line block window
+      silently matched NOTHING (false "no overlay"); now block=12 lines and
+      `ty=ACCESSIBILITY_OVERLAY` is the primary marker.
+  (2) `mCurrentFocus` can be a bare `PopupWindow:` name -> focus_pkg()
+      falls back to mFocusedApp.
+  (3) d7 arm accepted ANY 'Overlay shown' line in the last 120 log lines —
+      including previous probes' — so taps landed on bare apps; arm_target
+      is now window-oracle-only (45 s cold-launch window).
+  (4) adb `kill`/`kill -9` does NOT kill an app process on HyperOS (silently
+      ignored); restart_via_kill() is therefore unusable on-device — reboot
+      (grant survives) or user UI-toggle are the only rebind paths.
+- F-25 (B, FIXED) reboot RESETS runtime grants: GET_USAGE_STATS fell to
+  default and SYSTEM_ALERT_WINDOW to ignore (both were granted pre-reboot;
+  appops-level, invisible to the app's own permission checks until re-checked).
+  Re-grant via `appops set` after every reboot before trusting probes.
+- F-26 (C, ENVIRONMENT BLOCKER, open): with the phone on battery and idle,
+  HyperOS caches the debug process to oom_score_adj=200 DESPITE
+  isForeground=true FGS + bound a11y service + deviceidle whitelist entry.
+  Accessibility events are then DELAYED MINUTES and delivered in a burst
+  when anything wakes the process (4/4 observed overlays fired 50 s–3 min
+  after entry, each exactly at a wake moment; zero decisions while frozen).
+  Yesterday's D6 was clean because the phone was charging with screen on.
+  PRODUCT-RELEVANT RISK for Release Readiness: without user-set 无限制 +
+  自启动 on HyperOS, interception can be late/inert — onboarding must make
+  that requirement unmistakable. Test protocol going forward: charging +
+  screen-on + `appops set RUN_ANY_IN_BACKGROUND allow` + adj spot-check.
+- Positive device results already banked tonight: overlay countdown/chips
+  render correctly over xhs and bili; Cancel tap (460,1860) -> Room
+  'cancelled' rows for both targets; Home escape + re-intercept PASS (P3/P4
+  run-1 with real overlay); control app never intercepted; zero residual
+  windows; backCB registers every show. D7 full battery to be re-run
+  tomorrow under the freeze-free protocol.
+
+## F-27 (A-class, FIXED + DEVICE-VERIFIED) Home left the 2032 pause card over the launcher — forever
+Symptom (user-observed, then instrumented): with the pause overlay up, a real
+Home gesture reached the launcher (focus=com.miui.home) but the card STAYED
+attached over the home screen for 2+ minutes without auto-dismissing —
+"had to swipe twice to get out" was the user's report; timeline capture:
++38.0s overlay=True focus=com.miui.home (linger), no further transition.
+Root cause (code): every Home-escape dismissal path (event-path confirmation,
+poller fallback, SkipSystem reuse) was gated on `!closeSystemDialogsReceiver
+Registered` — i.e. when the CLOSE_SYSTEM_DIALOGS receiver registered, the
+event/poller paths DEFERRED to it entirely. But Android 12+ stopped delivering
+that broadcast to normal apps: registration succeeds, delivery never happens
+(reproduced identically on the AOSP-34 emulator: HOME keyevent -> overlay
+attached 30s+, zero dismiss). Escape correctness must never depend on a
+deprecated broadcast.
+Fix (minimal): the receiver is demoted to an accelerator — its registration
+no longer gates anything; the launcher-event + UsageStats-confirmed dismissal
+(always idempotent, still policy-gated by HomeTransitionPolicy.shouldConfirm /
+shouldDismissForConfirmedHome) now runs unconditionally; dead flag removed.
+No fail-closed property weakened: dismissal still requires launcher event +
+foreground evidence; Recents-peek guard (isRecentAppsTransitionActive) kept.
+Verification: unit tests + assembleDebug PASS; EMULATOR: HOME-dismiss latency
+2.2 s (was never), re-intercept after Home True, P9 3/3 cycles + LEAVE-HOLD
+quiet-in-grace PASS; DEVICE (HyperOS 16, build installed 20:5x): user's single
+Home gesture dismissed the card immediately — user confirmed "A".
+Note: Recents-peek behavior on-device is unchanged in code but the dead
+receiver means `recentAppsTransitionAtUptime` never updates on Android 12+;
+the burstTracker/step-6.5 dedup remains the live guard. Watch in next session.
+
+## Goal-B closure addendum (2026-09-20 late night)
+- P5 CLOSED as harness false negative (B): the 18:20:50 FAIL detail already
+  showed escape=True (tap dismissed the overlay, focus=launcher); only the
+  Room read failed because latest_launch_action pulled the main db WITHOUT its
+  WAL while the commit was still journal-resident. WAL-aware peek at 18:28:56
+  returned 'cancelled' (PASS), and the archived snapshot
+  evidence/goalB/p5-closure-evidence.db now holds 13 device launch records
+  (18:17-18:28, all P1/P2/P5 cancels) proving Cancel->Room end-to-end on real
+  hardware. No D7 re-run needed.
+- Cleanup self-harm logged (B, fixed): the GB_* group-removal push used the
+  same WAL-less pull and truncated the debug slot's launch history (test data
+  only; user's release app untouched). seed_groups now pulls db+wal together.
+- Device residue at handover: expired temporary_passes entries for
+  tv.danmaku.bili (granted mid-testing via overlay taps, expired ~8 h ago,
+  functionally inert; left in place because live-DataStore surgery needs
+  another reboot for zero benefit). GB groups deleted, nav restored to
+  3-button (user choice), phone rebooted clean, no overlay windows.
+  USER ACTION STILL PENDING: a11y toggle Debug OFF -> release Appause ON.

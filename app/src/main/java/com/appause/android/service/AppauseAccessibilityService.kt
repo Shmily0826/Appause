@@ -503,7 +503,6 @@ class AppauseAccessibilityService : AccessibilityService() {
 
     /** Lifecycle-bound receiver for Android's system-dialog navigation signal. */
     private var closeSystemDialogsReceiver: BroadcastReceiver? = null
-    private var closeSystemDialogsReceiverRegistered = false
 
     /**
      * A Home broadcast can dismiss before the target's already-queued window
@@ -768,7 +767,6 @@ class AppauseAccessibilityService : AccessibilityService() {
                 registerReceiver(receiver, filter)
             }
             closeSystemDialogsReceiver = receiver
-            closeSystemDialogsReceiverRegistered = true
             AppLogger.d(TAG, "CLOSE_SYSTEM_DIALOGS receiver registered")
         } catch (e: Exception) {
             AppLogger.w(TAG, "CLOSE_SYSTEM_DIALOGS receiver registration failed", e)
@@ -779,7 +777,6 @@ class AppauseAccessibilityService : AccessibilityService() {
     private fun unregisterCloseSystemDialogsReceiver() {
         val receiver = closeSystemDialogsReceiver ?: return
         closeSystemDialogsReceiver = null
-        closeSystemDialogsReceiverRegistered = false
         try {
             unregisterReceiver(receiver)
         } catch (e: Exception) {
@@ -885,12 +882,12 @@ class AppauseAccessibilityService : AccessibilityService() {
                 // has already released the guard, the normal skip path below
                 // would leave an attached 2032 window covering Home. The
                 // resolved HOME package is sufficient confirmation here.
-                if (homePackages.contains(fg) && closeSystemDialogsReceiverRegistered && guardActive) {
-                    lastPolledPackage = fg
-                    continue
-                }
+                // F-27: do NOT defer to the CLOSE_SYSTEM_DIALOGS receiver —
+                // Android 12+ stopped delivering that broadcast to normal
+                // apps (verified on AOSP-34 emulator and HyperOS 16: gesture
+                // Home left the 2032 card over the launcher indefinitely).
+                // Registration succeeding never proved delivery.
                 if (homePackages.contains(fg) &&
-                    !closeSystemDialogsReceiverRegistered &&
                     dismissAttachedOverlayForConfirmedHome(
                         homePackage = fg,
                         currentForegroundPackage = fg,
@@ -957,7 +954,6 @@ class AppauseAccessibilityService : AccessibilityService() {
             // deadlock. Recording the launcher breaks the comparison.
             lastEventForeground = packageName
             if (pauseGuardWatchdogExpired &&
-                !closeSystemDialogsReceiverRegistered &&
                 !isRecentAppsTransitionActive()
             ) {
                 // After the logical guard expires, this resolved launcher event
@@ -969,7 +965,7 @@ class AppauseAccessibilityService : AccessibilityService() {
                     allowStaleForegroundFallback = true
                 )
             }
-            if (!closeSystemDialogsReceiverRegistered && !isRecentAppsTransitionActive()) {
+            if (!isRecentAppsTransitionActive()) {
                 scheduleHomeTransitionConfirmation(
                     homePackage = packageName,
                     homeEventTime = event.eventTime,
@@ -1013,7 +1009,7 @@ class AppauseAccessibilityService : AccessibilityService() {
             // UsageStats before removing the overlay; a system event alone is
             // never treated as proof of Home. Preserve a stronger Launcher
             // confirmation if it was already scheduled for this transition.
-            if (pendingHomeTransition == null && !closeSystemDialogsReceiverRegistered) {
+            if (pendingHomeTransition == null) {
                 scheduleSystemUiHomeConfirmation()
             }
         } else if (packageName != applicationContext.packageName && !isSystemPackage(packageName)) {
@@ -1356,7 +1352,6 @@ class AppauseAccessibilityService : AccessibilityService() {
                 // foreground-confirmed dismissal so Home cannot leave an
                 // accessibility window over Launcher.
                 if (homePackages.contains(packageName) &&
-                    !closeSystemDialogsReceiverRegistered &&
                     dismissAttachedOverlayForConfirmedHome(
                         homePackage = packageName,
                         currentForegroundPackage = withContext(Dispatchers.IO) {
