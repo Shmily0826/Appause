@@ -719,3 +719,24 @@ the burstTracker/step-6.5 dedup remains the live guard. Watch in next session.
   another reboot for zero benefit). GB groups deleted, nav restored to
   3-button (user choice), phone rebooted clean, no overlay windows.
   USER ACTION STILL PENDING: a11y toggle Debug OFF -> release Appause ON.
+
+## F-28 (B-class product-hardening candidate, logged as KI-1 — non-blocking) Release health page can stick at "Needs recovery" while the service is demonstrably live
+
+- Found 2026-09-21 during Release Readiness emulator checks (RC 0.5.44/96). After heavy adb
+  `settings put secure enabled_accessibility_services` churn (clear+put cycles, same-value puts),
+  the release service kept working (2032 overlays intercepted deskclock at 0.3-0.6 s, no crash,
+  no exception in logcat/crash buffer) while BOTH in-app health surfaces (home "Finish setup"
+  checklist + Settings > Permissions & Running) persistently showed SERVICE_NOT_CONNECTED
+  ("Needs recovery"). `_processState` only has three writers (onCreate=UNKNOWN,
+  onServiceConnected=CONNECTED, onDestroy=DISCONNECTED guarded by `instance == this`), so the
+  stuck state means the event stream was alive without a completed connect callback in this
+  process — an emulator AMS bookkeeping artifact under synthetic churn.
+- Direction is conservative: false ALARM, never a fake green; the guided recovery loop
+  (open Accessibility settings -> return) is exactly the right user action anyway. Never
+  observed on the physical HyperOS device (health UI correct there, incl. post-idle re-check).
+- Follow-up hardening (proposed, NOT in RC): let the onAccessibilityEvent heartbeat participate
+  in liveness derivation, so "events flowing" can never read as DISCONNECTED.
+- Harness lessons banked the same day (see [[appause-campaign-emulator-facts]] in agent memory):
+  same-value `settings put` fires no change event -> must clear to "" then put; window oracle for
+  the release package must match the exact header `com.appause.android}` (substring also hits
+  `.debug` and Activity windows).
