@@ -7,13 +7,13 @@ in groups, and set a cooldown. When a target app comes to the foreground,
 Appause shows a short pause screen so you can breathe and decide whether to
 continue.
 
-## Latest release: v0.5.43
+## Latest release: v0.5.44 Public Beta
 
-Download the signed APK from the canonical [GitHub Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.43):
+Download the signed APK from the canonical [GitHub Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.44):
 
-- [Appause-v0.5.43.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.43/Appause-v0.5.43.apk)
+- [Appause-v0.5.44.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.44/Appause-v0.5.44.apk)
 - Package: `com.appause.android`
-- versionCode: `95`
+- versionCode: `96`
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
 `versionCode` is internal metadata and is not part of the public filename.
@@ -97,10 +97,11 @@ Diagnostics and Pro test controls are isolated to the `debug` build
 (`com.appause.android.debug`). They are not included in the production Release
 APK and are not a production activation path.
 
-## v0.5.43 validation status
+## v0.5.44 Public Beta validation status
 
-- The public GitHub Release is `v0.5.43`, package `com.appause.android`,
-  versionCode `95`. The current `main` source is also `0.5.43 / 95`.
+- The public GitHub Release is `v0.5.44`, package `com.appause.android`,
+  versionCode `96`. The accepted APK SHA-256 is
+  `B2073E9138EEDF0FD3E31343304C04CFD6DB0D5CC199FBF69E961F34D68FA369`.
 - The Pro trial retry compatibility fix accepts a freshly signed retry token
   while retaining signature, device-binding, tier, expiry, and exact seven-day
   window validation.
@@ -114,6 +115,9 @@ APK and are not a production activation path.
   overlay; `reason=recentapps` left it present after about 1.8 seconds; and a
   Home-to-Bilibili reopen about 291 ms later produced a fresh second intercept.
   No subjective visual-smoothness measurement is claimed.
+- The v0.5.44 Public Beta also passed a bounded Xiaomi Android 16 smoke:
+  Accessibility health showed Enabled/Running before and after one Bilibili
+  type-2032 interception and Home cleanup. This is not full OEM/device QA.
 
 See [PROGRESS.md](PROGRESS.md) and [TEST_REPORT.md](TEST_REPORT.md) for the
 full evidence ledger and its remaining boundaries.
@@ -123,7 +127,7 @@ full evidence ledger and its remaining boundaries.
 - [Install guide](INSTALL.md)
 - [Privacy policy](PRIVACY.md)
 - [GitHub Issues](https://github.com/Shmily0826/Appause/issues)
-- [Latest GitHub Release](https://github.com/Shmily0826/Appause/releases/latest)
+- [v0.5.44 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.44)
 
 ## License
 
