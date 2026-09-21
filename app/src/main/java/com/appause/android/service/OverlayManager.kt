@@ -8,6 +8,8 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.view.KeyEvent
 import android.view.View
 import android.widget.FrameLayout
@@ -124,6 +126,11 @@ class OverlayManager {
 
     /** The overlay view — null when no overlay is showing. */
     private var overlayView: View? = null
+
+    /** When the overlay window was attached — [dismiss] skips the fade for
+     *  windows too young to have rendered a first frame (KI-2 edge case:
+     *  dismissing right after showing looked like a hitch, not a fade). */
+    private var overlayShownAtMs = 0L
 
     /**
      * The WindowManager the overlay was added to. Stored so [dismiss] removes
@@ -635,6 +642,7 @@ class OverlayManager {
                 overlayCanBeHiddenByTarget =
                     usedType == WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
                 overlayAttached = true
+                overlayShownAtMs = android.os.SystemClock.uptimeMillis()
                 overlayHost.requestFocus()
                 registerStandaloneBackCallback()
                 overlayAdded = true
@@ -654,6 +662,7 @@ class OverlayManager {
                         overlayWindowManager = windowManager
                         overlayCanBeHiddenByTarget = true
                         overlayAttached = true
+                        overlayShownAtMs = android.os.SystemClock.uptimeMillis()
                         overlayHost.requestFocus()
                         registerStandaloneBackCallback()
                         overlayAdded = true
@@ -831,17 +840,43 @@ class OverlayManager {
         }
 
         if (view != null) {
-            try {
-                // Remove via the SAME WindowManager that added the view (stored in
-                // overlayWindowManager). Falling back to the view's own context is a
-                // safety net, but normally they must match or removeView can throw.
-                val wm = overlayWindowManager
-                    ?: view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-                wm.removeView(view)
-                AppLogger.d(TAG, "Overlay dismissed")
-            } catch (e: Exception) {
-                AppLogger.w(TAG, "Error removing overlay", e)
+            // Remove via the SAME WindowManager that added the view (stored in
+            // overlayWindowManager). Falling back to the view's own context is a
+            // safety net, but normally they must match or removeView can throw.
+            val wm = overlayWindowManager
+                ?: view.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            // KI-2 polish: fade out over 100 ms so the card does not visibly pop on
+            // top of the launcher's zoom-out animation. The fade is cosmetic ONLY:
+            // the 200 ms safety net and the catch below guarantee removal, so escape
+            // never depends on the animation completing (F-27 lesson: dismissal
+            // must not rely on a fragile path).
+            val mainHandler = Handler(Looper.getMainLooper())
+            var removed = false
+            val removeNow = Runnable {
+                if (!removed) {
+                    removed = true
+                    try {
+                        wm.removeView(view)
+                        AppLogger.d(TAG, "Overlay dismissed")
+                    } catch (e: Exception) {
+                        AppLogger.w(TAG, "Error removing overlay", e)
+                    }
+                }
             }
+            mainHandler.post {
+                try {
+                    if (android.os.SystemClock.uptimeMillis() - overlayShownAtMs < 300L) {
+                        // Window too young to have rendered a first frame: the fade
+                        // would not paint and the card appears to hang — remove now.
+                        removeNow.run()
+                    } else {
+                        view.animate().alpha(0f).setDuration(100L).withEndAction(removeNow).start()
+                    }
+                } catch (e: Exception) {
+                    removeNow.run()
+                }
+            }
+            mainHandler.postDelayed(removeNow, 200L)
         }
 
         // Clean up the lifecycle so Compose effects stop running. This is also

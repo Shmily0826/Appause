@@ -1293,3 +1293,11 @@ prove that dual AccessibilityService interference caused the earlier freeze; tha
 | On-device intercept latency + adb-HOME dismiss (RC, charging) | **PASS** | xhs 0.34 s / bili 0.30 s; home-dismiss both, zero residual windows. |
 | On-device real-finger gestures + 10-min idle F-26 release probe | **NOT TESTED** | Awaiting the single user batch (GOAL_R_MANUAL.md R-C/R-D). |
 | Health-report false alarm under emulator bind churn (KI-1) | **FAIL (conservative direction, non-blocking)** | After heavy adb settings-put churn: release service demonstrably live (2032 intercepts at 0.3-0.6 s, no crash logs) while in-app status pages persistently read "Needs recovery" (_processState stuck DISCONNECTED). Never observed on the physical HyperOS device (health UI correct there); error direction is a safe false-alarm, self-heals via the guided recovery loop. Follow-up hardening proposed: derive liveness from the onAccessibilityEvent stream, not bind callbacks alone. |
+
+## 37. KI-2 fade-out polish on overlay dismissal (2026-09-21, user-feedback driven)
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| User feedback on no-animation dismissal | **CONFIRMED** | "刚打开就立刻关闭会卡一下；等 1-2s 就基本无感" — first-frame-not-yet-rendered window cannot paint a fade. |
+| Fix: 100ms alpha fade + 200ms guaranteed-removal safety net + <300ms-fresh windows skip fade | **PASS** | OverlayManager.dismiss(); removal never depends on animation (F-27 principle preserved). Gates: 235 unit tests, assembleDebug/Release + lintVital green. |
+| Device re-verify (HyperOS, RC rebuild) | **PASS** | immediate-dismiss 718ms / normal-dismiss 308ms single-HOME, focus=com.miui.home, zero residual windows. Final RC sha256 bc73d76a…516fff (v0.5.44/96, supersedes e6524be5 build). |
