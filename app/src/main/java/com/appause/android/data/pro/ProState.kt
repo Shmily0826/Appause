@@ -16,6 +16,15 @@ import java.net.URL
 private const val TRIAL_DURATION_SECONDS = 7L * 24 * 60 * 60
 
 /**
+ * Bounded tolerance for server/device clock skew in the "token issued in the
+ * future" check. W4 recovered-token evidence does not prove the source of
+ * any skew; keep this leeway small and fail closed on larger differences.
+ * The lower bound (iat >= activatedAt) and exact response window remain
+ * required.
+ */
+private const val CLOCK_SKEW_LEEWAY_SECONDS = 60L
+
+/**
  * Result of a server-side activation attempt ([ProState.redeemCode]).
  * The UI maps [Error.reason] to a user-facing string.
  */
@@ -365,7 +374,7 @@ class ProState(
         val expiryMatchesResponse = claims?.exp != null && claims.exp == expiresAt / 1000L
         val issuedAtIsValid = claims?.iat != null &&
             claims.iat >= activatedAt / 1000L &&
-            claims.iat <= nowSeconds
+            claims.iat <= nowSeconds + CLOCK_SKEW_LEEWAY_SECONDS
         val hasSevenDayWindow = activatedAt > 0L && expiresAt - activatedAt == TRIAL_DURATION_SECONDS * 1000L
         if (
             claims == null ||

@@ -375,7 +375,20 @@ class AppauseAccessibilityService : AccessibilityService() {
         internal val leaveCooldownDeadlines: StateFlow<Map<String, Long>> =
             _leaveCooldownDeadlines.asStateFlow()
 
-        fun currentProcessState(): AccessibilityProcessState = _processState.value
+        /**
+         * A live service instance is stronger evidence than a stale process
+         * marker. The instance is set only by service connection/event
+         * evidence and cleared by onDestroy, so this does not trust the
+         * system-enabled setting by itself.
+         */
+        fun currentProcessState(): AccessibilityProcessState =
+            effectiveProcessState(_processState.value, instance != null)
+
+        internal fun effectiveProcessState(
+            processState: AccessibilityProcessState,
+            hasLiveInstance: Boolean
+        ): AccessibilityProcessState =
+            if (hasLiveInstance) AccessibilityProcessState.CONNECTED else processState
 
         // ── Diagnostics counters ──
         // Plain in-memory fields read by the Diagnostics screen (debug builds).
@@ -910,8 +923,21 @@ class AppauseAccessibilityService : AccessibilityService() {
         }
     }
 
+    /**
+     * A callback from the framework is positive evidence that this service
+     * instance is live, even when a previous lifecycle callback left the
+     * process-local health marker stale. Keep system-setting checks in the
+     * health policy; this only reconciles evidence from the real service.
+     */
+    private fun markFrameworkConnectionObserved() {
+        instance = this
+        _processState.value = AccessibilityProcessState.CONNECTED
+    }
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
+        if (event == null) return
+        markFrameworkConnectionObserved()
+        if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         val packageName = event.packageName?.toString() ?: return
 

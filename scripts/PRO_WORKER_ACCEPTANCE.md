@@ -1,5 +1,33 @@
 # Pro/Worker 正式链路验收 — APPAUSE_PRO_WORKER_ACCEPTANCE_V1
 
+## Current closure addendum — 2026-09-21 (APPAUSE_V0_5_44_FINAL_RC_CLOSURE)
+
+The older W4 text in this report is historical. Current bounded evidence:
+
+- **W4 recovered PASS, not fresh first-click PASS.** The already-approved
+  `emulator-5554` synthetic trial was verified read-only through the binary
+  DataStore file. The pinned production public key verified the stored signed
+  trial token; the Pro UI was active after dismissing the existing success
+  modal and after a cold restart, and the persisted token remained unchanged.
+  `w4_prod_trial_smoke.py --verify-existing` passed. No production request was
+  made in this closure. QCode's exact earlier production-write count is not
+  recoverable; no new identity, trial slot, or production mutation was used.
+- **Clock conclusion is bounded.** The 60-second future-`iat` allowance is
+  covered by a focused acceptance test and remains fail-closed for larger
+  skew. The recovered token does not prove that Cloudflare clocks were the
+  original failure cause.
+- **Final signed RC:**
+  `output/Appause-v0.5.44-final-rc-health-fix-v3.apk`, package
+  `com.appause.android`, version `0.5.44` / code `96`, V2 signer certificate
+  SHA-1 `99F2DADB186EFD5AE07A039CDEB4373708A40816`, SHA-256
+  `B2073E9138EEDF0FD3E31343304C04CFD6DB0D5CC199FBF69E961F34D68FA369`.
+  Release build and lintVital passed; release diagnostics are absent and the
+  debug package remains `.debug` with its debug-only tools.
+- This v3 artifact passed the bounded physical Xiaomi smoke: Accessibility
+  health showed Enabled/Running before and after one Bilibili 2032 overlay and
+  Home cleanup. It is not full physical QA and was not tagged, released,
+  deployed, or published to Public Beta.
+
 日期：2026-09-21 ｜ 基线：main @ d104e7d（RC v0.5.44/96，worker/ 与 data/pro/ 与 v0.5.43 零差异）
 
 ## W1 本地门禁 — PASS

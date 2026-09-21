@@ -1,5 +1,78 @@
 # Appause — Development Progress
 
+## 2026-09-21 — v0.5.44 final RC closure (APPAUSE_V0_5_44_FINAL_RC_CLOSURE)
+- Built the signed final RC with `JAVA_HOME=D:/Dev-Setup/jdk ./gradlew.bat :app:assembleRelease`:
+  `output/Appause-v0.5.44-final-rc-iat-leeway.apk` (12,257,142 bytes), SHA-256
+  `1E8AEDDCA1704EEF0060BE05EB13461165CC780C6111429CB327813045906F85`.
+  The uniquely named artifact does not overwrite the older v0.5.44 output.
+- Binary metadata: package `com.appause.android`, versionName `0.5.44`,
+  versionCode `96`; `apksigner` V2 verification PASS; signer certificate
+  SHA-1 `99F2DADB186EFD5AE07A039CDEB4373708A40816`, matching the known
+  release signing lineage. Release dex has no diagnostics package and the APK
+  has no secret-config/keystore filenames. Debug remains `.debug` / `0.5.44-debug`.
+- Source/build gate: `ServerKeys.kt` still marks the embedded key as the
+  production pinned public key (`IS_PRODUCTION_KEY=true`), and the release was
+  built after the bounded 60-second future-`iat` check plus fail-closed tests.
+  This is source/build inclusion evidence, not a new live Worker deployment.
+- Current-turn verification: focused `ProStateRedeemTest` 30/30 PASS;
+  `assembleRelease` and `lintVitalRelease` PASS. Prior W4 recovery's
+  `assembleDebug` and `w4_prod_trial_smoke.py --verify-existing` remain PASS.
+  W4 is recovered existing-trial evidence, not fresh first-click evidence;
+  no production request was made in this closure and QCode's exact prior
+  production-write count remains unknown.
+- Historical checkpoint: this exact final-RC SHA had not yet been installed on
+  the physical phone. The later v3 physical smoke and current disposition are
+  recorded below; no Public Beta release or publication was performed.
+
+## 2026-09-21 — v0.5.44 final RC physical acceptance (APPAUSE_V0_5_44_FINAL_RC_PHYSICAL_ACCEPTANCE_V1)
+- Installed the exact final RC on Xiaomi `2410DPN6CC` / Android 16 / ADB
+  `6036d5b` with `adb -s 6036d5b install -r`. Local SHA-256 was rechecked as
+  `1E8AEDDCA1704EEF0060BE05EB13461165CC780C6111429CB327813045906F85` before
+  installation. Package remained release `com.appause.android`, versionName
+  `0.5.44`, versionCode `96`; the debug package was not installed or changed.
+- Data-preservation checks PASS: `firstInstallTime` remained unchanged,
+  `dataDir` remained `/data/user/0/com.appause.android`, and CE/DE data inodes
+  remained unchanged across install. Private Room/DataStore contents were not
+  read; no uninstall, clear, reset, backup/restore, or configuration write was
+  performed. Existing Home/group UI marker remained present after the upgrade.
+- Existing permissions remained intact: system accessibility enabled, Appause
+  release service listed in `Bound services`, overlay app-op allow, usage access
+  allow, and background execution allow. Settings showed the existing Pro
+  entitlement without opening trial/redeem/debug activation paths.
+- **Physical smoke result:** PASS for one existing Bilibili path. Release
+  `com.appause.android` produced a real type-2032 Accessibility overlay; a
+  single Home escape left Launcher focused and no 2032 Appause overlay. This is
+  a small smoke only, not full physical QA; no screenshot or private record was
+  stored.
+- **Blocking finding:** Permissions UI persistently displayed “Accessibility is
+  enabled, but Appause is not currently connected” after upgrade, wait, back to
+  Home, re-enter Settings, and re-enter Permissions. This remained true even
+  after the real 2032 overlay smoke, while system dumpsys showed the service
+  bound and foreground. The source path combines system-enabled state with a
+  process-local service state; the physical result is a confirmed health-card
+  false negative/instrumentation mismatch, but the exact lifecycle trigger is
+  not observable in the release build. Do not call this a clean physical PASS.
+- This pre-v3 blocker was superseded by the v3 physical smoke recorded below.
+
+## 2026-09-21 — W4-1 recovered trial acceptance (APPAUSE_PRO_WORKER_ACCEPTANCE_V1)
+- Recovered acceptance only: QCode had already consumed one or more synthetic
+  production trial attempts; the exact production-write count is not independently
+  recoverable. This turn made no production request, activation-code mutation,
+  new fingerprint, trial slot, deploy, commit, or push.
+- Existing `emulator-5554` debug DataStore token was read through binary
+  `exec-out`, verified locally with the pinned production public key, and the
+  UI showed the active-trial state after dialog dismissal and after cold restart.
+  The token remained persisted and unchanged across restart. No JWT, fingerprint,
+  or full claim was recorded here; this is not fresh first-click smoke evidence.
+- `w4_prod_trial_smoke.py --verify-existing` PASS; synthetic-byte extractor and
+  fail-closed checks PASS; focused `ProStateRedeemTest` (30 tests) PASS;
+  `assembleDebug` PASS. The harness now hard-locks to `emulator-5554`, never
+  repeats a trial tap, accepts remaining lifetime up to seven days rather than
+  `exp-iat == 604800`, and keeps the 60-second client skew bound fail-closed.
+- The installed debug identity remains `0.5.44-debug`; a signed release rebuild
+  and version-identity verification remain release gates. QCode-owned Wrangler
+  `:8787` and emulator processes remain alive and were not stopped.
+
 ## 2026-09-18 — 补充核心安全逻辑单元测试（APPAUSE-20260918-TEST-COV-V1）
 - 为此前零覆盖的分支逻辑补测，仅新增测试代码、未改动生产代码：
   - `AppGroupRepositoryTest`：跑真实内存 Room（Robolectric），锁定 `findGroupForPackage`（learning 组必须返回 null，永不触发冷却）、`saveGroupWithApps`（新建 vs 编辑 + 全量替换成员）、`deleteOldLaunchRecords`（365 天保留边界）。
@@ -884,3 +957,16 @@
 ## 2026-09-17 - Home trial CTA (APPAUSE-20260917-HOME-TRIAL-CTA-V1)
 - Added a localized Home card for FREE users: “Try Pro free for 7 days” / “免费试用 Appause Pro 7 天”. The CTA only navigates to the existing Pro screen; it does not duplicate trial-start logic and is hidden for every other entitlement state.
 - `testDebugUnitTest` and `assembleDebug` passed; no commit, push, release, or deploy.
+
+## 2026-09-21 (Accessibility health false-negative follow-up — APPAUSE_ACCESSIBILITY_HEALTH_FALSE_NEGATIVE_V1)
+- Physical Xiaomi evidence confirmed the release Permissions card could remain `Needs recovery` while the same release process was foreground, the system reported Appause in Accessibility bound services, and Bilibili produced a real type-2032 overlay. Activity and AccessibilityService were verified in the same release PID, so this was not a cross-process static-state issue.
+- Minimal source fix: `AccessibilityHealthChecker.observe()` now reconciles raw process-state emissions with the live service instance before updating the shared health flow. A stale raw `DISCONNECTED` can no longer overwrite healthy live-instance evidence; no live instance still fails closed, and `onDestroy` still clears it. Added regression coverage for the raw-DISCONNECTED/live-CONNECTED overwrite path plus existing lifecycle/destroy coverage.
+- Verification: focused Accessibility health/service tests PASS; full `:app:testDebugUnitTest` PASS; `:app:assembleRelease` including `lintVitalRelease` PASS. New artifact `output/Appause-v0.5.44-final-rc-health-fix-v3.apk`, package `com.appause.android`, version 0.5.44 / code 96, SHA-256 `B2073E9138EEDF0FD3E31343304C04CFD6DB0D5CC199FBF69E961F34D68FA369`, V2 signer cert SHA-1 `99f2dadb186efd5ae07a039cdeb4373708a40816`; release dex remains debug-diagnostics-free.
+- The prior v2 artifact was installed with `adb install -r` and preserved first-install time plus CE/DE data inodes. One targeted release `force-stop` was used solely to ensure the new process loaded the candidate code; Android then removed Appause from enabled/bound Accessibility services. No toggle or recovery gesture was performed. v3 was therefore built but not installed.
+- **Disposition:** physical acceptance and Public Beta remain BLOCKED. The code/test/build evidence supports the race fix, but the required post-fix physical health/interception/Home retest cannot be completed without the user manually re-enabling Appause Accessibility. No production API, trial/redeem, Worker deploy, commit, push, tag, or release was performed. Emulator-5554, debug app, QCode Wrangler, protected campaign.xml, and PNG were not touched.
+
+### 2026-09-21 v3 physical bounded smoke closure
+- User manually re-enabled Appause Accessibility. On Xiaomi `6036d5b`, v3 `adb install -r` returned `Success`; package stayed `com.appause.android` v0.5.44/code 96, first-install time stayed `2026-07-29 23:01:15`, and the app data directory remained unchanged. Local SHA-256 matched `B2073E9138EEDF0FD3E31343304C04CFD6DB0D5CC199FBF69E961F34D68FA369`; signer continuity remained cert SHA-1 `99f2dadb186efd5ae07a039cdeb4373708a40816`.
+- Post-install enabled-services settings and `dumpsys accessibility` both showed the release Appause service enabled and bound. Release Permissions UI showed `Accessibility Service — Enabled` and `Running`; the old `not currently connected`/`Needs recovery` state did not recur.
+- One existing Bilibili launch produced a release `ACCESSIBILITY_OVERLAY` with window type `2032`. One Home key removed the overlay and returned focus to Launcher. Reopening Appause Permissions after returning showed `Enabled` and `Running` again. The phone was then returned to release Appause Home with no active 2032 overlay.
+- This is a bounded physical smoke, not full physical QA. The Accessibility false-negative blocker is **cleared for this RC**; no trial/redeem/Worker call, group edit, uninstall, reset, force-stop, commit, push, tag, release, or deploy was performed. Overall Public Beta publication remains a separate release-owner decision.

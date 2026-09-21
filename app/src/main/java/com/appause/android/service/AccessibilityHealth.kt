@@ -98,6 +98,12 @@ object AccessibilityHealthPolicy {
 
 /** Runtime source of truth used by all app screens that show Accessibility health. */
 object AccessibilityHealthChecker {
+    internal fun reconcileObservedProcessState(
+        processState: AccessibilityProcessState,
+        hasLiveInstance: Boolean
+    ): AccessibilityProcessState =
+        AppauseAccessibilityService.effectiveProcessState(processState, hasLiveInstance)
+
     fun snapshot(context: Context): AccessibilityHealthState =
         AccessibilityHealthPolicy.derive(
             systemState = AccessibilityServiceChecker.systemState(context),
@@ -106,7 +112,14 @@ object AccessibilityHealthChecker {
 
     fun observe(context: Context): Flow<AccessibilityHealthState> =
         AccessibilityHealthPolicy.observe(
-            processStates = AppauseAccessibilityService.processState,
+            processStates = AppauseAccessibilityService.processState.map { processState ->
+                // A stale raw DISCONNECTED emission must not overwrite a
+                // live service connection observed by the same process.
+                reconcileObservedProcessState(
+                    processState = processState,
+                    hasLiveInstance = AppauseAccessibilityService.instance != null
+                )
+            },
             systemState = { AccessibilityServiceChecker.systemState(context) }
         )
 }

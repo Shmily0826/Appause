@@ -67,6 +67,26 @@ class AccessibilityHealthPolicyTest {
     }
 
     @Test
+    fun `live instance prevents stale disconnected observation from overwriting healthy state`() = runTest {
+        val rawProcessStates = MutableStateFlow(AccessibilityProcessState.CONNECTED)
+        val health = AccessibilityHealthPolicy.observe(
+            processStates = rawProcessStates.map { rawState ->
+                AccessibilityHealthChecker.reconcileObservedProcessState(
+                    processState = rawState,
+                    hasLiveInstance = true
+                )
+            },
+            systemState = { AccessibilitySystemState.ENABLED }
+        )
+
+        assertEquals(AccessibilityHealthStatus.HEALTHY, health.first().status)
+
+        rawProcessStates.value = AccessibilityProcessState.DISCONNECTED
+
+        assertEquals(AccessibilityHealthStatus.HEALTHY, health.first().status)
+    }
+
+    @Test
     fun `system disabled wins over connected process`() {
         val state = AccessibilityHealthPolicy.derive(
             AccessibilitySystemState.DISABLED,

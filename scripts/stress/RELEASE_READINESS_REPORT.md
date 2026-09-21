@@ -1,5 +1,57 @@
 # Android Release Readiness — 验收报告 (APPAUSE_ANDROID_RELEASE_READINESS_V1)
 
+## Current final-RC closure addendum — 2026-09-21
+
+This addendum is the current artifact record and supersedes the older local
+v0.5.44 SHA entries below. The older APK was not overwritten.
+
+- **Artifact:** `output/Appause-v0.5.44-final-rc-health-fix-v3.apk`
+- **SHA-256:** `B2073E9138EEDF0FD3E31343304C04CFD6DB0D5CC199FBF69E961F34D68FA369`
+- **Metadata:** package `com.appause.android`; versionName `0.5.44`; versionCode
+  `96`; size 12,257,142 bytes.
+- **Signing:** `apksigner` V2 verification PASS; certificate SHA-1
+  `99F2DADB186EFD5AE07A039CDEB4373708A40816`, matching the known release
+  signing lineage. Release dex contains no diagnostics package, and the APK
+  archive contains no `.dev.vars`, `local.properties`, or keystore filename.
+- **Pro/W4 source gate:** `ProState` includes the bounded 60-second future-`iat`
+  check and focused tests. `ServerKeys.kt` identifies its embedded key as the
+  production pinned public key (`IS_PRODUCTION_KEY=true`). This is source plus
+  local binary build evidence; it is not proof of a new live Worker deployment.
+- **Verification:** focused `ProStateRedeemTest` 30/30 PASS; Accessibility
+  health/service focused tests and full `testDebugUnitTest` PASS;
+  `assembleRelease` and `lintVitalRelease` PASS. The earlier W4 recovered
+  `--verify-existing` PASS remains valid and made no new production call; it is
+  not fresh first-click evidence, and the exact prior production-write count is
+  unknown. The exact v3 SHA also passed the bounded physical Xiaomi smoke;
+  this is not full physical QA.
+- **Launch decision:** the Accessibility false-negative blocker is cleared for
+  v3. Public Beta publication remains a separate authorization; no tag,
+  GitHub Release, deploy, or production mutation was performed.
+
+## Physical acceptance follow-up — 2026-09-21
+
+- Exact artifact `output/Appause-v0.5.44-final-rc-iat-leeway.apk` was installed
+  on Xiaomi `2410DPN6CC` / Android 16 / `6036d5b` with `adb install -r`; the
+  pre-install SHA-256 was the recorded final-RC SHA. Package/version remained
+  `com.appause.android` / `0.5.44` / `96`, and first-install time plus CE/DE
+  data inodes were unchanged. This was data-preserving install evidence only;
+  no private records were read.
+- Existing permissions remained enabled and the release service appeared in
+  system `Bound services`. One passive existing Bilibili launch produced a
+  real release type-2032 Accessibility overlay; one Home escape removed the
+  overlay and returned focus to Launcher. This is a bounded physical smoke,
+  not full physical QA.
+- **Blocker:** the release Permissions screen continued to show “Accessibility
+  is enabled, but Appause is not currently connected” after wait, back/Home
+  refresh, and re-entry. System binding and the working 2032 overlay contradict
+  the card, so this is a confirmed physical health-status false negative. The
+  implementation's process-local state path is identified, but the exact
+  lifecycle trigger is not observable in release. No code change was made in
+  this acceptance turn because changing the fail-closed health contract without
+  a bounded regression test would be unsafe.
+- **Disposition:** historical pre-v3 artifact/signature/data-preserving install
+  PASS; superseded by the v3 source fix and physical smoke in Section 10.
+
 日期：2026-09-21 ｜ 基线：main @ d2d2aea（已推送）+ 本轮 2 个本地提交（版本 bump/测试套件，push 待批准）
 RC：`output/Appause-v0.5.44.apk` ｜ `com.appause.android` ｜ versionCode 96 / versionName 0.5.44
 SHA-256：`bc73d76a68c3c570a002719faa4c56c22b50af0eed1c1ce619f2d80d25516fff`（最终版，含 KI-2 淡出修复；前代 e6524be5… 已被取代）
@@ -109,3 +161,91 @@ SHA-256：`bc73d76a68c3c570a002719faa4c56c22b50af0eed1c1ce619f2d80d25516fff`（�
 ## 8. 边界遵守
 
 未 commit/push/tag/release/网站/Worker 操作（除用户已授权的 d2d2aea 与本轮既有提交）；用户正式版数据未清空（手机侧仅 install -r 与正常用户路径操作）；模拟器数据可随意处置。
+
+## 9. Accessibility health false-negative follow-up — 2026-09-21
+
+### Root cause and minimal fix
+
+The physical release repro was real: the release process contained both the
+Activity and AccessibilityService in the same PID, `dumpsys accessibility`
+reported the service bound, and a Bilibili launch produced a release 2032
+overlay, while the Permissions card still showed `Needs recovery`. The
+existing getter used live-instance evidence for a snapshot, but the continuous
+observer still consumed the raw process-state `StateFlow`. A stale raw
+`DISCONNECTED` emission could therefore overwrite the shared
+`SystemStatusHolder` health value after a healthy snapshot.
+
+The targeted fix is in `AccessibilityHealthChecker.observe()`: each raw
+process-state emission is reconciled with the live service instance before it
+reaches `SystemStatusHolder`. A live instance upgrades stale raw state to
+`CONNECTED`; with no live instance, `UNKNOWN`/`DISCONNECTED` remains fail
+closed, and `onDestroy` still clears the instance. No system-enabled setting
+alone is treated as proof of a live service.
+
+Regression coverage includes the raw-`DISCONNECTED`/live-instance flow path,
+service event reconciliation, and destroy-to-disconnected behavior. Focused
+Accessibility tests PASS; full `:app:testDebugUnitTest` PASS;
+`:app:assembleRelease` and `lintVitalRelease` PASS.
+
+### Candidate artifact and physical disposition
+
+New uniquely named candidate (not overwriting earlier RCs):
+
+| Field | Value |
+|---|---|
+| APK | `output/Appause-v0.5.44-final-rc-health-fix-v3.apk` |
+| Package / version | `com.appause.android` / 0.5.44 / versionCode 96 |
+| SHA-256 | `B2073E9138EEDF0FD3E31343304C04CFD6DB0D5CC199FBF69E961F34D68FA369` |
+| Signing | APK V2; cert SHA-1 `99f2dadb186efd5ae07a039cdeb4373708a40816` |
+| Debug isolation | release dex has no `com.appause.android.ui.diagnostics`; debug remains a separate package/flavor |
+
+The prior v2 candidate was installed on Xiaomi serial `6036d5b` with
+`adb install -r`; package identity, first-install time, data directory, and CE
+/DE data inodes were preserved. After the install, the physical health card
+still reproduced the blocker. A single release-package `force-stop` was then
+used to ensure the candidate process was not stale; Android removed Appause
+from enabled/bound Accessibility services. No Accessibility toggle, trial,
+redeem, reset, uninstall, or private-data read was performed. Because
+restoring the service now requires a user gesture, v3 is built and hashed but
+was not installed and the post-fix physical retest is **BLOCKED**.
+
+### Final disposition
+
+> Historical v2 disposition only; Section 10 supersedes the blocked state with
+> the v3 physical bounded-smoke result.
+
+This was source/test/build evidence before the v3 physical retest; Section 10
+now records the physical acceptance result.
+The prior v2 disposition was **BLOCKED** until the user re-enabled Appause Accessibility;
+on `6036d5b` and a fresh `install -r` of v3 is followed by the required small
+health → Bilibili 2032 → Home → re-entry smoke. No commit, push, tag, release,
+deploy, Worker call, or production activation mutation was performed.
+
+## 10. v3 physical bounded smoke — 2026-09-21
+
+The user manually re-enabled Appause Accessibility on Xiaomi serial
+`6036d5b`. Before installation, the release service was present in the
+enabled-services setting and `dumpsys accessibility` bound services.
+
+| Check | Result |
+|---|---|
+| Local v3 SHA-256 | PASS — `B2073E9138EEDF0FD3E31343304C04CFD6DB0D5CC199FBF69E961F34D68FA369` |
+| `adb -s 6036d5b install -r` | PASS — `Success`; no uninstall, clear, reset, or force-stop |
+| Installed package/version | PASS — `com.appause.android`, 0.5.44 / versionCode 96 |
+| Data preservation | PASS — first-install time remained `2026-07-29 23:01:15`; data directory remained `/data/user/0/com.appause.android` |
+| Accessibility after install | PASS — release Appause remained enabled and bound |
+| Permissions UI after launch | PASS — `Accessibility Service` showed `Enabled` and `Running`; no `Needs recovery` / `not currently connected` |
+| Existing Bilibili interception | PASS — one release `ACCESSIBILITY_OVERLAY`, window type 2032 |
+| Home cleanup | PASS — Home removed the overlay and focus returned to Launcher |
+| Health after re-entry | PASS — reopening Permissions still showed `Enabled` and `Running` |
+| Final phone state | PASS — release Appause Home, no active 2032 overlay |
+
+This closes the confirmed Accessibility health false-negative for the v3 RC.
+It is a small physical smoke, not full physical QA, and does not constitute a
+publication or release action. No production trial/redeem/Worker operation,
+group edit, commit, push, tag, deploy, or GitHub release was performed.
+
+**Disposition:** the Accessibility false-negative Public Beta blocker is
+**CLEARED for this RC**. Overall Public Beta publication remains subject to
+the existing full-QA/release-owner decision; this task did not publish or
+release anything.

@@ -319,12 +319,37 @@ class ProStateRedeemTest {
         var stored: String? = null
         val result = proState(
             transport,
-            verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", expiresAt / 1000L, nowSeconds + 60L, "trial", true) },
+            // 1 hour ahead: far beyond the 60 s clock-skew leeway
+            verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", expiresAt / 1000L, nowSeconds + 3600L, "trial", true) },
             persister = { stored = it }
         ).startTrial()
 
         assertEquals(RedeemResult.Error("token_verify_failed"), result)
         assertEquals(null, stored)
+    }
+
+    @Test
+    fun `one-tap trial accepts a token a few seconds ahead of the device clock`() = runTest {
+        // A bounded 45 s server/device skew is accepted; larger future iat is
+        // rejected by the fail-closed test above.
+        val nowSeconds = System.currentTimeMillis() / 1000L
+        val activatedAt = (nowSeconds - 60L) * 1000L
+        val expiresAt = activatedAt + 7L * 24 * 60 * 60 * 1000L
+        val transport = FakeTransport(
+            trialResponse = RedeemHttpResponse(
+                200,
+                """{"token":"SKEW-IAT","activatedAt":$activatedAt,"expiresAt":$expiresAt}"""
+            )
+        )
+        var stored: String? = null
+        val result = proState(
+            transport,
+            verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", expiresAt / 1000L, nowSeconds + 45L, "trial", true) },
+            persister = { stored = it }
+        ).startTrial()
+
+        assertEquals(RedeemResult.TrialStarted, result)
+        assertEquals("SKEW-IAT", stored)
     }
 
     @Test
