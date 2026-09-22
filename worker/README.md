@@ -2,8 +2,9 @@
 
 A tiny [Cloudflare Worker](https://workers.cloudflare.com/) that issues
 **device-bound** Appause Pro license tokens (JWT, RS256), including the
-one-time self-service seven-day trial. It is the server half
-of the "open source but paid" model: the app is MIT-licensed and forkable, but
+one-time self-service seven-day trial. The public beta is currently free, with
+no payments, subscriptions, or paid tier planned; the Worker remains the
+technical path for the opt-in trial and manually issued free lifetime access.
 Pro can only be unlocked with a token signed by **this** worker's private key —
 which never leaves Cloudflare.
 

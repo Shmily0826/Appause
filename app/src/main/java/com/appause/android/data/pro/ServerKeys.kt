@@ -1,5 +1,7 @@
 package com.appause.android.data.pro
 
+import com.appause.android.BuildConfig
+
 /**
  * Server-side public key used to VERIFY Appause Pro license tokens (JWT, RS256).
  *
@@ -13,17 +15,16 @@ package com.appause.android.data.pro
  *   tokens but not create valid Pro tokens.
  *
  * Deployment:
- * - [SERVER_PUBLIC_KEY_PEM] now holds the **PRODUCTION** public key. The
- *   matching RSA private key lives ONLY in the Cloudflare Worker secret
- *   `APPAUSE_PRIVATE_KEY` and is never shipped in the app or committed to the
- *   repo. Do not paste the private key anywhere in this project.
+ * - Release builds use the pinned production public key. Debug builds may
+ *   receive an ephemeral local-test public key at build time; its matching
+ *   private key stays outside the repository and is never used by release.
  * - The DEV token (used during early testing) is intentionally NOT device-bound
  *   and is now rejected by any build compiled with `IS_PRODUCTION_KEY = true`,
  *   because production tokens MUST include a "device" claim equal to the device
  *   fingerprint (see [DeviceKeyStore]).
  */
 object ServerKeys {
-    const val SERVER_PUBLIC_KEY_PEM = """-----BEGIN PUBLIC KEY-----
+    private const val PRODUCTION_SERVER_PUBLIC_KEY_PEM = """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqwwP+me3Ld+uuqT3gwcU
 BosqCjoSCO2dS2/yH0xjb+YXXVPtZx/RToTZQaZa8IP2zCqt3konhutOMj+orAoO
 IO3v5oe+lBq2ezcRerqeIS1pdaSA3Pzthpty5EwUQd3hZ9Pjf3IGuKgQsghZmqDy
@@ -32,6 +33,13 @@ moeVUp80ygV2KsNrlNvICR53qOvltkvG8M+tIPksJzOiqPtEjHFJQr3H2qDNkyXR
 fPrtbPQDaDJgfJPHadEta+McZ+HjhWJ1ZCN/zDEp8sV9iW82qsy1SbM3yg5jjxQu
 NwIDAQAB
 -----END PUBLIC KEY-----"""
+
+    val SERVER_PUBLIC_KEY_PEM: String
+        get() = if (BuildConfig.DEBUG && BuildConfig.DEBUG_SERVER_PUBLIC_KEY_PEM.isNotBlank()) {
+            BuildConfig.DEBUG_SERVER_PUBLIC_KEY_PEM
+        } else {
+            PRODUCTION_SERVER_PUBLIC_KEY_PEM
+        }
 
     /**
      * Set to true once [SERVER_PUBLIC_KEY_PEM] has been replaced with the real

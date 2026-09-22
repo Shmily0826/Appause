@@ -1,5 +1,7 @@
 # Appause 海外收款路线（Merchant of Record / MoR）
 
+> **Parked historical alternative (2026-09-22):** The public beta is currently free; no payments, subscriptions, or paid tier are planned. Pro trial and lifetime access are free, with lifetime access requested through in-app feedback and issued manually. Keep this document only as a record of a future decision path.
+
 > 适用场景：面向**英语用户**（Instagram / TikTok / YouTube / 游戏等）卖 Appause Pro 买断激活码。
 > 配套文档：`docs/afdian-domestic-route.md`（国内 · 爱发电）。
 > 研究日期：2026-08-17；**2026-08-19 复核修正**（平台对比与接入策略）。

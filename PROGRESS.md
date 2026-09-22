@@ -1,5 +1,10 @@
 # Appause — Development Progress
 
+## 2026-09-22 — bounded free-beta Pro journey (APPAUSE_FREE_BETA_PRO_JOURNEY_V1)
+- Added a debug-only, explicit Gradle seam for a temporary Worker URL, public key, and clock offset. Ordinary debug and release retain the production URL/key fallback; release fields are empty/zero and the debug localhost network resource is not merged.
+- Isolated new AVD `Appause_P1_Temp_20260922_1630` evidence: Home → Pro → opt-in 7-day trial → deterministic debug expiry → local synthetic lifetime-code redeem → Worker stopped/reverse removed → persisted offline lifetime state. No production request, physical-device ADB, commit, push, deploy, or release action was performed.
+- Verification: focused Pro tests 48/48 PASS; `assembleDebug` and `assembleRelease` PASS; release APK scan found no local endpoint; `git diff --check` PASS.
+
 ## 2026-09-21 — v0.5.44 final RC closure (APPAUSE_V0_5_44_FINAL_RC_CLOSURE)
 - Built the signed final RC with `JAVA_HOME=D:/Dev-Setup/jdk ./gradlew.bat :app:assembleRelease`:
   `output/Appause-v0.5.44-final-rc-iat-leeway.apk` (12,257,142 bytes), SHA-256

@@ -1,5 +1,7 @@
 package com.appause.android.data.pro
 
+import com.appause.android.BuildConfig
+
 import android.content.Context
 import com.appause.android.data.settings.SettingsDataStore
 import kotlinx.coroutines.Dispatchers
@@ -178,6 +180,11 @@ class ProState(
     private val currentEntitlement: (suspend () -> ProEntitlement)? = null
 ) {
 
+    private fun wallClockNowMillis(): Long = System.currentTimeMillis()
+
+    private fun effectiveNowMillis(): Long =
+        wallClockNowMillis() + BuildConfig.DEBUG_TIME_OFFSET_MILLIS
+
     private val defaultVerifier: (String, String) -> LicenseClaims? = { token, fp ->
         LicenseVerifier.verify(
             token,
@@ -241,7 +248,7 @@ class ProState(
                     requireDeviceBinding = ServerKeys.IS_PRODUCTION_KEY,
                     checkExpiry = false
                 ),
-                System.currentTimeMillis() / 1000L
+                effectiveNowMillis() / 1000L
             )
         }.getOrDefault(ProEntitlement(ProAccessStatus.FREE))
     }
@@ -257,7 +264,9 @@ class ProState(
         DebugActivationPolicy.resolve(
             override = override,
             real = resolveRealEntitlement(token, debugFlag),
-            nowMillis = System.currentTimeMillis()
+            // DebugActivationStore stamps this expiry with the raw wall clock;
+            // the offset is only for deterministic token-entitlement testing.
+            nowMillis = wallClockNowMillis()
         )
     }
 
@@ -370,7 +379,7 @@ class ProState(
         val expiresAt = body.optLong("expiresAt", 0L)
         val verifier = tokenVerifier ?: defaultVerifier
         val claims = verifier(token, fingerprint)
-        val nowSeconds = System.currentTimeMillis() / 1000L
+        val nowSeconds = effectiveNowMillis() / 1000L
         val expiryMatchesResponse = claims?.exp != null && claims.exp == expiresAt / 1000L
         val issuedAtIsValid = claims?.iat != null &&
             claims.iat >= activatedAt / 1000L &&

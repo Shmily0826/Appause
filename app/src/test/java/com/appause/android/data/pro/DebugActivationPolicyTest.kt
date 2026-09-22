@@ -46,6 +46,29 @@ class DebugActivationPolicyTest {
     }
 
     @Test
+    fun `raw-stamped override is resolved on the raw clock, not an offset token clock`() {
+        val rawNow = 1_000_000_000_000L
+        val effectiveNow = rawNow + 8 * day
+        val debugOverride = DebugActivationOverride.Active(
+            DebugActivationPolicy.activationExpiry(rawNow)
+        )
+
+        val active = DebugActivationPolicy.resolve(
+            override = debugOverride,
+            real = ProEntitlement(ProAccessStatus.FREE),
+            nowMillis = rawNow
+        )
+        val incorrectlyOffset = DebugActivationPolicy.resolve(
+            override = debugOverride,
+            real = ProEntitlement(ProAccessStatus.FREE),
+            nowMillis = effectiveNow
+        )
+
+        assertTrue(active.isPro)
+        assertFalse(incorrectlyOffset.isPro)
+    }
+
+    @Test
     fun `expired override reads as not activated`() {
         val now = 10_000L
         val effective = DebugActivationPolicy.resolve(

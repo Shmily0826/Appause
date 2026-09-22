@@ -41,6 +41,16 @@ See [INSTALL.md](INSTALL.md) before the first sideload.
   activation-code-based. Appause verifies signed, device-bound tokens locally,
   does not auto-refresh them, and performs no background license checks.
 
+> **Public beta position (2026-09-22):** Appause remains free during the public
+> beta; no payments, subscriptions, or paid tier are planned. Pro remains a
+> clearly labelled, gated set of experimental features. The one-tap, once-per-
+> device 7-day trial is opt-in and helps us learn about real engagement and
+> invite feedback; without appropriate consented telemetry, it is not a
+> precise D7-retention metric. After the trial, lifetime Pro access remains
+> free and manually issued on request through the in-app feedback path (email or
+> GitHub issue). This is staged access, not a promise that every Pro feature is
+> enabled or bug-free.
+
 ## Screenshots
 
 | Home | Pause screen | Groups |

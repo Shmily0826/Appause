@@ -1,6 +1,18 @@
 import java.util.Date
 import java.util.Properties
 
+fun String.asBuildConfigString(): String =
+    "\"${replace("\\", "\\\\").replace("\"", "\\\"").replace("\r", "").replace("\n", "\\n")}\""
+
+val debugWorkerBaseUrl = providers.gradleProperty("appauseDebugWorkerUrl").orNull
+    ?: "https://appause-pro-worker.rng2018520.workers.dev"
+val debugWorkerPublicKey = providers.gradleProperty("appauseDebugWorkerPublicKeyFile").orNull
+    ?.let { file(it).readText() }
+    ?: ""
+val debugClockOffsetSeconds = providers.gradleProperty("appauseDebugClockOffsetSeconds").orNull
+    ?.let { it.toLongOrNull() ?: error("appauseDebugClockOffsetSeconds must be an integer") }
+    ?: 0L
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -75,6 +87,9 @@ android {
             // any stale old APK be rejected as a downgrade.
             versionNameSuffix = "-debug"
             isDebuggable = true
+            buildConfigField("String", "DEBUG_WORKER_BASE_URL", debugWorkerBaseUrl.asBuildConfigString())
+            buildConfigField("String", "DEBUG_SERVER_PUBLIC_KEY_PEM", debugWorkerPublicKey.asBuildConfigString())
+            buildConfigField("Long", "DEBUG_TIME_OFFSET_MILLIS", "${debugClockOffsetSeconds * 1000L}L")
             // Debug build keeps AppLogger output (BuildConfig.DEBUG == true),
             // so interception is visible in logcat — this is the test build.
             // (BUILD_TIME is now defined in defaultConfig, so both debug and
@@ -88,6 +103,9 @@ android {
             )
             // Sign with the locally-stored release key (see signingConfigs above).
             signingConfig = signingConfigs.getByName("release")
+            buildConfigField("String", "DEBUG_WORKER_BASE_URL", "\"\"")
+            buildConfigField("String", "DEBUG_SERVER_PUBLIC_KEY_PEM", "\"\"")
+            buildConfigField("Long", "DEBUG_TIME_OFFSET_MILLIS", "0L")
         }
     }
 
