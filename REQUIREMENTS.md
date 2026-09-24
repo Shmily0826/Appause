@@ -174,15 +174,21 @@ Launch PauseActivity (full-screen cooldown)
 Some "out of scope for v1" items have since been added. This section records how
 the shipped app differs from the original v1 spec so the document stays honest.
 
-- **Appause Pro (Plan B) — paid activation.** A Cloudflare Worker (`worker/`)
-  issues signed, device-bound RS256 license JWTs. An activation code may carry
-  expiry metadata; the app verifies the token **on device** (embedded server
-  public key), accepts a missing `exp` claim, and performs no automatic network
-  license checks. If a stored token expires, the user may need to manually
-  redeem the code again or import another valid token. Free tier:
-  1 group. Everyone gets a 60s cooldown cap and 365-day stats history. Pro unlocks
-  unlimited groups, re-remind, a custom pause prompt, and custom open reasons.
-  *This is a paid license, not a backend/sync account — no user data is uploaded.*
+- **Appause Pro — free, staged access.** Appause's core remains permanently
+  free, with no subscription or paid version. A Cloudflare Worker (`worker/`)
+  issues signed, device-bound RS256 license JWTs, which Android verifies on
+  device. The Pro page is sequential: FREE offers the opt-in, once-per-device
+  seven-day trial; TRIAL_ACTIVE shows its countdown and no code field;
+  TRIAL_EXPIRED exposes the free lifetime-code request/redeem path; LIFETIME
+  shows status only. The client starts trials only from FREE and locally blocks
+  code redemption until TRIAL_EXPIRED. Timed entitlement state refreshes locally
+  at most every 60 seconds and at the expiry boundary; there are no background
+  Worker checks. Server-side caveat: `/api/redeem` still accepts generic,
+  unlinked admin-issued lifetime codes, so the sequence is not enforced by the
+  Worker for callers that bypass this client. Free tier: 1 group. Everyone gets
+  a 60s cooldown cap and 365-day stats history. Pro unlocks unlimited groups,
+  re-remind, a custom pause prompt, and custom open reasons. No user data is
+  uploaded for entitlement checks.
 - **Re-remind / session timer.** The original flow cleared the bypass the moment
   the user left the target app. The shipped behavior is a session model: a
   session keeps counting wall-clock time even during brief in-app switches

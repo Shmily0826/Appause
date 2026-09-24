@@ -1,4 +1,4 @@
-package com.appause.android.ui.onboarding
+﻿package com.appause.android.ui.onboarding
 
 import android.app.Application
 import androidx.activity.ComponentActivity
@@ -15,22 +15,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * On-device Compose UI test for the onboarding wizard's step navigation.
+ * Compose UI checks for the five-step onboarding flow.
  *
- * The ViewModel's own logic (language persistence, page clamping, skip/complete
- * flags) is already covered by OnboardingViewModelTest; this test verifies the
- * part only a rendered tree can: which controls appear on which step and that
- * tapping Next / Back moves the visible page.
- *
- * Navigation is driven purely through the ViewModel's in-memory [page] state,
- * so NO test clicks the Skip / Create-group / Later actions — those persist
- * HAS_COMPLETED_ONBOARDING to the real DataStore and would flip the device's
- * first-launch state. We assert those buttons only render on the final step.
- *
- * The VM is built with the real SettingsDataStore / SystemStatusHolder (the
- * permission state is irrelevant to navigation, and both read live device
- * values). String assertions resolve against the app's own resources so they
- * hold under any device locale.
+ * Navigation stays in ViewModel memory; Skip and Finish are not clicked so
+ * the real first-launch preference is not changed.
  */
 @RunWith(AndroidJUnit4::class)
 class OnboardingScreenUiTest {
@@ -48,11 +36,7 @@ class OnboardingScreenUiTest {
             systemStatusOverride = SystemStatusHolder(app)
         )
         composeRule.setContent {
-            OnboardingScreen(
-                onNavigateToHome = {},
-                onNavigateToGroupEditor = {},
-                viewModel = viewModel
-            )
+            OnboardingScreen(onNavigateToHome = {}, viewModel = viewModel)
         }
         return viewModel
     }
@@ -74,7 +58,7 @@ class OnboardingScreenUiTest {
 
         composeRule.onNodeWithText(str(R.string.onboarding_next)).performClick()
         composeRule.waitForIdle()
-        // Left the language step (now the preview step).
+        composeRule.onNodeWithText(str(R.string.onboarding_service_title)).assertIsDisplayed()
         composeRule.onNodeWithText(str(R.string.onboarding_language_title)).assertDoesNotExist()
 
         composeRule.onNodeWithText(str(R.string.onboarding_back)).performClick()
@@ -83,19 +67,17 @@ class OnboardingScreenUiTest {
     }
 
     @Test
-    fun walking_next_reaches_the_final_group_step() {
+    fun walking_next_reaches_finish_after_three_access_setup_steps() {
         showOnboarding()
 
-        // 8 steps (page 0..7): seven Next taps walk from language to the group step.
-        repeat(7) {
+        // Five steps (page 0..4): language, three access/setup pages, then Finish.
+        repeat(4) {
             composeRule.onNodeWithText(str(R.string.onboarding_next)).performClick()
             composeRule.waitForIdle()
         }
 
-        composeRule.onNodeWithText(str(R.string.onboarding_group_title)).assertIsDisplayed()
-        // Final step swaps the single Next button for Create-group + Later.
-        composeRule.onNodeWithText(str(R.string.onboarding_group_add)).assertIsDisplayed()
-        composeRule.onNodeWithText(str(R.string.onboarding_group_later)).assertIsDisplayed()
+        composeRule.onNodeWithText(str(R.string.onboarding_finish_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(str(R.string.onboarding_finish)).assertIsDisplayed()
         composeRule.onNodeWithText(str(R.string.onboarding_next)).assertDoesNotExist()
     }
 }

@@ -67,7 +67,7 @@ internal object DebugActivationPolicy {
         is DebugActivationOverride.Inactive -> ProEntitlement(ProAccessStatus.FREE)
 
         is DebugActivationOverride.Active ->
-            if (nowMillis <= override.expiresAtMillis) {
+            if (nowMillis < override.expiresAtMillis) {
                 ProEntitlement(ProAccessStatus.DEBUG, override.expiresAtMillis)
             } else {
                 ProEntitlement(ProAccessStatus.FREE)

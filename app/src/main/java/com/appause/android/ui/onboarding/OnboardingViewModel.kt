@@ -1,4 +1,4 @@
-package com.appause.android.ui.onboarding
+﻿package com.appause.android.ui.onboarding
 
 import android.app.Application
 import androidx.compose.runtime.mutableIntStateOf
@@ -17,18 +17,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
 /**
- * ViewModel for the first-launch onboarding flow.
+ * ViewModel for the short first-launch onboarding flow.
  *
- * Responsibilities are deliberately small — onboarding only:
- * - exposes the current language and lets the user change it (which the UI
- *   applies by recreating the Activity, the same mechanism as Settings),
- * - re-checks whether the Appause accessibility service is enabled (so the
- *   "enable accessibility" step can show live status after the user returns
- *   from the system settings page),
- * - tracks the current step [page] (hoisted here so it survives navigating to
- *   the group editor and back — a remembered value in the Composable is lost
- *   when the screen leaves the composition),
- * - marks onboarding as completed (or skipped) when the user finishes.
+ * It stores the current page across system-settings visits, refreshes access
+ * status on return, and records completion or skip.
  */
 class OnboardingViewModel @JvmOverloads constructor(
     application: Application,
@@ -70,18 +62,14 @@ class OnboardingViewModel @JvmOverloads constructor(
     }
 
     /**
-     * Current onboarding step.
-     * 0 = language, 1 = pause-screen preview, 2 = privacy/value,
-     * 3 = accessibility, 4 = usage access, 5 = battery,
-     * 6 = display-over-other-apps, 7 = optional first group.
-     * Stored in the ViewModel (not in the Composable) so the position is kept
-     * when the user opens the group editor and comes back — otherwise returning
-     * would restart the whole guide.
+     * Current step: language, accessibility, usage access, overlay fallback,
+     * and finish. Keeping it in the ViewModel preserves position across system
+     * settings while this Activity remains alive.
      */
     var page = mutableIntStateOf(0)
         private set
 
-    fun nextPage() { page.value = (page.value + 1).coerceAtMost(7) }
+    fun nextPage() { page.value = (page.value + 1).coerceAtMost(4) }
     fun prevPage() { page.value = (page.value - 1).coerceAtLeast(0) }
 
     /** Re-query permission status (call when the screen resumes). */

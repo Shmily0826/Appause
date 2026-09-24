@@ -1,5 +1,25 @@
 # TEST REPORT — Appause Unit-Test Suite (consolidated)
 
+## Current working-tree validation — sequential Pro activation UX (2026-09-24)
+
+This is local, uncommitted source and emulator evidence on `main` at
+`c968615bcb3a906080097b4dba699f036e538514`. No Worker deployment, production
+request, trial start, code issue/redeem, physical phone test, or release-package
+change was performed.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Android JVM unit suite | **PASS** | `:app:testDebugUnitTest`: 248 tests, 0 failures, 0 errors, 0 skipped. New coverage includes state-to-action gates, countdown units, exact expiry, timed refresh scheduling, clock high-water behavior, and blocked early redemption. |
+| Debug build | **PASS** | `:app:assembleDebug --rerun-tasks` completed with the existing canonical Debug signing identity. |
+| Emulator Free-state smoke | **PASS** | On `emulator-5554`, Home's Pro status entry opened the Pro page. Free status, optional trial CTA, and free-beta copy were visible; lifetime-code entry was absent. The installed Debug package was updated with `install -r` only after the candidate signing certificate matched. No trial or redeem control was tapped. |
+| Trial / Expired / Lifetime runtime states | **NOT TESTED** | These states were not activated or synthesized on the emulator; the UI action matrix and expiry/countdown logic are covered by JVM tests. |
+| Connected instrumentation / phone | **NOT TESTED** | `connectedDebugAndroidTest` was avoided because it targets all connected devices, including the Xiaomi device. No per-device command was sent to the phone. |
+| Worker / production enforcement | **NOT TESTED** | Worker source/deployment was not changed or called. The Worker still accepts generic admin-issued lifetime codes without trial linkage, so the Android sequential gate is not server-side enforcement for callers bypassing this client. |
+
+The timed entitlement clock uses a process-local non-decreasing wall-time guard.
+It does not persist a high-water timestamp across process death, so deliberate
+clock rollback followed by a restart is outside this validation.
+
 - **Report date**: 2026-08-23
 - **Baseline**: extends the 2026-08-22 report (50 tests, interception core). The Android JVM suite currently has **80 tests, 0 failures**.
 - **Scope**: behavior-preserving refactors for testability + three new test areas requested by the user — (①) Pro redemption network-failure modes, (②) Room DAO/migration data-loss prevention, (③) ViewModel logic. **No user-visible behavior was intended to change.**

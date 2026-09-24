@@ -239,11 +239,12 @@ fun HomeScreen(
                 }
             }
 
-            // ── Today's Statistics ──
-            if (entitlement.status == ProAccessStatus.FREE) {
-                item {
-                    TrialCtaCard(onNavigateToPro = onNavigateToPro)
-                }
+            // ── Pro status and activation ──
+            item {
+                TrialCtaCard(
+                    status = entitlement.status,
+                    onNavigateToPro = onNavigateToPro
+                )
             }
 
             leaveCooldownDeadlines.values.minOrNull()?.let { deadline ->
@@ -410,31 +411,43 @@ fun HomeScreen(
 }
 
 @Composable
-private fun TrialCtaCard(onNavigateToPro: () -> Unit) {
+private fun TrialCtaCard(
+    status: ProAccessStatus,
+    onNavigateToPro: () -> Unit
+) {
+    val title = when (status) {
+        ProAccessStatus.FREE -> R.string.home_pro_free_title
+        ProAccessStatus.TRIAL_ACTIVE, ProAccessStatus.EXPIRING_ACTIVE -> R.string.pro_settings_trial_active
+        ProAccessStatus.TRIAL_EXPIRED -> R.string.pro_settings_trial_expired
+        ProAccessStatus.LIFETIME -> R.string.pro_settings_lifetime
+        ProAccessStatus.DEBUG -> R.string.pro_active_label
+    }
+    val description = when (status) {
+        ProAccessStatus.FREE -> R.string.home_pro_free_desc
+        ProAccessStatus.TRIAL_ACTIVE, ProAccessStatus.EXPIRING_ACTIVE -> R.string.home_pro_trial_desc
+        ProAccessStatus.TRIAL_EXPIRED -> R.string.home_pro_expired_desc
+        ProAccessStatus.LIFETIME, ProAccessStatus.DEBUG -> R.string.home_pro_active_desc
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
+        onClick = onNavigateToPro,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = stringResource(R.string.home_trial_cta_title),
+                text = stringResource(title),
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.home_trial_cta_desc),
+                text = stringResource(description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(10.dp))
-            Button(
-                onClick = onNavigateToPro,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(stringResource(R.string.home_trial_cta_action))
-            }
+            Text(stringResource(R.string.home_pro_open))
         }
     }
 }

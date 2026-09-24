@@ -35,14 +35,15 @@ class DebugActivationPolicyTest {
     }
 
     @Test
-    fun `active override still holds on the exact expiry instant`() {
+    fun `active override expires on the exact expiry instant`() {
         val now = 9_000L
         val effective = DebugActivationPolicy.resolve(
             override = DebugActivationOverride.Active(now),
             real = ProEntitlement(ProAccessStatus.FREE),
             nowMillis = now
         )
-        assertTrue(effective.isPro)
+        assertFalse(effective.isPro)
+        assertEquals(ProAccessStatus.FREE, effective.status)
     }
 
     @Test

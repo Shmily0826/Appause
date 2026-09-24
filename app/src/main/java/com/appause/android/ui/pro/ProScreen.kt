@@ -1,6 +1,7 @@
 package com.appause.android.ui.pro
 
 import android.widget.Toast
+import android.os.SystemClock
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,9 +54,12 @@ import com.appause.android.R
 import com.appause.android.data.pro.ProAccessStatus
 import com.appause.android.data.pro.ProEntitlement
 import com.appause.android.data.pro.RedeemResult
+import com.appause.android.data.pro.canRedeemLifetimeCode
+import com.appause.android.data.pro.remainingTrialMillis
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 /**
  * Appause Pro screen — shows the free/Pro comparison and lets the user start
@@ -71,14 +75,33 @@ fun ProScreen(
     onNavigateBack: () -> Unit,
     viewModel: ProViewModel = viewModel()
 ) {
-    val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val entitlement by viewModel.entitlement.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val redeemResult by viewModel.redeemResult.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val trialExpiresAt = entitlement.expiresAt
+    val actions = proPageActions(entitlement.status)
+    var countdownNowMillis by remember(trialExpiresAt) {
+        mutableStateOf(System.currentTimeMillis())
+    }
 
     var codeInput by remember { mutableStateOf("") }
+
+    LaunchedEffect(entitlement.status, trialExpiresAt) {
+        if (entitlement.status != ProAccessStatus.TRIAL_ACTIVE || trialExpiresAt == null) {
+            return@LaunchedEffect
+        }
+        val wallClockAnchor = System.currentTimeMillis()
+        val elapsedRealtimeAnchor = SystemClock.elapsedRealtime()
+        while (true) {
+            val monotonicWallTime = wallClockAnchor +
+                (SystemClock.elapsedRealtime() - elapsedRealtimeAnchor)
+            countdownNowMillis = maxOf(System.currentTimeMillis(), monotonicWallTime)
+            val remaining = remainingTrialMillis(trialExpiresAt, countdownNowMillis)
+            if (remaining == 0L) break
+            delay(minOf(remaining, if (remaining <= 60_000L) 1_000L else 60_000L))
+        }
+    }
 
     // Show transient messages as a toast, then clear them.
     LaunchedEffect(message) {
@@ -128,15 +151,40 @@ fun ProScreen(
                         color = if (entitlement.isPro) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    if (entitlement.status == ProAccessStatus.TRIAL_ACTIVE && trialExpiresAt != null) {
+                    if (actions.showTrialCountdown && trialExpiresAt != null) {
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             stringResource(R.string.pro_trial_ends, formatEntitlementDate(trialExpiresAt)),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        val countdown = trialCountdownParts(trialExpiresAt, countdownNowMillis)
+                        Text(
+                            text = when (countdown.unit) {
+                                TrialCountdownUnit.DAYS_HOURS -> stringResource(
+                                    R.string.pro_trial_remaining_days_hours,
+                                    countdown.first,
+                                    countdown.second
+                                )
+                                TrialCountdownUnit.HOURS_MINUTES -> stringResource(
+                                    R.string.pro_trial_remaining_hours_minutes,
+                                    countdown.first,
+                                    countdown.second
+                                )
+                                TrialCountdownUnit.MINUTES -> stringResource(
+                                    R.string.pro_trial_remaining_minutes,
+                                    countdown.first
+                                )
+                                TrialCountdownUnit.SECONDS -> stringResource(
+                                    R.string.pro_trial_remaining_seconds,
+                                    countdown.first
+                                )
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
-                    if (entitlement.status == ProAccessStatus.FREE) {
+                    if (actions.showTrialStart) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(stringResource(R.string.pro_trial_start_desc), style = MaterialTheme.typography.bodySmall)
                         Spacer(modifier = Modifier.height(8.dp))
@@ -144,23 +192,29 @@ fun ProScreen(
                             Text(stringResource(R.string.pro_trial_start))
                         }
                     }
-                    if (entitlement.status == ProAccessStatus.TRIAL_EXPIRED) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            stringResource(R.string.pro_trial_expired_desc),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
             }
 
-            // ── Free vs Pro comparison ──
+            // ── Permanent free core and the current stage ──
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.pro_upgrade_desc), style = MaterialTheme.typography.bodyMedium)
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(stringResource(R.string.pro_free_forever), style = MaterialTheme.typography.bodyMedium)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val stageDescription = when (entitlement.status) {
+                        ProAccessStatus.FREE -> R.string.pro_early_access_desc
+                        ProAccessStatus.TRIAL_ACTIVE -> R.string.pro_trial_active_desc
+                        ProAccessStatus.TRIAL_EXPIRED -> R.string.pro_trial_expired_desc
+                        ProAccessStatus.LIFETIME -> R.string.pro_lifetime_active_desc
+                        ProAccessStatus.EXPIRING_ACTIVE -> R.string.pro_status_pro
+                        ProAccessStatus.DEBUG -> R.string.pro_status_debug
+                    }
+                    Text(stringResource(stageDescription), style = MaterialTheme.typography.bodySmall)
+                }
+            }
 
+            // A redeemed lifetime entitlement is a status page, without upgrade prompts.
+            if (!actions.lifetimeStatusOnly) Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp)) {
                     // Column headers — Pro header is emphasized.
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -240,7 +294,7 @@ fun ProScreen(
             }
 
             // ── Activate (only when not Pro yet) ──
-            if (!isPro) {
+            if (actions.showLifetimeCode && canRedeemLifetimeCode(entitlement.status)) {
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(stringResource(R.string.pro_activate_title), style = MaterialTheme.typography.titleMedium)
@@ -321,6 +375,7 @@ fun ProScreen(
                     "network_error" -> R.string.pro_redeem_network to R.string.pro_redeem_network_hint
                     "already_active" -> R.string.pro_already_active to null
                     "trial_expired" -> R.string.pro_trial_already_used to null
+                    "trial_not_expired" -> R.string.pro_redeem_after_trial to null
                     else -> R.string.pro_redeem_failed to null
                 }
                 AlertDialog(
@@ -430,3 +485,48 @@ private fun entitlementStatusText(entitlement: ProEntitlement): String = when (e
 
 private fun formatEntitlementDate(expiresAt: Long): String =
     SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(expiresAt))
+
+internal data class ProPageActions(
+    val showTrialStart: Boolean,
+    val showTrialCountdown: Boolean,
+    val showLifetimeCode: Boolean,
+    val lifetimeStatusOnly: Boolean
+)
+
+internal fun proPageActions(status: ProAccessStatus): ProPageActions = when (status) {
+    ProAccessStatus.FREE -> ProPageActions(true, false, false, false)
+    ProAccessStatus.TRIAL_ACTIVE -> ProPageActions(false, true, false, false)
+    ProAccessStatus.TRIAL_EXPIRED -> ProPageActions(false, false, true, false)
+    ProAccessStatus.LIFETIME -> ProPageActions(false, false, false, true)
+    ProAccessStatus.EXPIRING_ACTIVE, ProAccessStatus.DEBUG -> ProPageActions(false, false, false, false)
+}
+
+internal enum class TrialCountdownUnit { DAYS_HOURS, HOURS_MINUTES, MINUTES, SECONDS }
+
+internal data class TrialCountdownParts(
+    val unit: TrialCountdownUnit,
+    val first: Int,
+    val second: Int = 0
+)
+
+internal fun trialCountdownParts(expiresAtMillis: Long, nowMillis: Long): TrialCountdownParts {
+    val remaining = remainingTrialMillis(expiresAtMillis, nowMillis)
+    val totalSeconds = (remaining + 999L) / 1_000L
+    return when {
+        totalSeconds >= 24 * 60 * 60 -> TrialCountdownParts(
+            TrialCountdownUnit.DAYS_HOURS,
+            (totalSeconds / (24 * 60 * 60)).toInt(),
+            ((totalSeconds / 3_600) % 24).toInt()
+        )
+        totalSeconds >= 60 * 60 -> TrialCountdownParts(
+            TrialCountdownUnit.HOURS_MINUTES,
+            (totalSeconds / 3_600).toInt(),
+            ((totalSeconds / 60) % 60).toInt()
+        )
+        totalSeconds >= 60 -> TrialCountdownParts(
+            TrialCountdownUnit.MINUTES,
+            ((totalSeconds + 59) / 60).toInt()
+        )
+        else -> TrialCountdownParts(TrialCountdownUnit.SECONDS, totalSeconds.toInt())
+    }
+}

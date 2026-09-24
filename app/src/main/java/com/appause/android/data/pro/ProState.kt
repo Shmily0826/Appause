@@ -4,16 +4,21 @@ import com.appause.android.BuildConfig
 
 import android.content.Context
 import com.appause.android.data.settings.SettingsDataStore
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CoroutineDispatcher
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.atomic.AtomicLong
 
 private const val TRIAL_DURATION_SECONDS = 7L * 24 * 60 * 60
 
@@ -25,6 +30,7 @@ private const val TRIAL_DURATION_SECONDS = 7L * 24 * 60 * 60
  * required.
  */
 private const val CLOCK_SKEW_LEEWAY_SECONDS = 60L
+private const val ENTITLEMENT_REFRESH_MAX_MILLIS = 60_000L
 
 /**
  * Result of a server-side activation attempt ([ProState.redeemCode]).
@@ -60,18 +66,47 @@ internal fun classifyLicenseClaims(claims: LicenseClaims?, nowSeconds: Long): Pr
     if (claims == null) return ProEntitlement(ProAccessStatus.FREE)
     val expiresAt = claims.exp?.times(1000L)
     if (claims.trial) {
-        return if (claims.exp != null && nowSeconds <= claims.exp) {
+        return if (claims.exp != null && nowSeconds < claims.exp) {
             ProEntitlement(ProAccessStatus.TRIAL_ACTIVE, expiresAt)
         } else {
             ProEntitlement(ProAccessStatus.TRIAL_EXPIRED, expiresAt)
         }
     }
     if (claims.exp == null) return ProEntitlement(ProAccessStatus.LIFETIME)
-    return if (nowSeconds <= claims.exp) {
+    return if (nowSeconds < claims.exp) {
         ProEntitlement(ProAccessStatus.EXPIRING_ACTIVE, expiresAt)
     } else {
         ProEntitlement(ProAccessStatus.FREE)
     }
+}
+
+internal fun canRedeemLifetimeCode(status: ProAccessStatus): Boolean =
+    status == ProAccessStatus.TRIAL_EXPIRED
+
+internal fun canStartProTrial(status: ProAccessStatus): Boolean =
+    status == ProAccessStatus.FREE
+
+internal fun remainingTrialMillis(expiresAtMillis: Long, nowMillis: Long): Long =
+    (expiresAtMillis - nowMillis).coerceAtLeast(0L)
+
+internal fun nonDecreasingClockMillis(previousMillis: Long, currentMillis: Long): Long =
+    maxOf(previousMillis, currentMillis)
+
+internal fun entitlementRefreshDelayMillis(
+    entitlement: ProEntitlement,
+    nowMillis: Long
+): Long? {
+    when (entitlement.status) {
+        ProAccessStatus.TRIAL_ACTIVE,
+        ProAccessStatus.EXPIRING_ACTIVE,
+        ProAccessStatus.DEBUG -> Unit
+        else -> return null
+    }
+
+    val expiresAt = entitlement.expiresAt ?: return null
+    val remaining = remainingTrialMillis(expiresAt, nowMillis)
+    if (remaining == 0L) return 1L
+    return minOf(remaining, ENTITLEMENT_REFRESH_MAX_MILLIS)
 }
 
 /**
@@ -180,7 +215,12 @@ class ProState(
     private val currentEntitlement: (suspend () -> ProEntitlement)? = null
 ) {
 
-    private fun wallClockNowMillis(): Long = System.currentTimeMillis()
+    private val lastObservedWallClockMillis = AtomicLong(System.currentTimeMillis())
+
+    /** Keep a wall-clock rollback from extending an entitlement in this process. */
+    private fun wallClockNowMillis(): Long = lastObservedWallClockMillis.updateAndGet { previous ->
+        nonDecreasingClockMillis(previous, System.currentTimeMillis())
+    }
 
     private fun effectiveNowMillis(): Long =
         wallClockNowMillis() + BuildConfig.DEBUG_TIME_OFFSET_MILLIS
@@ -253,21 +293,36 @@ class ProState(
         }.getOrDefault(ProEntitlement(ProAccessStatus.FREE))
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     val entitlement: Flow<ProEntitlement> = combine(
         settings.licenseToken,
         settings.isProDebug,
         DebugActivationStore.overrideFlow(context)
-    ) { token, debugFlag, override ->
-        // The debug-build activation override outranks the real entitlement
-        // while it is set. On a release build overrideFlow() is always None, so
-        // this resolves to the real entitlement and changes nothing.
-        DebugActivationPolicy.resolve(
-            override = override,
-            real = resolveRealEntitlement(token, debugFlag),
-            // DebugActivationStore stamps this expiry with the raw wall clock;
-            // the offset is only for deterministic token-entitlement testing.
-            nowMillis = wallClockNowMillis()
-        )
+    ) { token, debugFlag, override -> Triple(token, debugFlag, override) }
+        .flatMapLatest { (token, debugFlag, override) ->
+            flow {
+                while (true) {
+                    val rawNowMillis = wallClockNowMillis()
+                    // Re-resolve signed expiry while a timed entitlement is active. The
+                    // final delay is shortened to land on its expiry boundary.
+                    val current = DebugActivationPolicy.resolve(
+                        override = override,
+                        real = resolveRealEntitlement(token, debugFlag),
+                        // DebugActivationStore stamps this expiry with raw wall time;
+                        // token tests alone use the configured debug time offset.
+                        nowMillis = rawNowMillis
+                    )
+                    emit(current)
+                    val clockForEntitlement = if (current.status == ProAccessStatus.DEBUG) {
+                        rawNowMillis
+                    } else {
+                        effectiveNowMillis()
+                    }
+                    val refreshAfter = entitlementRefreshDelayMillis(current, clockForEntitlement)
+                        ?: return@flow
+                    delay(refreshAfter)
+                }
+            }
     }
 
     val isPro: Flow<Boolean> = entitlement.map { it.isPro }
@@ -313,6 +368,9 @@ class ProState(
     suspend fun redeemCode(code: String): RedeemResult {
         val current = currentEntitlement?.invoke() ?: this.entitlement.first()
         if (current.isPro) return RedeemResult.Error("already_active")
+        if (!canRedeemLifetimeCode(current.status)) {
+            return RedeemResult.Error("trial_not_expired")
+        }
 
         val effectiveTransport = transport ?: run {
             val base = ProConfig.WORKER_BASE_URL
@@ -341,7 +399,7 @@ class ProState(
     suspend fun startTrial(): RedeemResult {
         val current = currentEntitlement?.invoke() ?: this.entitlement.first()
         if (current.isPro) return RedeemResult.Error("already_active")
-        if (current.status == ProAccessStatus.TRIAL_EXPIRED) {
+        if (!canStartProTrial(current.status)) {
             return RedeemResult.Error("trial_expired")
         }
 

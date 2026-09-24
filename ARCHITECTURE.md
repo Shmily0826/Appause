@@ -25,14 +25,22 @@
 
 ## Pro entitlement flow
 
-The current source presents four user-facing entitlement categories: FREE, one-time
-TRIAL_ACTIVE, TRIAL_EXPIRED, and LIFETIME. A user explicitly starts the
-device-bound trial from the Pro screen; `POST /api/trial/start` anchors exactly
-seven days at the first successful start and is idempotent for that device.
-Android verifies that the response is an active seven-day trial JWT before
-storing it. After expiry, lifetime access remains activation-code-based through
-`POST /api/redeem`. The Worker deployment status is separate from this source
-description.
+The Pro screen presents a sequential state flow: FREE offers the optional
+once-per-device seven-day trial; TRIAL_ACTIVE shows a live countdown and hides
+lifetime-code entry; TRIAL_EXPIRED offers the feedback request path and code
+redemption; LIFETIME shows status only. `POST /api/trial/start` anchors seven
+days at successful activation and is idempotent per device. Android verifies
+the device-bound trial JWT before storing it, allows trial start only from FREE,
+and locally blocks code redemption until TRIAL_EXPIRED.
+
+Timed entitlements are re-evaluated locally at most every 60 seconds, with the
+refresh shortened to the expiry boundary (`now >= exp`). This does not make a
+background Worker request. The app has no paid version or subscription; core
+features remain permanently free and lifetime activation codes are manually
+issued at no charge. Server-side limitation: the Worker still accepts generic
+admin-issued lifetime codes that are not linked to a trial, so this sequence is
+a client UI/logic gate rather than universal Worker enforcement. No Worker
+deployment is implied by this source description.
 
 ---
 

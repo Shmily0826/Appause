@@ -321,6 +321,13 @@
     <string name="pro_status_lifetime">永久 Pro</string>
     <string name="pro_status_debug">调试版 Pro 已解锁</string>
     <string name="pro_trial_ends">试用结束时间：%1$s</string>
+    <string name="pro_trial_remaining_days_hours">还剩 %1$d 天 %2$d 小时</string>
+    <string name="pro_trial_remaining_hours_minutes">还剩 %1$d 小时 %2$d 分钟</string>
+    <string name="pro_trial_remaining_minutes">还剩 %1$d 分钟</string>
+    <string name="pro_trial_remaining_seconds">还剩 %1$d 秒</string>
+    <string name="pro_trial_active_desc">一次性试用正在进行。结束后，可前往「设置 → 反馈」申请免费永久激活码；不会自动转换为永久权限。</string>
+    <string name="pro_lifetime_active_desc">此设备上的 Pro 永久权限已生效。Appause 核心功能仍永久免费。</string>
+    <string name="pro_redeem_after_trial">一次性 7 天试用结束后，才可兑换永久激活码。</string>
     <string name="pro_trial_expired_desc">一次性 7 天试用已结束。Appause Pro 仍然免费：请前往「设置 → 反馈」申请永久授权码，再在下方输入；不会自动转为永久权限。</string>
     <string name="pro_trial_start_desc">为这台设备主动开始一次性 7 天 Pro 试用。只有点击按钮后才会开始计时。</string>
     <string name="pro_trial_start">开始 7 天试用</string>
@@ -438,4 +445,16 @@
 
     <string name="leave_cooldown_title">离开后的宽限期进行中</string>
     <string name="leave_cooldown_desc">在 %1$d:%2$02d 内返回会保留本次会话；超时后再次打开时会重新显示冷却页。</string>
+    <string name="pro_settings_open_status">查看 Pro 状态或激活信息。</string>
+    <string name="pro_free_forever">Appause 核心功能永久免费，没有订阅或付费版本。</string>
+    <string name="pro_early_access_desc">Pro 是分阶段开放的可选实验功能，用于验证方案并收集反馈。你可主动为每台设备开启一次 7 天试用，之后可通过「设置 → 反馈」申请免费永久激活码；不会自动扣费。</string>
+    <string name="home_pro_free_title">Appause 永久免费</string>
+    <string name="home_pro_free_desc">核心功能永久免费，没有订阅或付费版本。Pro 权限为独立的可选体验。</string>
+    <string name="home_pro_trial_desc">一次性 Pro 试用正在进行。查看试用状态和权限信息。</string>
+    <string name="home_pro_expired_desc">试用已结束。Appause 核心功能仍永久免费；可查看激活信息。</string>
+    <string name="home_pro_active_desc">此设备上的 Pro 权限已生效。查看状态详情。</string>
+    <string name="home_pro_open">查看 Pro 状态与激活</string>
+    <string name="onboarding_finish_title">准备就绪</string>
+    <string name="onboarding_finish_desc">你可以稍后在设置中查看权限和运行建议。</string>
+    <string name="onboarding_finish">完成</string>
 </resources>

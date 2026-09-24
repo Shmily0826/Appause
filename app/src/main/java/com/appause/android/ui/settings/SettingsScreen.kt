@@ -199,8 +199,8 @@ private fun CategoryItem(category: SettingsCategory) {
 
 /**
  * Pro promo / status bar shown at the top of Settings — kept out of the category
- * list so Pro doesn't look like just another setting. Tapping it (when free)
- * opens the Pro screen; when already Pro it shows a calm "active" note.
+ * list so Pro doesn't look like just another setting. It always opens the
+ * same status and activation screen, including while Pro is active.
  */
 @Composable
 private fun ProBanner(
@@ -208,9 +208,24 @@ private fun ProBanner(
     onNavigateToPro: () -> Unit
 ) {
     val isPro = entitlement.isPro
+    val title = when (entitlement.status) {
+        ProAccessStatus.TRIAL_ACTIVE, ProAccessStatus.EXPIRING_ACTIVE -> R.string.pro_settings_trial_active
+        ProAccessStatus.LIFETIME -> R.string.pro_settings_lifetime
+        ProAccessStatus.DEBUG -> R.string.pro_active_label
+        ProAccessStatus.TRIAL_EXPIRED -> R.string.pro_settings_trial_expired
+        ProAccessStatus.FREE -> R.string.pro_banner_title
+    }
+    val description = when (entitlement.status) {
+        ProAccessStatus.TRIAL_ACTIVE, ProAccessStatus.EXPIRING_ACTIVE,
+        ProAccessStatus.LIFETIME, ProAccessStatus.DEBUG -> R.string.pro_settings_open_status
+        ProAccessStatus.TRIAL_EXPIRED -> R.string.pro_trial_already_used
+        ProAccessStatus.FREE -> R.string.pro_settings_trial_available
+    }
     if (isPro) {
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onNavigateToPro),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             )
@@ -227,16 +242,23 @@ private fun ProBanner(
                     tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = stringResource(
-                        when (entitlement.status) {
-                            ProAccessStatus.TRIAL_ACTIVE -> R.string.pro_settings_trial_active
-                            ProAccessStatus.LIFETIME -> R.string.pro_settings_lifetime
-                            else -> R.string.pro_active_label
-                        }
-                    ),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = stringResource(description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
@@ -263,25 +285,13 @@ private fun ProBanner(
                 Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(
-                            if (entitlement.status == ProAccessStatus.TRIAL_EXPIRED) {
-                                R.string.pro_settings_trial_expired
-                            } else {
-                                R.string.pro_banner_title
-                            }
-                        ),
+                        text = stringResource(title),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = stringResource(
-                            if (entitlement.status == ProAccessStatus.TRIAL_EXPIRED) {
-                                R.string.pro_trial_already_used
-                            } else {
-                                R.string.pro_settings_trial_available
-                            }
-                        ),
+                        text = stringResource(description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )

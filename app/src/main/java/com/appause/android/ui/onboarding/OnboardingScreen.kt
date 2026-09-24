@@ -21,28 +21,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.animation.togetherWith
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import com.appause.android.ui.pause.CountdownRing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.GroupAdd
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.Power
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -54,12 +39,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,30 +57,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
 import com.appause.android.service.AccessibilityHealthState
 import com.appause.android.service.AccessibilityHealthStatus
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
  * First-launch onboarding screen.
  *
- * A short, skippable guide that walks a new user through four things that are
- * otherwise easy to miss:
- *   1. Pick a language (applied immediately, the rest of the app follows).
- *   2. See what Appause does (a live pause-screen preview).
- *   3. Understand the privacy model and enable the accessibility service.
- *   4. Complete the optional accuracy and reliability settings.
- *   5. Create the optional first group (deep-links to the existing group editor).
- *
- * The whole flow is optional: "Skip" (top-right) finishes it at any point.
- *
- * The group step is the final page. Creating a group is optional; choosing
- * "Later" completes onboarding and enters Home. The live pause-screen preview
- * is shown earlier and is separate from this creation step.
+ * A short guide for language selection and access setup. Access remains
+ * user-controlled here; Home keeps the setup checklist available afterward.
  */
 @Composable
 fun OnboardingScreen(
     onNavigateToHome: () -> Unit,
-    onNavigateToGroupEditor: () -> Unit,
     viewModel: OnboardingViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -111,7 +79,6 @@ fun OnboardingScreen(
     val accessibilityHealth by viewModel.accessibilityHealth.collectAsStateWithLifecycle()
     val canDrawOverlays by viewModel.canDrawOverlays.collectAsStateWithLifecycle()
     val isUsageAccessGranted by viewModel.isUsageAccessGranted.collectAsStateWithLifecycle()
-    val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
 
     // Re-query accessibility status every time the screen resumes (e.g. after the
     // user enables the service in system settings and comes back).
@@ -127,13 +94,10 @@ fun OnboardingScreen(
     // Each step gets a friendly icon so the guide feels visual, not text-heavy.
     val stepIcons = listOf(
         Icons.Default.Language,
-        Icons.Default.Pause,
-        Icons.Default.Info,
         Icons.Default.Accessibility,
         Icons.Default.Info,
-        Icons.Default.Power,
         Icons.Default.Visibility,
-        Icons.Default.GroupAdd
+        Icons.Default.CheckCircle
     )
 
     Column(
@@ -184,12 +148,7 @@ fun OnboardingScreen(
                         }
                     }
                 )
-                1 -> PreviewStep()
-                2 -> InfoStep(
-                    title = R.string.onboarding_welcome_title,
-                    desc = R.string.onboarding_welcome_desc
-                )
-                3 -> ServiceStep(
+                1 -> ServiceStep(
                     accessibilityHealth = accessibilityHealth,
                     onOpenSettings = {
                         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
@@ -197,7 +156,7 @@ fun OnboardingScreen(
                         context.startActivity(intent)
                     }
                 )
-                4 -> UsageStep(
+                2 -> UsageStep(
                     isGranted = isUsageAccessGranted,
                     onOpenSettings = {
                         val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
@@ -205,16 +164,7 @@ fun OnboardingScreen(
                         context.startActivity(intent)
                     }
                 )
-                5 -> BatteryStep(
-                    isIgnoring = isIgnoringBattery,
-                    onOpenSettings = {
-                        val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                            data = Uri.parse("package:${context.packageName}")
-                        }
-                        context.startActivity(intent)
-                    }
-                )
-                6 -> OverlayStep(
+                3 -> OverlayStep(
                     isGranted = canDrawOverlays,
                     onOpenSettings = {
                         val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
@@ -223,9 +173,9 @@ fun OnboardingScreen(
                         context.startActivity(intent)
                     }
                 )
-                7 -> InfoStep(
-                    title = R.string.onboarding_group_title,
-                    desc = R.string.onboarding_group_desc
+                4 -> InfoStep(
+                    title = R.string.onboarding_finish_title,
+                    desc = R.string.onboarding_finish_desc
                 )
             }
         }
@@ -246,22 +196,12 @@ fun OnboardingScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             when (page) {
-                7 -> {
-                    // Creating a group is deliberately the last optional step. The
-                    // user has seen every permission explanation before leaving the
-                    // guide, so this no longer skips essential setup information.
+                4 -> {
                     Button(onClick = {
-                        viewModel.completeOnboarding()
-                        onNavigateToGroupEditor()
-                    }) {
-                        Text(stringResource(R.string.onboarding_group_add))
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(onClick = {
                         viewModel.completeOnboarding()
                         onNavigateToHome()
                     }) {
-                        Text(stringResource(R.string.onboarding_group_later))
+                        Text(stringResource(R.string.onboarding_finish))
                     }
                 }
                 else -> Button(onClick = { viewModel.nextPage() }) {
@@ -415,139 +355,6 @@ private fun InfoStep(title: Int, desc: Int) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
-    }
-}
-
-/**
- * Preview step: the explanation plus a live preview of the real
- * interception screen. The preview animates in and loops a countdown so the
- * user gets a concrete idea of what they'll see — it is not a nudge to create
- * a group (the buttons in the bottom bar stay fully clickable).
- */
-@Composable
-private fun PreviewStep() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        InfoStep(
-            title = R.string.onboarding_preview_title,
-            desc = R.string.onboarding_preview_desc
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        AnimatedVisibility(
-            visible = true,
-            enter = fadeIn() + scaleIn(initialScale = 0.95f)
-        ) {
-            GroupStepPreview()
-        }
-    }
-}
-
-/**
- * A small, non-interactive mock of the pause screen: app icon, name, prompt,
- * and the same countdown ring + animated number used by the real interception.
- * Loops 3 → 2 → 1 → done → 3 … to convey the concept, nothing more.
- */
-@Composable
-private fun GroupStepPreview() {
-    var remaining by remember { mutableStateOf(3) }
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(1000)
-            remaining = if (remaining <= 0) 3 else remaining - 1
-        }
-    }
-    val isFinished = remaining <= 0
-    val progress = if (isFinished) 1f else (3f - remaining) / 3f
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
-    ) {
-        // fillMaxWidth + CenterHorizontally keeps the icon, texts and ring
-        // centered in the card. Without it the Column is measured at its
-        // content width and left-aligned inside the card (Card's default
-        // placement), so the whole preview sits off-center / "tilted".
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // NOTE: R.mipmap.ic_launcher is an *adaptive* icon
-            // (<adaptive-icon> XML). Compose's painterResource only supports
-            // VectorDrawable and raster assets, so loading it crashes with
-            // IllegalArgumentException. We use the foreground vector drawable
-            // (a plain VectorDrawable) on a brand-colored circle instead.
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(R.drawable.ic_launcher_foreground),
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp)
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(
-                text = stringResource(R.string.onboarding_preview_app_name),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.prompt_label),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Explicit size matching the CountdownRing prevents the ring from
-            // shifting when surrounding Chinese text changes the Column's
-            // measured width (the ring would otherwise look tilted/offset).
-            Box(
-                modifier = Modifier.size(110.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                CountdownRing(
-                    progress = progress,
-                    isFinished = isFinished,
-                    size = 110.dp,
-                    strokeWidth = 5.dp
-                )
-                AnimatedContent(
-                    targetState = if (isFinished) -1 else remaining,
-                    transitionSpec = {
-                        (slideInVertically { it } + fadeIn()) togetherWith
-                            (slideOutVertically { -it } + fadeOut())
-                    },
-                    label = "preview_countdown"
-                ) { number ->
-                    Text(
-                        text = if (number >= 0) "$number" else "✓",
-                        style = MaterialTheme.typography.displaySmall,
-                        fontWeight = FontWeight.Bold,
-                        color = if (number >= 0) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.tertiary
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.onboarding_preview_caption),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center
-            )
-        }
     }
 }
 
@@ -710,65 +517,6 @@ private fun UsageStep(
                 stringResource(
                     if (isGranted) R.string.onboarding_usage_on
                     else R.string.onboarding_usage_open
-                )
-            )
-        }
-    }
-}
-
-/**
- * Battery-optimization step (page 4): explains why Appause must be set to
- * "Unrestricted" and links to the system battery settings. On HyperOS/MIUI a
- * non-exempt app gets its AccessibilityService killed in the background with no
- * auto-restart, so interception silently stops until the app is reopened.
- */
-@Composable
-private fun BatteryStep(
-    isIgnoring: Boolean,
-    onOpenSettings: () -> Unit
-) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = stringResource(R.string.onboarding_battery_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = stringResource(R.string.onboarding_battery_desc),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        val statusColor = if (isIgnoring) {
-            MaterialTheme.colorScheme.primary
-        } else {
-            MaterialTheme.colorScheme.error
-        }
-        Text(
-            text = if (isIgnoring) {
-                stringResource(R.string.onboarding_battery_on)
-            } else {
-                stringResource(R.string.onboarding_battery_off)
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = statusColor,
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = onOpenSettings,
-            enabled = !isIgnoring,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text(
-                stringResource(
-                    if (isIgnoring) R.string.onboarding_battery_on
-                    else R.string.onboarding_battery_open
                 )
             )
         }

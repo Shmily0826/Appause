@@ -79,7 +79,7 @@ class OnboardingViewModelTest {
         viewModel.nextPage()
         assertEquals(1, viewModel.page.value)
         repeat(10) { viewModel.nextPage() }
-        assertEquals(7, viewModel.page.value) // max step
+        assertEquals(4, viewModel.page.value) // Finish is the last step.
     }
 
     @Test

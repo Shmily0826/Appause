@@ -89,7 +89,6 @@ object Routes {
 fun AppNavGraph() {
     val navController = rememberNavController()
     val app = LocalContext.current.applicationContext as AppauseApp
-    var returnHomeAfterOnboardingGroup by remember { mutableStateOf(false) }
 
     // The start destination depends on whether onboarding is finished.
     // DataStore is async, so we resolve it once before building the NavHost
@@ -145,16 +144,7 @@ fun AppNavGraph() {
         composable(Routes.GROUP_EDITOR) {
             GroupEditorScreen(
                 groupId = -1L,
-                onNavigateBack = {
-                    if (returnHomeAfterOnboardingGroup) {
-                        returnHomeAfterOnboardingGroup = false
-                        navController.navigate(Routes.HOME) {
-                            popUpTo(Routes.ONBOARDING) { inclusive = true }
-                        }
-                    } else {
-                        safePopBackStack()
-                    }
-                },
+                onNavigateBack = safePopBackStack,
                 onNavigateToAppSelect = { navController.navigate(Routes.APP_SELECT) },
                 onNavigateToPro = { navController.navigate(Routes.PRO) }
             )
@@ -285,10 +275,6 @@ fun AppNavGraph() {
                     navController.navigate(Routes.HOME) {
                         popUpTo(Routes.ONBOARDING) { inclusive = true }
                     }
-                },
-                onNavigateToGroupEditor = {
-                    returnHomeAfterOnboardingGroup = true
-                    navController.navigate(Routes.GROUP_EDITOR)
                 }
             )
         }

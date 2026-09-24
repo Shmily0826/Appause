@@ -34,12 +34,15 @@ See [INSTALL.md](INSTALL.md) before the first sideload.
   settings that matter on Xiaomi/HyperOS and similar devices.
 - **Feedback** — Settings → Feedback lets you review a structured diagnostic
   snapshot before choosing to send a bug report or suggestion.
-- **Appause Pro** — optional Pro unlocks unlimited groups, re-remind, a custom
-  pause prompt, and custom open reasons. The current source supports one
-  explicit, one-time 7-day trial started in the app; it starts only after the
-  first successful trial activation. After expiry, lifetime access remains
-  activation-code-based. Appause verifies signed, device-bound tokens locally,
-  does not auto-refresh them, and performs no background license checks.
+- **Appause Pro** — optional access to unlimited groups, re-remind, a custom
+  pause prompt, and custom open reasons. Appause's core remains permanently
+  free, with no subscription or paid version. The Pro page shows an optional,
+  once-per-device 7-day trial while Free; after successful activation it shows
+  a live countdown and hides lifetime-code entry. At expiry, the user can
+  request a free, manually issued lifetime code through Settings → Feedback.
+  Lifetime access shows status only. Android verifies signed, device-bound
+  tokens locally and refreshes timed entitlement state at expiry without
+  background Worker checks.
 
 > **Public beta position (2026-09-22):** Appause remains free during the public
 > beta; no payments, subscriptions, or paid tier are planned. Pro remains a

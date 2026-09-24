@@ -254,6 +254,9 @@
     <string name="settings_category_pro">Appause Pro</string>
     <string name="pro_active_label">Appause Pro is active</string>
     <string name="pro_banner_title">Explore Appause Pro</string>
+    <string name="pro_settings_open_status">View your Pro status or activation details.</string>
+    <string name="pro_free_forever">Appause core features are permanently free. There is no subscription or paid version.</string>
+    <string name="pro_early_access_desc">Pro is an optional experiment being opened in stages for validation and feedback. You can choose one 7-day trial per device, then request a free permanent activation code through Settings → Feedback. No automatic charges.</string>
     <string name="pro_banner_desc">Try the gated experimental and advanced options</string>
     <string name="settings_category_feedback">Feedback</string>
     <string name="settings_category_about">About</string>
@@ -326,6 +329,13 @@
     <string name="pro_status_lifetime">Lifetime access</string>
     <string name="pro_status_debug">Debug Pro unlocked</string>
     <string name="pro_trial_ends">Trial ends %1$s</string>
+    <string name="pro_trial_remaining_days_hours">%1$d days %2$d hours remaining</string>
+    <string name="pro_trial_remaining_hours_minutes">%1$d hours %2$d minutes remaining</string>
+    <string name="pro_trial_remaining_minutes">%1$d minutes remaining</string>
+    <string name="pro_trial_remaining_seconds">%1$d seconds remaining</string>
+    <string name="pro_trial_active_desc">Your one-time trial is active. After it ends, you can request a free lifetime code through Settings → Feedback. It will not convert automatically.</string>
+    <string name="pro_lifetime_active_desc">Lifetime Pro is active on this device. Appause core features remain permanently free.</string>
+    <string name="pro_redeem_after_trial">A lifetime code can be redeemed after the one-time 7-day trial ends.</string>
     <string name="pro_trial_expired_desc">Your one-time 7-day trial has ended. Appause Pro remains free: request a lifetime code through Settings → Feedback, then enter it below. It does not convert automatically.</string>
     <string name="pro_trial_start_desc">Start a one-time, opt-in 7-day Pro trial for this device. It begins only after you tap the button.</string>
     <string name="pro_trial_start">Start 7-day trial</string>
@@ -371,6 +381,12 @@
     <string name="pro_settings_trial_active">Appause Pro — 7-day trial</string>
     <string name="pro_settings_trial_expired">Appause Pro — trial ended</string>
     <string name="pro_settings_lifetime">Appause Pro — lifetime</string>
+    <string name="home_pro_free_title">Appause is permanently free</string>
+    <string name="home_pro_free_desc">Core features have no subscription or paid version. Optional Pro access is separate.</string>
+    <string name="home_pro_trial_desc">Your one-time Pro trial is active. View its status and access details.</string>
+    <string name="home_pro_expired_desc">Your trial has ended. Core Appause features remain free; view activation details.</string>
+    <string name="home_pro_active_desc">Your Pro access is active on this device. View status details.</string>
+    <string name="home_pro_open">View Pro status and activation</string>
     <string name="home_trial_cta_title">Try Pro free for 7 days</string>
     <string name="home_trial_cta_desc">Start your one-time trial on the Pro page. No activation code required.</string>
     <string name="home_trial_cta_action">View 7-day trial</string>
@@ -438,6 +454,9 @@
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_lang_zh">简体中文</string>
     <string name="onboarding_lang_en">English</string>
+    <string name="onboarding_finish_title">You’re ready</string>
+    <string name="onboarding_finish_desc">You can review permissions and reliability settings later in Settings.</string>
+    <string name="onboarding_finish">Finish</string>
     <string name="onboarding_preview_app_name">Sample App</string>
     <string name="onboarding_preview_caption">Before these apps open, Appause gives you a few seconds to pause.</string>
 

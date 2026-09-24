@@ -73,7 +73,7 @@ class ProStateRedeemTest {
         verifier: ((String, String) -> LicenseClaims?)? = null,
         persister: (suspend (String) -> Unit)? = null,
         entitlement: suspend () -> ProEntitlement = {
-            ProEntitlement(ProAccessStatus.FREE)
+            ProEntitlement(ProAccessStatus.TRIAL_EXPIRED)
         }
     ): ProState = ProState(
         settings = settings,
@@ -152,6 +152,30 @@ class ProStateRedeemTest {
         assertEquals(RedeemResult.Error("already_active"), result)
         assertTrue(transport.capturedBodies.isEmpty())
         assertEquals("TRIAL-TOKEN", stored)
+    }
+
+    @Test
+    fun `free device cannot redeem a lifetime code before the trial expires`() = runTest {
+        val transport = FakeTransport(RedeemHttpResponse(200, ""))
+        val result = proState(
+            transport,
+            entitlement = { ProEntitlement(ProAccessStatus.FREE) }
+        ).redeemCode("ADMIN-CODE")
+
+        assertEquals(RedeemResult.Error("trial_not_expired"), result)
+        assertTrue(transport.capturedBodies.isEmpty())
+    }
+
+    @Test
+    fun `active trial cannot redeem a lifetime code before expiry`() = runTest {
+        val transport = FakeTransport(RedeemHttpResponse(200, ""))
+        val result = proState(
+            transport,
+            entitlement = { ProEntitlement(ProAccessStatus.TRIAL_ACTIVE, 1_000_000L) }
+        ).redeemCode("ADMIN-CODE")
+
+        assertEquals(RedeemResult.Error("already_active"), result)
+        assertTrue(transport.capturedBodies.isEmpty())
     }
 
     @Test
@@ -275,7 +299,8 @@ class ProStateRedeemTest {
         val result = proState(
             transport,
             verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", (now / 1000L) + 7 * 24 * 60 * 60, now / 1000L, "trial", true) },
-            persister = { stored = it }
+            persister = { stored = it },
+            entitlement = { ProEntitlement(ProAccessStatus.FREE) }
         ).startTrial()
 
         assertEquals(RedeemResult.TrialStarted, result)
@@ -298,7 +323,8 @@ class ProStateRedeemTest {
         val result = proState(
             transport,
             verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", expiresAt / 1000L, nowSeconds, "trial", true) },
-            persister = { stored = it }
+            persister = { stored = it },
+            entitlement = { ProEntitlement(ProAccessStatus.FREE) }
         ).startTrial()
 
         assertEquals(RedeemResult.TrialStarted, result)
@@ -321,7 +347,8 @@ class ProStateRedeemTest {
             transport,
             // 1 hour ahead: far beyond the 60 s clock-skew leeway
             verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", expiresAt / 1000L, nowSeconds + 3600L, "trial", true) },
-            persister = { stored = it }
+            persister = { stored = it },
+            entitlement = { ProEntitlement(ProAccessStatus.FREE) }
         ).startTrial()
 
         assertEquals(RedeemResult.Error("token_verify_failed"), result)
@@ -345,7 +372,8 @@ class ProStateRedeemTest {
         val result = proState(
             transport,
             verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", expiresAt / 1000L, nowSeconds + 45L, "trial", true) },
-            persister = { stored = it }
+            persister = { stored = it },
+            entitlement = { ProEntitlement(ProAccessStatus.FREE) }
         ).startTrial()
 
         assertEquals(RedeemResult.TrialStarted, result)
@@ -367,7 +395,8 @@ class ProStateRedeemTest {
         val result = proState(
             transport,
             verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", expiresAt / 1000L, nowSeconds, "trial", true) },
-            persister = { stored = it }
+            persister = { stored = it },
+            entitlement = { ProEntitlement(ProAccessStatus.FREE) }
         ).startTrial()
 
         assertEquals(RedeemResult.Error("token_verify_failed"), result)
@@ -387,7 +416,8 @@ class ProStateRedeemTest {
         val result = proState(
             transport,
             verifier = { _, _ -> LicenseClaims("pro", "device-fp-123", null, now / 1000L, "lifetime", false) },
-            persister = { stored = it }
+            persister = { stored = it },
+            entitlement = { ProEntitlement(ProAccessStatus.FREE) }
         ).startTrial()
 
         assertEquals(RedeemResult.Error("token_verify_failed"), result)
