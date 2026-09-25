@@ -708,6 +708,127 @@
       border-top: var(--rule-thin) solid var(--color-rule);
     }
 
+    .opensource-section {
+      border-top: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .opensource-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-md);
+    }
+
+    .opensource-item {
+      border: var(--rule-thin) solid var(--color-rule);
+      border-radius: var(--radius-sm);
+      background: var(--color-paper-soft);
+      padding: var(--space-md);
+    }
+
+    .opensource-label {
+      display: block;
+      margin-bottom: var(--space-2xs);
+      color: var(--color-accent-deep);
+      font-family: var(--font-utility);
+      font-size: var(--text-xs);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .opensource-item p {
+      margin: 0;
+      color: var(--color-ink-soft);
+      font-size: var(--text-sm);
+      line-height: 1.7;
+    }
+
+    .opensource-more {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+      margin-top: var(--space-lg);
+      font-size: var(--text-sm);
+      font-weight: 700;
+    }
+
+    .opensource-more a:hover {
+      color: var(--color-accent-deep);
+    }
+
+    .faq-section {
+      border-top: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .faq-list {
+      display: grid;
+      gap: var(--space-sm);
+      max-width: 56rem;
+    }
+
+    .faq-list details {
+      border: var(--rule-thin) solid var(--color-rule);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      padding: var(--space-sm) var(--space-md);
+    }
+
+    .faq-list summary {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--space-md);
+      cursor: pointer;
+      font-weight: 700;
+      font-size: var(--text-body);
+      color: var(--color-ink);
+      list-style: none;
+    }
+
+    .faq-list summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .faq-list summary::after {
+      content: "+";
+      color: var(--color-ink-soft);
+      font-family: var(--font-utility);
+      font-weight: 400;
+    }
+
+    .faq-list details[open] summary::after {
+      content: "\2212";
+    }
+
+    .faq-list summary:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .faq-list details p {
+      margin: var(--space-xs) 0 0;
+      max-width: 52rem;
+      color: var(--color-ink-soft);
+      font-size: var(--text-sm);
+      line-height: 1.75;
+    }
+
+    .release-line a {
+      color: inherit;
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+
+    .release-line a:hover {
+      color: var(--color-accent-deep);
+    }
+
+    @media (max-width: 820px) {
+      .opensource-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     .pro-columns {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -756,24 +877,6 @@
     .pro-list strong {
       color: var(--color-ink);
       font-weight: 700;
-    }
-
-    .pro-note {
-      max-width: 56rem;
-      margin: var(--space-lg) 0 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .pro-note strong {
-      color: var(--color-ink);
-    }
-
-    .pro-fact {
-      margin: var(--space-sm) 0 0;
-      color: var(--color-ink-soft);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
     }
 
     .download-section {
@@ -1147,8 +1250,9 @@
         <a href="#product">Inside the app</a>
         <a href="#privacy">Privacy</a>
         <a href="#pro">Free beta</a>
+        <a href="#faq">FAQ</a>
         <a href="zh.html" lang="zh-CN">中文</a>
-        <a class="nav-download" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.44/Appause-v0.5.44.apk">Download v0.5.44 Public Beta</a>
+        <a class="nav-download" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">Download v0.5.45 Public Beta</a>
       </div>
     </nav>
   </header>
@@ -1161,10 +1265,10 @@
           <h1 id="hero-title">Pause first. Then decide.</h1>
           <p class="hero-intro">Appause is a free Android focus tool. When a selected app opens, it gives you a short pause: continue, or go home. You decide.</p>
           <div class="actions" aria-label="Primary actions">
-            <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.44/Appause-v0.5.44.apk">Download Appause free <span aria-hidden="true">↗</span></a>
+            <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">Download Appause free <span aria-hidden="true">↗</span></a>
             <a class="button button-secondary" href="#how-it-works">See how it works</a>
           </div>
-          <p class="release-line">v0.5.44 &#183; free to use &#183; no subscription</p>
+          <p class="release-line">v0.5.45 prerelease public beta &#183; Android 8.0+ &#183; <a href="#privacy">Accessibility permission required</a></p>
         </div>
 
         <div class="moment-board" aria-label="From automatic tap to intentional choice">
@@ -1227,7 +1331,7 @@
         <article class="tour-chapter">
           <div class="chapter-copy">
             <span class="chapter-number">01 / Set the boundary</span>
-            <h3>Start with the context, not a blacklist.</h3>
+            <h3>Group apps by the habits you want to change.</h3>
             <p>Group apps that pull you into the same habit, choose a cooldown, and keep a better next action visible when you need it.</p>
           </div>
 
@@ -1273,7 +1377,7 @@
 
         <aside class="tour-cta" aria-label="Download Appause after the product tour">
           <p>Set one boundary and see how the next opening feels.</p>
-          <a class="button button-secondary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.44/Appause-v0.5.44.apk">Download v0.5.44 <span aria-hidden="true">↗</span></a>
+          <a class="button button-secondary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">Download v0.5.45 <span aria-hidden="true">↗</span></a>
         </aside>
       </div>
     </section>
@@ -1294,7 +1398,7 @@
           <article class="permission-row">
             <span class="permission-status">Recommended</span>
             <h3>Usage Access</h3>
-            <p>An optional compatibility and confirmation layer that also supports usage statistics. The core pause flow uses Accessibility.</p>
+            <p>Optionally confirms which app is in the foreground to help clarify a suspected app switch. It cannot prevent every false trigger; the core pause flow uses Accessibility.</p>
           </article>
           <article class="permission-row">
             <span class="permission-status">Device fallback</span>
@@ -1314,11 +1418,41 @@
       </div>
     </section>
 
+    <section class="section opensource-section" id="open-source" aria-labelledby="opensource-title">
+      <div class="container">
+        <div class="section-heading">
+          <h2 id="opensource-title">Open source, so you can check all of this.</h2>
+          <p class="section-intro">Appause is MIT licensed and developed in the open. The claims on this page are backed by code you can read and build yourself.</p>
+        </div>
+
+        <div class="opensource-grid">
+          <div class="opensource-item">
+            <span class="opensource-label">MIT license</span>
+            <p>Read it, build it, change it. If Appause ever stops, the source and your right to continue it do not disappear.</p>
+          </div>
+          <div class="opensource-item">
+            <span class="opensource-label">Auditable limits</span>
+            <p>The accessibility service is declared with <code>canRetrieveWindowContent=false</code> in the public source, so Android never delivers it screen content or input.</p>
+          </div>
+          <div class="opensource-item">
+            <span class="opensource-label">No strings</span>
+            <p>No account, no analytics SDK, no cloud sync, and no planned paid tier. Uninstalling removes everything, because nothing is stored anywhere else.</p>
+          </div>
+        </div>
+
+        <div class="opensource-more">
+          <a href="https://github.com/Shmily0826/Appause">Read the source on GitHub</a>
+          <a href="https://github.com/Shmily0826/Appause/blob/main/LICENSE">MIT license text</a>
+          <a href="https://github.com/Shmily0826/Appause/issues">Questions? Open an issue</a>
+        </div>
+      </div>
+    </section>
+
     <section class="section pro-section" id="pro" aria-labelledby="pro-title">
       <div class="container">
         <div class="section-heading">
-          <h2 id="pro-title">The public beta is free.</h2>
-          <p class="section-intro">Appause is free to download, and the core experience works without a subscription. We do not plan to add payments, subscriptions, or a paid tier. Pro remains a clearly labelled, gated set of experimental and advanced options: opt in to one free 7-day trial per device, then request free lifetime access through the app's feedback path if you want to continue.</p>
+          <h2 id="pro-title">Free beta. Optional Pro.</h2>
+          <p class="section-intro">Core features work without activation. No payments, subscriptions, or paid tier are planned.</p>
         </div>
 
         <div class="pro-columns">
@@ -1334,16 +1468,57 @@
           <section class="pro-column" aria-label="Appause Pro access">
             <span class="pro-column-label">About Pro access</span>
             <ul class="pro-list">
-              <li><strong>Pro is intentionally retained</strong> It gates experimental and advanced options while the public beta develops.</li>
-              <li><strong>Core features work directly</strong> Blocking, groups, basic settings, and statistics do not require a trial or activation.</li>
-              <li><strong>Free trial, by choice</strong> Start one 7-day trial per device only when you tap the trial button.</li>
-              <li><strong>Free lifetime access by request</strong> After the trial expires, use Settings → Feedback to request a code; it is not automatic.</li>
+              <li><strong>Advanced options</strong> Unlimited groups, re-remind, custom pause text, and custom open reasons.</li>
+              <li><strong>Free 7-day trial</strong> Start it in the app when you choose, once per device.</li>
+              <li><strong>Free lifetime access</strong> After the trial ends, request a code through Settings → Feedback. It is issued manually.</li>
             </ul>
           </section>
         </div>
 
-        <p class="pro-note"><strong>To be clear:</strong> the free public beta has no subscription fee or planned paid tier. Pro is an intentionally gated experimental/advanced path; trial and lifetime access are free, with lifetime access manually issued after a request through the app's feedback path.</p>
-        <p class="pro-fact">One APK. Free public beta.</p>
+      </div>
+    </section>
+
+    <section class="section faq-section" id="faq" aria-labelledby="faq-title">
+      <div class="container">
+        <div class="section-heading">
+          <h2 id="faq-title">Questions people actually ask.</h2>
+          <p class="section-intro">Short answers on installing, permissions, data, and Pro. The install guide and privacy policy cover the rest.</p>
+        </div>
+
+        <div class="faq-list">
+          <details>
+            <summary>Install warns the app is "harmful". Is something wrong?</summary>
+            <p>No. Appause ships the APK directly and is not on an app store, so this is the generic warning Android shows for every non-store APK. Allow "Install unknown apps" for the app you downloaded with, then choose "Install anyway" if asked.</p>
+          </details>
+          <details>
+            <summary>Why is the accessibility permission required? Does it read my screen?</summary>
+            <p>The service only detects which app is in the foreground, so Appause knows when to step in. It is configured without window-content access and never reads screen content, messages, screenshots, or keystrokes.</p>
+          </details>
+          <details>
+            <summary>Is my data uploaded anywhere?</summary>
+            <p>Groups, cooldowns, and statistics are stored on your device with Room and DataStore. No account, no ads, no analytics SDK, no cloud sync. The network is used only when you start the Pro trial, redeem a code, or send feedback.</p>
+          </details>
+          <details>
+            <summary>Does Xiaomi / HyperOS need extra setup?</summary>
+            <p>Yes, three settings: set battery to Unrestricted, allow Autostart, and lock Appause in recents. If the system removes it from memory in the background, interception stops working.</p>
+          </details>
+          <details>
+            <summary>Why did a notification trigger a pause?</summary>
+            <p>On some devices, a media notification can produce an accessibility event that resembles an app switch and occasionally trigger a pause. Optional Usage access can help confirm which app is in the foreground, but it cannot prevent every false trigger.</p>
+          </details>
+          <details>
+            <summary>Does it force-lock my phone?</summary>
+            <p>No. After the countdown you can continue or return to the home screen, and you can disable the service or change groups at any time. Appause is a habit aid, not a monitoring or security tool.</p>
+          </details>
+          <details>
+            <summary>Do I have to pay for Pro?</summary>
+            <p>The public beta is free and no paid tier is planned. Pro is optional: unlimited groups, re-remind, custom pause text, and custom open reasons. You can start one free 7-day trial per device, then request free lifetime access through Settings → Feedback.</p>
+          </details>
+          <details>
+            <summary>How do I update, and what happens when I switch phones?</summary>
+            <p>Install the new APK over the old one and do not uninstall first, because uninstalling removes local data. There is no config export; groups are set up again on a new phone and the Pro license needs re-activation there.</p>
+          </details>
+        </div>
       </div>
     </section>
 
@@ -1353,13 +1528,13 @@
           <div>
             <h2 id="download-title">Download it free and try it.</h2>
             <p>Download the free Appause public beta from GitHub Releases, review the source, and follow the installation guide if Android asks about installing an app from your browser.</p>
-          <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.44/Appause-v0.5.44.apk">Download v0.5.44 APK <span aria-hidden="true">↗</span></a>
+            <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">Download v0.5.45 APK <span aria-hidden="true">↗</span></a>
           </div>
 
           <dl class="install-facts">
             <div>
               <dt>File</dt>
-              <dd>Appause-v0.5.44.apk</dd>
+              <dd>Appause-v0.5.45.apk</dd>
             </div>
             <div>
               <dt>Requires</dt>
@@ -1377,8 +1552,8 @@
         </div>
 
         <div class="download-links" aria-label="Other download and support links">
-          <a href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.44">View v0.5.44 Public Beta release</a>
-          <a href="https://appause-pro-worker.rng2018520.workers.dev/api/download?to=https://shmily0826.lanzoup.com/b01eunt29a&amp;t=kP9xQ2mZ8vL3nR7tB4wY6hC1sD5fG0jU">Mirror download</a>
+          <a href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.45">View v0.5.45 prerelease</a>
+          <a href="https://shmily0826.lanzoup.com/b01eunt29a">Mirror download page (not counted)</a>
           <a href="https://github.com/Shmily0826/Appause/issues">Report an issue</a>
         </div>
       </div>

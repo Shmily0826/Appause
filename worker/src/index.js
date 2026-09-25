@@ -378,12 +378,7 @@ async function handleAdminFeedback(req, env) {
 /**
  * Aggregate, anonymous download counter (no PII — only a single number).
  *
- * The canonical "Download" CTA points here:
- *   https://<worker>/api/download?to=<apk-url>&t=<token>
- * We increment one KV counter and 302-redirect to the real APK, so downloads
- * from any channel (GitHub Releases, 蓝奏云, Coolapk) that flow through the
- * official link are counted in a single real total. The increment is gated
- * behind a shared DOWNLOAD_TOKEN so the count stays trustworthy.
+ * Authenticated redirects are limited to the published HTTPS mirror URL.
  */
 async function bumpDownload(env) {
   const raw = await env.APPAUSE_CODES.get("downloads:total");
@@ -399,18 +394,20 @@ async function handleDownload(req, env) {
   if (token !== env.DOWNLOAD_TOKEN) {
     return json({ error: "forbidden" }, 403);
   }
-  const n = await bumpDownload(env);
   const to = url.searchParams.get("to");
   if (to) {
     try {
       const u = new URL(to);
-      if (u.protocol === "https:" || u.protocol === "http:") {
-        return Response.redirect(to, 302);
+      if (u.href === "https://shmily0826.lanzoup.com/b01eunt29a") {
+        const n = await bumpDownload(env);
+        return Response.redirect(u.href, 302);
       }
     } catch {
-      /* fall through to JSON */
+      /* return a bad-request response below */
     }
+    return json({ error: "invalid_download_target" }, 400);
   }
+  const n = await bumpDownload(env);
   return json({ downloads: n });
 }
 

@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#f7f8fb" />
-  <title>Appause | 打开之前，先给出一个理由</title>
-  <meta name="description" content="Appause 在你打开分心应用的那一刻插入一次停顿，让「继续」重新成为你自己做的决定。本地优先的 Android 应用，无需注册账号。" />
+  <title>Appause | 打开前，先等一会儿</title>
+  <meta name="description" content="打开选定的 Android 应用前先等待一段时间。Appause 显示倒计时，之后你可以继续或返回桌面。核心功能免费，无需注册账号。" />
   <link rel="canonical" href="https://shmily0826.github.io/Appause/zh.html" />
   <link rel="alternate" hreflang="en" href="https://shmily0826.github.io/Appause/" />
   <link rel="alternate" hreflang="zh-CN" href="https://shmily0826.github.io/Appause/zh.html" />
@@ -16,18 +16,18 @@
   <meta property="og:site_name" content="Appause" />
   <meta property="og:locale" content="zh_CN" />
   <meta property="og:url" content="https://shmily0826.github.io/Appause/zh.html" />
-  <meta property="og:title" content="Appause | 免费公开测试版，先停一下再决定" />
-  <meta property="og:description" content="免费的 Android 专注工具，在打开分心应用前给你几秒钟。无订阅，不计划做付费版。" />
+  <meta property="og:title" content="Appause | 打开前，先等一会儿" />
+  <meta property="og:description" content="为选定的 Android 应用设置等待时间。倒计时结束后，由你选择继续或返回桌面。核心功能免费。" />
   <meta property="og:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png" />
   <meta property="og:image:type" content="image/png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Appause 停顿屏：在选定应用打开前先给你几秒钟，再决定是否继续。" />
+  <meta property="og:image:alt" content="Appause 在打开选定应用时显示倒计时，并提供继续或返回桌面的选项。" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Appause | 打开之前，先给出一个理由" />
-  <meta name="twitter:description" content="Appause 在你打开分心应用的那一刻插入一次停顿，让「继续」重新成为你自己做的决定。本地优先的 Android 应用，无需注册账号。" />
+  <meta name="twitter:title" content="Appause | 打开前，先等一会儿" />
+  <meta name="twitter:description" content="打开选定的 Android 应用前先等待一段时间。Appause 显示倒计时，之后你可以继续或返回桌面。核心功能免费，无需注册账号。" />
   <meta name="twitter:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png" />
-  <meta name="twitter:image:alt" content="Appause 停顿屏：在选定应用打开前先问你为什么，旁边是标题「在点开和下滑之间，放一个你的决定。」" />
+  <meta name="twitter:image:alt" content="Appause 在打开选定应用时显示倒计时，并提供继续或返回桌面的选项。" />
   <style>
     /* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt · enrichment: real product captures · nav: N1b · footer: Ft2 · tone: calm-utilitarian */
     :root {
@@ -45,8 +45,8 @@
       --color-success: oklch(57% 0.13 158);
       --color-shadow: oklch(25% 0.04 258 / 0.13);
 
-      --font-display: "Aptos Display", "Segoe UI Variable Display", "Segoe UI", sans-serif;
-      --font-body: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
+      --font-display: "Aptos Display", "Segoe UI Variable Display", "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+      --font-body: "Aptos", "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
       --font-utility: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
 
       --space-3xs: 0.25rem;
@@ -81,11 +81,6 @@
     *::before,
     *::after {
       box-sizing: border-box;
-    }
-
-    html,
-    body {
-      overflow-x: clip;
     }
 
     html {
@@ -204,7 +199,7 @@
     }
 
     .hero {
-      padding: clamp(4.5rem, 9vw, 7.5rem) 0 clamp(5rem, 9vw, 7rem);
+      padding: clamp(3.5rem, 6vw, 5.25rem) 0 clamp(4rem, 7vw, 5.5rem);
     }
 
     .hero-grid {
@@ -247,11 +242,15 @@
     }
 
     h1 {
-      max-width: 11ch;
+      max-width: none;
       margin-bottom: var(--space-lg);
       font-size: var(--text-display);
       font-weight: 720;
       line-height: 0.91;
+    }
+
+    h1 span {
+      display: block;
     }
 
     h2 {
@@ -301,8 +300,11 @@
       transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
     }
 
-    .button:hover {
-      transform: translateY(-2px);
+    /* Touch devices latch :hover after a tap, leaving buttons stuck mid-lift. */
+    @media (hover: hover) {
+      .button:hover {
+        transform: translateY(-2px);
+      }
     }
 
     .button:active {
@@ -325,6 +327,24 @@
       color: var(--color-ink);
     }
 
+    .hero-trust {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2xs);
+      margin: var(--space-sm) 0 0;
+    }
+
+    .hero-trust span {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.3rem 0.7rem;
+      border: var(--rule-thin) solid var(--color-rule);
+      border-radius: var(--radius-pill);
+      color: var(--color-ink-soft);
+      font-size: var(--text-xs);
+      line-height: 1.4;
+    }
+
     .release-line {
       margin: var(--space-sm) 0 0;
       color: var(--color-ink-soft);
@@ -335,65 +355,11 @@
     .moment-board {
       min-width: 0;
       display: grid;
-      grid-template-columns: minmax(9rem, 0.72fr) minmax(0, 1fr);
-      align-items: center;
-      gap: clamp(1.25rem, 3vw, 2.5rem);
+      place-items: center;
       padding: clamp(1.25rem, 3vw, 2.25rem);
       border: var(--rule-thin) solid var(--color-rule);
       border-radius: var(--radius-lg);
       background: var(--color-paper-soft);
-    }
-
-    .decision-track {
-      position: relative;
-      margin: 0;
-    }
-
-    .decision-track::before {
-      position: absolute;
-      top: 0.65rem;
-      bottom: 0.65rem;
-      left: 0.28rem;
-      width: var(--rule-thin);
-      content: "";
-      background: var(--color-rule);
-    }
-
-    .decision-track div {
-      position: relative;
-      padding-left: 1.4rem;
-    }
-
-    .decision-track div + div {
-      margin-top: clamp(2rem, 5vw, 3.75rem);
-    }
-
-    .decision-track div::before {
-      position: absolute;
-      top: 0.45rem;
-      left: 0;
-      width: 0.62rem;
-      height: 0.62rem;
-      border: 2px solid var(--color-paper-soft);
-      border-radius: var(--radius-pill);
-      content: "";
-      background: var(--color-accent);
-      box-shadow: 0 0 0 1px var(--color-accent);
-    }
-
-    .decision-track dt {
-      color: var(--color-ink-soft);
-      font-family: var(--font-utility);
-      font-size: 0.68rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .decision-track dd {
-      margin: 0.2rem 0 0;
-      font-size: var(--text-sm);
-      font-weight: 680;
-      line-height: 1.35;
     }
 
     .product-shot {
@@ -415,8 +381,7 @@
     }
 
     .hero-shot {
-      width: min(100%, 14rem);
-      justify-self: end;
+      width: min(100%, 19rem);
     }
 
     .hero-shot figcaption {
@@ -433,12 +398,12 @@
     }
 
     .section {
-      padding: clamp(5.25rem, 10vw, var(--space-3xl)) 0;
+      padding: clamp(4rem, 7vw, 5.5rem) 0;
     }
 
     .section-heading {
       max-width: 54rem;
-      margin-bottom: clamp(3rem, 7vw, 5.5rem);
+      margin-bottom: clamp(2rem, 4vw, 3rem);
     }
 
     .section-heading h2 {
@@ -692,6 +657,10 @@
       font-size: var(--text-sm);
     }
 
+    .trust-note-copy p + p {
+      margin-top: var(--space-sm);
+    }
+
     .text-links {
       display: flex;
       flex-wrap: wrap;
@@ -709,11 +678,119 @@
       border-top: var(--rule-thin) solid var(--color-rule);
     }
 
+    .opensource-section {
+      border-top: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .opensource-more {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+      margin-top: var(--space-lg);
+      font-size: var(--text-sm);
+      font-weight: 700;
+    }
+
+    .opensource-more a:hover {
+      color: var(--color-accent-deep);
+    }
+
+    .faq-section {
+      border-top: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .faq-section .container {
+      max-width: 60rem;
+    }
+
+    .faq-list {
+      display: grid;
+      gap: var(--space-sm);
+    }
+
+    .faq-list details {
+      border: var(--rule-thin) solid var(--color-rule);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      padding: var(--space-sm) var(--space-md);
+    }
+
+    .faq-list summary {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: var(--space-md);
+      cursor: pointer;
+      font-weight: 700;
+      font-size: var(--text-body);
+      color: var(--color-ink);
+      list-style: none;
+    }
+
+    .faq-list summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .faq-list summary::after {
+      content: "+";
+      color: var(--color-ink-soft);
+      font-family: var(--font-utility);
+      font-weight: 400;
+    }
+
+    .faq-list details[open] summary::after {
+      content: "\2212";
+    }
+
+    .faq-list summary:focus-visible {
+      outline: 2px solid var(--color-focus);
+      outline-offset: 2px;
+    }
+
+    .faq-list details p {
+      margin: var(--space-xs) 0 0;
+      max-width: 52rem;
+      color: var(--color-ink-soft);
+      font-size: var(--text-sm);
+      line-height: 1.75;
+    }
+
+    .release-line a {
+      color: inherit;
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+
+    .release-line a:hover {
+      color: var(--color-accent-deep);
+    }
+
     .pro-columns {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       border-top: var(--rule-thin) solid var(--color-rule);
       border-bottom: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .pro-access {
+      display: grid;
+      grid-template-columns: minmax(10rem, 0.35fr) minmax(0, 1fr);
+      align-items: baseline;
+      gap: var(--space-lg);
+      padding: var(--space-lg) 0;
+      border-bottom: var(--rule-thin) solid var(--color-rule);
+    }
+
+    .pro-access h3 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+
+    .pro-access p {
+      margin: 0;
+      color: var(--color-ink-soft);
+      font-size: var(--text-sm);
+      line-height: 1.75;
     }
 
     .pro-column {
@@ -744,6 +821,8 @@
     }
 
     .pro-list li {
+      display: grid;
+      gap: var(--space-2xs);
       padding: var(--space-xs) 0;
       border-bottom: var(--rule-thin) solid var(--color-rule);
       color: var(--color-ink-soft);
@@ -755,26 +834,9 @@
     }
 
     .pro-list strong {
+      display: block;
       color: var(--color-ink);
       font-weight: 700;
-    }
-
-    .pro-note {
-      max-width: 56rem;
-      margin: var(--space-lg) 0 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .pro-note strong {
-      color: var(--color-ink);
-    }
-
-    .pro-fact {
-      margin: var(--space-sm) 0 0;
-      color: var(--color-ink-soft);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
     }
 
     .download-section {
@@ -791,7 +853,7 @@
     }
 
     .download-panel h2 {
-      max-width: 10ch;
+      max-width: none;
       margin-bottom: var(--space-md);
     }
 
@@ -886,10 +948,6 @@
         gap: var(--space-xl);
       }
 
-      .moment-board {
-        grid-template-columns: minmax(8rem, 0.7fr) minmax(0, 1fr);
-      }
-
       .tour-chapter,
       .tour-chapter-review {
         grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 1.3fr);
@@ -918,20 +976,76 @@
       .nav {
         min-height: 4.25rem;
         gap: var(--space-sm);
+        position: relative;
       }
 
       .nav-links {
         gap: var(--space-xs);
-      }
-
-      .nav-links a:not(.nav-download) {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        align-items: stretch;
+        background: var(--color-paper);
+        border-bottom: var(--rule-thin) solid var(--color-rule);
+        padding: var(--space-sm);
         display: none;
       }
 
+      .nav-links.is-open {
+        display: flex;
+      }
+
+      .nav-links a:not(.nav-download) {
+        display: block;
+        padding: var(--space-2xs) 0;
+      }
+
       .nav-download {
-        min-height: 2.35rem;
-        padding-inline: 0.85rem;
-        font-size: var(--text-xs);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        margin-top: var(--space-xs);
+      }
+
+      .nav-toggle {
+        display: block;
+        background: none;
+        border: none;
+        padding: var(--space-2xs);
+        cursor: pointer;
+        color: var(--color-ink);
+      }
+
+      .nav-toggle svg {
+        width: 1.5rem;
+        height: 1.5rem;
+      }
+
+      /* Turn the three bars into a close glyph when the menu is open. */
+      .nav-toggle svg line {
+        transform-box: view-box;
+        transform-origin: 12px 12px;
+        transition: transform var(--dur-short) var(--ease-out), opacity var(--dur-short) var(--ease-out);
+      }
+
+      .nav-toggle.is-open svg line:nth-child(1) {
+        transform: translateY(6px) rotate(45deg);
+      }
+
+      .nav-toggle.is-open svg line:nth-child(2) {
+        opacity: 0;
+      }
+
+      .nav-toggle.is-open svg line:nth-child(3) {
+        transform: translateY(-6px) rotate(-45deg);
+      }
+
+      /* Keep the page still behind the open menu. */
+      body.nav-open {
+        overflow: hidden;
       }
 
       .hero {
@@ -951,6 +1065,11 @@
         grid-template-columns: minmax(0, 1fr);
       }
 
+      .pro-access {
+        grid-template-columns: minmax(0, 1fr);
+        gap: var(--space-xs);
+      }
+
       .pro-column,
       .pro-column + .pro-column {
         padding: var(--space-md) 0;
@@ -961,11 +1080,6 @@
         border-top: var(--rule-thin) solid var(--color-rule);
       }
 
-      h1 {
-        max-width: 10ch;
-        font-size: clamp(3.1rem, 15vw, 4.8rem);
-      }
-
       .actions {
         align-items: stretch;
         flex-direction: column;
@@ -973,11 +1087,6 @@
 
       .button {
         width: 100%;
-      }
-
-      .moment-board {
-        width: min(100%, 30rem);
-        justify-self: center;
       }
 
       .section-heading {
@@ -1045,28 +1154,6 @@
     }
 
     @media (max-width: 440px) {
-      .moment-board {
-        grid-template-columns: minmax(6.7rem, 0.65fr) minmax(0, 1fr);
-        gap: var(--space-sm);
-        padding: var(--space-sm);
-      }
-
-      .decision-track div {
-        padding-left: 1.1rem;
-      }
-
-      .decision-track div + div {
-        margin-top: var(--space-lg);
-      }
-
-      .decision-track dd {
-        font-size: var(--text-xs);
-      }
-
-      .hero-shot figcaption {
-        display: none;
-      }
-
       .paired-shots {
         padding: var(--space-xs);
         gap: var(--space-xs);
@@ -1139,22 +1226,19 @@
        Chinese headings far too early (and can strand a lone full stop on its
        own line). These retune the display type for 中文. */
     h1 {
-      max-width: 20ch;
-      font-size: clamp(2.2rem, 4.6vw, 3.9rem);
+      font-size: clamp(2.4rem, 5.2vw, 4.25rem);
       line-height: 1.06;
       letter-spacing: -0.02em;
     }
 
     h2 {
-      max-width: 24ch;
+      max-width: 30ch;
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      line-height: 1.15;
     }
 
     .product-section .section-heading h2 {
-      max-width: 28ch;
-    }
-
-    .download-panel h2 {
-      max-width: 18ch;
+      max-width: 30ch;
     }
 
     .hero-label,
@@ -1176,7 +1260,7 @@
     .chapter-copy p,
     .permission-row p,
     .pro-list li,
-    .pro-note {
+    .trust-note p {
       line-height: 1.75;
     }
   </style>
@@ -1190,12 +1274,20 @@
         <img src="images/appause-icon.png" alt="" width="32" height="32" />
         <span>Appause</span>
       </a>
-      <div class="nav-links">
+      <button class="nav-toggle" aria-label="菜单" aria-expanded="false" aria-controls="primary-nav">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="4" y1="6" x2="20" y2="6" />
+          <line x1="4" y1="12" x2="20" y2="12" />
+          <line x1="4" y1="18" x2="20" y2="18" />
+        </svg>
+      </button>
+      <div class="nav-links" id="primary-nav">
         <a href="#how-it-works">工作原理</a>
-        <a href="#product">应用内</a>
-        <a href="#privacy">隐私</a>
-        <a href="#pro">免费使用</a>
-        <a class="nav-download" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.44/Appause-v0.5.44.apk">下载 v0.5.44</a>
+        <a href="#product">应用界面</a>
+        <a href="#privacy">权限与隐私</a>
+        <a href="#pro">Pro 介绍</a>
+        <a href="#faq">常见问题</a>
+        <a class="nav-download" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 v0.5.45 测试版</a>
       </div>
     </nav>
   </header>
@@ -1204,34 +1296,25 @@
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-grid container">
         <div class="hero-copy">
-          <p class="hero-label">免费公开测试版</p>
-          <h1 id="hero-title">先停一下，再决定要不要打开。</h1>
-          <p class="hero-intro">Appause 是一款免费的 Android 专注工具。打开被管理的应用时，它先给你一个短暂停顿：继续，或回到桌面，由你决定。</p>
+          <p class="hero-label">Android 免费公开测试版</p>
+          <h1 id="hero-title"><span>打开前，</span><span>先等一会儿。</span></h1>
+          <p class="hero-intro">把想管理的应用加进分组，设一个等待时间。下次打开时，Appause 先弹停顿屏，让你决定继续还是回桌面。</p>
           <div class="actions" aria-label="主要操作">
-            <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.44/Appause-v0.5.44.apk">免费下载 Appause <span aria-hidden="true">↗</span></a>
-            <a class="button button-secondary" href="#how-it-works">看看它怎么工作</a>
+            <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">免费下载 Appause <span aria-hidden="true">↗</span></a>
+            <a class="button button-secondary" href="#how-it-works">查看使用流程</a>
           </div>
-          <p class="release-line">v0.5.44 &#183; &#20844;&#24320;&#27979;&#35797;&#29256; &#183; 免费使用 &#183; 无订阅</p>
+          <p class="hero-trust">
+            <span>本地优先，数据留在本机</span>
+            <span>日常使用不联网</span>
+            <span>无需注册账号</span>
+          </p>
+          <p class="release-line">v0.5.45 预发布测试版 &#183; Android 8.0+ &#183; <a href="#privacy">需开启无障碍服务</a></p>
         </div>
 
-        <div class="moment-board" aria-label="从自动点开到有意识的选择">
-          <dl class="decision-track">
-            <div>
-              <dt>点开</dt>
-              <dd>顺手点开的习惯</dd>
-            </div>
-            <div>
-              <dt>Appause</dt>
-              <dd>先停一下</dd>
-            </div>
-            <div>
-              <dt>你来决定</dt>
-              <dd>继续，或回到桌面</dd>
-            </div>
-          </dl>
+        <div class="moment-board" aria-label="Appause 暂停界面截图">
           <figure class="product-shot hero-shot">
-            <img src="images/screenshots/zh/pause.png" alt="Appause 停顿屏：在打开 YouTube 之前先问你为什么，并提供继续或取消" width="1080" height="2400" />
-            <figcaption><strong>停顿屏</strong>决定权还在你手里</figcaption>
+            <img src="images/screenshots/zh/pause.png" alt="Appause 在打开 YouTube 时显示倒计时，并提供继续或取消选项" width="1080" height="2400" fetchpriority="high" decoding="async" sizes="(max-width: 820px) 100vw, 40vw" />
+            <figcaption><strong>停顿屏</strong>下一步由你决定</figcaption>
           </figure>
         </div>
       </div>
@@ -1240,25 +1323,25 @@
     <section class="section mechanism-section" id="how-it-works" aria-labelledby="mechanism-title">
       <div class="container">
         <div class="section-heading">
-          <h2 id="mechanism-title">在信息流出现前，给自己几秒钟</h2>
-          <p class="section-intro">Appause 不替你拉黑应用，也不会把你锁在外面。它只在打开的那一刻插入停顿，让你有机会想清楚。</p>
+          <h2 id="mechanism-title">怎么使用</h2>
+          <p class="section-intro">打开被管理应用时，Appause 会先显示倒计时。</p>
         </div>
 
         <ol class="choice-rail">
           <li>
             <span class="choice-index">01</span>
-            <h3>看见这次打开</h3>
-            <p>被管理的应用来到前台时，停顿屏先出现，给习惯接管你之前留一点空间。</p>
+            <h3>选择应用</h3>
+            <p>将想管理的应用加入分组。</p>
           </li>
           <li>
             <span class="choice-index">02</span>
-            <h3>想清楚为什么</h3>
-            <p>一句简单的提问，让“就看一眼”变成一个你可以重新考虑的选择。</p>
+            <h3>设置等待时间</h3>
+            <p>为分组设置等待时间。</p>
           </li>
           <li>
             <span class="choice-index">03</span>
-            <h3>自己做决定</h3>
-            <p>想清楚了就继续，不想就取消回到桌面。决定一直在你手里。</p>
+            <h3>决定下一步</h3>
+            <p>倒计时结束后，继续或返回桌面。</p>
           </li>
         </ol>
       </div>
@@ -1267,60 +1350,60 @@
     <section class="section product-section" id="product" aria-labelledby="product-title">
       <div class="container">
         <div class="section-heading">
-          <h2 id="product-title">先设边界，再看看结果</h2>
-          <p class="section-intro">把想管的应用放在一起，设好停顿时间；用过一阵子，再回头看看自己的选择。</p>
+          <h2 id="product-title">分组设置与使用记录</h2>
+          <p class="section-intro">按分组管理应用和等待时间，并查看每次继续或取消的记录。</p>
         </div>
 
         <article class="tour-chapter">
           <div class="chapter-copy">
-            <span class="chapter-number">01 / 设定边界</span>
-            <h3>按习惯分组，不用列黑名单。</h3>
-            <p>把容易让你一路刷下去的应用放在同一组，设一个冷却时间。需要时可以临时通行，事情做完再回来。</p>
+            <span class="chapter-number">01 / 添加应用</span>
+            <h3>把应用加入分组</h3>
+            <p>把要管理的应用加入分组，再为每个分组设置等待时间。等待时也可以选择临时放行。</p>
           </div>
 
-          <div class="paired-shots" aria-label="首页与分组编辑界面">
+          <div class="paired-shots" aria-label="首页和分组设置界面">
             <figure class="product-shot">
-              <img src="images/screenshots/zh/home.png" alt="Appause 首页：显示服务状态、今日活动和一个分组" width="1080" height="2400" loading="lazy" decoding="async" />
-              <figcaption class="screen-caption"><strong>首页</strong><span>一眼看到你的边界</span></figcaption>
+              <img src="images/screenshots/zh/home.png" alt="Appause 首页：查看服务状态、今日记录和应用分组" width="1080" height="2400" loading="lazy" decoding="async" sizes="(max-width: 820px) 100vw, 35vw" />
+              <figcaption class="screen-caption"><strong>首页</strong><span>查看服务和今日记录</span></figcaption>
             </figure>
             <figure class="product-shot">
-              <img src="images/screenshots/zh/group.png" alt="Appause 分组编辑界面：显示冷却时间与已选应用" width="1080" height="2400" loading="lazy" decoding="async" />
-              <figcaption class="screen-caption"><strong>分组</strong><span>让阻力贴合你的情境</span></figcaption>
+              <img src="images/screenshots/zh/group.png" alt="Appause 分组设置：选择要管理的应用并设置等待时间" width="1080" height="2400" loading="lazy" decoding="async" sizes="(max-width: 820px) 100vw, 35vw" />
+              <figcaption class="screen-caption"><strong>分组</strong><span>选择应用和等待时间</span></figcaption>
             </figure>
           </div>
         </article>
 
         <article class="tour-chapter tour-chapter-review">
           <div class="chapter-copy">
-            <span class="chapter-number">02 / 回头看结果</span>
-            <h3>看见自己的选择，不是被监控。</h3>
-            <p>统计只留在你的设备上，记录哪些打开最后继续了、哪些停下来了。不需要注册账号。</p>
+            <span class="chapter-number">02 / 查看使用记录</span>
+            <h3>每次决定都有记录</h3>
+            <p>查看倒计时后继续打开或取消并返回桌面的次数。记录保存在本机。</p>
           </div>
 
-          <div class="review-visual" aria-label="统计界面与各字段说明">
+          <div class="review-visual" aria-label="使用统计界面与记录说明">
             <figure class="product-shot">
-              <img src="images/screenshots/zh/statistics.png" alt="Appause 统计界面：显示已完成与已避免的打开" width="1080" height="2400" loading="lazy" decoding="async" />
+            <img src="images/screenshots/zh/statistics.png" alt="Appause 统计页面：记录继续、临时放行或取消的次数" width="1080" height="2400" loading="lazy" decoding="async" sizes="(max-width: 820px) 100vw, 35vw" />
             </figure>
             <dl class="review-notes">
               <div>
-                <dt>已完成</dt>
-                <dd>你明知道要点开，还是决定继续。</dd>
+                <dt>完成</dt>
+                <dd>选择继续或临时放行的次数。</dd>
               </div>
               <div>
-                <dt>已避免</dt>
-                <dd>你选择不进入那个应用。</dd>
+                <dt>阻止</dt>
+                <dd>取消并返回桌面的次数。</dd>
               </div>
               <div>
                 <dt>本地历史</dt>
-                <dd>你的记录始终留在你的设备上。</dd>
+                <dd>统计记录保存在本机。</dd>
               </div>
             </dl>
           </div>
         </article>
 
-        <aside class="tour-cta" aria-label="看完产品导览后下载">
-          <p>先给一个应用加上短暂停顿，试试看。</p>
-          <a class="button button-secondary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.44/Appause-v0.5.44.apk">下载 v0.5.44 <span aria-hidden="true">↗</span></a>
+        <aside class="tour-cta" aria-label="下载 Appause">
+          <p>选择一个应用并设置等待时间，开始使用 Appause。</p>
+            <a class="button button-secondary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 v0.5.45 <span aria-hidden="true">↗</span></a>
         </aside>
       </div>
     </section>
@@ -1328,35 +1411,52 @@
     <section class="section trust-section" id="privacy" aria-labelledby="trust-title">
       <div class="container">
         <div class="section-heading">
-          <h2 id="trust-title">需要的权限，都说清楚</h2>
-          <p class="section-intro">Appause 说明每个权限为什么需要。核心检测只看当前应用的身份，不看屏幕内容。</p>
+          <h2 id="trust-title">Appause 需要哪些权限</h2>
+          <p class="section-intro">无障碍服务用于识别当前打开的应用并在需要时显示倒计时。应用分组、等待时间和统计保存在本机。</p>
         </div>
 
         <div class="permission-ledger">
           <article class="permission-row">
             <span class="permission-status">必需</span>
             <h3>无障碍服务</h3>
-            <p>判断哪个应用来到前台，并显示 Appause 的停顿屏。<code>canRetrieveWindowContent=false</code>，所以 Appause 不会读取屏幕内容，也不会读取你的输入。</p>
+            <p>用于识别当前打开的应用并显示倒计时。此服务未启用读取窗口内容的能力，不读取屏幕文字或输入内容。</p>
           </article>
           <article class="permission-row">
             <span class="permission-status">建议开启</span>
-            <h3>用途访问权限</h3>
-            <p>一层可选的兼容与确认机制，同时支持使用统计。核心停顿流程依赖无障碍服务。</p>
+            <h3>使用情况访问权限</h3>
+            <p>可选。用于辅助确认当前前台应用，例如判断是否仍停留在同一个 App，或已经回到桌面。是否拦截依据无障碍事件判定，不依赖此权限；未授权也能正常工作。</p>
           </article>
           <article class="permission-row">
-            <span class="permission-status">机型兜底</span>
+            <span class="permission-status">部分机型备用</span>
             <h3>悬浮窗权限</h3>
-            <p>首选的辅助功能悬浮层不需要这个权限。部分机型的兜底路径可能需要。</p>
+            <p>可选备用权限。Appause 通常通过无障碍服务显示倒计时；个别机型无法显示时，可启用悬浮窗备用。</p>
           </article>
         </div>
 
         <div class="trust-note">
-          <p><strong>免费，也尽量留在本地。</strong>拦截、分组和统计都在你的手机上完成，不需要账号，也没有后台统计。小米/HyperOS 用户如果发现服务容易被系统停掉，请允许 Appause 自启动，并把电池策略设为“无限制”。</p>
-          <div class="text-links">
-            <a href="privacy-policy.html">隐私政策</a>
-            <a href="https://github.com/Shmily0826/Appause/blob/main/INSTALL.md">安装指南</a>
-            <a href="https://github.com/Shmily0826/Appause">源代码</a>
+          <div class="trust-note-copy">
+            <p><strong>日常使用不联网。</strong>分组、等待时间和统计保存在本机。开始 Pro 试用、激活授权或发送反馈时会联网；发送前可先查看反馈内容。</p>
+            <p>无需注册账号。Pro 授权令牌在本机验证并保存，之后可离线检查。</p>
           </div>
+          <div class="text-links">
+            <a href="privacy-policy.html">查看隐私政策</a>
+            <a href="https://github.com/Shmily0826/Appause/blob/main/INSTALL.md">安装指南</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section opensource-section" id="open-source" aria-labelledby="opensource-title">
+      <div class="container">
+        <div class="section-heading">
+          <h2 id="opensource-title">源码公开，采用 MIT 许可证</h2>
+          <p class="section-intro">全部代码在 MIT 许可证下公开，包括无障碍权限相关实现。你可以查看、构建和修改源码。</p>
+        </div>
+
+        <div class="opensource-more">
+          <a href="https://github.com/Shmily0826/Appause">查看 GitHub 源码</a>
+          <a href="https://github.com/Shmily0826/Appause/blob/main/LICENSE">阅读 MIT 许可证</a>
+          <a href="https://github.com/Shmily0826/Appause/issues">报告问题或提出建议</a>
         </div>
       </div>
     </section>
@@ -1364,33 +1464,79 @@
     <section class="section pro-section" id="pro" aria-labelledby="pro-title">
       <div class="container">
         <div class="section-heading">
-          <h2 id="pro-title">公开测试版目前免费开放</h2>
-          <p class="section-intro">Appause 免费下载，核心功能直接用。不收订阅费，也不计划加入支付、订阅或付费层。Pro 会继续作为清晰标注、受控开放的实验性和高级功能保留：每台设备可主动开始一次免费的 7 天试用；试用结束后，如需继续，可通过应用内反馈申请免费的永久权限。</p>
+          <h2 id="pro-title">核心功能免费，Pro 可选</h2>
+          <p class="section-intro">公开测试版目前免费，无支付或订阅。Pro 是一组仍在测试的额外功能。</p>
         </div>
 
         <div class="pro-columns">
-          <section class="pro-column" aria-label="免费版本已包含的功能">
-            <span class="pro-column-label">现在就有</span>
+          <section class="pro-column" aria-label="免费版已包含的功能">
+            <span class="pro-column-label">免费版功能</span>
             <ul class="pro-list">
-              <li><strong>拦截与冷却</strong>选中的应用会先停顿，冷却时间最长可设 60 秒。</li>
-              <li><strong>分组与临时通行</strong>按自己的习惯管理应用，需要时临时放行。</li>
-              <li><strong>本地统计</strong>记录留在你的设备上，不需要账号。</li>
+              <li><strong>打开前倒计时</strong><span>为选定的应用设置等待时间，最长 60 秒。</span></li>
+              <li><strong>应用分组</strong><span>最多创建 1 个分组；等待时可选择临时放行。</span></li>
+              <li><strong>本机统计</strong><span>查看继续或取消的记录，数据保存在设备上。</span></li>
             </ul>
           </section>
 
-          <section class="pro-column" aria-label="关于 Pro 的使用方式">
-            <span class="pro-column-label">关于 Pro 的使用方式</span>
+          <section class="pro-column" aria-label="Pro 功能">
+            <span class="pro-column-label">Pro 功能</span>
             <ul class="pro-list">
-              <li><strong>Pro 是有意保留的</strong>它用于控制实验性和高级功能，随公开测试版继续调整。</li>
-              <li><strong>核心功能直接用</strong>拦截、分组、基础设置和统计不需要试用或激活。</li>
-              <li><strong>免费试用，是否开始由你决定</strong>每台设备只能主动开始一次 7 天试用。</li>
-              <li><strong>试用后仍可免费申请</strong>试用结束后前往应用内「设置 → 反馈」申请永久权限；不会自动转为永久权限。</li>
+              <li><strong>不限分组数量</strong><span>按需要创建和管理分组。</span></li>
+              <li><strong>再次提醒</strong><span>等待结束后，可在设定时间再次显示提醒。</span></li>
+              <li><strong>自定义停顿文案和打开理由</strong><span>按自己的习惯调整暂停界面。</span></li>
             </ul>
           </section>
         </div>
 
-        <p class="pro-note"><strong>说清楚：</strong>免费公开测试版不收订阅费，也没有计划中的付费层。Pro 是有意保留的实验性/高级功能入口；试用和永久权限都免费，永久权限需要你通过应用内反馈申请后人工发放。</p>
-        <p class="pro-fact">一个 APK，免费公开测试版。</p>
+        <div class="pro-access">
+          <h3>试用与授权</h3>
+          <p>Pro 目前处于公开测试阶段，不收费。每台设备可主动开启一次 7 天试用；结束后可在「设置 → 反馈」申请永久授权码，由开发者人工发放。</p>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="section faq-section" id="faq" aria-labelledby="faq-title">
+      <div class="container">
+        <div class="section-heading">
+          <h2 id="faq-title">常见问题</h2>
+          <p class="section-intro">安装、权限、数据和 Pro 的常见问题。更多细节请查看安装指南和隐私政策。</p>
+        </div>
+
+        <div class="faq-list">
+          <details>
+            <summary>Appause 会强制锁住应用吗？</summary>
+            <p>不会。等待结束后，你可以继续打开，也可以取消并返回桌面；还可以随时关闭服务或修改分组。</p>
+          </details>
+          <details>
+            <summary>Pro 是收费的吗？</summary>
+            <p>公开测试阶段免费，无订阅。可主动开启一次 7 天试用；结束后在「设置 → 反馈」申请永久授权码，由开发者人工发放。</p>
+          </details>
+          <details>
+            <summary>为什么需要无障碍权限？会读我的屏幕吗？</summary>
+            <p>Appause 只读前台应用包名，不读取屏幕内容、消息或按键输入。</p>
+          </details>
+          <details>
+            <summary>我的数据会上传吗？</summary>
+            <p>分组、等待时间和统计保存在本机。日常使用不联网；开始 Pro 试用、激活授权或主动发送反馈时会联网。通过 Appause 发送反馈前，可先查看将要发送的内容。</p>
+          </details>
+          <details>
+            <summary>安装时提示风险，该怎么办？</summary>
+            <p>确认 APK 来自 Appause 的 GitHub Releases 并核对版本。Android 对侧载应用的提示本身不能证明应用安全或有害；若 Play Protect 或厂商安全提示仍拦截，先查看提示详情和安装指南，不确定时先停止安装并反馈。</p>
+          </details>
+          <details>
+            <summary>小米 / HyperOS 上需要额外设置吗？</summary>
+            <p>部分机型可能会限制后台服务。按安装指南检查自启动和电池策略；具体选项因系统版本和机型而异。</p>
+          </details>
+          <details>
+            <summary>为什么有时候通知也会触发暂停？</summary>
+            <p>Appause 依据无障碍事件判定前台应用。部分机型的媒体通知会产生类似切换应用的事件，偶尔也会因此触发一次暂停，这是当前方案的已知取舍。可选的「使用情况访问权限」可辅助核实前台应用。</p>
+          </details>
+          <details>
+            <summary>怎么更新？换手机怎么办？</summary>
+            <p>下载新版 APK 直接覆盖安装；不要先卸载，否则本机数据会被清除。换机后需重新设置分组；Pro 授权绑定设备，需在新设备重新激活。</p>
+          </details>
+        </div>
       </div>
     </section>
 
@@ -1398,15 +1544,15 @@
       <div class="container">
         <div class="download-panel">
           <div>
-            <h2 id="download-title">免费下载，先试试看</h2>
-            <p>从 GitHub Releases 下载免费的 Appause 公开测试版，可以查看源码；如果 Android 提示「来自浏览器的应用」，按安装指南操作即可。</p>
-          <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.44/Appause-v0.5.44.apk">下载 v0.5.44 APK <span aria-hidden="true">↗</span></a>
+            <h2 id="download-title">下载 Appause</h2>
+            <p>Android 免费公开测试版。从 GitHub Releases 下载 APK。安装前需允许浏览器或文件管理器安装应用；遇到系统安全提示时，请先查看提示详情并参照安装指南。首次安装后建议保留 APK，便于后续覆盖更新。</p>
+           <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 v0.5.45 APK <span aria-hidden="true">↗</span></a>
           </div>
 
           <dl class="install-facts">
             <div>
               <dt>文件</dt>
-              <dd>Appause-v0.5.44.apk</dd>
+              <dd>Appause-v0.5.45.apk</dd>
             </div>
             <div>
               <dt>系统要求</dt>
@@ -1418,15 +1564,16 @@
             </div>
             <div>
               <dt>许可</dt>
-              <dd>MIT 开源</dd>
+              <dd>MIT 许可证</dd>
             </div>
           </dl>
         </div>
 
         <div class="download-links" aria-label="其他下载与支持链接">
-          <a href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.44">查看 v0.5.44 公开测试版</a>
-          <a href="https://appause-pro-worker.rng2018520.workers.dev/api/download?to=https://shmily0826.lanzoup.com/b01eunt29a&amp;t=kP9xQ2mZ8vL3nR7tB4wY6hC1sD5fG0jU">网盘镜像下载</a>
-          <a href="https://github.com/Shmily0826/Appause/issues">反馈问题</a>
+          <a href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.45">查看 v0.5.45 预发布</a>
+          <a href="https://github.com/Shmily0826/Appause/blob/main/INSTALL.md">安装说明</a>
+          <a href="https://shmily0826.lanzoup.com/b01eunt29a">镜像下载页（不计入下载统计）</a>
+          <a href="https://github.com/Shmily0826/Appause/issues">报告问题或提出建议</a>
         </div>
       </div>
     </section>
@@ -1434,9 +1581,33 @@
 
   <footer class="site-footer">
     <div class="footer-row container">
-      <p>Appause 把打开的那一刻还给你。</p>
-      <p><a href="privacy-policy.html">隐私</a> &#183; <a href="https://github.com/Shmily0826/Appause">GitHub</a> &#183; MIT 许可 &#183; <a href="index.html" lang="en">English</a></p>
+      <p>Appause：打开前，先等一会儿。</p>
+      <p><a href="privacy-policy.html">隐私</a> &#183; <a href="https://github.com/Shmily0826/Appause">GitHub</a> &#183; MIT 许可 &#183; <a href="index.html" lang="en">英文版</a></p>
     </div>
   </footer>
+  <script>
+    const toggle = document.querySelector('.nav-toggle');
+    const navLinks = document.querySelector('.nav-links');
+    if (toggle && navLinks) {
+      const setOpen = (open) => {
+        navLinks.classList.toggle('is-open', open);
+        toggle.classList.toggle('is-open', open);
+        toggle.setAttribute('aria-expanded', String(open));
+        document.body.classList.toggle('nav-open', open);
+      };
+      toggle.addEventListener('click', () => {
+        setOpen(!navLinks.classList.contains('is-open'));
+      });
+      navLinks.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => setOpen(false));
+      });
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && navLinks.classList.contains('is-open')) {
+          setOpen(false);
+          toggle.focus();
+        }
+      });
+    }
+  </script>
 </body>
 </html>

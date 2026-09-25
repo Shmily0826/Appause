@@ -354,7 +354,7 @@
     <string name="pro_pro_groups">Unlimited</string>
     <string name="free_group_limit_banner">The free beta currently allows 1 group. Explore Appause Pro for the gated advanced option.</string>
     <string name="upgrade_pro">See Pro options</string>
-    <string name="pro_free_cooldown">30s</string>
+    <string name="pro_free_cooldown">60s</string>
     <string name="pro_pro_cooldown">60s</string>
     <string name="pro_pro_reremind">Included</string>
 

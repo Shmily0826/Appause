@@ -346,7 +346,7 @@
     <string name="pro_pro_groups">无限</string>
     <string name="free_group_limit_banner">免费公开测试版目前最多 1 个分组；前往 Appause Pro 查看受控开放的高级选项。</string>
     <string name="upgrade_pro">查看 Pro 选项</string>
-    <string name="pro_free_cooldown">30 秒</string>
+    <string name="pro_free_cooldown">60 秒</string>
     <string name="pro_pro_cooldown">60 秒</string>
     <string name="pro_pro_reremind">已包含</string>
 
