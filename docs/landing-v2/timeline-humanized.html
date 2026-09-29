@@ -137,12 +137,12 @@
 <meta property="og:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Appause 分享卡片：淡紫底上写着「在点开和下滑之间，放一个你的决定」，右侧是暂停页示意，倒计时显示 2 秒，下方有四个原因选项和一个禁用的继续按钮">
+<meta property="og:image:alt" content="Appause 分享卡片：淡紫底上写着「在点开和下滑之间，放一个你的决定」，右侧是暂停页示意，冷却倒计时显示 2 秒，下方有四个原因选项和一个禁用的继续按钮">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Appause · 先停一下，再决定">
 <meta name="twitter:description" content="打开选定的应用时先冷却几秒，再决定继续还是回桌面。冷却时长可自己设，本地优先，MIT 开源。">
 <meta name="twitter:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png">
-<meta name="twitter:image:alt" content="Appause 分享卡片：淡紫底上写着「在点开和下滑之间，放一个你的决定」，右侧是暂停页示意，倒计时显示 2 秒，下方有四个原因选项和一个禁用的继续按钮">
+<meta name="twitter:image:alt" content="Appause 分享卡片：淡紫底上写着「在点开和下滑之间，放一个你的决定」，右侧是暂停页示意，冷却倒计时显示 2 秒，下方有四个原因选项和一个禁用的继续按钮">
 <link rel="icon" href="../../images/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="../../images/apple-touch-icon.png">
 <style>
@@ -198,7 +198,7 @@
   /* 中文排版：
      短行（标题、导语、小节说明、图注）用 balance 摊平两行，消除末行只剩一两字的孤字；
      正文段落用 pretty。用 balance 会把行摊成等长，行尾留出大片空白，读起来像被切断。 */
-  .hero-lede, .preface-statement, .section-head p, .pro-order, .ledger-note, .privacy-note p, figcaption { text-wrap: balance; }
+  .hero-lede, .preface-statement, .section-head p, .pro-order, .privacy-note p, figcaption { text-wrap: balance; }
   .preface-body p, .timeline p, .faq-list details p, .step p { text-wrap: pretty; }
   /* 清单项与短行也开 pretty：Chrome 的 pretty 会主动避免末行只剩一两个字。
      这几处实测最容易出 1 字末行（free-list / pro-col 是定宽网格栏，宽度由 fr 决定，
@@ -608,14 +608,6 @@
     overflow-wrap: anywhere;
   }
   table.ledger td:first-child { color: var(--ink); font-weight: 550; white-space: nowrap; }
-  .mono { font-family: var(--font-mono); font-size: 0.86em; overflow-wrap: anywhere; }
-  .pass { color: var(--cinnabar); font-weight: 600; }
-  .ledger-note {
-    font-size: 0.86rem;
-    color: var(--ink-faint);
-    margin-top: var(--space-2);
-  }
-  .ledger-note a { color: inherit; }
 
   /* ---------- 分组与统计 ---------- */
   .groups-section { border-top: 1px solid var(--rule); padding: var(--space-5) 0 var(--space-4); }
@@ -778,13 +770,13 @@
   .dl-links { margin-top: var(--space-3); font-size: 0.9rem; display: flex; flex-wrap: wrap; gap: 0.2rem 1.3rem; }
   .dl-links a { color: var(--cinnabar-deep); text-underline-offset: 4px; padding-block: 0.5rem; }
   .dl-links span { color: var(--ink-faint); }
-  .ledger-note a, footer a { padding-block: 0.45rem; }
+  footer a { padding-block: 0.45rem; }
 
   @media (hover: hover) {
     .dl-panel .btn:hover { background: var(--cinnabar-bright); }
     .dl-panel summary:hover { color: var(--ink); }
     .dl-links a:hover { color: var(--ink); }
-    .ledger-note a:hover, footer a:hover { color: var(--ink); }
+    footer a:hover { color: var(--ink); }
   }
 
   /* ---------- 三步开始用 ---------- */
@@ -1017,7 +1009,6 @@
       <a href="#privacy">权限与隐私</a>
       <a href="#pro">免费与 Pro</a>
       <a href="#how">拦截经过</a>
-      <a href="#evidence">真机验证</a>
       <a href="#faq">常见问题</a>
     </nav>
     <a class="mini" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 <span data-r="version">v0.5.45</span></a>
@@ -1032,8 +1023,8 @@
       <p class="kicker">APPAUSE · ANDROID 专注工具</p>
       <h1 id="hero-title">先停一下，<br>再决定。</h1>
       <p class="hero-lede">
-        Appause 让你最分心的那几个应用，打开前多一道冷却。
-        想清楚了再进，不想进就回桌面。
+        Appause 在你选定的应用前加一道冷却，
+        给「要不要打开」留出几秒。
       </p>
       <div class="cta-row">
         <a class="btn" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 APK · <span data-r="size">12.3 MB</span></a>
@@ -1049,7 +1040,7 @@
       </p>
     </div>
     <figure class="hero-shot">
-      <img src="../../images/screenshots/zh/pause-crop.png" width="1080" height="1631" alt="Appause 暂停页截图：YouTube 打开前显示倒计时，提供四个原因选项和继续、取消按钮" loading="eager">
+      <img src="../../images/screenshots/zh/pause-crop.png" width="1080" height="1631" alt="Appause 暂停页截图：YouTube 打开前显示冷却倒计时，提供四个原因选项和继续、取消按钮" loading="eager">
       <figcaption>真机上的暂停页。</figcaption>
     </figure>
   </section>
@@ -1063,9 +1054,9 @@
       </div>
       <div class="preface-body">
         <p>
-          手比脑子快。Appause 在打开前留几秒冷却，<span class="nb">让手停一停</span>，等你决定。
+          在打开前留出几秒冷却，为「是否打开」留一点判断时间。
         </p>
-        <p>它不会替你决定要不要继续，只做两件事：到点拦一下，然后把<span class="nb">每一次</span>选择记下来。</p>
+        <p>它不替你做决定，只做两件事：在打开时拦一下，然后把<span class="nb">每一次</span>选择记录下来。</p>
       </div>
     </div>
   </section>
@@ -1083,15 +1074,15 @@
         </li>
         <li class="start-step">
           <h3>打开 Appause，开启无障碍服务</h3>
-          <p>首页会列出还差哪几项，点「去开启」跟着走就行。这项权限只用来知道你打开了哪个应用。</p>
+          <p>首页会列出还差哪几项，按提示点「去开启」逐项完成。这项权限只用来判断你打开了哪个应用。</p>
         </li>
         <li class="start-step">
           <h3>放开电池优化和自启动</h3>
-          <p>在应用设置里把 Appause 的电池优化设为「无限制」，并允许自启动。这一步和无障碍服务一样是必做的：
-          系统会在省电时终止后台服务，表现为第一次打开目标应用不拦截。设完就不用再管了。</p>
+          <p>在应用设置里把 Appause 的电池优化设为「无限制」，并允许自启动。这两项与无障碍服务同为必做项：
+          系统会在省电时终止后台服务，表现为第一次打开目标应用不拦截。设置一次即可，之后无需再调整。</p>
         </li>
       </ol>
-      <p class="start-note">装新版直接覆盖旧版就行，不要先卸载，卸载会把本机的分组和统计一起清掉。</p>
+      <p class="start-note">安装新版会直接覆盖旧版，不需要先卸载。卸载会一并清除本机的分组与统计。</p>
     </div>
   </section>
 
@@ -1119,7 +1110,7 @@
           <tr>
             <td>电池优化</td>
             <td data-label="状态"><span class="status s-req">必需</span></td>
-            <td data-label="用途">设为「无限制」。系统会在省电时终止后台服务，表现为第一次打开目标应用不拦截、切回 Appause 才拦。部分安卓机型（小米、华为等后台管理较严格的系统）会默认这样做。</td>
+            <td data-label="用途">设为「无限制」。系统会在省电时终止后台服务，导致第一次打开目标应用不拦截；部分安卓机型（小米、华为等后台管理较严格的系统）默认采用此策略。</td>
           </tr>
           <tr>
             <td>允许自启动</td>
@@ -1169,7 +1160,7 @@
           <ul>
             <li><b>拦截、冷却、暂停页、统计</b>不限时间，也<span class="nb">不限次数</span></li>
             <li><b>分组上限</b>：1 个</li>
-            <li><b>反馈通道</b>：设置里带一份诊断快照，<span class="nb">发不发由你</span></li>
+            <li><b>反馈通道</b>：反馈时附带一份诊断快照，<span class="nb">由你决定</span>是否发送</li>
           </ul>
         </section>
         <section class="pro-col pro" aria-label="Pro 额外提供的功能">
@@ -1183,13 +1174,13 @@
         </section>
       </div>
       <div class="pro-order">
-        <p>Pro 不要钱，但只能按这个顺序拿：</p>
+        <p>Pro 不收费，但需要按以下顺序获取：</p>
         <ol>
-          <li>先在 Pro 页面点「开始试用」，<b>7 天</b>，不用付费。</li>
-          <li>7 天走完，试用结束，Pro 的四项功能关闭。已有的分组和统计不受影响。</li>
-          <li>这时到 <code>设置 → 反馈</code> 申请一个免费永久授权码，回 Pro 页面兑换。</li>
+          <li>在 Pro 页面点击「开始试用」，试用期 <b>7 天</b>，无需付费。</li>
+          <li>7 天后试用结束，Pro 的四项功能关闭；已有的分组与统计不受影响。</li>
+          <li>试用结束后，通过 <code>设置 → 反馈</code> 申请一个免费永久授权码，回 Pro 页面兑换。</li>
         </ol>
-        <p class="pro-order-note">永久授权码要等试用结束才会开放兑换，一个码最多用在 3 台设备上。</p>
+        <p class="pro-order-note">永久授权码需在试用结束后才能兑换，一个授权码最多用于 3 台设备。</p>
       </div>
     </div>
   </section>
@@ -1199,79 +1190,28 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="how-title">一次拦截的经过</h2>
-        <p>你看到的三步。下面真机记录里有每一步的实测数据。</p>
+        <p>从点开到落地，你会经历的三步。</p>
       </div>
       <ol class="timeline">
         <li class="tl-fade">
           <span class="tl-t">第一步</span>
           <h3>你点开那个应用</h3>
-          <p>先出现的不是它，是一页暂停页。Appause 知道的是你点开了哪个应用，不读屏幕上的内容。</p>
+          <p>你点开应用后，先出现的是一页暂停页。Appause 只识别你打开的是哪个应用，不读取屏幕上的内容。</p>
         </li>
         <li class="tl-fade">
           <span class="tl-t">第二步</span>
           <h3>这几秒里你可以想一下</h3>
-          <p>倒计时结束前，「继续」是按不动的。等等的这段时间，可以先选一个原因：
-          工作需要、无聊、查消息，或其他。冷却时长自己定，1 到 60 秒，新分组默认 10 秒。
-          暂停页会盖在最上层，即使那个应用开了防干扰设置也照样出现。</p>
+          <p>冷却结束前，「继续」不可点击。这段等待时间里，可以先选一个原因：
+          工作需要、无聊、查消息，或其他。冷却时长可自行设置，1 到 60 秒，新分组默认 10 秒。
+          暂停页始终显示在最上层，即使该应用开启了防干扰设置也依然出现。</p>
         </li>
         <li class="tl-fade">
           <span class="tl-t">第三步</span>
           <h3>继续，或者回桌面</h3>
-          <p>「继续」进入应用；「取消」直接回桌面，冷却重新计时。按 Home 键也一样。
-          关掉马上又点回去，会再拦一次。</p>
+          <p>「继续」进入应用；「取消」直接回桌面，冷却重新计时。按 Home 键效果相同。
+          关闭后立即重新打开，会再次拦截。</p>
         </li>
       </ol>
-    </div>
-  </section>
-
-  <!-- ================= 真机验证记录 ================= -->
-  <section class="ledger-section" id="evidence" aria-labelledby="evidence-title">
-    <div class="wrap">
-      <div class="section-head">
-        <h2 id="evidence-title">真机验证记录</h2>
-        <p>下面五条是当时的验证记录，装一遍就能自己对着看。</p>
-      </div>
-      <table class="ledger">
-        <caption>设备：Xiaomi 2410DPN6CC · HyperOS · Android 16 ｜ 记录于 v0.5.44</caption>
-        <thead>
-          <tr>
-            <th scope="col">验证项</th>
-            <th scope="col">怎么验的</th>
-            <th scope="col">结果</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>按 Home 键能关掉暂停页</td>
-            <td data-label="怎么验的">连系统日志看按键事件</td>
-            <td data-label="结果"><span class="pass">立即关闭</span></td>
-          </tr>
-          <tr>
-            <td>按最近任务键不算「回桌面」</td>
-            <td data-label="怎么验的">连续记录暂停页是否还在屏幕上</td>
-            <td data-label="结果">约 <span class="pass">1.8 秒</span>后暂停页<span class="nb">仍在</span></td>
-          </tr>
-          <tr>
-            <td>开着防截屏的应用也挡不住暂停页</td>
-            <td data-label="怎么验的">在手机上实际打开小红书</td>
-            <td data-label="结果"><span class="pass">照常可见</span></td>
-          </tr>
-          <tr>
-            <td>只读应用名，不读屏幕</td>
-            <td data-label="怎么验的">检查无障碍服务的配置开关</td>
-            <td data-label="结果">读到的只有应用名，<span class="pass">不读屏幕内容</span></td>
-          </tr>
-          <tr>
-            <td>回桌面后立刻重开，会再拦一次</td>
-            <td data-label="怎么验的">回桌面后间隔 291 毫秒重开 B 站</td>
-            <td data-label="结果">产生 <span class="pass">第二次</span>拦截</td>
-          </tr>
-        </tbody>
-      </table>
-      <p class="ledger-note">
-        这些只在一台真机上验过，覆盖不到所有机型和系统版本，不能当作全设备质检报告。
-        完整证据台账见 <a href="https://github.com/Shmily0826/Appause/blob/main/docs/archive/TEST_REPORT.md">TEST_REPORT.md</a>。
-      </p>
     </div>
   </section>
 
@@ -1314,14 +1254,14 @@
           <summary>无障碍服务能看到什么？为什么一定要开？</summary>
           <p>这是 Android 自带的一项辅助功能，Appause 只用它做一件事：判断当前打开的是哪个应用。
           它读取的只有应用名，不会读取屏幕上的文字、消息、截图或键盘输入。
-          没有这项权限就无法判断你打开了什么，也就无法拦截。</p>
+          没有这项权限就无法判断你打开了什么，拦截也就无法生效。</p>
         </details>
         <details>
           <summary>会耗电吗？为什么拦截有时会失灵？</summary>
           <p>无障碍服务常驻后台，本机测试中耗电影响不大。如果拦截失灵，先检查三项：
           无障碍服务是否还在运行、电池优化是否设为「无限制」、是否允许了自启动。
           部分安卓系统在终止后台服务后，不会自动重新拉起无障碍服务，这是排障记录中最常见的原因。</p>
-          <p>按上面三项检查完还是拦不住，到 <code>设置 → 反馈</code> 说一声。随反馈附上诊断快照，能省很多来回。</p>
+          <p>按上面三项检查后仍无法拦截，请通过 <code class="nb">设置 → 反馈</code> 提交，并可附上诊断快照，便于定位问题。</p>
         </details>
         <details>
           <summary>暂停页会被其他应用挡住吗？</summary>
@@ -1335,7 +1275,7 @@
         </details>
         <details>
           <summary>永久授权码怎么申请？要花钱吗？</summary>
-          <p>先在这台设备上把 7 天试用走完，试用结束后到 <code>设置 → 反馈</code> 申请，开发者人工签发，全程免费。
+          <p>先在这台设备上完成 7 天试用，试用结束后通过 <code>设置 → 反馈</code> 申请，由开发者人工签发，全程免费。
           永久授权码绑定设备，一个码最多用于 3 台。</p>
         </details>
         <details>
