@@ -975,3 +975,23 @@
 - Post-install enabled-services settings and `dumpsys accessibility` both showed the release Appause service enabled and bound. Release Permissions UI showed `Accessibility Service — Enabled` and `Running`; the old `not currently connected`/`Needs recovery` state did not recur.
 - One existing Bilibili launch produced a release `ACCESSIBILITY_OVERLAY` with window type `2032`. One Home key removed the overlay and returned focus to Launcher. Reopening Appause Permissions after returning showed `Enabled` and `Running` again. The phone was then returned to release Appause Home with no active 2032 overlay.
 - This is a bounded physical smoke, not full physical QA. The Accessibility false-negative blocker is **cleared for this RC**; no trial/redeem/Worker call, group edit, uninstall, reset, force-stop, commit, push, tag, release, or deploy was performed. Overall Public Beta publication remains a separate release-owner decision.
+
+## 2026-09-24 (Landing-page content audit)
+- Updated the English and Chinese main landing pages: surfaced Android 8.0+ and required Accessibility permission beside the first download CTA, corrected the optional Usage Access description, removed misleading group and judgmental statistics copy, and shortened the repeated Pro explanation while keeping the free core, optional 7-day trial, and manually issued free lifetime access clear.
+- Marked `landing/` alternatives as earlier visual drafts because their product and licensing copy has not been reconciled with the current public beta. The root `index.html` and `zh.html` are the content baseline.
+- Cross-checked claims against README, PRIVACY, current Android strings and source. GitHub release metadata confirmed public prerelease `v0.5.44` with `Appause-v0.5.44.apk` present. `assembleDebug` passed using the configured JDK after the default Java 1.7 wrapper failed to start. No browser visual check, APK download, commit, push, tag, release, or deploy was performed.
+
+## 2026-09-25 (Landing release and download security repair)
+- Updated root English and Chinese landing-page APK links to the verified v0.5.45 prerelease asset and removed the public tokenized mirror-counter URLs. Mirror links now go directly to the mirror page and say they are not counted.
+- Restricted authenticated Worker redirects to the one published HTTPS mirror URL and added redirect regression checks. Corrected the Free cooldown label to 60 seconds in both locales; clarified the English notification FAQ and added Escape focus restoration to the Chinese mobile menu.
+- Verification: Worker tests passed (51 existing checks plus redirect checks); static link, anchor, image, and cooldown checks passed. Android unit tests/debug assembly could not complete because Windows denied access to the SDK `core-lambda-stubs.jar`. No browser visual check or production interaction was performed. Public pages still need a separate push/deploy, and the previously exposed production download token needs separate rotation authorization.
+
+## 2026-09-28 (Repository and landing draft organization — APPAUSE-20260928-REPO-ORGANIZE-01)
+- Consolidated the three root landing concepts into `docs/landing-drafts/`, moved the Chinese landing audits into `docs/landing-reviews/`, and updated the draft catalog with production-page locations and the supplied visual-review ranking.
+- Updated repo-relative links affected by the earlier docs/scripts moves, including the production landing pages' install links. HTML assets in the moved concepts now resolve from their new location.
+- Static path checks and `git diff --check` are the validation scope. Android build not run: this docs/landing organization does not affect build tooling, as requested. No commit, push, release, or deploy.
+## 2026-09-29 (Accessibility service lifecycle - APPAUSE-20260928-ACCESSIBILITY-INTERCEPT-DIAG-01)
+- Removed foreground-service coupling from AppauseAccessibilityService. The optional monitoring notification now uses NotificationManager; release manifest no longer declares specialUse foreground-service permissions or metadata.
+- Focused Accessibility health/service lifecycle tests and assembleDebug/assembleRelease passed. Release v0.5.45/code 97 installed with adb install -r; first-install time and app data were preserved.
+- After user 0 completed unlock, Appause remained Bound with accessibility_enabled=1. Two pure-ADB Xiaohongshu launches both displayed the Appause Pause overlay (window type 2032); KEYCODE_HOME returned home between attempts and after the second. No Ui Automation registration was present.
+- dumpsys activity services reported startForegroundCount=0. The optional Appause notification was posted with numForegroundService=0. No commit, push, release, or deploy.

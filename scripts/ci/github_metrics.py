@@ -141,7 +141,7 @@ def main():
         f.write("# Appause — GitHub 项目指标 (Project Metrics)\n\n")
         f.write(
             "> 自动采集：GitHub Actions 每周日 UTC 0 点运行 "
-            "`scripts/github_metrics.py`，也可本地手动跑。\n"
+            "`scripts/ci/github_metrics.py`，也可本地手动跑。\n"
         )
         f.write(
             "> 隐私说明：仅统计**公开仓库的聚合指标**（star / fork / 下载 / "

@@ -82,7 +82,7 @@ Settings、Pro、GroupEditor、AppSelect、Recommended。
 
 ### G8（低）——OverlayManager 降级链 / PauseActivity / ForegroundChecker
 这三处强依赖 Android 框架（WindowManager、AlarmManager、UsageStatsManager），
-JVM 测不了，instrumented test 成本高。现状是**真机矩阵验证**（PROGRESS.md
+JVM 测不了，instrumented test 成本高。现状是**真机矩阵验证**（archive/PROGRESS.md
 里的小米 P0 记录）承担了这部分。可以接受，但要在发版清单（§4）里保持
 真机冒烟，不因为"有单测"而跳过。
 
@@ -101,4 +101,4 @@ JVM 测不了，instrumented test 成本高。现状是**真机矩阵验证**（
 6. G5（re-remind 时间数学）
 
 每完成一项：`testDebugUnitTest` 全绿 + `assembleDebug` 通过 +
-TEST_REPORT.md 追加记录（append-only）。
+archive/TEST_REPORT.md 追加记录（append-only）。

@@ -12,7 +12,7 @@ This file defines rules that ALL AI agents (and human developers) MUST follow wh
 4. **Compile after every change.** Run `./gradlew assembleDebug` after modifying code. If it fails, fix the error before proceeding.
 5. **Never ignore compile errors.** Read the full error message, understand the root cause, and fix it properly.
 6. **Do not expand scope.** Implement only what was requested. If you notice something that could be improved, note it but do not implement it unless asked.
-7. **Update PROGRESS.md** after completing each phase or significant milestone.
+7. **Update `docs/archive/PROGRESS.md`** after completing each phase or significant milestone.
 8. **No unsolicited refactoring.** Do not rewrite or restructure existing working code unless explicitly requested.
 
 ---
@@ -94,7 +94,7 @@ This file defines rules that ALL AI agents (and human developers) MUST follow wh
 
 ## 7. Testing
 
-- After each phase, verify the specific functionality described in ARCHITECTURE.md's testing checklist.
+- After each phase, verify the specific functionality described in `docs/ARCHITECTURE.md`'s testing checklist.
 - Use logcat to verify AccessibilityService events during development.
 - Test on a real device when possible — emulators may not perfectly replicate AccessibilityService behavior.
 - If a phase involves UI, run the app and verify the screen visually.

@@ -334,7 +334,7 @@ Appause 是一个基于无障碍服务的**本地专注工具**。当你打开�
 见 [INSTALL.md](INSTALL.md) —— 含「开启未知来源」「放行 Play Protect / 小米 / 华为 等机型的安装警告弹窗」「开启无障碍服务」「加后台白名单」完整步骤。
 
 ### 隐私
-见 [PRIVACY.md](PRIVACY.md) —— 我们**不收集、不上传任何数据**。
+见 [PRIVACY.md](../PRIVACY.md) —— 我们**不收集、不上传任何数据**。
 
 ### 已知限制
 - 需手动在系统设置开启「无障碍服务」，且授权后需保持开启；
@@ -480,7 +480,7 @@ Appause is a **local-first focus tool** built on Android's AccessibilityService.
 See [INSTALL.md](INSTALL.md) for "install unknown apps", dismissing Play Protect / Xiaomi / Huawei and other OEM install warnings, enabling AccessibilityService, and keeping the service alive.
 
 ### Privacy
-See [PRIVACY.md](PRIVACY.md) — we collect and upload **nothing**.
+See [PRIVACY.md](../PRIVACY.md) — we collect and upload **nothing**.
 
 ### Known limitations
 - AccessibilityService must be enabled manually and kept on.

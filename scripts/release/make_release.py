@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 BUILD_FILE = ROOT / "app" / "build.gradle.kts"
 APK = ROOT / "app" / "build" / "outputs" / "apk" / "release" / "app-release.apk"
 OUTPUT_DIR = ROOT / "output"

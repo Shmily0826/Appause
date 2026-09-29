@@ -59,7 +59,7 @@ SHA-256：`bc73d76a68c3c570a002719faa4c56c22b50af0eed1c1ce619f2d80d25516fff`（�
 
 > 构建可复现性说明：BUILD_TIME 编译进 BuildConfig（设计如此），故 APK 非字节级可复现；
 > 溯源以「commit + 版本 bump diff + SHA-256 + 构建命令」四元组为准：
-> `JAVA_HOME=D:/Dev-Setup/jdk ./gradlew assembleRelease` → `python scripts/make_release.py`。
+> `JAVA_HOME=D:/Dev-Setup/jdk ./gradlew assembleRelease` → `python scripts/release/make_release.py`。
 
 ## 1. 验收矩阵结果（对照 RELEASE_ACCEPTANCE.md）
 

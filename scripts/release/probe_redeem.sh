@@ -12,7 +12,7 @@
 # 本脚本用于「不装 app、只想从服务端确认」的场景（需先拿到 DEVICE）。
 #
 # 用法：
-#   CODE=XXXX-XXXX DEVICE=<64位hex指纹> bash scripts/probe_redeem.sh
+#   CODE=XXXX-XXXX DEVICE=<64位hex指纹> bash scripts/release/probe_redeem.sh
 #
 # 结果判读：
 #   {"token":"..."}              → 成功！私钥已设且与 app 公钥匹配，链打通。

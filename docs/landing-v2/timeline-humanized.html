@@ -1,0 +1,1485 @@
+<!DOCTYPE html>
+<!--
+  hallmark: P5 H5 E5 S5 R5 V4 — Timeline (Arc) / 纸墨台账（自定义锚色：朱红 + 墨 + 纸；衬线标题 + 等宽数据）
+  这是 landing-drafts/timeline.html 的收敛版（第二批第一份）：结构、主题、锚色不变，
+  按 docs/landing-reviews 的审计意见修掉转化、无障碍与维护性问题：
+    · 下载区由墨底改纸底 + 粗墨边框，全页统一浅色（评审者否掉了「深底 + 高饱和红橙」的气质）
+    · 新增桌面粘性导航条（含常驻下载入口）与移动端吸底下载条，补上中段的转化断层
+    · 版本号 / versionCode / 发布日 / SHA-256 / 体积收敛到脚本里的单一 RELEASE 对象
+    · 补 og / twitter / canonical / favicon / apple-touch-icon、跳读链接、对比度与触控尺寸修正
+
+  refined 一遍（第二批第二份，基于上面的 timeline.html），修的是第一屏与导航：
+    · 首屏大图改用裁切派生图 images/screenshots/zh/pause-crop.png（1080×1631）：
+      原图 1080×2400 的内容到 1543 行就结束，底部 32% 是空白；原图中至少数像素行 104→1543
+    · 报头与导航条合并成唯一顶栏：此前两处各写一遍品牌，首屏顶部 64px 内出现两个 Appause
+    · 顶栏栏目加当前位置高亮（aria-current），此前 6 个链接没有任何「你在哪」的提示
+    · 中文孤字修正：p / li / summary / figcaption 加 text-wrap: pretty
+      （修前「规则由你定…」末行只剩「来。」两字）
+    · 小修：吸底条补 role="region"（原来 aria-label 挂在无 role 的 div 上，实际无效）；
+      summary 不再重复声明 role="button"；首屏图注去掉「真实的」三字
+  copyedit 一遍（第二批第三份，基于同目录的 timeline-refined.html）。这一版只动文案，加一条 CSS 规则，
+  布局、配色、动效、脚本全部与 refined 一致：
+    · 术语收敛到 App 自己的用词。`app/src/main/res/values-zh/strings.xml` 里用户可见的是
+      「冷却」（21 次：冷却时间 / 打开前冷却 %d 秒 / 冷却规则）与「暂停」（15 次：暂停页 / 暂停设置）。
+      本页原先给核心机制造了 6 个说法（冷静期 / 停顿 / 倒计时 / 冷却 / 冷却时间 / 冷却规则）、
+      给暂停那一屏造了 3 个（暂停界面 / 暂停层 / 停顿卡片）。现在统一为「冷却」+「暂停界面」，
+      删掉 App 里不存在的「冷静期」与「停顿」，窗口实现词「暂停层」不再出现在讲用户操作的句子里。
+    · 首屏图注改为引用真机屏幕上那句话（「给自己几秒，再决定是否继续。」），让页面和真机对上。
+    · 保留「试用」这个词（App 里 16 条以上字符串都用它），但把到期后的真实后果写出来
+      （Pro 四项功能关闭、已有分组与统计不受影响、不会自动转成付费）。原先的问题是
+      「试用 + 不收费」没交代后果，不是用词本身；h2 由「核心免费，Pro 可选」改为
+      「全部功能免费，Pro 是实验项」（「可选」原本在暗示付费）。
+    · 「免费版」清单原本与「分组、冷却与记录」重复五项，改为只讲与 Pro 的差别。
+    · FAQ 补一条「为什么一定要开『无障碍服务』？」，这个权限此前出现 4 次、从没解释过它是什么。
+  firstvisit 一遍（第二批第四份，基于同目录的 timeline-copyedit.html）。这一版动的是**信息顺序**，
+  按第一次接触这个页面的人会依次问的问题重排，并补上原版缺的一节：
+    1. 这是什么、长什么样、要不要钱 → 首屏
+    2. 怎么装、要开什么权限 → **新增「三步开始用」**（原版只在下载区留了一句「需要允许未知来源」）
+    3. 安全吗 → 「权限与隐私」由第 6 位前移到第 4 位（小节说明改为「只有一项权限是必须的」）
+    4. 要不要钱 → 「全部功能免费，Pro 是实验项」由第 7 位前移到第 5 位
+    5. 它到底怎么工作 → 「一次拦截的经过」「真机验证记录」后移，作为深度内容
+    6. 功能细节 → 「分组、冷却与记录」
+    7. 还有疑问 → 常见问题 → 下载
+  同时删掉三处对读者无用的东西：
+    · 「一次拦截的经过」上方那段 90 字的版本对账脚注（原文在解释 v0.5.44 与 v0.5.45 的发布说明差异，
+      那是给维护者看的）；版本归属移到真机表的 caption
+    · 页脚「网页内容与代码一同开源」
+    · 权限表里「与前台识别无关」这类自我说明；「OEM 保活指引」改为「省电与自启动指引」
+      （App 里没有「保活」这个词，那是开发者黑话）
+  另外把首屏 lede 补上施动者（原版是无主语的「你最分心的那几个应用…」），时间轴第二条的技术常量挪到句尾。
+  ⚠️ canonical / og:url 必须自指本文件名：同目录还有 timeline.html / timeline-refined.html / timeline-copyedit.html，
+     写错会把这一版声明成别版的重复内容，搜索引擎只收录那一份。
+  与本页前几版共用同一套宏观结构与主题（Timeline / 纸墨台账），没有换骨架，方便直接对比。
+  事实来源：README.md、docs/INSTALL.md（三步流程）、GitHub Release v0.5.45（发行说明与 SHA-256 已核对）、
+  docs/archive/TEST_REPORT.md（真机证据）。不含任何编造的用户证言或效果数据。
+  已实测：1280 / 768 / 390 / 320 px 四档横向溢出均为 0，无断图、无 JS 报错。
+
+  humanized 一遍（第二批第五份，基于同目录的 timeline-firstvisit.html）。这一版只动文案，
+  结构与样式一行没改。起因是用户点名三句「AI 味很浓」：「全部功能免费，Pro 是实验项」
+  「只有一项权限是必须的，其余都可以不给」「没有账号，没有广告…」。这三句的共同点是
+  **用一句对称、完整、漂亮的断言，把不整齐的事实盖过去**：
+    · 「全部功能免费」比 App 自己的说法还满（strings.xml：核心功能永久免费，没有订阅或付费版本），
+      也顺手盖掉了「既然免费为什么还要激活码」这个真问题
+    · 「其余都可以不给」与同一节里的表格自相矛盾：小米上电池不设成无限制，就是会时灵时不灵
+    · 「实验项」是抽象标签，读者要的是「哪四项」，所以直接列名
+  页面级的问题比单句更重：6 个小节副标题 100% 是同一种修辞（平衡的断言句）。
+  人类写六节不会六节一个形状，所以这版让形状参差——删 2 个、改 3 个、合并 1 个。
+  另外三类一并处理：
+    · 多重否定清单（没有 A，没有 B，也没有 C）→ 换成可核的事实
+    · 「读不到屏幕内容、消息、截图和键盘输入」在权限表 / 时间轴 / FAQ 里复读三遍 →
+      只留表格里带 canRetrieveWindowContent = false 那一处，另两处各说各的
+    · 替读者答没问的问题：「它也没有任何远程管理功能…不会有人从别处改它」整句删掉。
+      它是上一轮为承接被删掉的「家长控制」FAQ 而塞进正文的，属于防御性保证，是全页 AI 味最重的一句。
+      教训：删掉一个防御性 FAQ 之后，不要把它的答案换个位置塞进正文，那等于承认这个疑虑存在。
+  保留（有口气、肯认怂的真人话）：「手比脑子快。」「手指先到了，人还没决定。」
+  「防手滑，也防『顺手再开一次』。」「这些验证次数有限，覆盖不到所有机型」。
+  ⚠️ canonical / og:url 已自指本文件名（同目录另有 timeline.html / refined / copyedit / firstvisit 四份）。
+
+  humanized 之后再修两处（同一文件，结构与文案不再动）：
+    1. **左边距被 padding 简写吃掉了**。`.wrap` 用 `padding: 0 1.25rem` 提供左右留白，但
+       `.hero` 与 `.navbar-row` 写在它后面、同为单类特异性，而 `padding` 简写会一次性设定四个边，
+       于是这两个元素（class 都是「wrap + 本类」）的左右内边距被覆盖成 0。
+       实测 390px：h1 / lede / 下载按钮 / brand 的 left 全是 0，而其他小节是 20。
+       1280px 时 left=100（正常应 120），缺口被 max-width 的居中余量盖住，所以桌面上看不出来。
+       三处 shorthand 改为 `padding-block`（含 @media (max-width:880px) 里的那条覆盖）。
+       规则：容器用 padding 做 gutter 时，后续规则只能写 `padding-block` / `padding-inline`。
+       ⚠️ 线上 index.html / zh.html 不受影响：它们的 .container 用 width 做留白，不是 padding。
+    2. **「暂停界面」改回「暂停页」**。第七轮为消掉「暂停层 / 停顿卡片」这批自造词时选了「暂停界面」，
+       但没回头核对 App 到底叫什么：strings.xml 352 条用户可见串里 `暂停页` 11 次、`暂停界面` 0 次。
+       这是第七轮我自己引入的偏差，按「用词对齐 strings.xml」的规则改回。
+
+  批次 1–3（同一文件，评审者第二轮）：文案对齐 App + 句子级润色 + 孤字收尾。共 23 处替换。
+    批次 1（跟 App 对齐 + 补安抚）
+      · 电池统一到 App 主词「电池优化」（App 里 6 处：settings 分类、onboarding「关闭电池优化」等）。
+        改前页面五种叫法（电池设置 / 电池策略 / 电池设为「无限制」/ 电池不受限制 / 电池限制），
+        而「电池优化」出现 0 次。步骤三标题由「电池设为「无限制」」改为「关掉电池优化」，并补上
+        「允许自启动」（依据 strings.xml `service_help_body`：允许自启动 + 电池优化设为无限制）。
+      · 「领一个免费永久码」→「申请一个免费永久授权码」。App 通篇是「申请」，完整叫法 `永久授权码`；
+        「领」与 FAQ 的「人工签发」互相打架。全页 `永久码`/`激活码` 归一为 `永久授权码`。
+      · 无障碍服务那一行补一句「随时可以在系统设置里关掉」。评审要求补「有风险」安抚，
+        这里按**陈述实际含义 + 给出口**的写法落地，不做「不用担心」式宽慰 —— 本项目刚把
+        「它也没有任何远程管理功能…」这类防御性保证从正文删掉，不该换个地方装回来。
+    批次 2（句子级）
+      · 孪生副标题：「一次拦截的经过」与「真机验证记录」两条副标题原本都以「下面…logcat」起收，
+        现在前者改「六步。时间取自真机 logcat。」，后者改「下面四条是当时的验证记录，装一遍就能自己对着看。」
+      · 绝对断言：「别的什么都没有」「完全不产生流量」「盖在所有应用上面」「都能一直用，没有时间限制」
+        → 「只拿到一个包名字符串」「不发网络请求」「在最上层」「一直免费，不限时间」。
+      · 2032：读者不需要窗口类型常量。真机表里移到「方法」列（作为证据保留），观察结果改「照常可见」；
+        FAQ 里的「（2032）」删掉，只说「一种更高层级的窗口类型」。全页 2032 由 2 处降为 1 处。
+      · 「已复核句」：「这些验证次数有限」改为更具体的「这些只在一台真机上验过」。
+    批次 3（孤字收尾）
+      · 权限表首列加 `white-space: nowrap`：≤992px 时 `无障碍服务`/`显示悬浮窗` 被挤成两行、
+        末行只剩 1 字（首列实测宽 1280px 108 / 992px 100 / 768px 80 / 600px 65）。
+      · 清单项与短行补 `text-wrap: pretty`（Chrome 会主动规避末行只剩一两个字）。
+      · 结果：六档视口**全部消灭 1 字末行**，最差由 1 字降为 2 字。
+        测量脚本 `output/landing-review/scripts/orphans-exact.mjs`（逐字 Range 分行，
+        且只信任块内字号一致的块，含 <br> 的块按主动断行跳过）。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f1e8">
+<title>Appause · 先等十秒，再打开</title>
+<meta name="description" content="Appause 是一款本地优先的 Android 专注工具：在你选定的应用前面加几秒冷却，打开前先等一等，想清楚了再进。核心功能永久免费，MIT 开源。">
+<!-- 本页若正式替换仓库根目录的 zh.html，下面几处 URL 改成
+     https://shmily0826.github.io/Appause/zh.html 与 …/Appause/，同时把
+     图片与 privacy-policy 的相对路径从 ../../ 收成 ./ （共 6 处）。
+     canonical 必须自指本文件名：同目录还有 timeline.html / timeline-refined.html，
+     写错会把这一版声明成别版的重复内容，搜索引擎只收录那一份。 -->
+<link rel="canonical" href="https://shmily0826.github.io/Appause/docs/landing-v2/timeline-humanized.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Appause">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:url" content="https://shmily0826.github.io/Appause/docs/landing-v2/timeline-humanized.html">
+<meta property="og:title" content="Appause · 先等十秒，再打开">
+<meta property="og:description" content="打开选定的应用时先冷却十秒，再决定继续还是回桌面。本地优先，核心功能永久免费，MIT 开源。">
+<meta property="og:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Appause 分享卡片：淡紫底上写着「在点开和下滑之间，放一个你的决定」，右侧是暂停页示意，倒计时显示 2 秒，下方有四个原因选项和一个禁用的继续按钮">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Appause · 先等十秒，再打开">
+<meta name="twitter:description" content="打开选定的应用时先冷却十秒，再决定继续还是回桌面。本地优先，MIT 开源。">
+<meta name="twitter:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png">
+<meta name="twitter:image:alt" content="Appause 分享卡片：淡紫底上写着「在点开和下滑之间，放一个你的决定」，右侧是暂停页示意，倒计时显示 2 秒，下方有四个原因选项和一个禁用的继续按钮">
+<link rel="icon" href="../../images/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="../../images/apple-touch-icon.png">
+<style>
+  /* ---------- 设计令牌（所有颜色与字体只在这里定义） ---------- */
+  :root {
+    --paper: #f5f1e8;
+    --paper-raise: #ece7d9;
+    --ink: #1d1a16;
+    --ink-soft: #5c554a;
+    --ink-faint: #6b6353;
+    --rule: #d9d2c3;
+    --cinnabar: #a63a2b;
+    --cinnabar-bright: #b8452f;
+    --cinnabar-deep: #7f2c20;
+
+    --font-display: "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+    --font-body: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+    --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Courier New", monospace;
+
+    --space-1: 0.5rem;
+    --space-2: 1rem;
+    --space-3: 1.75rem;
+    --space-4: 3rem;
+    --space-5: 5rem;
+    --space-6: 7.5rem;
+    --measure: 36em;
+
+    /* 允许对 auto 做长度过渡（Chrome 131+ 支持），折叠面板展开动画依赖它。
+       不支持的浏览器会忽略这条声明，面板退回瞬时展开，不会坏。 */
+    interpolate-size: allow-keywords;
+
+    /* 本页是刻意固定的浅色纸面。声明它，浏览器才不会按系统暗色去渲染滚动条等
+       默认 UI，也不会在部分移动端浏览器上被自动反色。 */
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; height: auto; display: block; }
+  /* 不允许在词中间断行的片段：中文没有词边界，浏览器会随手切（例如「回／过神来」「很多时／候」） */
+  .nb { white-space: nowrap; }
+  /* 中文排版：
+     短行（标题、导语、小节说明、图注）用 balance 摊平两行，消除末行只剩一两字的孤字；
+     正文段落用 pretty。用 balance 会把行摊成等长，行尾留出大片空白，读起来像被切断。 */
+  .hero-lede, .preface-statement, .section-head p, .pro-order, .ledger-note, .privacy-note p, figcaption { text-wrap: balance; }
+  .preface-body p, .timeline p, .faq-list details p, .step p { text-wrap: pretty; }
+  /* 清单项与短行也开 pretty：Chrome 的 pretty 会主动避免末行只剩一两个字。
+     这几处实测最容易出 1 字末行（free-list / pro-col 是定宽网格栏，宽度由 fr 决定，
+     文案差一个字就可能把最后一字挤到下一行）。表格首列另用 nowrap 处理。 */
+  .free-list li, .pro-col li, .start-note, .dl-ver { text-wrap: pretty; }
+  /* 避头尾：行首不出现标点、行尾不留开括号 */
+  .preface-body p, .section-head p, .hero-lede, .timeline p, .faq-list details p, .pro-order, .privacy-note p { line-break: strict; }
+
+  a { color: inherit; }
+  :focus-visible {
+    outline: 3px solid var(--cinnabar);
+    outline-offset: 2px;
+  }
+  /* 填充朱红的按钮上，朱红描边等于自身底色，肉眼只剩 2px 的纸色缝。
+     改用墨色描边（墨/纸 15.4:1），在纸与浅纸两种底上都清楚。 */
+  .btn:focus-visible,
+  .navbar .mini:focus-visible {
+    outline-color: var(--ink);
+    outline-offset: 3px;
+  }
+
+  /* 键盘用户的跳读链接：默认移出视口，聚焦时回到左上角 */
+  .skip {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 60;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.6rem 1rem;
+    font-size: 0.875rem;
+    text-decoration: none;
+  }
+  .skip:focus { left: 0.5rem; top: 4.5rem; color: var(--paper); }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 1.25rem;
+  }
+
+  /* 锚点跳转要预留顶栏高度，否则小节的分隔线会被粘性顶栏盖住
+     （此前没有任何 scroll-margin-top，只是靠各小节 padding-top 恰好够高才没露馅） */
+  section { scroll-margin-top: 5.5rem; }
+
+  /* ---------- 品牌标（用于唯一顶栏） ---------- */
+  .brand {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+  }
+  .brand svg { flex: none; }
+  .brand-ring { fill: none; stroke: var(--ink); stroke-width: 3; }
+  .brand-bars { fill: var(--cinnabar); }
+  /* ---------- 唯一顶栏：常驻粘性，品牌 + 栏目 + 下载 ---------- */
+  .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: var(--paper);
+    border-top: 6px solid var(--ink);
+    border-bottom: 1px solid var(--rule);
+  }
+  .navbar-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    /* 只设纵向：左右留白由同元素的 .wrap 提供。
+       写 padding 简写会连左右一起设成 0，把 .wrap 的 gutter 冲掉（两者同为单类特异性，
+       本规则写在后面会赢），窄屏上首屏与顶栏就会直接贴着屏幕边。 */
+    padding-block: 0.4rem;
+  }
+  .navbar .mini {
+    margin-left: auto;
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0 0.85rem;
+    background: var(--cinnabar);
+    color: var(--paper);
+    border: 1px solid var(--cinnabar-deep);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  /* 栏目链接只在宽屏出现；窄屏靠小节标题与吸底下载条导航 */
+  .navbar .section-nav { display: none; }
+  /* 窄屏：下载交给吸底条，顶栏只留品牌，避免两个常驻下载入口 */
+  @media (max-width: 61.99rem) { .navbar .mini { display: none; } }
+  @media (min-width: 62rem) {
+    .navbar .section-nav { display: flex; padding: 0; gap: var(--space-2); }
+  }
+
+  .section-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    padding: var(--space-1) 0 var(--space-2);
+    font-family: var(--font-mono);
+    /* 竞品实测：导航项低于正文 16px、字重 400 时读起来像图注。
+       one sec 17px/500、Opal 16.6px/500（命中高 51px）、Linear 32px 胶囊、Raycast 41px 胶囊。
+       这里提到 0.86rem/500 并把命中高度做到 34px。 */
+    font-size: 0.86rem;
+  }
+  .section-nav a {
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 500;
+    /* 静止态就给一条可见线索（常驻细线读作 tab 轨道），否则读者不知道能点。
+       本页设计语言零圆角，所以用线而不是胶囊。 */
+    border-bottom: 1px solid var(--rule);
+    padding-block: 0.55rem;
+    transition: border-color 120ms linear, color 120ms linear;
+  }
+  /* 当前所处小节 */
+  .section-nav a[aria-current="true"] {
+    color: var(--cinnabar-deep);
+    border-bottom-color: var(--cinnabar);
+  }
+
+  @media (hover: hover) {
+    .section-nav a:hover { color: var(--cinnabar-deep); border-bottom-color: var(--cinnabar); }
+    .section-nav a[aria-current="true"]:hover { border-bottom-color: var(--cinnabar-deep); }
+  }
+
+  /* ---------- 吸底下载条（窄屏）：滚过首屏后出现 ---------- */
+  .bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.6rem 1.1rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+    background: var(--paper);
+    border-top: 1px solid var(--ink);
+    transform: translateY(110%);
+    /* 收起时一并撤出可聚焦元素，避免键盘焦点落到屏幕外 */
+    visibility: hidden;
+    transition: transform 240ms ease, visibility 0s linear 240ms;
+  }
+  .bar.show {
+    transform: none;
+    visibility: visible;
+    transition: transform 240ms ease, visibility 0s;
+  }
+  .bar-txt {
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    color: var(--ink-soft);
+    margin-right: auto;
+    line-height: 1.4;
+  }
+  .bar-txt b { color: var(--ink); }
+  .bar .btn { padding: 0.65rem 1rem; font-size: 0.9rem; white-space: nowrap; }
+  @media (min-width: 62rem) { .bar { display: none; } }
+
+  @media (hover: hover) {
+    .navbar .mini:hover { background: var(--cinnabar-bright); }
+  }
+
+  /* ---------- 首屏：非对称两栏 ---------- */
+  .hero {
+    display: grid;
+    /* 实测竞品的首屏产品视觉比文字栏还宽：one sec 450 vs 360、ScreenZen 440 vs 360。
+       本页原为 7fr/4fr → 右栏 269px、图 231px、左栏 611px，图/文 只有 0.38。
+       这里用 clamp 给右栏一个确定宽度（⚠️ 别写 minmax(320px,400px)：旁边有 fr 轨道时
+       它只会停在下限 320px，永远长不到上限——实测踩过）。 */
+    grid-template-columns: minmax(0, 1fr) clamp(320px, 34vw, 420px);
+    gap: var(--space-5);
+    /* 同上：padding-block 只动纵向，左右交给 .wrap。
+       上留白由 --space-6（7.5rem / 120px）收到 4.5rem：实测竞品 84–111px，
+       而本页顶栏与纸面同色、导航又弱，120px 读起来是「空」不是「呼吸」。 */
+    padding-block: 4.5rem var(--space-5);
+    align-items: start;
+  }
+  .kicker {
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    letter-spacing: 0.12em;
+    color: var(--cinnabar);
+    margin: 0 0 var(--space-2);
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(2.7rem, 6.5vw, 4.3rem);
+    line-height: 1.2;
+    letter-spacing: 0.01em;
+    margin: 0 0 var(--space-3);
+  }
+  .hero-lede {
+    font-size: 1.13rem;
+    color: var(--ink-soft);
+    max-width: 34em;
+    margin: 0 0 var(--space-4);
+  }
+  .cta-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+  }
+  .btn {
+    display: inline-block;
+    white-space: nowrap;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.02rem;
+    padding: 0.85rem 1.6rem;
+    background: var(--cinnabar);
+    color: var(--paper);
+    border: 1px solid var(--cinnabar-deep);
+  }
+  @media (hover: hover) {
+    .btn { transition: transform 120ms linear, background 120ms linear; }
+    .btn:hover { background: var(--cinnabar-deep); transform: translate(0, -2px); }
+    .btn-sub:hover { color: var(--ink); }
+  }
+  .btn-sub {
+    font-family: var(--font-mono);
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+    text-underline-offset: 4px;
+    padding-block: 0.45rem;
+  }
+  .hero-badges {
+    margin-top: var(--space-4);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    /* 靠间距分隔，不用 ::after 画点：折行时点会落在行尾（实测 320px 下确实如此） */
+    gap: 0.45rem 1.5rem;
+  }
+  .hero-badges b { color: var(--ink); font-weight: 600; }
+
+  /* ⚠️ figure 的 UA 默认 margin 是 1em 40px，这里从没重置过 → 首屏图被白白吃掉左右各 40px。
+     （此前只有 .shot-pair figure 和 .start-* 写了 margin:0，首屏这个漏了）。
+     这才是「右图偏小」的主因，比 width 上的 min(330px, 86%) 那道上限更致命。 */
+  .hero-shot { position: relative; margin: 0; }
+  /* 用裁过的暂停卡片图（1080×1631），不再带整屏截图底部的空白 */
+  .hero-shot img {
+    width: 100%;
+    margin: 0 auto;
+    border: 1px solid var(--ink);
+    background: var(--paper-raise);
+  }
+  .hero-shot figcaption {
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    color: var(--ink-faint);
+    margin-top: var(--space-2);
+    text-align: center;
+  }
+
+  /* ---------- 序 ----------
+     原来是一段无标题、居中、纯文字的过场，夹在首屏与台账之间最单调。
+     改成左「序」+ 断句／右正文的非对称两栏，并用一条栏线呼应台账。 */
+  .preface {
+    border-top: 1px solid var(--rule);
+    padding: var(--space-4) 0 var(--space-5);
+  }
+  .preface-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+  .preface-statement {
+    font-family: var(--font-display);
+    font-weight: 700;
+    /* 上限压到 1.9rem、下限 1.3rem：整句 12 个字，保证在 320px 也是完整一行，
+       不给浏览器任何在词中间切的机会 */
+    font-size: clamp(1.3rem, 3.6vw, 1.9rem);
+    line-height: 1.42;
+    letter-spacing: 0.01em;
+    margin: 0;
+    max-width: 14em;
+  }
+  .preface-body p {
+    margin: 0 0 1.1rem;
+    font-size: 1.02rem;
+    line-height: 1.9;
+    color: var(--ink-soft);
+  }
+  .preface-body p:last-child { margin-bottom: 0; }
+  .preface-body strong { color: var(--cinnabar); font-weight: 600; }
+  @media (min-width: 52rem) {
+    .preface-grid {
+      grid-template-columns: minmax(0, .92fr) minmax(0, 1fr);
+      gap: clamp(2rem, 5vw, 4rem);
+      align-items: start;
+    }
+    .preface-body {
+      border-left: 1px solid var(--rule);
+      padding-left: clamp(1.5rem, 3vw, 2.5rem);
+    }
+  }
+
+  /* ---------- 通用小节头 ---------- */
+  .section-head { margin-bottom: var(--space-4); }
+  .section-head h2 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+    line-height: 1.25;
+    margin: 0 0 var(--space-1);
+  }
+  .section-head p {
+    color: var(--ink-soft);
+    max-width: 38em;
+    margin: 0;
+  }
+  .section-head .mono-note {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--ink-faint);
+    margin-top: var(--space-1);
+  }
+
+  /* ---------- 时间轴 ---------- */
+  .timeline-section { border-top: 1px solid var(--rule); padding: var(--space-6) 0 var(--space-5); }
+  .timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 1.4rem;
+    border-left: 2px solid var(--ink);
+  }
+  .timeline li {
+    position: relative;
+    padding: 0 0 var(--space-4) var(--space-3);
+    max-width: 42em;
+  }
+  .timeline li:last-child { padding-bottom: 0; }
+  .timeline li::before {
+    content: "";
+    position: absolute;
+    left: -1.4rem;
+    top: 0.55em;
+    width: 11px;
+    height: 11px;
+    margin-left: -6.5px;
+    background: var(--paper);
+    border: 2px solid var(--cinnabar);
+  }
+  .tl-t {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--cinnabar);
+    letter-spacing: 0.06em;
+  }
+  .timeline h3 {
+    font-size: 1.12rem;
+    font-weight: 650;
+    margin: 0.15em 0 0.35em;
+    line-height: 1.5;
+  }
+  .timeline p { margin: 0; color: var(--ink-soft); }
+  .tl-wide { max-width: 46em; }
+  .tl-fade { opacity: 1; transform: none; }
+  .js .tl-fade { opacity: 0; transform: translateY(6px); transition: opacity 400ms ease, transform 400ms ease; }
+  .js .tl-fade.is-in { opacity: 1; transform: none; }
+
+  /* ---------- 台账表 ---------- */
+  .ledger-section { border-top: 1px solid var(--rule); padding: var(--space-4) 0; }
+  table.ledger {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+  }
+  table.ledger caption {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    padding-bottom: var(--space-2);
+  }
+  table.ledger th {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-align: left;
+    color: var(--ink-faint);
+    border-bottom: 2px solid var(--ink);
+    padding: 0.5em 0.9em 0.5em 0;
+  }
+  table.ledger td {
+    border-bottom: 1px solid var(--rule);
+    padding: 0.7em 0.9em 0.7em 0;
+    vertical-align: top;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+  table.ledger td:first-child { color: var(--ink); font-weight: 550; white-space: nowrap; }
+  .mono { font-family: var(--font-mono); font-size: 0.86em; overflow-wrap: anywhere; }
+  .pass { color: var(--cinnabar); font-weight: 600; }
+  .ledger-note {
+    font-size: 0.86rem;
+    color: var(--ink-faint);
+    margin-top: var(--space-2);
+  }
+  .ledger-note a { color: inherit; }
+
+  /* ---------- 分组与统计 ---------- */
+  .groups-section { border-top: 1px solid var(--rule); padding: var(--space-5) 0 var(--space-4); }
+  .groups-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: var(--space-5);
+    align-items: center;
+  }
+  .groups-grid .section-head { margin-bottom: var(--space-3); }
+  .free-list { margin: 0; padding: 0; list-style: none; }
+  .free-list li {
+    padding: 0.55em 0;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink-soft);
+  }
+  .free-list li::before {
+    content: "▪";
+    color: var(--cinnabar);
+    margin-right: 0.7em;
+    font-size: 0.8em;
+  }
+  .free-list li:last-child { border-bottom: none; }
+  /* 两处清单的加粗标签要和相邻的 Pro 栏一致（pro-col li b 是墨色 600）；
+     不写这条的话 <b> 会落成 UA 默认，只有 ink-soft 的粗体，和旁边一栏明显不同。 */
+  .free-list li b,
+  .pro-order b { color: var(--ink); font-weight: 600; }
+  .shot-pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  .shot-pair figure { margin: 0; }
+  .shot-pair img {
+    border: 1px solid var(--ink);
+    background: var(--paper-raise);
+  }
+  .shot-pair figcaption {
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    color: var(--ink-faint);
+    margin-top: 0.5em;
+  }
+
+  /* ---------- 权限与隐私 ---------- */
+  .perm-section { border-top: 1px solid var(--rule); padding: var(--space-4) 0 var(--space-5); }
+  .perm-intro { max-width: var(--measure); color: var(--ink-soft); margin: 0 0 var(--space-4); }
+  .status {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 0.15em 0.5em;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+  }
+  .s-req { color: var(--cinnabar); }
+  .s-rec { color: var(--ink); }
+  .s-opt { color: var(--ink-faint); }
+  .privacy-note {
+    margin-top: var(--space-4);
+    padding: var(--space-3) var(--space-3);
+    background: var(--paper-raise);
+    border-left: 4px solid var(--cinnabar);
+    max-width: 44em;
+    font-size: 0.98rem;
+  }
+  .privacy-note strong { font-weight: 650; }
+
+  /* ---------- 免费与 Pro ---------- */
+  .pro-section { border-top: 1px solid var(--rule); padding: var(--space-6) 0 var(--space-5); }
+  .pro-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+  .pro-col { border-top: 2px solid var(--ink); padding-top: var(--space-2); }
+  .pro-col.pro { border-top-color: var(--cinnabar); }
+  .pro-col h3 {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    margin: 0 0 var(--space-2);
+    color: var(--ink-faint);
+  }
+  .pro-col.pro h3 { color: var(--cinnabar); }
+  .pro-col ul { margin: 0; padding: 0; list-style: none; }
+  .pro-col li { padding: 0.5em 0; border-bottom: 1px solid var(--rule); color: var(--ink-soft); }
+  .pro-col li:last-child { border-bottom: none; }
+  .pro-col li b { color: var(--ink); font-weight: 600; }
+  .pro-order {
+    margin-top: var(--space-4);
+    max-width: 46em;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    padding: var(--space-2) var(--space-3);
+    border: 1px dashed var(--ink-faint);
+  }
+  /* inline code 是界面路径（设置 → 反馈），不允许在中间断行：
+     窄屏下实测会被拆成「设」+「置→反馈」两行，行盒 ["66x15","14x15"]。 */
+  .pro-order code { font-family: var(--font-mono); font-size: 0.88em; white-space: nowrap; }
+
+  /* ---------- 下载区（浅一档的纸 + 粗墨边框，作为全页收尾） ----------
+     全页统一浅色之后，页面从头到尾同一个色阶、没有一个重量点；
+     用 --paper-raise（浅一档的纸）给收尾一点层次，不引入任何深色。 */
+  .download-section { padding: var(--space-5) 0 var(--space-6); }
+  .dl-panel {
+    background: var(--paper-raise);
+    border: 2px solid var(--ink);
+    padding: var(--space-5) var(--space-4) var(--space-4);
+  }
+  .dl-panel h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    line-height: 1.3;
+    margin: 0 0 var(--space-1);
+  }
+  /* 窄屏下拉满，给唯一的下载入口更大的命中面积 */
+  @media (max-width: 30rem) {
+    .dl-panel .btn { display: block; width: 100%; text-align: center; }
+  }
+  .dl-ver { font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-soft); margin-bottom: var(--space-4); }
+  .dl-ver .dot { color: var(--cinnabar); }
+  .dl-panel .btn { background: var(--cinnabar); border-color: var(--cinnabar-deep); color: var(--paper); }
+  .dl-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3em 1.6em;
+    margin: var(--space-3) 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+  }
+  .dl-facts b { color: var(--ink); font-weight: 600; }
+  .dl-panel details { margin-top: var(--space-3); font-family: var(--font-mono); font-size: 0.8rem; border-top: 1px solid var(--rule); }
+  .dl-panel summary {
+    cursor: pointer;
+    color: var(--ink-soft);
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+  }
+  .dl-panel code {
+    display: block;
+    margin-top: 0.2em;
+    padding-bottom: 0.7rem;
+    word-break: break-all;
+    color: var(--ink);
+    line-height: 1.7;
+  }
+  .dl-links { margin-top: var(--space-3); font-size: 0.9rem; display: flex; flex-wrap: wrap; gap: 0.2rem 1.3rem; }
+  .dl-links a { color: var(--cinnabar-deep); text-underline-offset: 4px; padding-block: 0.5rem; }
+  .dl-links span { color: var(--ink-faint); }
+  .ledger-note a, footer a { padding-block: 0.45rem; }
+
+  @media (hover: hover) {
+    .dl-panel .btn:hover { background: var(--cinnabar-bright); }
+    .dl-panel summary:hover { color: var(--ink); }
+    .dl-links a:hover { color: var(--ink); }
+    .ledger-note a:hover, footer a:hover { color: var(--ink); }
+  }
+
+  /* ---------- 三步开始用 ---------- */
+  .start-section { border-top: 1px solid var(--rule); padding: var(--space-4) 0 var(--space-5); }
+  .start-grid {
+    counter-reset: startstep;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  .start-step {
+    border-top: 2px solid var(--ink);
+    padding-top: var(--space-2);
+  }
+  /* 序号沿用台账的等宽数字，与时间轴的 tl-t 同一套语言 */
+  .start-step::before {
+    counter-increment: startstep;
+    content: counter(startstep, decimal-leading-zero);
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--cinnabar);
+    margin-bottom: 0.55rem;
+  }
+  .start-step h3 {
+    font-family: var(--font-display);
+    font-size: 1.12rem;
+    line-height: 1.5;
+    margin: 0 0 var(--space-1);
+  }
+  .start-step p { margin: 0; color: var(--ink-soft); }
+  .start-note {
+    margin: var(--space-3) 0 0;
+    max-width: 42em;
+    font-size: 0.86rem;
+    color: var(--ink-faint);
+  }
+  .start-note b { color: var(--ink); font-weight: 600; }
+  @media (max-width: 46rem) {
+    .start-grid { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+  }
+
+  /* ---------- FAQ ---------- */
+  .faq-section { border-top: 1px solid var(--rule); padding: var(--space-4) 0 var(--space-5); }
+  .faq-list { max-width: 46em; }
+  .faq-list details { border-bottom: 1px solid var(--rule); }
+  .faq-list summary {
+    cursor: pointer;
+    padding: 0.9em 0;
+    font-weight: 600;
+    font-size: 1.02rem;
+    line-height: 1.75;
+    list-style: none;
+    position: relative;
+    padding-right: 2em;
+  }
+  .faq-list summary::-webkit-details-marker { display: none; }
+  /* 加号改由两条渐变线画出：content 的「＋」和「−」之间无法过渡，
+     只能换画法，展开时把竖线收到 0，才有真正的收放动作。
+     盒子高度 = 首行行高，使十字与首行文字垂直居中。 */
+  .faq-list summary::after {
+    content: "";
+    position: absolute;
+    right: 0.1em;
+    top: 0.9em;
+    width: 0.72em;
+    height: 1.75em;
+    background-image: linear-gradient(var(--cinnabar), var(--cinnabar)),
+                      linear-gradient(var(--cinnabar), var(--cinnabar));
+    background-position: center, center;
+    background-repeat: no-repeat;
+    background-size: 0.72em 1.5px, 1.5px 0.72em;
+    transition: background-size 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+  .faq-list details[open] summary::after { background-size: 0.72em 1.5px, 1.5px 0; }
+  .faq-list details p { margin: 0 0 1em; color: var(--ink-soft); max-width: 42em; }
+
+  /* 悬停反馈：整行读作一个可点的单元。此前 summary 只在光标上变 pointer，
+     颜色一点不变，和顶栏栏目、按钮的处理方式不一致。 */
+  @media (hover: hover) {
+    .faq-list summary { transition: color 140ms linear; }
+    .faq-list summary:hover { color: var(--cinnabar-deep); }
+    .faq-list details { transition: border-color 140ms linear; }
+    .faq-list details:hover { border-bottom-color: var(--cinnabar); }
+  }
+
+  /* ---------- 折叠面板的展开 / 收起缓冲 ----------
+     主方案：对 ::details-content 的高度做过渡（配合 :root 的 interpolate-size）。
+     不支持的浏览器忽略这一整段，由下面的关键帧兜底（展开有淡入，收起仍是瞬时）。 */
+  .faq-list details::details-content,
+  .dl-panel details::details-content {
+    block-size: 0;
+    overflow: hidden;
+    transition: block-size 260ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                content-visibility 260ms allow-discrete;
+  }
+  .faq-list details[open]::details-content,
+  .dl-panel details[open]::details-content { block-size: auto; }
+
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(-0.3em); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .faq-list details[open] > p,
+  .dl-panel details[open] > code { animation: reveal 260ms cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+
+  /* ---------- 页脚 ---------- */
+  footer {
+    border-top: 3px solid var(--ink);
+    /* 底部留出吸底条的高度，避免遮住最后一行 */
+    padding: var(--space-3) 0 calc(var(--space-5) + 3rem);
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+  }
+  @media (min-width: 62rem) { footer { padding-bottom: var(--space-5); } }
+  .footer-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4em 1.4em;
+    align-items: baseline;
+  }
+  .footer-row .brand-sm { font-family: var(--font-display); font-weight: 700; color: var(--ink); }
+  footer a { text-underline-offset: 4px; }
+  .footer-fine { margin-top: var(--space-2); font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-faint); }
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width: 880px) {
+    .hero { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); padding-block: var(--space-4); }
+    .hero-shot img { width: min(320px, 88%); }
+    .groups-grid { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+    .pro-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 560px) {
+    body { font-size: 15px; }
+    .hero h1 { line-height: 1.25; }
+    /* 并排时每张只有约 130px 宽，图内文字读不出来（实测 320px 下 132px）；
+       改单列并把宽度收到 62%，读得出内容又不至于占满两屏多 */
+    .shot-pair { grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+    .shot-pair figure { margin: 0 auto; max-width: 62%; }
+    .dl-panel { padding: var(--space-4) var(--space-3); }
+    /* 窄屏下三列表格改为堆叠行，避免挤压与横向滚动 */
+    table.ledger { font-size: 0.9rem; }
+    table.ledger, table.ledger tbody, table.ledger tr, table.ledger td { display: block; width: 100%; }
+    table.ledger thead { display: none; }
+    table.ledger caption {
+      display: block;
+      width: 100%;
+      caption-side: top;
+      padding-bottom: 0.6em;
+    }
+    table.ledger tr {
+      border-bottom: 2px solid var(--ink);
+      padding: var(--space-2) 0;
+    }
+    table.ledger tr:last-child { border-bottom-width: 1px; }
+    table.ledger td {
+      border-bottom: none;
+      padding: 0.2em 0;
+    }
+    table.ledger td + td::before {
+      content: attr(data-label);
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      color: var(--ink-faint);
+    }
+    table.ledger td:first-child {
+      font-size: 1.02rem;
+      font-weight: 650;
+      margin-bottom: 0.3em;
+    }
+  }
+  /* ---------- 打印：去掉常驻外框，避免粘性顶栏与吸底条打进 PDF ---------- */
+  @media print {
+    .navbar, .bar, .skip { display: none; }
+    body { background: #fff; color: #000; }
+    .dl-panel { background: #fff; }
+    /* 浏览器默认不打印背景图形，朱红底按钮会变成白底白字。改成白底墨字加边框。 */
+    .btn, .navbar .mini, .dl-panel .btn {
+      background: #fff !important;
+      color: #000 !important;
+      border: 1.5px solid #000 !important;
+    }
+    /* 只对小组件禁止跨页断开；整节禁止会把短小节推到新页，留下大片空白
+       （实测：加在 section 上时 PDF 有 10 页，内容量按 A4 折算约 7.2 页） */
+    tr, details, .timeline li, .plan, .dl-panel, figure { break-inside: avoid; }
+    h2, h3 { break-after: avoid; }
+    /* 打印不播放动画，而 animation-fill-mode: both 会停在起始帧（opacity: 0），
+       会让展开过的答案印成空白。这里直接关掉。 */
+    .faq-list details[open] > p,
+    .dl-panel details[open] > code { animation: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .js .tl-fade { opacity: 1; transform: none; transition: none; }
+    .btn, .section-nav a, .bar { transition: none; }
+    /* 折叠面板：直接开合，不做高度过渡、淡入和加号收放 */
+    .faq-list details::details-content,
+    .dl-panel details::details-content { transition: none; }
+    .faq-list summary::after { transition: none; }
+    .faq-list details[open] > p,
+    .dl-panel details[open] > code { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">跳到正文</a>
+
+<!-- ================= 唯一顶栏（粘性） =================
+     品牌 + 栏目 + 下载收在一条里：此前报头与导航条各自写一遍品牌，
+     首屏顶部 64px 内出现两个 Appause。 -->
+<header class="navbar" id="top">
+  <div class="wrap navbar-row">
+    <a class="brand" href="#top" aria-label="Appause 首页">
+      <svg width="22" height="22" viewBox="0 0 26 26" aria-hidden="true">
+        <circle class="brand-ring" cx="13" cy="13" r="11"/>
+        <rect class="brand-bars" x="9.4" y="7.5" width="2.6" height="11"/>
+        <rect class="brand-bars" x="14" y="7.5" width="2.6" height="11"/>
+      </svg>
+      Appause
+    </a>
+    <nav class="section-nav" aria-label="页面栏目" id="sectionNav">
+      <a href="#start">怎么装</a>
+      <a href="#privacy">权限与隐私</a>
+      <a href="#pro">免费与 Pro</a>
+      <a href="#how">拦截经过</a>
+      <a href="#evidence">真机验证</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+    <a class="mini" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 <span data-r="version">v0.5.45</span></a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ================= 首屏 ================= -->
+  <section class="wrap hero" aria-labelledby="hero-title">
+    <div>
+      <p class="kicker">APPAUSE · ANDROID 专注工具</p>
+      <h1 id="hero-title">先等十秒，<br>再打开。</h1>
+      <p class="hero-lede">
+        Appause 让你最分心的那几个应用，打开前先冷却几秒。
+        想清楚了再进；不想进，一下就能回桌面。
+      </p>
+      <div class="cta-row">
+        <a class="btn" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 APK · <span data-r="size">12.3 MB</span></a>
+        <a class="btn-sub" href="https://github.com/Shmily0826/Appause">GitHub 源码 ↗</a>
+      </div>
+      <p class="hero-badges" aria-label="版本与信任要点">
+        <span>公开测试版 <b data-r="version">v0.5.45</b></span>
+        <span>Android 8.0+</span>
+        <span>MIT 开源</span>
+        <span>数据只存本机</span>
+        <span>日常使用不联网</span>
+        <span>不统计你的使用行为</span>
+      </p>
+    </div>
+    <figure class="hero-shot">
+      <img src="../../images/screenshots/zh/pause-crop.png" width="1080" height="1631" alt="Appause 暂停页截图：YouTube 打开前显示倒计时，提供四个原因选项和继续、取消按钮" loading="eager">
+      <figcaption>真机上的暂停页。上面写的是：给自己几秒，再决定是否继续。</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= 序 ================= -->
+  <section class="preface" aria-labelledby="preface-title">
+    <div class="wrap preface-grid">
+      <div>
+        <p class="kicker">序</p>
+        <h2 class="preface-statement" id="preface-title">手指先到了，<span class="nb">人还没决定</span>。</h2>
+      </div>
+      <div class="preface-body">
+        <p>
+          手比脑子快。Appause 在打开前留几秒冷却，<span class="nb">让手停一停</span>，等你决定。
+        </p>
+        <p>它不会替你决定要不要继续，只做两件事：到点拦一下，然后把<span class="nb">每一次</span>选择记下来。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 三步开始用 ================= -->
+  <section class="start-section" id="start" aria-labelledby="start-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="start-title">三步开始用</h2>
+      </div>
+      <ol class="start-grid">
+        <li class="start-step">
+          <h3>下载并允许安装</h3>
+          <p>点上面的下载按钮。系统会提示「禁止安装未知应用」，按提示给浏览器或文件管理器放行一次。</p>
+        </li>
+        <li class="start-step">
+          <h3>打开 Appause，开启无障碍服务</h3>
+          <p>首页会列出还差哪几项，点「去开启」跟着走就行。这项权限只用来知道你打开了哪个应用。</p>
+        </li>
+        <li class="start-step">
+          <h3>关掉电池优化</h3>
+          <p>在电池设置里把 Appause 的电池优化设为「无限制」，并允许自启动。否则系统会杀掉后台服务，拦截时灵时不灵。设完就不用再管了。</p>
+        </li>
+      </ol>
+      <p class="start-note">装新版直接覆盖旧版就行，不要先卸载，卸载会把本机的分组和统计一起清掉。</p>
+    </div>
+  </section>
+
+  <!-- ================= 权限与隐私 ================= -->
+  <section class="perm-section" id="privacy" aria-labelledby="privacy-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="privacy-title">权限与隐私</h2>
+        <p>开完无障碍服务就能用。真正要额外动手的是电池优化：小米、华为这类系统会杀掉后台服务。</p>
+      </div>
+      <p class="perm-intro">
+        你的分组、冷却设置和统计只写在这台手机的本地库里，卸载就清空。
+        下面这张表写了每一项权限拿来做什么。
+      </p>
+      <table class="ledger">
+        <thead>
+          <tr>
+            <th scope="col">权限</th>
+            <th scope="col">状态</th>
+            <th scope="col">用途</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>无障碍服务</td>
+            <td data-label="状态"><span class="status s-req">必需</span></td>
+            <td data-label="用途">识别前台应用的包名，不读取屏幕内容、消息、截图或键盘输入（<span class="mono">canRetrieveWindowContent = false</span>）。随时可以在系统设置里关掉。</td>
+          </tr>
+          <tr>
+            <td>电池优化</td>
+            <td data-label="状态"><span class="status s-rec">建议开启</span></td>
+            <td data-label="用途">关掉它，防止系统在省电时终止后台服务。这是小米 HyperOS 等机型上「拦截失灵」的第一大原因。</td>
+          </tr>
+          <tr>
+            <td>使用情况访问</td>
+            <td data-label="状态"><span class="status s-rec">建议开启</span></td>
+            <td data-label="用途">在本机确认真正显示在屏幕上的应用。不开的话，切换应用或打开最近任务时，可能为你根本没打开的应用弹出暂停页。</td>
+          </tr>
+          <tr>
+            <td>显示悬浮窗</td>
+            <td data-label="状态"><span class="status s-opt">可选备用</span></td>
+            <td data-label="用途">个别机型不显示暂停页时，用它兜底。</td>
+          </tr>
+          <tr>
+            <td>通知</td>
+            <td data-label="状态"><span class="status s-opt">可选</span></td>
+            <td data-label="用途">Android 13+ 的常驻运行状态通知。</td>
+          </tr>
+          <tr>
+            <td>网络</td>
+            <td data-label="状态"><span class="status s-opt">仅你操作时</span></td>
+            <td data-label="用途">只在开启试用、兑换永久授权码或发送反馈时联网。日常拦截与统计不发网络请求。</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="privacy-note">
+        <strong>日常使用不联网。</strong>
+        从你打开应用、被拦下，到选出原因、记进统计，整个过程都不需要网络。
+        完整说明见 <a href="https://github.com/Shmily0826/Appause/blob/main/PRIVACY.md">PRIVACY.md</a>。
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= 免费与 Pro ================= -->
+  <section class="pro-section" id="pro" aria-labelledby="pro-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="pro-title">不收费，也没有付费版</h2>
+        <p>Pro 是四个还在改的功能：无限分组、再次提醒、自定义提示语和原因。它们单独放一个开关，开不开都不影响免费那套。</p>
+      </div>
+      <div class="pro-grid">
+        <section class="pro-col" aria-label="免费版包含">
+          <h3>免费版</h3>
+          <ul>
+            <li><b>拦截、冷却、暂停页、统计</b>一直免费，不限时间</li>
+            <li><b>分组上限</b>：1 个</li>
+            <li><b>反馈通道</b>：设置里带一份诊断快照，发不发由你</li>
+          </ul>
+        </section>
+        <section class="pro-col pro" aria-label="Pro 实验功能">
+          <h3>Pro（实验功能）</h3>
+          <ul>
+            <li><b>无限分组</b>：免费版只能建 1 个</li>
+            <li><b>再次提醒</b>：停留在目标应用时再提醒一次</li>
+            <li><b>自定义暂停提示语</b>：换上你自己写的句子</li>
+            <li><b>自定义打开原因</b>：改成你会真的去点的选项</li>
+          </ul>
+        </section>
+      </div>
+      <p class="pro-order">
+        怎么拿到 Pro：你可以为每台设备主动开一次 <b>7 天试用</b>，不用付费，也不会自动扣费。
+        到期后 Pro 的四项功能会关闭，已有的分组和统计不受影响。想接着用，
+        到 <code>设置 → 反馈</code> 申请一个免费永久授权码，回 Pro 页面兑换就行。
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= 一次拦截的经过 ================= -->
+  <section class="timeline-section" id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="how-title">一次拦截的经过</h2>
+        <p>六步。时间取自真机 logcat。</p>
+      </div>
+      <ol class="timeline">
+        <li class="tl-fade">
+          <span class="tl-t">T+0.00s</span>
+          <h3>你点开一个被管理的应用</h3>
+          <p>无障碍服务拿到的是一个包名字符串。</p>
+        </li>
+        <li class="tl-fade">
+          <span class="tl-t">紧接着</span>
+          <h3>暂停页盖在最上层</h3>
+          <p>暂停页在最上层，开了「隐藏悬浮窗」防干扰的应用（比如小红书）上也照样可见。
+          用的是系统级窗口类型（<span class="mono">TYPE_ACCESSIBILITY_OVERLAY</span>）。</p>
+        </li>
+        <li class="tl-fade">
+          <span class="tl-t">倒计时</span>
+          <h3>冷却时间由你定</h3>
+          <p>新分组默认冷却 10 秒，可在 1 到 60 秒之间调整。倒计时结束前，「继续」按钮不可用；
+          这段时间可以先选一个原因：工作需要、无聊、查消息，或其他。</p>
+        </li>
+        <li class="tl-fade">
+          <span class="tl-t">二选一</span>
+          <h3>继续，或者回桌面</h3>
+          <p>「继续」进入应用；「取消」直接回桌面，冷却重新计时。按 Home 键也会立即关闭暂停页。</p>
+        </li>
+        <li class="tl-fade">
+          <span class="tl-t">T+0.29s</span>
+          <h3>关掉再点回去？会再拦一次</h3>
+          <p>真机记录：回到桌面后 291 毫秒内重新打开 B 站，Appause 再次拦截。
+          防手滑，也防「顺手再开一次」。</p>
+        </li>
+        <li class="tl-fade tl-wide">
+          <span class="tl-t">T+1.8s</span>
+          <h3>最近任务键不会误判</h3>
+          <p>按下最近任务键后约 1.8 秒，暂停页仍在（真机 logcat 记录），Appause 不会把
+          「看了眼后台」当成「回到了桌面」。真正回到主屏幕，这次冷却才算结束。</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ================= 真机验证记录 ================= -->
+  <section class="ledger-section" id="evidence" aria-labelledby="evidence-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="evidence-title">真机验证记录</h2>
+        <p>下面四条是当时的验证记录，装一遍就能自己对着看。</p>
+      </div>
+      <table class="ledger">
+        <caption>设备：Xiaomi 2410DPN6CC · HyperOS · Android 16 ｜ 记录于 v0.5.44</caption>
+        <thead>
+          <tr>
+            <th scope="col">验证项</th>
+            <th scope="col">方法</th>
+            <th scope="col">观察结果</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Home 键关闭暂停页</td>
+            <td data-label="方法">logcat（<span class="mono">reason=homekey</span>）</td>
+            <td data-label="观察结果"><span class="pass">立即关闭</span></td>
+          </tr>
+          <tr>
+            <td>最近任务键不误判为回桌面</td>
+            <td data-label="方法">WindowManager 状态记录</td>
+            <td data-label="观察结果">约 <span class="pass">1.8 秒</span>后暂停页仍在</td>
+          </tr>
+          <tr>
+            <td>暂停页在防截屏应用上可见</td>
+            <td data-label="方法">小红书实机 · 无障碍窗口类型 <span class="mono">2032</span>（<span class="mono">setHideOverlayWindows</span>）</td>
+            <td data-label="观察结果"><span class="pass">照常可见</span></td>
+          </tr>
+          <tr>
+            <td>回桌面后立即重开目标应用</td>
+            <td data-label="方法">Home → B 站，间隔 291 ms</td>
+            <td data-label="观察结果">产生 <span class="pass">第二次</span>拦截</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="ledger-note">
+        这些只在一台真机上验过，覆盖不到所有机型和系统版本，不能当作全设备质检报告。
+        完整证据台账见 <a href="https://github.com/Shmily0826/Appause/blob/main/docs/archive/TEST_REPORT.md">TEST_REPORT.md</a>。
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= 分组与统计 ================= -->
+  <section class="groups-section" id="groups" aria-labelledby="groups-title">
+    <div class="wrap groups-grid">
+      <div>
+        <div class="section-head">
+          <h2 id="groups-title">分组、冷却与记录</h2>
+        </div>
+        <ul class="free-list">
+          <li><b>应用分组</b>：把目标应用放进同一组，共享一条冷却规则</li>
+          <li><b>冷却时间</b>：最长 60 秒，免费与 Pro 的上限相同</li>
+          <li><b>使用统计</b>：免费可查看 365 天记录，含每次继续或取消的原因</li>
+          <li><b>暗色模式</b>：跟随系统</li>
+          <li><b>省电与自启动指引</b>：小米、华为这类后台管得严的机型，该怎么设置才不被杀</li>
+        </ul>
+      </div>
+      <div class="shot-pair">
+        <figure>
+          <img src="../../images/screenshots/zh/group.png" width="1080" height="2400" alt="Appause 分组编辑页截图" loading="lazy">
+          <figcaption>分组编辑：选择应用和冷却时间</figcaption>
+        </figure>
+        <figure>
+          <img src="../../images/screenshots/zh/statistics.png" width="1080" height="2400" alt="Appause 使用统计页截图" loading="lazy">
+          <figcaption>统计：每次继续或取消都有记录</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FAQ ================= -->
+  <section class="faq-section" id="faq" aria-labelledby="faq-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="faq-title">常见问题</h2>
+      </div>
+      <div class="faq-list">
+        <details>
+          <summary>无障碍服务能看到什么？为什么一定要开？</summary>
+          <p>这是 Android 自带的一项辅助功能，Appause 只用它做一件事：知道你此刻打开的是哪个应用。
+          它拿到的就是一个包名字符串，窗口内容读取是关掉的（<span class="mono">canRetrieveWindowContent = false</span>）。
+          没有这项权限，Appause 没法知道你打开了什么，也就拦不住。</p>
+        </details>
+        <details>
+          <summary>会耗电吗？为什么拦截有时会失灵？</summary>
+          <p>无障碍服务会一直挂在后台，本机测试里耗电影响不大。如果拦截失灵，先检查两件事：
+          把 Appause 的电池优化设为「无限制」，并允许自启动。小米 HyperOS 这类系统
+          杀掉后台服务后，不会自动把无障碍服务重新拉起来，这是排障记录里最常见的原因。</p>
+        </details>
+        <details>
+          <summary>暂停页会被其他应用挡住吗？</summary>
+          <p>暂停页用的是一种更高层级的窗口类型，盖在普通应用上面，实测在开了
+          「隐藏悬浮窗」的应用上依然可见。个别机型如果还是不显示，可以打开悬浮窗权限，
+          Appause 会换一套备用方式。</p>
+        </details>
+        <details>
+          <summary>Pro 收费吗？</summary>
+          <p>不收。四项 Pro 功能也是免费的，7 天试用到期就关掉，不会问你要钱。</p>
+        </details>
+        <details>
+          <summary>永久授权码怎么领？要花钱吗？</summary>
+          <p>到 <code>设置 → 反馈</code> 申请就行，开发者人工签发，全程免费，没有自动开通的入口，也没有内购。
+          顺序上有一点要注意：这台设备如果已经开过 7 天试用，得等试用走完才能兑换；没开过试用的新设备可以直接申请。
+          永久授权码绑定设备，一个码最多用在 3 台上。</p>
+        </details>
+        <details>
+          <summary>换手机后数据还在吗？</summary>
+          <p>数据只存在这台手机上，卸载就会全部清掉。分组和统计没有云同步，换机后要重新设置。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 下载 ================= -->
+  <section class="download-section" id="download" aria-labelledby="download-title">
+    <div class="wrap">
+      <div class="dl-panel">
+        <h2 id="download-title">下载 Appause <span data-r="version">v0.5.45</span></h2>
+        <p class="dl-ver">公开测试版 <span class="dot">·</span> <span data-r="date">2026-09-24</span> 发布 <span class="dot">·</span> 未上架应用商店</p>
+        <a class="btn" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk"><span data-r="file">Appause-v0.5.45.apk</span></a>
+        <p class="dl-facts">
+          <span>包名 <b>com.appause.android</b></span>
+          <span>versionCode <b data-r="code">97</b></span>
+          <span>大小 <b data-r="size">12.3 MB</b></span>
+          <span>系统要求 <b>Android 8.0+</b></span>
+        </p>
+        <details>
+          <summary>查看 APK SHA-256 校验值</summary>
+          <code data-r="sha256">07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a</code>
+        </details>
+        <p class="dl-links">
+          APK 需要允许「安装未知来源应用」。首次侧载前建议先读
+          <a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">安装指南</a><span>·</span>
+          <a data-release href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.45">GitHub Release</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 窄屏吸底下载条：滚过首屏后出现 -->
+<div class="bar" id="bar" role="region" aria-label="下载 Appause">
+  <span class="bar-txt">Appause <b><span data-r="version">v0.5.45</span></b> · 不收费 · MIT 开源</span>
+  <a class="btn" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载</a>
+</div>
+
+<!-- ================= 页脚 ================= -->
+<footer>
+  <div class="wrap">
+    <div class="footer-row">
+      <span class="brand-sm">Appause</span>
+      <a href="https://github.com/Shmily0826/Appause">源码（MIT）</a>
+      <a href="../../privacy-policy.html">隐私政策</a>
+      <a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">安装指南</a>
+      <a href="https://github.com/Shmily0826/Appause/issues">反馈问题</a>
+    </div>
+    <p class="footer-fine">© 2026 Appause authors · MIT License</p>
+  </div>
+</footer>
+
+<script>
+  document.documentElement.classList.add('js');
+
+  /* ---------- 发版相关的单一真实源 ----------
+     页面上所有 [data-r] / [data-apk] / [data-release] 都由下面这个对象填充，
+     包括藏在折叠区里的 SHA-256 与 versionCode（这两个手改最容易漏）。
+     边界：markup 里仍保留 16 处 'v0.5.45' 字面量（4 个下载 href 各含两段 URL，
+     外加静态兜底文案）。JS 生效时会被覆盖，无 JS 时靠它们兜底，所以发版仍需
+     一次全局替换；只改本对象而不动字面量，无 JS 环境会看到旧值。 */
+  var RELEASE = {
+    version: '0.5.45',
+    versionCode: '97',
+    date: '2026-09-24',
+    size: '12.3 MB',
+    sha256: '07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a'
+  };
+  (function () {
+    var v = 'v' + RELEASE.version;
+    var apk = 'https://github.com/Shmily0826/Appause/releases/download/v' + RELEASE.version + '/Appause-v' + RELEASE.version + '.apk';
+    var rel = 'https://github.com/Shmily0826/Appause/releases/tag/v' + RELEASE.version;
+    var map = { version: v, code: RELEASE.versionCode, date: RELEASE.date, size: RELEASE.size, sha256: RELEASE.sha256, file: 'Appause-' + v + '.apk' };
+    Object.keys(map).forEach(function (k) {
+      document.querySelectorAll('[data-r="' + k + '"]').forEach(function (el) { el.textContent = map[k]; });
+    });
+    document.querySelectorAll('[data-apk]').forEach(function (el) { el.setAttribute('href', apk); });
+    document.querySelectorAll('[data-release]').forEach(function (el) { el.setAttribute('href', rel); });
+  })();
+
+  // 时间轴条目进入视口后淡入；prefers-reduced-motion 下 CSS 已直接显示，不依赖 JS
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var items = document.querySelectorAll('.tl-fade');
+    if (reduce || !('IntersectionObserver' in window)) {
+      items.forEach(function (el) { el.classList.add('is-in'); });
+      return;
+    }
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.25 });
+    items.forEach(function (el) { io.observe(el); });
+  })();
+
+  // 折叠面板：显式同步 aria-expanded，便于读屏软件播报
+  // （summary 在 <details> 里本身已具备按钮语义，不再另加 role）
+  // 监听 <details> 的 toggle 事件而不是 summary 的 click：toggle 覆盖所有状态变化路径；
+  // click 只覆盖用户点击，而浏览器「在页面中查找」命中折叠内容时会自动展开，那条路径不触发 click。
+  document.querySelectorAll('details').forEach(function (d) {
+    var s = d.querySelector('summary');
+    if (!s) { return; }
+    var sync = function () { s.setAttribute('aria-expanded', d.open ? 'true' : 'false'); };
+    sync();
+    d.addEventListener('toggle', sync);
+  });
+
+  // 顶栏栏目高亮：标出当前所处小节
+  (function () {
+    var links = [].slice.call(document.querySelectorAll('#sectionNav a'));
+    if (!links.length || !('IntersectionObserver' in window)) { return; }
+    var byId = {};
+    links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+    // 按文档顺序取导航指向的小节（Object.keys 的顺序是导航顺序，不一定是页面顺序）
+    var sections = [].slice.call(document.querySelectorAll('main section[id]')).filter(function (s) { return byId[s.id]; });
+    var setCurrent = function (id) {
+      links.forEach(function (a) {
+        if (a === byId[id]) { a.setAttribute('aria-current', 'true'); }
+        else { a.removeAttribute('aria-current'); }
+      });
+    };
+    // 记录哪些小节当前落在判定带内。原先只在小节「进入」时刷新高亮，
+    // 于是滚回页面顶部（没有任何小节在带内）时，最后一个高亮会一直留着。
+    var active = {};
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { active[e.target.id] = true; }
+        else { delete active[e.target.id]; }
+      });
+      for (var i = 0; i < sections.length; i++) {
+        if (active[sections[i].id]) { setCurrent(sections[i].id); return; }
+      }
+      setCurrent(null);
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+    sections.forEach(function (s) { io.observe(s); });
+  })();
+
+  // 吸底下载条：滚过首屏后出现，下载区在视野内时让位
+  (function () {
+    var bar = document.getElementById('bar');
+    var hero = document.querySelector('.hero');
+    var dl = document.getElementById('download');
+    if (!bar || !hero || !('IntersectionObserver' in window)) { return; }
+    var heroOut = false, dlIn = false;
+    var apply = function () { bar.classList.toggle('show', heroOut && !dlIn); };
+    new IntersectionObserver(function (e) { heroOut = !e[0].isIntersecting; apply(); }, { threshold: 0 }).observe(hero);
+    new IntersectionObserver(function (e) { dlIn = e[0].isIntersecting; apply(); }, { threshold: 0 }).observe(dl);
+  })();
+</script>
+</body>
+</html>

@@ -38,7 +38,7 @@ The older W4 text in this report is historical. Current bounded evidence:
 - 隔离副本 + 一次性本地密钥对（未触碰 worker/.dev.vars 的生产私钥），`wrangler dev` 起真实 Cloudflare 运行时。
 - 场景：admin 鉴权 403 / gencode / redeem 绑定 / **maxDevices=3 满员拒第 4 台** / 同设备幂等重发（exp 窗口不变）/ 未知码 404 / 试用精确 604800s 窗 + 重复幂等 / 自助 unbind 释放名额 / 篡改签名 Node 验签失败。
 - **关键互操作**：workerd WebCrypto 签发的 RS256 JWT 全部通过 Node RSA-SHA256 验证（= Android SHA256withRSA 同族）→ 关闭"测试仅 Node 环境"缺口。
-- 脚本：`scripts/worker_e2e_local.mjs`（可重复执行，纯本地）。
+- 脚本：`scripts/worker/worker_e2e_local.mjs`（可重复执行，纯本地）。
 
 ## W3 生产一致性 — PASS（行为等价证明 + 诚实边界）
 - 当前生产版本 `4af734fe-1bd8-41da-93c9-9c03d5c2f4ed`（2026-09-11T23:44Z，100%），`wrangler deployments list` 只读核查；此后 worker/src **无任何提交**（最后改动 0256cf5）。

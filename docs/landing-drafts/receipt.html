@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f6f1e6">
+<title>Appause 收银小票 · 打开之前，先停一下</title>
+<meta name="description" content="一张 Appause 的收银小票：核心功能逐项列明，应付永久为零。本地优先、无账号、MIT 开源的 Android 专注工具。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:title" content="Appause 收银小票 · 打开之前，先停一下">
+<meta property="og:description" content="核心功能逐项列明，应付永久为零。本地优先、无账号、MIT 开源。">
+<meta property="og:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+  /*
+    hallmark: P5 H5 E5 S5 R5 V4 — Pricing Ledger（收银小票形态）/ 自定义主题「热敏小票」
+    与既有版本错开：
+      · index.html / zh.html   hero+3卡+CTA / 品牌蓝
+      · landing-almanac        Long Document / Almanac（衬线+纸）/ 森林绿
+      · landing-timeline       Timeline / 纸墨台账 / 朱红
+      · landing-console        Workbench / Terminal / 琥珀
+      · landing-contrast       Comparison / 警示混凝土 / 信号橙
+    本次换用：收银小票骨架（票头 → 明细行 → 合计 → 条码），主题「热敏小票」
+    （纸 #f6f1e6 + 墨 #23201b + 档案紫 #5b4a8a；sans 正文 + 等宽数字，虚线分栏、锯齿票边、
+    检验章、条码，均由 token 驱动）。
+    事实来源（可核，无编造数字或证言）：
+      · 版本 v0.5.45 / versionCode 97 / 2026-09-24 / 12.3 MB / SHA-256 07cfbfaa…30b6a：GitHub Release
+      · 默认等待 10 秒、可调 1-60 秒：GroupEditorViewModel.kt（_cooldownSeconds = 10）
+      · 免费与 Pro 冷却上限同为 60 秒：ProState.kt:252/255
+      · 免费 1 组 / 统计 365 天：ProState.kt
+      · canRetrieveWindowContent=false：无障碍服务配置（README / PRODUCT）
+      · 真机记录（homekey / recentapps 1.8s / 291ms 重拦 / 小红书 2032 可见）：docs/archive/TEST_REPORT.md
+  */
+
+  /* ---------- 设计令牌 ---------- */
+  :root {
+    --counter:     #e5dfd1;
+    --paper:       #f6f1e6;
+    --paper-deep:  #efe8d7;
+    --ink:         #23201b;
+    --ink-2:       #4d473c;
+    --ink-3:       #7e7666;
+    --rule:        #cfc5b0;
+
+    --accent:      #5b4a8a;
+    --accent-deep: #473780;
+    --accent-soft: #e8e3f3;
+
+    --font-sans: "PingFang SC", "HarmonyOS Sans SC", "Hiragino Sans GB", "Source Han Sans SC", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, "Courier New", monospace;
+
+    --receipt: 26rem;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--counter);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: 15.5px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  :focus-visible { outline: 2.5px solid var(--accent); outline-offset: 3px; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap;
+  }
+
+  /* 跳读链接 */
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 50;
+    background: var(--ink); color: var(--paper);
+    padding: .6rem 1rem; font-size: .875rem; text-decoration: none;
+  }
+  .skip:focus { left: .5rem; top: .5rem; }
+
+  .counter { padding: clamp(1.5rem, 4vw, 3rem) 1rem clamp(2.5rem, 6vw, 4rem); }
+  .counter-note {
+    max-width: var(--receipt); margin: 0 auto 1rem;
+    font-family: var(--font-mono); font-size: .72rem; letter-spacing: .12em;
+    color: var(--ink-3); text-align: center;
+  }
+  .counter-note a { color: var(--ink-2); }
+
+  /* ---------- 票据本体 ---------- */
+  .receipt {
+    max-width: var(--receipt);
+    margin: 0 auto;
+    background: var(--paper);
+    box-shadow: 0 22px 44px rgba(46, 41, 32, .18), 0 2px 6px rgba(46, 41, 32, .10);
+    position: relative;
+  }
+  .pad { padding: 0 clamp(1.1rem, 4.5%, 1.6rem); }
+
+  /* 锯齿票边：台面色三角咬进纸面，留出纸的锯齿 */
+  .zig { height: 10px; background-repeat: repeat-x; background-size: 12px 10px; }
+  .zig-top {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='10'%3E%3Cpolygon points='0,0 12,0 6,10' fill='%23e5dfd1'/%3E%3C/svg%3E");
+  }
+  .zig-bot {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='10'%3E%3Cpolygon points='0,10 12,10 6,0' fill='%23e5dfd1'/%3E%3C/svg%3E");
+  }
+
+  /* 分栏虚线（票面上的撕线） */
+  .perf { margin: 0 clamp(1.1rem, 4.5%, 1.6rem); border-top: 1.5px dashed var(--rule); }
+
+  section { padding: clamp(1.6rem, 5vw, 2.4rem) 0; position: relative; }
+  section:first-of-type { padding-top: 2rem; }
+
+  h2 {
+    font-size: 1.02rem; font-weight: 700; letter-spacing: .02em;
+    margin: 0 0 .9rem; line-height: 1.3;
+    display: flex; align-items: baseline; gap: .6rem;
+  }
+  h2 .num {
+    font-family: var(--font-mono); font-weight: 600; font-size: .72rem;
+    color: var(--accent); letter-spacing: .1em;
+  }
+  .sec-note { margin: -.35rem 0 1.1rem; font-size: .85rem; color: var(--ink-3); }
+
+  /* ---------- 票头 ---------- */
+  .ticket-head { padding: 2.1rem 0 1.9rem; }
+  .store {
+    font-family: var(--font-mono); font-size: 1.05rem; font-weight: 700;
+    letter-spacing: .18em; text-align: center; margin: 0;
+  }
+  .store-sub {
+    font-family: var(--font-mono); font-size: .7rem; letter-spacing: .2em;
+    color: var(--ink-3); text-align: center; margin: .45rem 0 1.6rem;
+  }
+  h1 {
+    font-size: clamp(1.9rem, 8vw, 2.55rem); font-weight: 800; letter-spacing: -.015em;
+    line-height: 1.22; margin: 0 0 .9rem; text-align: center;
+  }
+  h1 em { font-style: normal; color: var(--accent); }
+  .lead { font-size: .94rem; color: var(--ink-2); margin: 0 0 1.5rem; }
+
+  .meta { margin: 0; font-family: var(--font-mono); font-size: .76rem; }
+  .meta > div { display: flex; justify-content: space-between; gap: 1rem; padding: .28rem 0; }
+  .meta dt { color: var(--ink-3); white-space: nowrap; flex: none; }
+  .meta dd { margin: 0; color: var(--ink); text-align: right; word-break: break-all; }
+
+  /* ---------- 商品照片 ---------- */
+  .photos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem; }
+  .photos figure {
+    margin: 0; background: #fff; padding: 7px 7px 0;
+    border: 1px solid var(--rule);
+    box-shadow: 0 6px 14px rgba(46, 41, 32, .10);
+  }
+  .photos figure:first-child { transform: rotate(-1.2deg); }
+  .photos figure:last-child { transform: rotate(1deg); }
+  .photos figcaption {
+    font-family: var(--font-mono); font-size: .66rem; color: var(--ink-3);
+    padding: .5rem .1rem .55rem; line-height: 1.55;
+  }
+
+  /* ---------- 明细行（名称 …… 金额） ---------- */
+  .items { list-style: none; margin: 0; padding: 0; }
+  .item {
+    display: flex; align-items: baseline; gap: .55rem;
+    padding: .6rem 0;
+  }
+  .item + .item { border-top: 1px dotted var(--rule); }
+  .item .name { min-width: 0; }
+  .item .name small { display: block; font-size: .8rem; color: var(--ink-3); line-height: 1.5; }
+  .item .dots { flex: 1 1 1rem; min-width: 1rem; border-bottom: 1.5px dotted var(--rule); transform: translateY(-.35em); }
+  .item .price {
+    font-family: var(--font-mono); font-size: .86rem; font-variant-numeric: tabular-nums;
+    color: var(--ink); flex: none;
+  }
+  .item .price.free { color: var(--accent); font-weight: 700; }
+
+  /* ---------- 本票不含 ---------- */
+  .deny .name { color: var(--ink-2); }
+  .deny .price { color: var(--ink-3); text-decoration: none; }
+  .deny small code {
+    font-family: var(--font-mono); font-size: .92em;
+    background: var(--paper-deep); padding: .05em .35em; border: 1px solid var(--rule);
+  }
+
+  /* ---------- 手续 ---------- */
+  .forms-list { list-style: none; margin: 0; padding: 0; counter-reset: f; }
+  .forms-list li { padding: .8rem 0; }
+  .forms-list li + li { border-top: 1px dotted var(--rule); }
+  .forms-list b { display: inline; font-weight: 700; }
+  .forms-list p { margin: .3rem 0 0; font-size: .86rem; color: var(--ink-2); }
+  .tag {
+    display: inline-block; font-family: var(--font-mono); font-size: .64rem;
+    letter-spacing: .1em; padding: .12em .45em; margin-left: .5rem;
+    border: 1px solid var(--accent); color: var(--accent);
+    vertical-align: .12em; white-space: nowrap;
+  }
+  .tag.opt { border-color: var(--ink-3); color: var(--ink-3); }
+
+  /* ---------- 出厂检验 ---------- */
+  .checks { list-style: none; margin: 0; padding: 0; }
+  .checks li { display: flex; gap: .6rem; padding: .55rem 0; font-size: .9rem; align-items: baseline; }
+  .checks li + li { border-top: 1px dotted var(--rule); }
+  .checks .mark {
+    flex: none; font-family: var(--font-mono); font-size: .68rem; font-weight: 700;
+    letter-spacing: .1em; color: var(--accent); border: 1px solid var(--accent);
+    padding: .1em .4em; transform: translateY(-.1em);
+  }
+  .stamp-row { display: flex; justify-content: flex-end; margin-top: .9rem; }
+  .stamp {
+    width: 5.2rem; height: 5.2rem; border-radius: 50%;
+    border: 2px solid var(--accent); outline: 1.5px solid var(--accent); outline-offset: -7px;
+    display: grid; place-items: center;
+    color: var(--accent); font-weight: 800; font-size: .98rem; letter-spacing: .14em;
+    transform: rotate(-13deg); opacity: .92;
+  }
+
+  /* ---------- 合计 ---------- */
+  .total { padding-top: 1.9rem; }
+  .sum-line {
+    display: flex; align-items: baseline; gap: .55rem;
+    font-size: .9rem; color: var(--ink-2); padding: .4rem 0;
+  }
+  .sum-line .dots { flex: 1; border-bottom: 1.5px dotted var(--rule); transform: translateY(-.35em); }
+  .sum-line .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .grand {
+    margin-top: .9rem; padding: 1rem 0;
+    border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink);
+    display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+  }
+  .grand-label { font-weight: 800; font-size: 1.02rem; letter-spacing: .05em; }
+  .grand-num {
+    font-family: var(--font-mono); font-weight: 700;
+    font-size: clamp(1.7rem, 7vw, 2.1rem); font-variant-numeric: tabular-nums;
+    color: var(--accent-deep);
+  }
+  .grand-note { margin: .8rem 0 0; font-size: .83rem; color: var(--ink-3); }
+
+  /* ---------- 凭票取货 ---------- */
+  .btn {
+    display: block; text-align: center; text-decoration: none;
+    background: var(--accent-deep); color: #fff;
+    font-weight: 700; font-size: 1rem; letter-spacing: .03em;
+    padding: .95rem 1rem; border: 2px solid var(--accent-deep);
+  }
+  .btn .sub {
+    display: block; font-family: var(--font-mono); font-weight: 400;
+    font-size: .7rem; letter-spacing: .08em; margin-top: .3rem; opacity: .82;
+  }
+  @media (hover: hover) {
+    .btn { transition: transform 120ms linear, background 120ms linear; }
+    .btn:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-1px); }
+  }
+  .links {
+    display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; justify-content: center;
+    margin-top: 1rem; font-family: var(--font-mono); font-size: .74rem;
+  }
+
+  /* ---------- 退换货须知 ---------- */
+  details { border-top: 1px dotted var(--rule); }
+  details:last-of-type { border-bottom: 1px dotted var(--rule); }
+  summary {
+    cursor: pointer; list-style: none; padding: .7rem 0;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+    font-weight: 600; font-size: .92rem;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after {
+    content: "+"; font-family: var(--font-mono); color: var(--accent);
+    flex: none; line-height: 1;
+  }
+  details[open] summary::after { content: "−"; }
+  details p { margin: 0 0 .9rem; font-size: .87rem; color: var(--ink-2); }
+
+  /* ---------- 防伪 ---------- */
+  .barcode {
+    height: 54px; margin: 0 0 .4rem;
+    background: repeating-linear-gradient(90deg,
+      var(--ink) 0 3px, transparent 3px 5px,
+      var(--ink) 5px 6px, transparent 6px 10px,
+      var(--ink) 10px 14px, transparent 14px 16px,
+      var(--ink) 16px 17px, transparent 17px 22px,
+      var(--ink) 22px 26px, transparent 26px 29px);
+  }
+  .bar-cap {
+    text-align: center; font-family: var(--font-mono); font-size: .78rem;
+    letter-spacing: .28em; margin: 0 0 1.1rem;
+  }
+  .verify { font-size: .83rem; color: var(--ink-2); margin: 1rem 0 0; }
+  .verify code {
+    font-family: var(--font-mono); font-size: .92em;
+    background: var(--paper-deep); border: 1px solid var(--rule); padding: .05em .35em;
+  }
+
+  /* ---------- 票尾 ---------- */
+  .ticket-foot { padding: 1.6rem 0 1.9rem; }
+  .thanks {
+    font-family: var(--font-mono); font-size: .82rem; letter-spacing: .14em;
+    text-align: center; margin: 0 0 1rem;
+  }
+  .foot-note { font-size: .83rem; color: var(--ink-2); margin: 0 0 .9rem; }
+  .foot-meta {
+    font-family: var(--font-mono); font-size: .68rem; letter-spacing: .1em;
+    color: var(--ink-3); text-align: center; margin: 0;
+  }
+
+  @media (max-width: 380px) {
+    body { font-size: 15px; }
+    .photos { gap: .6rem; }
+    .grand-num { font-size: 1.6rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">跳到票面正文</a>
+
+<div class="counter">
+  <p class="counter-note">收银台 · 方案草稿 · 正式页面见 <a href="../../zh.html">zh.html</a></p>
+
+  <article class="receipt" id="top">
+    <div class="zig zig-top" aria-hidden="true"></div>
+
+    <main id="main" class="pad">
+
+      <!-- ============ 票头 ============ -->
+      <header class="ticket-head">
+        <p class="store">APPAUSE</p>
+        <p class="store-sub">自我管理用品 · 收银台</p>
+        <h1>打开之前，<br>先<em>停一下</em>。</h1>
+        <p class="lead">
+          你点开一个分心应用的那一瞬间，Appause 插进一段你看得到的时间。
+          时间走完，继续还是回桌面，你自己决定。本票每一行，都能在公开仓库里对到代码。
+        </p>
+        <dl class="meta">
+          <div><dt>单号</dt><dd>NO.0.5.45</dd></div>
+          <div><dt>打印日期</dt><dd>2026-09-24</dd></div>
+          <div><dt>台号</dt><dd>Android 8.0 及以上</dd></div>
+          <div><dt>包名</dt><dd>com.appause.android</dd></div>
+          <div><dt>versionCode</dt><dd>97</dd></div>
+          <div><dt>许可</dt><dd>MIT 开源</dd></div>
+        </dl>
+      </header>
+
+      <div class="perf" aria-hidden="true"></div>
+
+      <!-- ============ 01 商品照片 ============ -->
+      <section aria-labelledby="h-photo">
+        <h2 id="h-photo"><span class="num">01</span>商品照片</h2>
+        <div class="photos">
+          <figure>
+            <img src="../../images/screenshots/zh/pause.png" width="1080" height="2400" alt="Appause 停顿屏：中央是倒计时数字，下方是继续与取消两个选项" loading="lazy">
+            <figcaption>停顿屏 · 倒计时走完前「继续」点不动</figcaption>
+          </figure>
+          <figure>
+            <img src="../../images/screenshots/zh/home.png" width="1080" height="2400" alt="Appause 首页：显示无障碍服务状态、今日记录与应用分组" loading="lazy">
+            <figcaption>首页 · 服务状态与分组一眼可见</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <div class="perf" aria-hidden="true"></div>
+
+      <!-- ============ 02 商品明细 ============ -->
+      <section aria-labelledby="h-goods">
+        <h2 id="h-goods"><span class="num">02</span>商品明细 · 核心功能</h2>
+        <p class="sec-note">以下全部含在票内，不另收费。</p>
+        <ul class="items">
+          <li class="item">
+            <span class="name">应用分组与拦截<small>免费 1 组，把要管的应用放进同一组</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price free">¥0.00</span>
+          </li>
+          <li class="item">
+            <span class="name">打开前等待<small>1 至 60 秒可调，默认 10 秒</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price free">¥0.00</span>
+          </li>
+          <li class="item">
+            <span class="name">「继续」与「回桌面」<small>倒计时走完才能继续，取消随时可按</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price free">¥0.00</span>
+          </li>
+          <li class="item">
+            <span class="name">打开原因记录<small>继续时随手选一个理由，回看自己为什么点开</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price free">¥0.00</span>
+          </li>
+          <li class="item">
+            <span class="name">本地统计<small>完成与放弃次数，7 天与 365 天趋势，只存本机</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price free">¥0.00</span>
+          </li>
+          <li class="item">
+            <span class="name">推荐应用<small>永不拦截，只在停顿屏上作为另一个选项出现</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price free">¥0.00</span>
+          </li>
+        </ul>
+      </section>
+
+      <div class="perf" aria-hidden="true"></div>
+
+      <!-- ============ 03 试用装 ============ -->
+      <section aria-labelledby="h-trial">
+        <h2 id="h-trial"><span class="num">03</span>试用装 · Pro 实验功能</h2>
+        <p class="sec-note">还在试的四样，同样不收钱。</p>
+        <ul class="items">
+          <li class="item">
+            <span class="name">无限分组<small>工作与娱乐分开管</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price">¥0.00</span>
+          </li>
+          <li class="item">
+            <span class="name">再次提醒<small>停留在目标应用时二次提醒</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price">¥0.00</span>
+          </li>
+          <li class="item">
+            <span class="name">自定义停顿提示语<small>停顿屏上那句话自己写</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price">¥0.00</span>
+          </li>
+          <li class="item">
+            <span class="name">自定义打开原因<small>理由选项自己定</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price">¥0.00</span>
+          </li>
+        </ul>
+        <p style="margin:1.1rem 0 0;font-size:.86rem;color:var(--ink-2);">
+          每台设备可在应用里手动开启一次 7 天试用，不默认开始。
+          试用期结束后，在「设置 → 反馈」里申请免费永久码，开发者一对一发放，一个码最多绑定 3 台设备。
+          试用期间不能兑换永久码，需要等这 7 天走完。到期不删数据，已有分组照常拦截。
+        </p>
+      </section>
+
+      <div class="perf" aria-hidden="true"></div>
+
+      <!-- ============ 04 本票不含 ============ -->
+      <section aria-labelledby="h-not">
+        <h2 id="h-not"><span class="num">04</span>本票不含 · 给钱也不卖</h2>
+        <ul class="items">
+          <li class="item deny">
+            <span class="name">账号系统</span>
+            <i class="dots" aria-hidden="true"></i><span class="price">无</span>
+          </li>
+          <li class="item deny">
+            <span class="name">云同步<small>卸载即清空，换机请重新设置</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price">无</span>
+          </li>
+          <li class="item deny">
+            <span class="name">广告与统计 SDK</span>
+            <i class="dots" aria-hidden="true"></i><span class="price">无</span>
+          </li>
+          <li class="item deny">
+            <span class="name">屏幕内容读取<small><code>canRetrieveWindowContent = false</code>，只读前台应用包名</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price">无</span>
+          </li>
+          <li class="item deny">
+            <span class="name">日常联网<small>仅开始试用、兑换激活码、发送反馈时联网</small></span>
+            <i class="dots" aria-hidden="true"></i><span class="price">无</span>
+          </li>
+        </ul>
+      </section>
+
+      <div class="perf" aria-hidden="true"></div>
+
+      <!-- ============ 05 自行办理的手续 ============ -->
+      <section aria-labelledby="h-forms">
+        <h2 id="h-forms"><span class="num">05</span>请自行办理的手续</h2>
+        <p class="sec-note">不是钱的事，是权限的事。前两项办不好，东西拿回去也不灵。</p>
+        <ol class="forms-list">
+          <li>
+            <b>无障碍服务</b><span class="tag">必需</span>
+            <p>用它识别当前前台是哪个应用，这是 Appause 唯一的核心权限，关掉即停工。</p>
+          </li>
+          <li>
+            <b>电池设为「无限制」</b><span class="tag">小米 / HyperOS 必需</span>
+            <p>不办的话系统会在后台杀掉检测服务，表现是第一次打开不拦。路径：系统设置 → 应用 → Appause → 省电策略 → 无限制。顺手允许自启动。</p>
+          </li>
+          <li>
+            <b>使用情况访问</b><span class="tag opt">可选</span>
+            <p>在本机二次确认真正的前台应用，减少误触发。</p>
+          </li>
+          <li>
+            <b>显示在其他应用上层</b><span class="tag opt">可选兜底</span>
+            <p>只有你的机器显示不出停顿屏时才开，走兼容后备方案。</p>
+          </li>
+        </ol>
+      </section>
+
+      <div class="perf" aria-hidden="true"></div>
+
+      <!-- ============ 06 出厂检验 ============ -->
+      <section aria-labelledby="h-qc">
+        <h2 id="h-qc"><span class="num">06</span>出厂检验</h2>
+        <p class="sec-note">设备 Xiaomi 2410DPN6CC · HyperOS · Android 16 · v0.5.44。单机型记录，不是全机型质保。</p>
+        <ul class="checks">
+          <li><span class="mark">合格</span><span>按 Home 键，停顿屏立即关闭（reason=homekey）</span></li>
+          <li><span class="mark">合格</span><span>按最近任务键，1.8 秒后停顿屏仍在，不误判为回桌面</span></li>
+          <li><span class="mark">合格</span><span>回桌面 291 毫秒后再打开 B 站，立刻重新拦截</span></li>
+          <li><span class="mark">合格</span><span>小红书「隐藏悬浮窗」机制下，停顿屏仍可见（无障碍窗口 2032）</span></li>
+        </ul>
+        <div class="stamp-row" aria-hidden="true"><div class="stamp">检验合格</div></div>
+      </section>
+
+      <div class="perf" aria-hidden="true"></div>
+
+      <!-- ============ 合计 ============ -->
+      <section class="total" aria-labelledby="h-total">
+        <h2 id="h-total" class="sr-only">合计</h2>
+        <div class="sum-line"><span>商品合计</span><i class="dots" aria-hidden="true"></i><span class="mono">¥0.00</span></div>
+        <div class="sum-line"><span>运费 · 侧载安装</span><i class="dots" aria-hidden="true"></i><span class="mono">¥0.00</span></div>
+        <div class="sum-line"><span>税费 · 隐藏扣费</span><i class="dots" aria-hidden="true"></i><span class="mono">¥0.00</span></div>
+        <div class="grand">
+          <span class="grand-label">应付 · 永久</span>
+          <span class="grand-num">¥0.00</span>
+        </div>
+        <p class="grand-note">核心功能永久免费，没有订阅，也没有付费版的计划。</p>
+      </section>
+
+      <div class="perf" aria-hidden="true"></div>
+
+      <!-- ============ 07 凭票取货 ============ -->
+      <section aria-labelledby="h-pickup">
+        <h2 id="h-pickup"><span class="num">07</span>凭票取货</h2>
+        <a class="btn" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 Appause v0.5.45<span class="sub">APK · 12.3 MB · 2026-09-24 发布</span></a>
+        <div class="links">
+          <a href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.45">版本说明</a>
+          <a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">安装指南</a>
+          <a href="../../privacy-policy.html">隐私政策</a>
+          <a href="https://github.com/Shmily0826/Appause">源码（MIT）</a>
+        </div>
+      </section>
+
+      <div class="perf" aria-hidden="true"></div>
+
+      <!-- ============ 08 退换货须知 ============ -->
+      <section aria-labelledby="h-returns">
+        <h2 id="h-returns"><span class="num">08</span>退换货须知 · 常见问题</h2>
+        <details>
+          <summary>它会看到我屏幕上的内容吗？</summary>
+          <p>不会。无障碍服务只读取前台应用的包名一个字符串，canRetrieveWindowContent 设为 false，屏幕内容、消息、截图、键盘输入一概拿不到。代码 MIT 开源，可以自己查。</p>
+        </details>
+        <details>
+          <summary>装了为什么不拦？</summary>
+          <p>八成是电池限制。到系统设置 → 应用 → Appause → 省电策略 → 无限制，再把无障碍关掉重开一次。小米 / HyperOS 上这一步不做，服务会被系统杀掉。</p>
+        </details>
+        <details>
+          <summary>能拿来管孩子或员工吗？</summary>
+          <p>不能。这是给使用者本人的自我管理工具，没有远程管理能力，也不向任何人上报。权限按无障碍辅助功能如实描述。</p>
+        </details>
+        <details>
+          <summary>试用到期后，正在用的会失效吗？</summary>
+          <p>已有分组继续拦截，冷却和统计照常，数据不删。失效的是再次提醒、新建分组，以及自定义文案的编辑。</p>
+        </details>
+        <details>
+          <summary>换手机怎么办？</summary>
+          <p>数据不云同步，需要在新机器上重建分组。Pro 在新设备上重新输入同一个激活码即可，一个码最多绑 3 台。</p>
+        </details>
+      </section>
+
+      <div class="perf" aria-hidden="true"></div>
+
+      <!-- ============ 09 防伪信息 ============ -->
+      <section aria-labelledby="h-sec">
+        <h2 id="h-sec"><span class="num">09</span>防伪信息</h2>
+        <div class="barcode" role="img" aria-label="条形码，包名 com.appause.android"></div>
+        <p class="bar-cap">com.appause.android</p>
+        <dl class="meta">
+          <div><dt>文件</dt><dd>Appause-v0.5.45.apk</dd></div>
+          <div><dt>大小</dt><dd>12,268,450 字节</dd></div>
+          <div><dt>SHA-256</dt><dd>07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a</dd></div>
+        </dl>
+        <p class="verify">下载后可自行比对：Windows 用 <code>certutil -hashfile 文件 SHA256</code>，macOS / Linux 用 <code>shasum -a 256 文件</code>。别处下载的安装包，请对不上就扔。</p>
+      </section>
+
+      <div class="perf" aria-hidden="true"></div>
+
+      <!-- ============ 票尾 ============ -->
+      <footer class="ticket-foot">
+        <p class="thanks">* 感谢惠顾 · 欢迎再来 *</p>
+        <p class="foot-note">
+          Appause 是一个人在业余时间维护的项目。遇到问题，或者想要一枚永久码，去 GitHub 提 issue 就有回应。
+          本票与代码一同以 MIT 许可开源。
+        </p>
+        <p class="foot-meta">© 2026 Appause authors · MIT LICENSE</p>
+      </footer>
+
+    </main>
+    <div class="zig zig-bot" aria-hidden="true"></div>
+  </article>
+
+  <p class="counter-note" style="margin-top:1rem">存档：docs/landing-drafts/receipt.html</p>
+</div>
+
+</body>
+</html>

@@ -273,7 +273,7 @@ python scripts/stress/analyze.py            # 默认分析最新一次运行
 对照修复前的 `run-20260916-120927`：3 次 WATCHDOG_RELEASE + DUPLICATE_INTERCEPT + OVERLAY_LEAK。
 
 **真机 Xiaomi/HyperOS 的 exact-30-second watchdog boundary 当时未验证；后续单包 Temporary Pass
-锁屏过期验证记录在 `TEST_REPORT.md` §34，但不替代本节的 exact-30-second 证据。**
+锁屏过期验证记录在 `archive/TEST_REPORT.md` §34，但不替代本节的 exact-30-second 证据。**
 
 ---
 

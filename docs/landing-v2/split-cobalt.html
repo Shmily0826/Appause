@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<!--
+  hallmark: P5 H5 E5 S5 R5 V4 — Editorial Split / Cobalt（浅场变体）
+  结构与主题都与同目录前三版错开：
+    · 宏观结构 Editorial Split（非对称两栏、正文与视觉交替），不是 Timeline / Long Document /
+      Comparison / Workbench / Pricing Ledger / Doc Portal —— 已用过的六种全部避开。
+    · 主题 Cobalt 的浅场变体：冷白场 #f5f6f8（前六版都是暖纸底）+ 钴蓝 #1f3bc4（前几版是朱红 /
+      森林绿 / 线圈琥珀 / 信号橙）+ 无衬线放大的 grotesque 标题（前几版是衬线或等宽）。
+
+  这一版是「按竞品实测结论重做首屏」的产物。实测 6 个竞品页（one sec / Opal / Linear /
+  Raycast / ScreenZen / Brick）后的四条结论，全部落进本页：
+    1. 首屏产品视觉应当和文字栏**同量级甚至更大**：one sec 450 vs 360、ScreenZen 440 vs 360。
+       本页右栏做成比左栏宽（1fr : 1.15fr），图宽 100%。
+       ⚠️ 同目录 timeline-humanized.html 的原病根不在 width，而在 **<figure> 的 UA 默认
+       margin: 1em 40px 从没被重置**，白白吃掉左右各 40px。本页 .shot 已 margin: 0。
+    2. 导航必须一眼看得出能点：竞品最低是 500 字重 + 32–51px 命中高度。本页用 15px/600 胶囊，
+       悬停与当前项给 --tint 底色。
+    3. 顶栏到首屏只留 72–90px（竞品实测 84 / 85 / 111）。
+    4. 讲机制用 2–4 组、每组一图一句，不写时间轴；FAQ 放最后，答案 1–3 句。
+
+  ⚠️ 文案约束（本轮用户明确要求）：**没有任何用户量或效果数据，也一个都不许编**
+  （PRODUCT.md: "No verified product-effect metrics or user testimonials were present in the
+  sources reviewed; do not invent them."）。所以本页不写「X 万人使用」「提升 Y%」之类，
+  信任只靠两条可核事实：**MIT 开源** 与 **永久免费**。所有数字都是可核的工程事实
+  （冷却 1–60 秒、分组免费 1 个、统计 365 天、一个码最多 3 台、APK 体积与校验值）。
+
+  事实来源：README.md、PRODUCT.md、PRIVACY.md、docs/INSTALL.md、GitHub Release v0.5.45、
+  app/src/main/res/values-zh/strings.xml（用词基准）、docs/archive/TEST_REPORT.md（真机记录）。
+  用词对齐 strings.xml：冷却 / 暂停页 / 试用 / 电池优化 / 永久授权码。不用「停顿」「冷静期」。
+  已实测：1280 / 768 / 390 / 320 四档 0 横向溢出、0 断图、0 JS 报错。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f6f8">
+<title>Appause · 先等十秒，再打开</title>
+<meta name="description" content="Appause 是一个 Android 专注工具：你选的应用打开前先冷却几秒，要不要继续由你按。MIT 开源，永久免费，数据只存本机。">
+<link rel="canonical" href="https://shmily0826.github.io/Appause/docs/landing-v2/split-cobalt.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Appause">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:url" content="https://shmily0826.github.io/Appause/docs/landing-v2/split-cobalt.html">
+<meta property="og:title" content="Appause · 先等十秒，再打开">
+<meta property="og:description" content="打开选定的应用时先冷却十秒，再决定继续还是回桌面。MIT 开源，永久免费。">
+<meta property="og:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Appause 分享卡片：淡紫底上写着「在点开和下滑之间，放一个你的决定」，右侧是暂停页示意，倒计时显示 2 秒，下方有四个原因选项和一个禁用的继续按钮">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Appause · 先等十秒，再打开">
+<meta name="twitter:description" content="打开选定的应用时先冷却十秒，再决定继续还是回桌面。MIT 开源，永久免费。">
+<meta name="twitter:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png">
+<meta name="twitter:image:alt" content="Appause 分享卡片：淡紫底上写着「在点开和下滑之间，放一个你的决定」，右侧是暂停页示意，倒计时显示 2 秒，下方有四个原因选项和一个禁用的继续按钮">
+<link rel="icon" href="../../images/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="../../images/apple-touch-icon.png">
+<style>
+  /* ---------- 令牌（颜色与字体只在这里定义） ---------- */
+  :root {
+    --field: #f5f6f8;
+    --card: #ffffff;
+    --ink: #14161a;
+    --ink-soft: #4f545d;
+    --ink-faint: #6b7076;
+    --line: #d9dde3;
+    --line-strong: #b9c0c9;
+    --cobalt: #1f3bc4;
+    --cobalt-deep: #172c96;
+    --tint: #e9edfb;
+
+    --font-display: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-body: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+
+    --s1: 0.5rem;
+    --s2: 1rem;
+    --s3: 1.75rem;
+    --s4: 3rem;
+    --s5: 5rem;
+    --wrap: 1120px;
+    --gutter: 1.5rem;
+
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--field);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  img { max-width: 100%; height: auto; display: block; }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
+
+  /* 容器只用 padding 做左右留白 —— 因此后面任何规则都不许再写 padding 简写，
+     只能写 padding-block / padding-inline（否则会把这两侧留白清零，本项目踩过）。 */
+  .wrap {
+    max-width: var(--wrap);
+    margin: 0 auto;
+    padding-inline: var(--gutter);
+  }
+
+  /* 中文排版：短块 balance 摊平两行，正文 pretty 防孤字，清单项也要 pretty */
+  h1, h2, .lede, .sec-head p, figcaption { text-wrap: balance; }
+  p, li, dd, .step p { text-wrap: pretty; }
+  p, li, .sec-head p, .lede { line-break: strict; }
+  .nb { white-space: nowrap; }
+  code { font-family: var(--font-mono); font-size: 0.9em; white-space: nowrap; }
+
+  .skip {
+    position: absolute; left: -9999px; top: 0; z-index: 60;
+    background: var(--ink); color: var(--field);
+    padding: 0.6rem 1rem; font-size: 0.875rem; text-decoration: none;
+  }
+  .skip:focus { left: 0.5rem; top: 4.5rem; }
+
+  /* ---------- 顶栏：导航做成胶囊，静止态就有可点线索 ---------- */
+  .top {
+    position: sticky; top: 0; z-index: 30;
+    background: rgba(245, 246, 248, 0.92);
+    backdrop-filter: saturate(1.6) blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .top-row {
+    display: flex; align-items: center; gap: var(--s2);
+    padding-block: 0.55rem;   /* 只写纵向，左右留给 .wrap */
+  }
+  .brand {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em;
+    text-decoration: none; white-space: nowrap;
+  }
+  .brand svg { flex: none; }
+  .brand-ring { fill: none; stroke: var(--ink); stroke-width: 2.6; }
+  .brand-bars { fill: var(--cobalt); }
+  /* 导航：胶囊形态，静止态就有可点线索（竞品最低是 500 字重 + 32–51px 命中高度）。
+     窄屏不隐藏、也不换行，改成与品牌同排的横向滚动条 —— 本页手机端约 9000px 高，
+     没有站内跳转是个真缺口；换行会把顶栏撑到 99px，同排滚动只占 59px。 */
+  .nav {
+    display: flex; gap: 0.25rem;
+    flex: 1 1 0; min-width: 0;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+  .nav a {
+    flex: none;
+    display: inline-flex; align-items: center;
+    min-height: 2.25rem; padding: 0 0.72rem;
+    border-radius: 999px;
+    font-size: 0.9rem; font-weight: 600;
+    color: var(--ink-soft); text-decoration: none;
+    transition: background 120ms linear, color 120ms linear;
+  }
+  .nav a[aria-current="true"] { color: var(--cobalt-deep); background: var(--tint); }
+  @media (hover: hover) {
+    .nav a:hover { color: var(--cobalt-deep); background: var(--tint); }
+  }
+  .top .cta {
+    margin-left: auto; flex: none;
+    display: inline-flex; align-items: center; min-height: 2.5rem;
+    padding: 0 1rem; border-radius: 999px;
+    background: var(--cobalt); color: #fff;
+    font-size: 0.9rem; font-weight: 600; text-decoration: none; white-space: nowrap;
+  }
+  @media (hover: hover) { .top .cta:hover { background: var(--cobalt-deep); } }
+  @media (max-width: 61.99rem) {
+    .top .cta { display: none; }   /* 窄屏下载交给吸底条，避免两个常驻入口 */
+  }
+  @media (min-width: 62rem) {
+    .nav { flex: 0 1 auto; margin-left: var(--s2); overflow: visible; }
+    .nav a { min-height: 2.5rem; font-size: 0.94rem; }
+  }
+
+  /* ---------- 首屏：Editorial Split（右栏比左栏宽，图占满） ---------- */
+  .hero { padding-block: 4.25rem var(--s4); }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s4);
+    align-items: start;
+  }
+  @media (min-width: 56rem) {
+    /* 右栏用确定宽度（clamp），左栏吃剩余：图/文 ≈ 0.8。
+       ⚠️ 别写 minmax(300px,440px)——旁边有 fr 轨道时它只会停在下限。 */
+    .hero-grid { grid-template-columns: minmax(0, 1fr) clamp(300px, 38vw, 440px); gap: var(--s5); }
+    .hero .shot { justify-self: end; }
+  }
+  .kicker {
+    font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.14em;
+    color: var(--cobalt); margin: 0 0 var(--s2); text-transform: uppercase;
+  }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(2.6rem, 6vw, 4rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    margin: 0 0 var(--s3);
+  }
+  .lede {
+    font-size: 1.15rem; color: var(--ink-soft); max-width: 30em;
+    margin: 0 0 var(--s4);
+  }
+  .btn-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+  .btn {
+    display: inline-flex; align-items: center; min-height: 3.25rem;
+    padding: 0 1.75rem; border-radius: 999px;
+    background: var(--cobalt); color: #fff;
+    font-size: 1.05rem; font-weight: 700; text-decoration: none;
+    box-shadow: 0 1px 0 var(--cobalt-deep);
+  }
+  @media (hover: hover) { .btn:hover { background: var(--cobalt-deep); } }
+  .btn-sub {
+    font-size: 0.95rem; font-weight: 600; color: var(--ink-soft);
+    text-underline-offset: 4px; padding-block: 0.5rem;
+  }
+  @media (hover: hover) { .btn-sub:hover { color: var(--ink); } }
+
+  /* 信任条：只有可核事实，不放任何用户量或效果数字 */
+  .facts {
+    list-style: none; display: flex; flex-wrap: wrap;
+    gap: 0.4rem 1.25rem; margin: var(--s4) 0 0; padding: 0;
+    font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-faint);
+  }
+  .facts li { display: inline-flex; align-items: center; gap: 0.4rem; }
+  .facts li::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--cobalt); }
+  .facts b { color: var(--ink); font-weight: 600; }
+
+  /* ⚠️ figure 的 UA 默认 margin 是 1em 40px，必须显式清零，否则图被吃掉左右各 40px */
+  .shot { margin: 0; }
+  .shot img {
+    width: 100%;
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    background: var(--card);
+  }
+  .shot figcaption {
+    font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-faint);
+    margin-top: 0.7rem;
+  }
+  .hero .shot img { box-shadow: 0 18px 44px -28px rgba(20, 22, 26, 0.5); }
+
+  /* ---------- 小节通用 ---------- */
+  section { scroll-margin-top: 4.5rem; }
+  .sec { padding-block: var(--s5); border-top: 1px solid var(--line); }
+  .sec-head { max-width: 40em; margin-bottom: var(--s4); }
+  .sec-head h2 {
+    font-family: var(--font-display); font-weight: 800;
+    font-size: clamp(1.6rem, 3.2vw, 2.2rem);
+    line-height: 1.16; letter-spacing: -0.02em;
+    margin: 0 0 0.6rem;
+  }
+  .sec-head p { color: var(--ink-soft); margin: 0; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 0.76rem; letter-spacing: 0.14em;
+    color: var(--cobalt); margin: 0 0 0.7rem;
+  }
+
+  /* ---------- 三步开始用 ---------- */
+  .steps { list-style: none; counter-reset: st; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+  @media (min-width: 46rem) { .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); } }
+  .step { position: relative; padding-top: var(--s3); border-top: 2px solid var(--ink); }
+  .step::before {
+    counter-increment: st; content: "0" counter(st);
+    position: absolute; top: 0.7rem; left: 0;
+    font-family: var(--font-mono); font-size: 0.78rem; color: var(--cobalt);
+  }
+  .step h3 { font-size: 1.08rem; font-weight: 700; margin: 1.6rem 0 0.4rem; line-height: 1.45; }
+  .step p { margin: 0; color: var(--ink-soft); }
+  .step-note {
+    margin-top: var(--s4); padding: 0.9rem 1.1rem;
+    background: var(--tint); border-radius: 10px;
+    font-size: 0.92rem; color: var(--ink-soft);
+  }
+  .step-note b { color: var(--ink); font-weight: 700; }
+
+  /* ---------- 十秒里发生什么：图文交替 ---------- */
+  .rows { display: grid; gap: var(--s5); }
+  .row { display: grid; gap: var(--s3); align-items: center; }
+  @media (min-width: 52rem) {
+    .row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: var(--s5); }
+    .row.flip .row-text { order: 2; }
+    /* 三张机制图收窄并靠外侧对齐（杂志式的错落），否则手机截图在平板上会胀到整栏宽 */
+    .row:not(.flip) .shot { justify-self: end; }
+    .row.flip .shot { justify-self: start; }
+  }
+  .row .shot { max-width: 340px; }
+  @media (max-width: 51.99rem) { .row .shot { margin-inline: auto; } }
+  .row-text h3 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(1.25rem, 2.2vw, 1.6rem); line-height: 1.3;
+    margin: 0 0 0.6rem; letter-spacing: -0.01em;
+  }
+  .row-text p { margin: 0 0 0.8rem; color: var(--ink-soft); max-width: 30em; }
+  .row-text p:last-child { margin-bottom: 0; }
+  .aside {
+    font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-faint);
+    border-left: 2px solid var(--line-strong); padding-left: 0.75rem;
+  }
+  .shot.compact img { border-radius: 12px; }
+  .shot.compact { max-width: 300px; }
+
+  /* ---------- 权限：清单而不是大表 ---------- */
+  .perms { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+  .perms li {
+    display: grid; gap: 0.3rem 1rem;
+    padding-block: 1rem; border-bottom: 1px solid var(--line);
+  }
+  @media (min-width: 44rem) { .perms li { grid-template-columns: 11rem minmax(0, 1fr); } }
+  .perms dt { font-weight: 700; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+  .perms dd { margin: 0; color: var(--ink-soft); }
+  .pill {
+    font-family: var(--font-mono); font-size: 0.7rem; font-weight: 500;
+    padding: 0.15em 0.5em; border-radius: 999px; white-space: nowrap;
+  }
+  .pill.req { background: var(--cobalt); color: #fff; }
+  .pill.rec { background: var(--tint); color: var(--cobalt-deep); }
+  .pill.opt { background: #eceef1; color: var(--ink-faint); }
+  .plain-note {
+    margin: var(--s3) 0 0; padding: 0.9rem 1.1rem;
+    background: var(--tint); border-radius: 10px;
+    font-size: 0.92rem; color: var(--ink-soft);
+  }
+  .plain-note strong { color: var(--ink); }
+
+  /* ---------- 免费与 Pro ---------- */
+  .plans { display: grid; gap: var(--s3); }
+  @media (min-width: 46rem) { .plans { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s4); } }
+  .plan { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: var(--s3); }
+  .plan.pro { border-color: var(--cobalt); }
+  .plan h3 {
+    font-family: var(--font-mono); font-size: 0.8rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--ink-faint); margin: 0 0 var(--s2);
+  }
+  .plan.pro h3 { color: var(--cobalt); }
+  .plan ul { list-style: none; margin: 0; padding: 0; }
+  .plan li { padding-block: 0.55rem; border-bottom: 1px solid var(--line); color: var(--ink-soft); }
+  .plan li:last-child { border-bottom: none; }
+  .plan li b { color: var(--ink); font-weight: 700; }
+  .plan-note { margin: var(--s3) 0 0; font-size: 0.92rem; color: var(--ink-soft); }
+  .plan-note b { color: var(--ink); font-weight: 700; }
+
+  /* ---------- FAQ ---------- */
+  .faq { max-width: 48em; border-top: 1px solid var(--line); }
+  .faq details { border-bottom: 1px solid var(--line); }
+  .faq summary {
+    cursor: pointer; list-style: none;
+    padding: 1rem 2.2rem 1rem 0; position: relative;
+    font-weight: 700; font-size: 1.03rem; line-height: 1.6;
+  }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after {
+    content: "+"; position: absolute; right: 0.2rem; top: 1rem;
+    font-family: var(--font-mono); font-size: 1.1rem; color: var(--cobalt); line-height: 1.6;
+  }
+  .faq details[open] summary::after { content: "\2212"; }
+  .faq details p { margin: 0 0 1.1rem; color: var(--ink-soft); max-width: 44em; }
+  @media (hover: hover) { .faq summary:hover { color: var(--cobalt-deep); } }
+
+  /* ---------- 下载 ---------- */
+  .dl {
+    background: var(--ink); color: #f2f3f5;
+    border-radius: 18px; padding: var(--s4) var(--s3);
+  }
+  .dl h2 {
+    font-family: var(--font-display); font-weight: 800;
+    font-size: clamp(1.5rem, 3vw, 2rem); line-height: 1.2;
+    margin: 0 0 0.5rem; letter-spacing: -0.02em;
+  }
+  .dl .sub { margin: 0 0 var(--s3); color: #a8adb6; font-size: 0.95rem; }
+  .dl .btn { background: #fff; color: var(--ink); box-shadow: none; }
+  @media (hover: hover) { .dl .btn:hover { background: var(--tint); } }
+  .dl-facts {
+    display: flex; flex-wrap: wrap; gap: 0.4rem 1.6rem;
+    margin: var(--s3) 0 0; padding: 0; list-style: none;
+    font-family: var(--font-mono); font-size: 0.8rem; color: #a8adb6;
+  }
+  .dl-facts b { color: #f2f3f5; font-weight: 600; }
+  .dl details { margin-top: var(--s3); border-top: 1px solid #33363d; }
+  .dl summary {
+    cursor: pointer; list-style: none; padding-block: 0.8rem;
+    font-family: var(--font-mono); font-size: 0.8rem; color: #a8adb6;
+  }
+  .dl summary::-webkit-details-marker { display: none; }
+  .dl code { display: block; padding-bottom: 1rem; word-break: break-all; color: #f2f3f5; white-space: normal; }
+  .dl-links { margin: var(--s3) 0 0; display: flex; flex-wrap: wrap; gap: 0.3rem 1.4rem; font-size: 0.92rem; }
+  .dl-links a { color: #cfd3da; text-underline-offset: 4px; padding-block: 0.5rem; }
+  @media (hover: hover) { .dl-links a:hover { color: #fff; } }
+
+  footer { padding-block: var(--s3) var(--s5); font-size: 0.9rem; color: var(--ink-soft); }
+  .foot { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; align-items: baseline; }
+  .foot a { text-underline-offset: 4px; padding-block: 0.45rem; }
+  .fine { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-faint); margin: 0.8rem 0 0; }
+
+  /* ---------- 窄屏吸底下载条 ---------- */
+  .bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    display: flex; align-items: center; gap: 0.85rem;
+    padding: 0.6rem 1.1rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+    background: var(--field); border-top: 1px solid var(--line-strong);
+    transform: translateY(110%); visibility: hidden;
+    transition: transform 220ms ease, visibility 0s linear 220ms;
+  }
+  .bar.show { transform: none; visibility: visible; transition: transform 220ms ease, visibility 0s; }
+  .bar-txt { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-soft); margin-right: auto; }
+  .bar-txt b { color: var(--ink); }
+  .bar .btn { min-height: 2.6rem; padding: 0 1.1rem; font-size: 0.92rem; box-shadow: none; }
+  @media (min-width: 62rem) { .bar { display: none; } }
+
+  @media (max-width: 34rem) {
+    .dl { padding: var(--s3) var(--s2); border-radius: 14px; }
+    .hero h1 { font-size: clamp(2.3rem, 11vw, 3rem); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .bar, .btn, .nav a { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">跳到正文</a>
+
+<header class="top" id="top">
+  <div class="wrap top-row">
+    <a class="brand" href="#top" aria-label="Appause 首页">
+      <svg width="22" height="22" viewBox="0 0 26 26" aria-hidden="true">
+        <circle class="brand-ring" cx="13" cy="13" r="11"/>
+        <rect class="brand-bars" x="9.4" y="7.5" width="2.6" height="11"/>
+        <rect class="brand-bars" x="14" y="7.5" width="2.6" height="11"/>
+      </svg>
+      Appause
+    </a>
+    <nav class="nav" aria-label="页面栏目" id="sectionNav">
+      <a href="#start">怎么装</a>
+      <a href="#how">怎么拦</a>
+      <a href="#perms">权限</a>
+      <a href="#plans">免费与 Pro</a>
+      <a href="#faq">常见问题</a>
+    </nav>
+    <a class="cta" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 APK</a>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ================= 首屏 ================= -->
+  <section class="wrap hero" aria-labelledby="hero-title">
+    <div class="hero-grid">
+      <div>
+        <p class="kicker">Appause · Android 专注工具</p>
+        <h1 id="hero-title">先等十秒，<br>再打开。</h1>
+        <p class="lede">
+          你挑几个最分心的应用，打开前先冷却几秒。要不要继续，你自己按。
+        </p>
+        <p class="btn-row">
+          <a class="btn" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 APK · <span data-r="size">12.3 MB</span></a>
+          <a class="btn-sub" href="https://github.com/Shmily0826/Appause">看源码 ↗</a>
+        </p>
+        <ul class="facts">
+          <li><b>MIT 开源</b></li>
+          <li><b>永久免费</b>，没有内购</li>
+          <li>数据只存本机</li>
+          <li>无账号</li>
+        </ul>
+      </div>
+      <figure class="shot">
+        <img src="../../images/screenshots/zh/pause-crop.png" width="1080" height="1631" alt="Appause 暂停页截图：YouTube 打开前显示倒计时，提供四个原因选项和继续、取消按钮" loading="eager">
+        <figcaption>真机上的暂停页。上面写的是：给自己几秒，再决定是否继续。</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ================= 三步开始用 ================= -->
+  <section class="sec" id="start" aria-labelledby="start-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">开始用</p>
+        <h2 id="start-title">装它只有三步，第三步最容易被忘</h2>
+        <p>Appause 不在应用商店里，需要你自己装。权限只申请用得上的那几项。</p>
+      </div>
+      <ol class="steps">
+        <li class="step">
+          <h3>下载并允许安装</h3>
+          <p>点上面的下载按钮。系统会提示「禁止安装未知应用」，按提示给浏览器或文件管理器放行一次。</p>
+        </li>
+        <li class="step">
+          <h3>打开 Appause，开启无障碍服务</h3>
+          <p>首页会列出还差哪几项，点「去开启」跟着走。这项权限只用来知道你打开了哪个应用。</p>
+        </li>
+        <li class="step">
+          <h3>把电池优化关掉</h3>
+          <p>在电池设置里把 Appause 设为「无限制」，并允许自启动。不然系统会在后台把它杀掉，拦截就会时灵时不灵。</p>
+        </li>
+      </ol>
+      <p class="step-note"><b>装新版直接覆盖就好，不要先卸载。</b>卸载会把本机的分组和统计一起清掉。</p>
+    </div>
+  </section>
+
+  <!-- ================= 十秒里发生什么 ================= -->
+  <section class="sec" id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">它是怎么拦的</p>
+        <h2 id="how-title">一次拦截，就三件事</h2>
+        <p>没有云端判断，也没有算法猜你想干什么。规则是你自己写的，它就照着执行。</p>
+      </div>
+      <div class="rows">
+
+        <div class="row">
+          <div class="row-text">
+            <h3>你点开，它先把你留住</h3>
+            <p>无障碍服务只读到一件事：你点开的是哪个应用。拿到的是一个包名字符串，没有别的。</p>
+            <p class="aside">窗口内容读取是关掉的（canRetrieveWindowContent = false）</p>
+          </div>
+          <figure class="shot">
+            <img src="../../images/screenshots/zh/pause-crop.png" width="1080" height="1631" alt="暂停页：倒计时未结束时「继续」按钮不可用" loading="lazy">
+            <figcaption>倒计时没走完，「继续」是按不了的</figcaption>
+          </figure>
+        </div>
+
+        <div class="row flip">
+          <div class="row-text">
+            <h3>这几秒由你定，顺便留个理由</h3>
+            <p>新分组默认冷却 10 秒，可以在 1 到 60 秒之间改。等的时候先选一个原因：工作需要、无聊、查消息，或者其他。</p>
+            <p class="aside">冷却上限 60 秒，免费版和 Pro 一样</p>
+          </div>
+          <figure class="shot">
+            <img src="../../images/screenshots/zh/group.png" width="1080" height="2400" alt="分组编辑页：选择目标应用与冷却时间" loading="lazy">
+            <figcaption>分组编辑：挑应用、定冷却时间</figcaption>
+          </figure>
+        </div>
+
+        <div class="row">
+          <div class="row-text">
+            <h3>继续，或者回桌面</h3>
+            <p>「继续」进应用；「取消」直接回桌面，冷却重新算。每次的选择都记在统计里，哪天想看看自己什么时候最容易手滑，翻一下就知道。</p>
+            <p class="aside">真机记录：回到桌面后 291 毫秒内重开，会再被拦一次</p>
+          </div>
+          <figure class="shot">
+            <img src="../../images/screenshots/zh/statistics.png" width="1080" height="2400" alt="使用统计页：每次继续或取消都有记录" loading="lazy">
+            <figcaption>统计：每次继续或取消都有记录</figcaption>
+          </figure>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 权限 ================= -->
+  <section class="sec" id="perms" aria-labelledby="perms-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">权限</p>
+        <h2 id="perms-title">它要哪些权限，各自干什么</h2>
+        <p>只有无障碍服务是必须的，其余按需要开。每一项都可以随时在系统设置里关掉。</p>
+      </div>
+      <dl class="perms">
+        <li>
+          <dt>无障碍服务 <span class="pill req">必须</span></dt>
+          <dd>只读到你打开的哪个应用。屏幕内容、消息、截图和键盘输入都读不到，窗口内容读取是关掉的。</dd>
+        </li>
+        <li>
+          <dt>电池优化 <span class="pill rec">建议关掉</span></dt>
+          <dd>关掉它，系统才不会在省电时终止后台服务。这是小米 HyperOS 这类机型上「拦截失灵」最常见的原因。</dd>
+        </li>
+        <li>
+          <dt>使用情况访问 <span class="pill rec">建议开启</span></dt>
+          <dd>在本机确认真正显示在屏幕上的应用。不开的话，切换应用或打开最近任务时，可能为你根本没打开的应用弹出暂停页。</dd>
+        </li>
+        <li>
+          <dt>显示悬浮窗 <span class="pill opt">可选</span></dt>
+          <dd>个别机型不显示暂停页时，用它兜底。</dd>
+        </li>
+      </dl>
+      <p class="plain-note">
+        <strong>日常使用不联网。</strong>只在开启试用、兑换永久授权码或发送反馈时才会连一次服务器。
+        分组、冷却设置和统计只写在这台手机上，卸载就清空。
+        完整说明见 <a href="https://github.com/Shmily0826/Appause/blob/main/PRIVACY.md">PRIVACY.md</a>。
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= 免费与 Pro ================= -->
+  <section class="sec" id="plans" aria-labelledby="plans-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">价钱</p>
+        <h2 id="plans-title">不收费，也没有付费版</h2>
+        <p>拦截、冷却、暂停页、统计对所有人开放，没有时间限制。Pro 只是另外四项还在改的功能。</p>
+      </div>
+      <div class="plans">
+        <div class="plan">
+          <h3>所有人都能用</h3>
+          <ul>
+            <li><b>拦截与冷却</b>：想拦几个应用都行，冷却最长 60 秒</li>
+            <li><b>暂停页与原因</b>：四个固定选项，继续或取消都记下来</li>
+            <li><b>使用统计</b>：365 天，每次继续或取消的原因都在</li>
+            <li><b>打开理由与诊断</b>：反馈时带一份快照，发不发由你</li>
+          </ul>
+        </div>
+        <div class="plan pro">
+          <h3>Pro · 四项还在改的功能</h3>
+          <ul>
+            <li><b>无限分组</b>：免费版可以建 1 个</li>
+            <li><b>再次提醒</b>：停在目标应用里时再提醒一次</li>
+            <li><b>自定义暂停提示语</b>：换成你自己写的句子</li>
+            <li><b>自定义打开原因</b>：改成你真的会去点的选项</li>
+          </ul>
+        </div>
+      </div>
+      <p class="plan-note">
+        Pro 也一样不花钱：每台设备可以主动开一次 <b>7 天试用</b>，到期后这四项会关掉，已有的分组和统计不受影响。
+        想接着用，到 <code>设置 → 反馈</code> 申请一个 <b>免费的永久授权码</b>，回 Pro 页面兑换就行。
+        码由开发者人工签发，绑定设备，一个码最多用在 3 台上。
+      </p>
+    </div>
+  </section>
+
+  <!-- ================= FAQ ================= -->
+  <section class="sec" id="faq" aria-labelledby="faq-title">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow">还有疑问</p>
+        <h2 id="faq-title">常见问题</h2>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>这种要开无障碍权限的应用，安全吗？</summary>
+          <p>它拿到的就是一个包名字符串，窗口内容读取是关掉的（<span class="mono">canRetrieveWindowContent = false</span>）。
+          不需要用的时候，随时可以在系统设置里关掉这项权限，Appause 只是拦不住而已，不会出别的问题。
+          代码是 MIT 开源的，你可以自己看它到底做了什么。</p>
+        </details>
+        <details>
+          <summary>会不会很耗电，或者拦不住？</summary>
+          <p>无障碍服务会一直挂在后台，本机测试里耗电影响不大。如果发现拦截时灵时不灵，先检查两件事：
+          把 Appause 的电池优化设为「无限制」，并允许自启动。小米 HyperOS 这类系统杀掉后台服务后，
+          不会自动把无障碍服务重新拉起来，这是排障记录里最常见的原因。</p>
+        </details>
+        <details>
+          <summary>暂停页会被别的应用挡住吗？</summary>
+          <p>它用的是一种更高层级的窗口类型，盖在普通应用上面，实测在开了「隐藏悬浮窗」的应用上依然可见。
+          个别机型如果还是不显示，可以打开悬浮窗权限，Appause 会换一套备用方式。</p>
+        </details>
+        <details>
+          <summary>永久授权码要花钱吗？怎么拿？</summary>
+          <p>不用。到 <code>设置 → 反馈</code> 申请就行，开发者人工签发，全程免费，没有内购，也没有自动开通的入口。
+          顺序上有一点注意：这台设备如果已经开过 7 天试用，要等试用走完才能兑换；没开过试用的新设备可以直接申请。</p>
+        </details>
+        <details>
+          <summary>换手机之后数据还在吗？</summary>
+          <p>数据只存在这台手机上，卸载就会全部清掉。分组和统计没有云同步，换机后要重新设置。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= 下载 ================= -->
+  <section class="sec" id="download" aria-labelledby="dl-title">
+    <div class="wrap">
+      <div class="dl">
+        <h2 id="dl-title">下载 Appause <span data-r="version">v0.5.45</span></h2>
+        <p class="sub">公开测试版 <span data-r="date">2026-09-24</span> 发布 · 未上架应用商店 · MIT 开源</p>
+        <a class="btn" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk"><span data-r="file">Appause-v0.5.45.apk</span></a>
+        <ul class="dl-facts">
+          <li>包名 <b>com.appause.android</b></li>
+          <li>versionCode <b data-r="code">97</b></li>
+          <li>大小 <b data-r="size">12.3 MB</b></li>
+          <li>系统要求 <b>Android 8.0+</b></li>
+        </ul>
+        <details>
+          <summary>查看 APK SHA-256 校验值</summary>
+          <code data-r="sha256">07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a</code>
+        </details>
+        <p class="dl-links">
+          <a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">安装指南</a>
+          <a data-release href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.45">GitHub Release</a>
+          <a href="https://github.com/Shmily0826/Appause/blob/main/docs/archive/TEST_REPORT.md">真机验证台账</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 窄屏吸底下载条：滚过首屏后出现 -->
+<div class="bar" id="bar" role="region" aria-label="下载 Appause">
+  <span class="bar-txt">Appause <b><span data-r="version">v0.5.45</span></b> · MIT 开源 · 永久免费</span>
+  <a class="btn" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载</a>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <span>Appause</span>
+      <a href="https://github.com/Shmily0826/Appause">源码（MIT）</a>
+      <a href="../../privacy-policy.html">隐私政策</a>
+      <a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">安装指南</a>
+      <a href="https://github.com/Shmily0826/Appause/issues">反馈问题</a>
+    </div>
+    <p class="fine">© 2026 Appause authors · MIT License</p>
+  </div>
+</footer>
+
+<script>
+  /* 发版相关的单一真实源：页面上所有 [data-r] / [data-apk] / [data-release] 由它填充。
+     markup 里仍保留 'v0.5.45' 字面量作无 JS 兜底，所以发版仍需一次全局替换。 */
+  var RELEASE = {
+    version: '0.5.45',
+    versionCode: '97',
+    date: '2026-09-24',
+    size: '12.3 MB',
+    sha256: '07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a'
+  };
+  (function () {
+    var v = 'v' + RELEASE.version;
+    var apk = 'https://github.com/Shmily0826/Appause/releases/download/v' + RELEASE.version + '/Appause-v' + RELEASE.version + '.apk';
+    var rel = 'https://github.com/Shmily0826/Appause/releases/tag/v' + RELEASE.version;
+    var map = { version: v, code: RELEASE.versionCode, date: RELEASE.date, size: RELEASE.size, sha256: RELEASE.sha256, file: 'Appause-' + v + '.apk' };
+    Object.keys(map).forEach(function (k) {
+      document.querySelectorAll('[data-r="' + k + '"]').forEach(function (el) { el.textContent = map[k]; });
+    });
+    document.querySelectorAll('[data-apk]').forEach(function (el) { el.setAttribute('href', apk); });
+    document.querySelectorAll('[data-release]').forEach(function (el) { el.setAttribute('href', rel); });
+  })();
+
+  // 折叠项：显式同步 aria-expanded（监听 toggle，覆盖浏览器查找自动展开等非点击路径）
+  document.querySelectorAll('details').forEach(function (d) {
+    var s = d.querySelector('summary');
+    if (!s) { return; }
+    var sync = function () { s.setAttribute('aria-expanded', d.open ? 'true' : 'false'); };
+    sync();
+    d.addEventListener('toggle', sync);
+  });
+
+  // 顶栏高亮：维护「当前在判定带内」的集合，空集合要清掉上一个高亮
+  (function () {
+    var links = [].slice.call(document.querySelectorAll('#sectionNav a'));
+    if (!links.length || !('IntersectionObserver' in window)) { return; }
+    var byId = {};
+    links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+    var sections = [].slice.call(document.querySelectorAll('main section[id]')).filter(function (s) { return byId[s.id]; });
+    var setCurrent = function (id) {
+      links.forEach(function (a) {
+        if (a === byId[id]) { a.setAttribute('aria-current', 'true'); } else { a.removeAttribute('aria-current'); }
+      });
+    };
+    var active = {};
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { active[e.target.id] = true; } else { delete active[e.target.id]; }
+      });
+      for (var i = 0; i < sections.length; i++) {
+        if (active[sections[i].id]) { setCurrent(sections[i].id); return; }
+      }
+      setCurrent(null);
+    }, { rootMargin: '-15% 0px -70% 0px', threshold: 0 });
+    sections.forEach(function (s) { io.observe(s); });
+  })();
+
+  // 吸底条：滚过首屏后出现，下载区在视野内时让位
+  (function () {
+    var bar = document.getElementById('bar');
+    var hero = document.querySelector('.hero');
+    var dl = document.getElementById('download');
+    if (!bar || !hero || !('IntersectionObserver' in window)) { return; }
+    var heroOut = false, dlIn = false;
+    var apply = function () { bar.classList.toggle('show', heroOut && !dlIn); };
+    new IntersectionObserver(function (e) { heroOut = !e[0].isIntersecting; apply(); }, { threshold: 0 }).observe(hero);
+    new IntersectionObserver(function (e) { dlIn = e[0].isIntersecting; apply(); }, { threshold: 0 }).observe(dl);
+  })();
+</script>
+</body>
+</html>

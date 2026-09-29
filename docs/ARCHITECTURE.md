@@ -510,4 +510,4 @@ programmatically.
 - [x] Phase 8: Settings persist, debug info accurate
 
 The checklist records implementation status; current build and device evidence,
-including its remaining manual gap, is maintained in `TEST_REPORT.md`.
+including its remaining manual gap, is maintained in `archive/TEST_REPORT.md`.

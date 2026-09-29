@@ -2,7 +2,7 @@
 set -e
 
 # Appause 自动安装 + 启动 + 截图脚本
-# 用法：在 Git Bash 中 ./scripts/adb_install_and_screenshot.sh
+# 用法：在 Git Bash 中 ./scripts/release/adb_install_and_screenshot.sh
 
 export JAVA_HOME=/d/Dev-Setup/jdk
 export ANDROID_SDK_ROOT=/c/Users/Shmily/AppData/Local/Android/Sdk

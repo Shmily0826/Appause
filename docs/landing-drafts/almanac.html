@@ -1,0 +1,823 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Appause 使用手册：打开之前，先停一下</title>
+<meta name="description" content="Appause 是一个本地优先的 Android 应用：给你自己选的那几个应用，在打开前插入一段可以反悔的时间。MIT 开源，无账号、无广告、无云同步。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Appause 使用手册">
+<meta property="og:description" content="给你自己选的那几个应用，在打开前插入一段可以反悔的时间。MIT 开源，数据留在本机。">
+<meta property="og:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../../images/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="../../images/apple-touch-icon.png">
+<style>
+/* hallmark: P4 H4 E5 S5 R4 V4 — Long Document / Almanac */
+/* 反套路记录：无居中全屏 Hero、无三张等宽功能卡、无紫渐变、无 emoji 图标、无假手机边框（截图为真机实拍） */
+
+/* ---------- tokens ---------- */
+:root{
+  --paper:#F3EEE4;
+  --paper-sunk:#EAE2D3;
+  --paper-raised:#FBF8F2;
+  --ink:#1B1A16;
+  --ink-2:#3E3A31;
+  --ink-3:#665F50;
+  --forest:#22483A;
+  --forest-2:#35624F;
+  --forest-tint:#DCE5DE;
+  --rust:#8A3B22;
+  --rust-tint:#F1DFD6;
+  --rule:#CFC5B2;
+  --rule-soft:#E3DBCB;
+  --focus:#8A3B22;
+
+  --font-serif:"Songti SC","STSong","Source Han Serif SC","Noto Serif SC","SimSun",Georgia,"Times New Roman",serif;
+  --font-sans:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei","Hiragino Sans GB","Source Han Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:ui-monospace,"SFMono-Regular","JetBrains Mono","Cascadia Mono",Consolas,"Liberation Mono",monospace;
+
+  --measure:38rem;
+  --gap:clamp(1.25rem,3vw,2.5rem);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#151A17;
+    --paper-sunk:#101513;
+    --paper-raised:#1C221E;
+    --ink:#EFE9DC;
+    --ink-2:#CBC4B5;
+    --ink-3:#A29B8B;
+    --forest:#93C3A3;
+    --forest-2:#72A98A;
+    --forest-tint:#1E2A24;
+    --rust:#E09A73;
+    --rust-tint:#2C1F19;
+    --rule:#2E3530;
+    --rule-soft:#232A25;
+    --focus:#E09A73;
+  }
+}
+
+/* ---------- base ---------- */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--font-sans);
+  font-size:clamp(1rem,0.96rem + 0.18vw,1.0625rem);
+  line-height:1.85;
+  letter-spacing:0.01em;
+  -webkit-font-smoothing:antialiased;
+}
+::selection{background:var(--forest-tint);color:var(--ink)}
+img{max-width:100%;height:auto;display:block}
+a{color:var(--forest);text-decoration:none}
+a:hover{color:var(--forest-2)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:1px;transition:none}
+
+.wrap{
+  width:100%;
+  max-width:74rem;
+  margin-inline:auto;
+  padding-inline:clamp(1rem,4vw,2.75rem);
+}
+
+.skip{
+  position:absolute;left:-9999px;top:0;
+  background:var(--forest);color:var(--paper);
+  padding:.6rem 1rem;font-size:.875rem;z-index:50;
+}
+.skip:focus{left:.5rem;top:.5rem;color:var(--paper)}
+
+/* ---------- masthead ---------- */
+.masthead{
+  border-bottom:1px solid var(--rule);
+  background:var(--paper);
+}
+.masthead__inner{
+  display:flex;flex-wrap:wrap;align-items:baseline;gap:.5rem 1.25rem;
+  padding-block:1.1rem;
+}
+.wordmark{
+  font-family:var(--font-serif);
+  font-size:1.375rem;font-weight:600;letter-spacing:.02em;
+  margin:0;line-height:1.2;color:var(--ink);
+}
+.wordmark small{
+  font-family:var(--font-mono);font-size:.6875rem;font-weight:400;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
+  margin-left:.6rem;
+}
+.stamp{
+  margin-left:auto;
+  font-family:var(--font-mono);font-size:.75rem;letter-spacing:.06em;
+  color:var(--ink-3);white-space:nowrap;
+}
+.stamp b{color:var(--forest);font-weight:600}
+
+/* sticky rail */
+.rail{
+  position:sticky;top:0;z-index:40;
+  background:var(--paper);
+  background:color-mix(in srgb,var(--paper) 88%,transparent);
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid var(--rule-soft);
+  transform:translateY(-101%);
+  transition:transform .28s ease;
+}
+.rail.is-on{transform:translateY(0)}
+.rail__inner{display:flex;align-items:center;gap:1rem;padding-block:.55rem}
+.rail__mark{font-family:var(--font-serif);font-size:.9375rem;font-weight:600;letter-spacing:.02em}
+.rail__cur{font-family:var(--font-mono);font-size:.75rem;color:var(--ink-3);letter-spacing:.06em}
+.rail__cta{margin-left:auto;font-family:var(--font-mono);font-size:.75rem;letter-spacing:.06em;color:var(--forest)}
+
+/* ---------- title block (not a centered hero) ---------- */
+.titleblock{padding-block:clamp(2.75rem,8vw,5.5rem) clamp(2rem,5vw,3.25rem)}
+.titleblock__grid{display:grid;gap:var(--gap)}
+@media (min-width:62rem){
+  .titleblock__grid{grid-template-columns:minmax(0,1fr) 17rem;align-items:end}
+}
+.lede{
+  font-family:var(--font-mono);font-size:.75rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--rust);margin:0 0 1.25rem;
+}
+h1{
+  font-family:var(--font-serif);font-weight:600;
+  font-size:clamp(2.25rem,6.4vw,4rem);
+  line-height:1.16;letter-spacing:-0.012em;
+  margin:0;max-width:20ch;color:var(--ink);
+}
+.deck{
+  margin:1.75rem 0 0;max-width:var(--measure);
+  font-size:clamp(1.0625rem,1rem + 0.4vw,1.25rem);
+  line-height:1.8;color:var(--ink-2);
+}
+.folio{
+  border:1px solid var(--rule);
+  background:var(--paper-raised);
+  padding:1rem 1.15rem;
+  font-family:var(--font-mono);font-size:.75rem;line-height:2;
+  color:var(--ink-3);
+}
+.folio dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 .9rem;margin:0}
+.folio dt{color:var(--ink-3)}
+.folio dd{margin:0;color:var(--ink-2);text-align:right;word-break:break-word}
+
+/* ---------- toc ---------- */
+.toc{border-top:1px solid var(--rule);padding-block:clamp(2rem,5vw,3rem)}
+.toc__head{
+  font-family:var(--font-mono);font-size:.75rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 1.25rem;
+}
+.toc ol{list-style:none;margin:0;padding:0;display:grid;gap:0}
+@media (min-width:48rem){.toc ol{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:3rem}}
+.toc li{border-bottom:1px solid var(--rule-soft)}
+.toc a{
+  display:flex;gap:1rem;align-items:baseline;
+  padding:.7rem 0;color:var(--ink-2);
+}
+.toc a:hover{color:var(--forest)}
+.toc .n{font-family:var(--font-mono);font-size:.75rem;color:var(--ink-3);letter-spacing:.06em}
+.toc .t{font-family:var(--font-serif);font-size:1.0625rem}
+
+/* ---------- chapters ---------- */
+.chapter{
+  border-top:1px solid var(--rule);
+  padding-block:clamp(2.5rem,6vw,4.5rem);
+  display:grid;gap:1.25rem var(--gap);
+}
+@media (min-width:56rem){
+  .chapter{grid-template-columns:4.5rem minmax(0,1fr) 15rem;align-items:start}
+  .chapter__num{grid-column:1;position:sticky;top:3.5rem}
+  .chapter__body{grid-column:2}
+  .chapter__note{grid-column:3}
+}
+.chapter__num{
+  font-family:var(--font-mono);font-size:.8125rem;letter-spacing:.08em;
+  color:var(--rust);padding-top:.35rem;
+}
+h2{
+  font-family:var(--font-serif);font-weight:600;
+  font-size:clamp(1.5rem,3.2vw,2.125rem);
+  line-height:1.3;letter-spacing:-0.006em;
+  margin:0;color:var(--ink);
+}
+.chapter h3{
+  font-family:var(--font-serif);font-weight:600;
+  font-size:clamp(1.125rem,2vw,1.375rem);
+  line-height:1.45;margin:2.25rem 0 .5rem;color:var(--ink);
+}
+.chapter__body > p{margin:1rem 0 0;max-width:var(--measure);color:var(--ink-2)}
+.chapter__body > p:first-of-type{margin-top:1.5rem}
+.chapter__body strong{color:var(--ink);font-weight:600}
+.chapter__note{
+  border-left:1px solid var(--rule);
+  padding:.25rem 0 .25rem 1rem;
+  font-size:.8125rem;line-height:1.7;color:var(--ink-3);
+}
+.chapter__note b{display:block;font-family:var(--font-mono);font-size:.6875rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);font-weight:400;margin-bottom:.4rem}
+
+/* pull quote */
+.pull{
+  margin:2.25rem 0 0;padding:1.25rem 0;
+  border-top:2px solid var(--ink);border-bottom:1px solid var(--rule);
+  font-family:var(--font-serif);font-size:clamp(1.25rem,2.6vw,1.625rem);
+  line-height:1.55;letter-spacing:0;color:var(--ink);max-width:32rem;
+}
+
+/* steps */
+.steps{list-style:none;margin:2rem 0 0;padding:0;counter-reset:s}
+.steps li{
+  counter-increment:s;
+  display:grid;grid-template-columns:2.25rem minmax(0,1fr);
+  gap:0 .9rem;padding:1.15rem 0;border-top:1px solid var(--rule-soft);
+}
+.steps li::before{
+  content:counter(s,decimal-leading-zero);
+  font-family:var(--font-mono);font-size:.8125rem;color:var(--rust);
+  letter-spacing:.06em;line-height:1.9;
+}
+.steps b{display:block;font-family:var(--font-serif);font-size:1.0625rem;color:var(--ink);font-weight:600}
+.steps span{display:block;color:var(--ink-2);font-size:.9375rem;line-height:1.75;max-width:34rem}
+
+/* figures */
+figure{margin:2.25rem 0 0}
+.figrow{display:grid;gap:1.25rem}
+@media (min-width:40rem){.figrow--2{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (min-width:52rem){.figrow--3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+figure img{
+  border:1px solid var(--rule);background:var(--paper-sunk);
+  width:100%;
+}
+figcaption{
+  margin-top:.6rem;font-family:var(--font-mono);font-size:.6875rem;
+  letter-spacing:.06em;color:var(--ink-3);line-height:1.7;
+}
+figure.solo img{max-width:19rem;margin-inline:auto}
+
+/* table */
+.tablewrap{margin-top:1.75rem;border:1px solid var(--rule);background:var(--paper-raised)}
+table{border-collapse:collapse;width:100%;font-size:.9375rem}
+caption{
+  caption-side:top;text-align:left;padding:.9rem 1rem;
+  font-family:var(--font-mono);font-size:.6875rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--rule-soft);
+}
+th,td{text-align:left;vertical-align:top;padding:.85rem 1rem;border-bottom:1px solid var(--rule-soft)}
+thead th{
+  font-family:var(--font-mono);font-size:.6875rem;font-weight:400;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);
+  background:var(--paper-sunk);
+}
+tbody th{font-weight:600;color:var(--ink);white-space:nowrap;font-size:.9375rem}
+tbody td{color:var(--ink-2);line-height:1.7}
+tbody tr:last-child th,tbody tr:last-child td{border-bottom:0}
+.tag{
+  display:inline-block;font-family:var(--font-mono);font-size:.625rem;
+  letter-spacing:.1em;padding:.1rem .4rem;border:1px solid var(--rule);
+  color:var(--ink-3);margin-left:.35rem;vertical-align:.08em;
+}
+.tag--req{border-color:var(--rust);color:var(--rust)}
+@media (max-width:44rem){
+  .tablewrap{overflow-x:auto}
+  table{min-width:38rem}
+}
+
+/* ledger (free vs pro) */
+.ledger{margin-top:1.75rem;border:1px solid var(--rule)}
+.ledger__row{
+  display:grid;grid-template-columns:minmax(0,1fr) 5.5rem;
+  gap:0 1rem;padding:.8rem 1rem;border-bottom:1px solid var(--rule-soft);
+  align-items:baseline;font-size:.9375rem;
+}
+.ledger__row:last-child{border-bottom:0}
+.ledger__row--head{
+  background:var(--paper-sunk);
+  font-family:var(--font-mono);font-size:.6875rem;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+.ledger__row--head span:last-child{text-align:center}
+.ledger__row span:last-child{
+  font-family:var(--font-mono);font-size:.8125rem;text-align:center;color:var(--ink-3);
+}
+.ledger__row b{font-weight:400;color:var(--ink)}
+.ledger__row .yes{color:var(--forest)}
+.ledger__row .no{color:var(--ink-3)}
+
+/* callout */
+.callout{
+  margin-top:2rem;border:1px solid var(--rule);
+  border-left:3px solid var(--rust);
+  background:var(--rust-tint);
+  padding:1rem 1.15rem;max-width:var(--measure);
+}
+.callout p{margin:0;color:var(--ink-2);font-size:.9375rem;line-height:1.75}
+.callout b{display:block;font-family:var(--font-mono);font-size:.6875rem;letter-spacing:.16em;text-transform:uppercase;color:var(--rust);font-weight:400;margin-bottom:.4rem}
+
+/* download */
+.dl{
+  margin-top:2rem;display:flex;flex-wrap:wrap;gap:1rem;align-items:center;
+}
+.btn{
+  display:inline-flex;align-items:baseline;gap:.7rem;
+  background:var(--forest);color:var(--paper);
+  padding:.85rem 1.4rem;border:1px solid var(--forest);border-radius:2px;
+  font-family:var(--font-sans);font-size:1rem;font-weight:600;line-height:1.4;
+}
+.btn:hover{background:var(--forest-2);border-color:var(--forest-2);color:var(--paper)}
+.btn .meta{font-family:var(--font-mono);font-size:.75rem;font-weight:400;opacity:.8;letter-spacing:.04em}
+.btn--ghost{
+  background:transparent;color:var(--forest);border-color:var(--rule);
+}
+.btn--ghost:hover{background:var(--forest-tint);color:var(--forest);border-color:var(--forest)}
+@media (hover:hover){
+  .btn{transition:background-color .18s ease,border-color .18s ease}
+  .btn:hover{transform:translateY(-1px)}
+}
+.btn:active{transform:none}
+.dlnote{margin-top:1rem;font-size:.875rem;color:var(--ink-3);max-width:var(--measure)}
+
+/* faq */
+.faq{margin-top:1.75rem;border-top:1px solid var(--rule)}
+details{border-bottom:1px solid var(--rule-soft)}
+summary{
+  cursor:pointer;list-style:none;padding:1rem 0;
+  display:flex;gap:1rem;align-items:baseline;justify-content:space-between;
+  font-family:var(--font-serif);font-size:1.0625rem;font-weight:600;color:var(--ink);
+}
+summary::-webkit-details-marker{display:none}
+summary::after{
+  content:"+";font-family:var(--font-mono);font-size:1rem;color:var(--rust);
+  flex:none;line-height:1.6;
+}
+details[open] summary::after{content:"\2212"}
+details p{margin:0 0 1.15rem;max-width:var(--measure);color:var(--ink-2);font-size:.9375rem}
+
+/* colophon */
+.colophon{
+  border-top:3px double var(--rule);
+  margin-top:clamp(3rem,8vw,5rem);
+  padding-block:clamp(2.25rem,5vw,3.25rem) clamp(2.5rem,5vw,3.5rem);
+}
+.colophon__grid{display:grid;gap:2rem}
+@media (min-width:48rem){.colophon__grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:2.5rem}}
+.colophon h2{
+  font-family:var(--font-mono);font-size:.6875rem;font-weight:400;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
+  margin:0 0 .75rem;
+}
+.colophon ul{list-style:none;margin:0;padding:0;font-size:.9375rem;line-height:2}
+.colophon a{
+  background-image:linear-gradient(var(--forest),var(--forest));
+  background-size:0% 1px;background-repeat:no-repeat;background-position:0 100%;
+  transition:background-size .2s ease;
+}
+.colophon a:hover{background-size:100% 1px}
+.colophon p{margin:0;font-size:.875rem;color:var(--ink-3);max-width:34rem;line-height:1.8}
+.totop{
+  display:inline-block;margin-top:2rem;
+  font-family:var(--font-mono);font-size:.75rem;letter-spacing:.1em;color:var(--ink-3);
+}
+.totop:hover{color:var(--forest)}
+
+/* reveal */
+@media (prefers-reduced-motion:no-preference){
+  .reveal{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .55s ease}
+  .reveal.is-in{opacity:1;transform:none}
+}
+
+@media print{
+  .rail,.skip{display:none}
+  body{background:#fff;color:#000}
+  .reveal{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#main">跳到正文</a>
+
+<header class="masthead">
+  <div class="wrap masthead__inner">
+    <p class="wordmark">Appause<small>使用手册</small></p>
+    <p class="stamp">版本 <b>v0.5.45</b> · versionCode 97 · 2026-09-24 · MIT</p>
+  </div>
+</header>
+
+<div class="rail" id="rail">
+  <div class="wrap rail__inner">
+    <span class="rail__mark">Appause</span>
+    <span class="rail__cur" id="curChapter">目录</span>
+    <a class="rail__cta" href="#download">下载 ↓</a>
+  </div>
+</div>
+
+<main id="main">
+
+  <!-- ============ 刊头 ============ -->
+  <div class="wrap titleblock">
+    <div class="titleblock__grid">
+      <div>
+        <p class="lede">Android · 本地优先 · 开源</p>
+        <h1>打开之前，先停一下</h1>
+        <p class="deck">
+          Appause 只做一件事：把你指定的那几个应用，从「手指已经点开」变成「你确实想打开」。
+          它不替你做决定，也不评价你看了多久。它只是把自动发生的动作，变成一次看得见的停顿。
+        </p>
+      </div>
+      <aside class="folio" aria-label="版本信息">
+        <dl>
+          <dt>版本</dt><dd>v0.5.45</dd>
+          <dt>versionCode</dt><dd>97</dd>
+          <dt>安装包</dt><dd>12.3 MB</dd>
+          <dt>系统要求</dt><dd>Android 8.0+</dd>
+          <dt>包名</dt><dd>com.appause.android</dd>
+          <dt>许可证</dt><dd>MIT</dd>
+        </dl>
+      </aside>
+    </div>
+  </div>
+
+  <!-- ============ 目录 ============ -->
+  <nav class="wrap toc" aria-labelledby="toc-head">
+    <p class="toc__head" id="toc-head">目录</p>
+    <ol>
+      <li><a href="#c1"><span class="n">§ 01</span><span class="t">它解决的是什么</span></a></li>
+      <li><a href="#c2"><span class="n">§ 02</span><span class="t">它是怎么工作的</span></a></li>
+      <li><a href="#c3"><span class="n">§ 03</span><span class="t">它需要哪些权限</span></a></li>
+      <li><a href="#c4"><span class="n">§ 04</span><span class="t">你的数据在哪里</span></a></li>
+      <li><a href="#c5"><span class="n">§ 05</span><span class="t">源码与完整性校验</span></a></li>
+      <li><a href="#c6"><span class="n">§ 06</span><span class="t">免费的部分与 Pro</span></a></li>
+      <li><a href="#c7"><span class="n">§ 07</span><span class="t">下载与安装</span></a></li>
+      <li><a href="#c8"><span class="n">§ 08</span><span class="t">常见问题</span></a></li>
+    </ol>
+  </nav>
+
+  <!-- ============ 01 ============ -->
+  <section class="wrap chapter reveal" id="c1" aria-labelledby="h1">
+    <p class="chapter__num">§ 01</p>
+    <div class="chapter__body">
+      <h2 id="h1">它解决的是什么</h2>
+      <p>
+        你解锁屏幕，手指已经落在那个图标上，应用已经开了。整个过程里没有哪一秒是你做过决定的。
+        等你回过神，二十分钟不见了。
+      </p>
+      <p>
+        Appause 不管你看什么、看多久，也不给你打分。它只在你自己挑出来的那几个应用启动时，
+        插进一小段等待。等待结束才能继续，也可以直接取消回到桌面。
+      </p>
+      <blockquote class="pull">
+        它不判断你该不该打开。<br>它只把「自动发生」变成「看得见」。
+      </blockquote>
+      <p>
+        所以它也不是给家长管孩子、给公司管员工用的东西。它的使用前提只有一个：
+        <strong>那些应用是你自己选的，等待时间也是你自己设的。</strong>
+      </p>
+    </div>
+    <aside class="chapter__note">
+      <b>边界</b>
+      它是辅助习惯的无障碍工具，不是监控工具、安全产品或医疗工具。任何时候你都可以关掉无障碍服务，或者卸载它。
+    </aside>
+  </section>
+
+  <!-- ============ 02 ============ -->
+  <section class="wrap chapter reveal" id="c2" aria-labelledby="h2">
+    <p class="chapter__num">§ 02</p>
+    <div class="chapter__body">
+      <h2 id="h2">它是怎么工作的</h2>
+      <ol class="steps">
+        <li>
+          <div>
+            <b>建一个分组</b>
+            <span>把想管的应用放进同一个分组，给这个分组设一个等待时间，最长 60 秒。同一分组共用这段冷却。</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <b>应用一打开，卡片就出现</b>
+            <span>当分组里的应用来到前台，Appause 立刻盖上一张带倒计时的停顿卡片，不给你先看两眼的机会。</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <b>倒计时走完，你再选</b>
+            <span>继续打开，或者取消回到桌面。回到桌面、或者离开得够久，冷却会重新计起。</span>
+          </div>
+        </li>
+      </ol>
+
+      <figure class="solo">
+        <img src="../../images/screenshots/zh/pause.png" alt="Appause 在目标应用之上显示的停顿卡片，中央是倒计时，下方是取消与继续两个选项。" loading="lazy" width="1080" height="2400">
+        <figcaption>停顿卡片 · 真机实拍（小米 HyperOS / Android 16）</figcaption>
+      </figure>
+
+      <h3>顺带记录的几件事</h3>
+      <p>
+        每一次继续或取消都会记在本机，最多保留 365 天，你也能顺手写下「这次为什么打开」。
+        需要的话，可以开启再次提醒：待在应用里超过设定时间，会再收到一次提示。
+      </p>
+
+      <div class="figrow figrow--2">
+        <figure>
+          <img src="../../images/screenshots/zh/home.png" alt="Appause 首页，显示当前分组状态与今日统计。" loading="lazy" width="1080" height="2400">
+          <figcaption>首页 · 分组状态与今日统计</figcaption>
+        </figure>
+        <figure>
+          <img src="../../images/screenshots/zh/group.png" alt="分组编辑页，可设置等待时间与再次提醒。" loading="lazy" width="1080" height="2400">
+          <figcaption>分组 · 等待时间与再次提醒</figcaption>
+        </figure>
+      </div>
+    </div>
+    <aside class="chapter__note">
+      <b>实现细节</b>
+      停顿卡片用的是无障碍浮层，不依赖「显示在其他应用上层」这个权限。也正因如此，在小红书这类会隐藏普通浮层的应用上，它照样盖得住。
+    </aside>
+  </section>
+
+  <!-- ============ 03 ============ -->
+  <section class="wrap chapter reveal" id="c3" aria-labelledby="h3">
+    <p class="chapter__num">§ 03</p>
+    <div class="chapter__body">
+      <h2 id="h3">它需要哪些权限</h2>
+      <p>
+        只有第一个是必需的。其余的要么可选，要么只在特定机型上才需要。
+      </p>
+      <div class="tablewrap">
+        <table>
+          <caption>权限清单</caption>
+          <thead>
+            <tr><th scope="col">权限</th><th scope="col">用来做什么</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">无障碍服务<span class="tag tag--req">必需</span></th>
+              <td>识别当前处于前台的应用，好在设定的应用打开时显示停顿卡片。配置为 <code>canRetrieveWindowContent = false</code>，不读取屏幕内容、消息、截图或按键。</td>
+            </tr>
+            <tr>
+              <th scope="row">电池无限制<span class="tag tag--req">国产 ROM 必需</span></th>
+              <td>防止系统杀掉检测服务。在小米 / HyperOS 这类机型上<strong>必须设为无限制</strong>，否则会出现「第一次打开不拦，切回 Appause 才拦」。同时建议允许自启动，并在最近任务里锁定 Appause。</td>
+            </tr>
+            <tr>
+              <th scope="row">用量访问<span class="tag">可选</span></th>
+              <td>在本机二次确认真正的前台应用，减少通知等造成的误触发。</td>
+            </tr>
+            <tr>
+              <th scope="row">显示在其他应用上层<span class="tag">可选兜底</span></th>
+              <td>正常情况用不到。只有你的设备确实不显示停顿卡片时才授予，让 Appause 退回到兼容方案。</td>
+            </tr>
+            <tr>
+              <th scope="row">通知<span class="tag">可选</span></th>
+              <td>Android 13 以上可能会被询问，用于常驻状态通知。它不参与前台应用检测。</td>
+            </tr>
+            <tr>
+              <th scope="row">联网<span class="tag">仅主动操作</span></th>
+              <td>只有在你主动开启 Pro 试用、兑换激活码或发送反馈时才会用到。令牌下发后在本机校验，包括有效期和设备绑定。不做自动授权检查，也不做日常状态检查。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <aside class="chapter__note">
+      <b>一条经验</b>
+      权限越少，功能越完整。除了无障碍服务，其余默认都可以关掉；电池无限制是唯一在国产 ROM 上「不设就不好使」的一项。
+    </aside>
+  </section>
+
+  <!-- ============ 04 ============ -->
+  <section class="wrap chapter reveal" id="c4" aria-labelledby="h4">
+    <p class="chapter__num">§ 04</p>
+    <div class="chapter__body">
+      <h2 id="h4">你的数据在哪里</h2>
+      <p>在本机，别处没有。</p>
+      <p>
+        分组、等待时间、统计记录都保存在手机本地的数据库和偏好存储里。
+        <strong>没有账号，没有广告，没有分析 SDK，没有云同步。</strong>
+        没有账号，也就没有可以泄露的账号；没有服务器副本，也就没有可以调取的记录。
+      </p>
+      <p>
+        无障碍服务只读取前台应用的<strong>包名</strong>这一个字符串，用来判断「现在打开的是不是我该拦的那个」。
+        它不看你在这个应用里做了什么。卸载应用，数据随之消失。
+      </p>
+      <blockquote class="pull">
+        完整的隐私说明写在<a href="../../privacy-policy.html">隐私政策</a>里，可以逐条对照。
+      </blockquote>
+    </div>
+    <aside class="chapter__note">
+      <b>如果你要自己确认</b>
+      全部代码公开在 GitHub，无障碍相关的实现也在里面。不想读代码的话，断网使用即可，核心功能不依赖网络。
+    </aside>
+  </section>
+
+  <!-- ============ 05 ============ -->
+  <section class="wrap chapter reveal" id="c5" aria-labelledby="h5">
+    <p class="chapter__num">§ 05</p>
+    <div class="chapter__body">
+      <h2 id="h5">源码与完整性校验</h2>
+      <p>
+        Appause 在 MIT 许可证下开源，包括无障碍服务的实现部分。你可以查看、自行构建、或者改写成你要的样子。
+      </p>
+      <p>
+        安装包通过 GitHub Releases 直接分发，不经过任何应用商店。下面这串 SHA-256 是 v0.5.45 安装包的指纹，
+        下载之后可以自己比对一次：
+      </p>
+      <div class="tablewrap">
+        <table>
+          <caption>v0.5.45 安装包</caption>
+          <tbody>
+            <tr><th scope="row">文件</th><td>Appause-v0.5.45.apk</td></tr>
+            <tr><th scope="row">大小</th><td>12,268,450 字节（约 12.3 MB）</td></tr>
+            <tr><th scope="row">SHA-256</th><td><code>07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a</code></td></tr>
+            <tr><th scope="row">包名 / versionCode</th><td>com.appause.android · 97</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <aside class="chapter__note">
+      <b>开源不等于没人管</b>
+      当前版本在小米 HyperOS / Android 16 真机上做过拦截验证，验证记录写在仓库的测试报告里，包括失败的那些情况。
+    </aside>
+  </section>
+
+  <!-- ============ 06 ============ -->
+  <section class="wrap chapter reveal" id="c6" aria-labelledby="h6">
+    <p class="chapter__num">§ 06</p>
+    <div class="chapter__body">
+      <h2 id="h6">免费的部分与 Pro</h2>
+      <p>
+        核心功能永久免费，没有订阅，也没有付费版本。Pro 是一组仍在试验的功能，愿意试就开个 7 天试用，
+        试用期结束后如果还想用，通过应用内的反馈找开发者要一个永久激活码，手动发放，不收钱。
+      </p>
+      <div class="ledger">
+        <div class="ledger__row ledger__row--head"><span>功能</span><span>免费</span></div>
+        <div class="ledger__row"><span><b>应用分组与拦截</b></span><span class="yes">1 组</span></div>
+        <div class="ledger__row"><span><b>等待时间上限</b></span><span class="yes">60 秒</span></div>
+        <div class="ledger__row"><span><b>使用记录</b></span><span class="yes">365 天</span></div>
+        <div class="ledger__row"><span><b>无限分组</b></span><span class="no">Pro</span></div>
+        <div class="ledger__row"><span><b>再次提醒</b></span><span class="no">Pro</span></div>
+        <div class="ledger__row"><span><b>自定义停顿提示语</b></span><span class="no">Pro</span></div>
+        <div class="ledger__row"><span><b>自定义打开原因</b></span><span class="no">Pro</span></div>
+      </div>
+      <div class="callout">
+        <b>关于试用</b>
+        <p>
+          每台设备一次，7 天，在应用里手动点「开始试用」才会开始。试用期内不能再激活永久码，
+          要等 7 天结束。<strong>试用结束后，已有的分组照常拦截</strong>，只是 Pro 那几项会停掉，数据不会被删除。
+        </p>
+      </div>
+    </div>
+    <aside class="chapter__note">
+      <b>为什么手动发码</b>
+      这个项目没有接入任何支付渠道，也不打算接。激活码由开发者一对一发出，同一个码最多绑定 3 台设备。
+    </aside>
+  </section>
+
+  <!-- ============ 07 ============ -->
+  <section class="wrap chapter reveal" id="c7" aria-labelledby="h7">
+    <p class="chapter__num">§ 07</p>
+    <div class="chapter__body">
+      <h2 id="h7">下载与安装</h2>
+      <p>
+        安装包是签名过的 APK，直接从 GitHub Releases 下载。Android 8.0（API 26）及以上可以安装。
+      </p>
+      <div class="dl">
+        <a class="btn" id="download" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">
+          下载 Appause v0.5.45<span class="meta">APK · 12.3 MB</span>
+        </a>
+        <a class="btn btn--ghost" href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.45">Release 页面与更新说明</a>
+      </div>
+      <p class="dlnote">
+        首次侧载需要先允许「安装未知应用」。装完请做两件事：把 Appause 的电池设置改为<strong>无限制</strong>，
+        然后打开无障碍服务。这两步没做完，拦截不会稳定生效。完整步骤见
+        <a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">安装指南</a>。
+      </p>
+    </div>
+    <aside class="chapter__note">
+      <b>不在应用商店</b>
+      Appause 只通过 GitHub Releases 分发。看到别处提供的安装包，请核对上面的 SHA-256。
+    </aside>
+  </section>
+
+  <!-- ============ 08 ============ -->
+  <section class="wrap chapter reveal" id="c8" aria-labelledby="h8">
+    <p class="chapter__num">§ 08</p>
+    <div class="chapter__body">
+      <h2 id="h8">常见问题</h2>
+      <div class="faq">
+        <details>
+          <summary>它会不会看到我在应用里做什么？</summary>
+          <p>不会。无障碍服务只读取前台应用的包名，一个字符串。它不读取屏幕内容、消息、截图或按键，<code>canRetrieveWindowContent</code> 设为 false。分组和记录都存在本机。</p>
+        </details>
+        <details>
+          <summary>小米 / HyperOS 上能用吗？</summary>
+          <p>能，当前版本就是在小米 Android 16 真机上验证的。但必须把 Appause 的电池设置改为「无限制」，否则系统会在后台杀掉检测服务，表现是第一次打开不拦截、切回 Appause 才拦。同时建议允许自启动并在最近任务里锁定它。</p>
+        </details>
+        <details>
+          <summary>收费吗？</summary>
+          <p>核心功能永久免费，没有订阅也没有付费版本。Pro 是一组试验功能，7 天试用结束后，可以通过应用内反馈免费领一个永久激活码，由开发者手动发放。</p>
+        </details>
+        <details>
+          <summary>我能绕过它吗？</summary>
+          <p>能。它可以被关掉，也可以被卸载，等待时间也是你自己设的。这是给愿意给自己设一道坎的人用的工具，不是锁。</p>
+        </details>
+        <details>
+          <summary>会不会误拦？</summary>
+          <p>拦截依据的是系统发出的前台切换事件，事件一到立刻响应。唯一会主动抑制的情况是「最近任务」里快速划过多个应用造成的事件风暴，需要 120 毫秒内出现 3 个以上不同应用才会判定为误触发。日常单个应用来回切换不会触发这个判断。</p>
+        </details>
+        <details>
+          <summary>支持哪些 Android 版本？</summary>
+          <p>Android 8.0（API 26）及以上。发布包名为 <code>com.appause.android</code>，通过 GitHub Releases 直接分发。</p>
+        </details>
+      </div>
+    </div>
+    <aside class="chapter__note">
+      <b>还有问题</b>
+      应用内「设置 → 反馈」可以先看一份诊断快照再决定要不要发。也可以在 GitHub 上直接提 issue。
+    </aside>
+  </section>
+
+  <!-- ============ colophon ============ -->
+  <footer class="wrap colophon">
+    <div class="colophon__grid">
+      <div>
+        <h2>项目</h2>
+        <ul>
+          <li><a href="https://github.com/Shmily0826/Appause">GitHub 源码</a></li>
+          <li><a href="https://github.com/Shmily0826/Appause/releases">全部版本</a></li>
+          <li><a href="https://github.com/Shmily0826/Appause/issues">问题反馈</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>文档</h2>
+        <ul>
+          <li><a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">安装指南</a></li>
+          <li><a href="../../privacy-policy.html">隐私政策</a></li>
+          <li><a href="https://github.com/Shmily0826/Appause/blob/main/docs/RELEASE_NOTES.md">发布说明</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>关于</h2>
+        <p>
+          Appause 在 MIT 许可证下开源，© 2026 Appause authors。
+          它是一个辅助习惯的无障碍工具，不是监控工具、安全产品或医疗工具。
+        </p>
+      </div>
+    </div>
+    <a class="totop" href="#main">↑ 回到目录</a>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // 滚动后出现的细导航条
+  var rail = document.getElementById('rail');
+  var titleblock = document.querySelector('.titleblock');
+  if (rail && titleblock) {
+    var onScroll = function(){
+      rail.classList.toggle('is-on', window.scrollY > titleblock.offsetHeight * 0.7);
+    };
+    window.addEventListener('scroll', onScroll, {passive:true});
+    onScroll();
+  }
+
+  // 当前章节指示
+  var label = document.getElementById('curChapter');
+  var sections = [].slice.call(document.querySelectorAll('.chapter'));
+  if (label && sections.length && 'IntersectionObserver' in window) {
+    var current = null;
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting) {
+          current = e.target;
+          var n = e.target.querySelector('.chapter__num');
+          if (n) label.textContent = n.textContent.trim();
+        }
+      });
+      if (!current) label.textContent = '目录';
+    }, {rootMargin:'-10% 0px -70% 0px', threshold:0});
+    sections.forEach(function(s){ io.observe(s); });
+  }
+
+  // 入场（尊重 reduced-motion）
+  var reveals = [].slice.call(document.querySelectorAll('.reveal'));
+  if (reduce || !('IntersectionObserver' in window)) {
+    reveals.forEach(function(el){ el.classList.add('is-in'); });
+  } else {
+    var ro = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if (e.isIntersecting) { e.target.classList.add('is-in'); ro.unobserve(e.target); }
+      });
+    }, {rootMargin:'0px 0px -12% 0px', threshold:0.08});
+    reveals.forEach(function(el){ ro.observe(el); });
+  }
+})();
+</script>
+
+</body>
+</html>

@@ -26,7 +26,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           METRICS_REPO: Shmily0826/Appause
           WORKER_STATS_URL: ${{ secrets.WORKER_STATS_URL }}
-        run: python scripts/github_metrics.py
+        run: python scripts/ci/github_metrics.py
 
       - name: Commit metrics
         run: |

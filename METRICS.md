@@ -1,6 +1,6 @@
 # Appause — GitHub 项目指标 (Project Metrics)
 
-> 自动采集：GitHub Actions 每周日 UTC 0 点运行 `scripts/github_metrics.py`，也可本地手动跑。
+> 自动采集：GitHub Actions 每周日 UTC 0 点运行 `scripts/ci/github_metrics.py`，也可本地手动跑。
 > 隐私说明：仅统计**公开仓库的聚合指标**（star / fork / 下载 / 流量），不采集任何用户或设备数据，与 Appause 隐私优先的定位一致。
 
 | date | stars | forks | watchers | open_issues | release_downloads | downloads_total | views_14d | clones_14d |

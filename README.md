@@ -17,7 +17,7 @@ Download the signed APK from the canonical [GitHub Release](https://github.com/S
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
 `versionCode` is internal metadata and is not part of the public filename.
-See [INSTALL.md](INSTALL.md) before the first sideload.
+See [docs/INSTALL.md](docs/INSTALL.md) before the first sideload.
 
 ## What it does
 
@@ -132,12 +132,13 @@ APK and are not a production activation path.
   Accessibility health showed Enabled/Running before and after one Bilibili
   type-2032 interception and Home cleanup. This is not full OEM/device QA.
 
-See [PROGRESS.md](PROGRESS.md) and [TEST_REPORT.md](TEST_REPORT.md) for the
+See [docs/archive/PROGRESS.md](docs/archive/PROGRESS.md) and
+[docs/archive/TEST_REPORT.md](docs/archive/TEST_REPORT.md) for the
 full evidence ledger and its remaining boundaries.
 
 ## Install and feedback
 
-- [Install guide](INSTALL.md)
+- [Install guide](docs/INSTALL.md)
 - [Privacy policy](PRIVACY.md)
 - [GitHub Issues](https://github.com/Shmily0826/Appause/issues)
 - [v0.5.44 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.44)

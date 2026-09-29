@@ -75,6 +75,12 @@ worker/codes.txt
 images/screenshots/*.png
 images/screenshots/*.xml
 
+# Stray dir with a Windows reserved name, created by wrangler writing logs to
+# "NUL" (2026-09-22). Normal Windows APIs cannot open or delete it; ignoring it
+# stops git from warning on every scan. Delete it manually from Git Bash:
+#   rm NUL/*.log && rmdir NUL
+/NUL/
+
 # Misc local debug artifacts (never part of the app)
 shot.py
 db_inspect/
@@ -82,6 +88,10 @@ db2/
 .gradle-user/
 .android-user/
 .hallmark/
+
+# Local tooling scratch dirs (agent/browser tool state, not project content)
+.impeccable/
+.playwright-cli/
 
 # Stress-test evidence output: raw logcat, screenshots, and copies of the
 # device database / persistent log. Contains real-device package names and

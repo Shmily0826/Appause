@@ -13,8 +13,8 @@ uses real app captures from images/screenshots/<lang>/, so sharing the link
 shows the actual product rather than a mock. The version string is read from
 app/build.gradle.kts, so re-run this after every release:
 
-    python scripts/make_og_card.py           # English card + icons
-    python scripts/make_og_card.py --lang zh # Chinese card
+    python scripts/release/make_og_card.py           # English card + icons
+    python scripts/release/make_og_card.py --lang zh # Chinese card
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 IMAGES = ROOT / "images"
 
 CANVAS = (1200, 630)
