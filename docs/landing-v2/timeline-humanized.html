@@ -707,6 +707,9 @@
     padding: var(--space-2) var(--space-3);
     border: 1px dashed var(--ink-faint);
   }
+  .pro-order p { margin: 0 0 0.5rem; }
+  .pro-order ol { margin: 0; padding-left: 1.3rem; display: grid; gap: 0.35rem; }
+  .pro-order li::marker { color: var(--cinnabar); font-weight: 600; }
   /* inline code 是界面路径（设置 → 反馈），不允许在中间断行：
      窄屏下实测会被拆成「设」+「置→反馈」两行，行盒 ["66x15","14x15"]。 */
   .pro-order code { font-family: var(--font-mono); font-size: 0.88em; white-space: nowrap; }
@@ -743,6 +746,10 @@
     color: var(--ink-soft);
   }
   .dl-facts b { color: var(--ink); font-weight: 600; }
+  .dl-ios {
+    margin: var(--space-3) 0 0; font-size: 0.9rem; color: var(--ink-soft);
+    padding-left: 0.9rem; border-left: 2px solid var(--rule);
+  }
   .dl-panel details { margin-top: var(--space-3); font-family: var(--font-mono); font-size: 0.8rem; border-top: 1px solid var(--rule); }
   .dl-panel summary {
     cursor: pointer;
@@ -1025,7 +1032,7 @@
       </div>
       <p class="hero-badges" aria-label="版本与信任要点">
         <span>公开测试版 <b data-r="version">v0.5.45</b></span>
-        <span>Android 8.0+</span>
+        <span>仅安卓 · Android 8.0+</span>
         <span>MIT 开源</span>
         <span>数据只存本机</span>
         <span>日常使用不联网</span>
@@ -1034,7 +1041,7 @@
     </div>
     <figure class="hero-shot">
       <img src="../../images/screenshots/zh/pause-crop.png" width="1080" height="1631" alt="Appause 暂停页截图：YouTube 打开前显示倒计时，提供四个原因选项和继续、取消按钮" loading="eager">
-      <figcaption>真机上的暂停页。上面写的是：给自己几秒，再决定是否继续。</figcaption>
+      <figcaption>真机上的暂停页。</figcaption>
     </figure>
   </section>
 
@@ -1070,8 +1077,8 @@
           <p>首页会列出还差哪几项，点「去开启」跟着走就行。这项权限只用来知道你打开了哪个应用。</p>
         </li>
         <li class="start-step">
-          <h3>关掉电池优化</h3>
-          <p>在电池设置里把 Appause 的电池优化设为「无限制」，并允许自启动。否则系统会杀掉后台服务，拦截时灵时不灵。设完就不用再管了。</p>
+          <h3>把电池优化设为「无限制」</h3>
+          <p>在电池设置里把 Appause 设为「无限制」，并允许自启动。这一项和无障碍服务一样是必做的：系统会在省电时终止后台服务，表现为第一次打开目标应用不拦截。设完就不用再管了。</p>
         </li>
       </ol>
       <p class="start-note">装新版直接覆盖旧版就行，不要先卸载，卸载会把本机的分组和统计一起清掉。</p>
@@ -1083,7 +1090,7 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="privacy-title">权限与隐私</h2>
-        <p>开完无障碍服务就能用。真正要额外动手的是电池优化：小米、华为这类系统会杀掉后台服务。</p>
+        <p>必须开两项：无障碍服务，以及把电池优化设为「无限制」。少了任何一项都会拦截失灵。其余四项按需要开。</p>
       </div>
       <p class="perm-intro">
         你的分组、冷却设置和统计只写在这台手机的本地库里，卸载就清空。
@@ -1105,8 +1112,8 @@
           </tr>
           <tr>
             <td>电池优化</td>
-            <td data-label="状态"><span class="status s-rec">建议开启</span></td>
-            <td data-label="用途">关掉它，防止系统在省电时终止后台服务。这是小米 HyperOS 等机型上「拦截失灵」的第一大原因。</td>
+            <td data-label="状态"><span class="status s-req">必需</span></td>
+            <td data-label="用途">设为「无限制」，并允许自启动。系统会在省电时终止后台服务，表现为第一次打开目标应用不拦截、切回 Appause 才拦。部分安卓机型（小米、华为等后台管理较严格的系统）会默认这样做。</td>
           </tr>
           <tr>
             <td>使用情况访问</td>
@@ -1143,32 +1150,35 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="pro-title">不收费，也没有付费版</h2>
-        <p>Pro 是四个还在改的功能：无限分组、再次提醒、自定义提示语和原因。它们单独放一个开关，开不开都不影响免费那套。</p>
+        <p>核心功能永久免费，不限时间。Pro 只是在此基础上多四个开关，用来试一些还没定稿的功能。</p>
       </div>
       <div class="pro-grid">
-        <section class="pro-col" aria-label="免费版包含">
-          <h3>免费版</h3>
+        <section class="pro-col" aria-label="免费包含的功能">
+          <h3>一直免费</h3>
           <ul>
-            <li><b>拦截、冷却、暂停页、统计</b>一直免费，不限时间</li>
+            <li><b>拦截、冷却、暂停页、统计</b>不限时间，也不限次数</li>
             <li><b>分组上限</b>：1 个</li>
             <li><b>反馈通道</b>：设置里带一份诊断快照，发不发由你</li>
           </ul>
         </section>
-        <section class="pro-col pro" aria-label="Pro 实验功能">
-          <h3>Pro（实验功能）</h3>
+        <section class="pro-col pro" aria-label="Pro 额外提供的功能">
+          <h3>Pro 额外提供</h3>
           <ul>
             <li><b>无限分组</b>：免费版只能建 1 个</li>
             <li><b>再次提醒</b>：停留在目标应用时再提醒一次</li>
-            <li><b>自定义暂停提示语</b>：换上你自己写的句子</li>
+            <li><b>自定义暂停提示语</b>：换成你自己写的句子</li>
             <li><b>自定义打开原因</b>：改成你会真的去点的选项</li>
           </ul>
         </section>
       </div>
-      <p class="pro-order">
-        怎么拿到 Pro：你可以为每台设备主动开一次 <b>7 天试用</b>，不用付费，也不会自动扣费。
-        到期后 Pro 的四项功能会关闭，已有的分组和统计不受影响。想接着用，
-        到 <code>设置 → 反馈</code> 申请一个免费永久授权码，回 Pro 页面兑换就行。
-      </p>
+      <div class="pro-order">
+        <p>Pro 不要钱。想用的话按这个顺序：</p>
+        <ol>
+          <li>在 Pro 页面点「开始试用」，<b>7 天</b>，不用付费，也不会自动扣费。</li>
+          <li>到期后 Pro 的四项功能关闭，已有的分组和统计不受影响。</li>
+          <li>想接着用，等到<b>试用结束后</b>，到 <code>设置 → 反馈</code> 申请一个免费永久授权码，回 Pro 页面兑换。</li>
+        </ol>
+      </div>
     </div>
   </section>
 
@@ -1177,42 +1187,25 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="how-title">一次拦截的经过</h2>
-        <p>六步。时间取自真机 logcat。</p>
+        <p>你看到的三步。下面真机记录里有每一步的实测数据。</p>
       </div>
       <ol class="timeline">
         <li class="tl-fade">
-          <span class="tl-t">T+0.00s</span>
-          <h3>你点开一个被管理的应用</h3>
-          <p>无障碍服务拿到的是一个包名字符串。</p>
+          <span class="tl-t">第一步</span>
+          <h3>你点开那个应用</h3>
+          <p>先出现的不是它，是一页暂停页。Appause 知道的是你点开了哪个应用，不读屏幕上的内容。</p>
         </li>
         <li class="tl-fade">
-          <span class="tl-t">紧接着</span>
-          <h3>暂停页盖在最上层</h3>
-          <p>暂停页在最上层，开了「隐藏悬浮窗」防干扰的应用（比如小红书）上也照样可见。
-          用的是系统级窗口类型（<span class="mono">TYPE_ACCESSIBILITY_OVERLAY</span>）。</p>
+          <span class="tl-t">第二步</span>
+          <h3>这几秒里你可以想一下</h3>
+          <p>暂停页盖在最上层，开着防干扰设置的应用上也照样出现。倒计时结束前「继续」按钮是按不动的，
+          这段时间可以先选一个原因：工作需要、无聊、查消息，或其他。冷却时长自己定，1 到 60 秒，新分组默认 10 秒。</p>
         </li>
         <li class="tl-fade">
-          <span class="tl-t">倒计时</span>
-          <h3>冷却时间由你定</h3>
-          <p>新分组默认冷却 10 秒，可在 1 到 60 秒之间调整。倒计时结束前，「继续」按钮不可用；
-          这段时间可以先选一个原因：工作需要、无聊、查消息，或其他。</p>
-        </li>
-        <li class="tl-fade">
-          <span class="tl-t">二选一</span>
+          <span class="tl-t">第三步</span>
           <h3>继续，或者回桌面</h3>
-          <p>「继续」进入应用；「取消」直接回桌面，冷却重新计时。按 Home 键也会立即关闭暂停页。</p>
-        </li>
-        <li class="tl-fade">
-          <span class="tl-t">T+0.29s</span>
-          <h3>关掉再点回去？会再拦一次</h3>
-          <p>真机记录：回到桌面后 291 毫秒内重新打开 B 站，Appause 再次拦截。
-          防手滑，也防「顺手再开一次」。</p>
-        </li>
-        <li class="tl-fade tl-wide">
-          <span class="tl-t">T+1.8s</span>
-          <h3>最近任务键不会误判</h3>
-          <p>按下最近任务键后约 1.8 秒，暂停页仍在（真机 logcat 记录），Appause 不会把
-          「看了眼后台」当成「回到了桌面」。真正回到主屏幕，这次冷却才算结束。</p>
+          <p>「继续」进入应用；「取消」直接回桌面，冷却重新计时。按 Home 键也一样。
+          关掉马上又点回去，会再拦一次。</p>
         </li>
       </ol>
     </div>
@@ -1223,7 +1216,7 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="evidence-title">真机验证记录</h2>
-        <p>下面四条是当时的验证记录，装一遍就能自己对着看。</p>
+        <p>下面五条是当时的验证记录，装一遍就能自己对着看。</p>
       </div>
       <table class="ledger">
         <caption>设备：Xiaomi 2410DPN6CC · HyperOS · Android 16 ｜ 记录于 v0.5.44</caption>
@@ -1243,12 +1236,17 @@
           <tr>
             <td>最近任务键不误判为回桌面</td>
             <td data-label="方法">WindowManager 状态记录</td>
-            <td data-label="观察结果">约 <span class="pass">1.8 秒</span>后暂停页仍在</td>
+            <td data-label="观察结果">约 <span class="pass">1.8 秒</span>后暂停页<span class="nb">仍在</span></td>
           </tr>
           <tr>
             <td>暂停页在防截屏应用上可见</td>
-            <td data-label="方法">小红书实机 · 无障碍窗口类型 <span class="mono">2032</span>（<span class="mono">setHideOverlayWindows</span>）</td>
+            <td data-label="方法">小红书实机 · 无障碍窗口类型 <span class="mono">2032</span>（<span class="mono">TYPE_ACCESSIBILITY_OVERLAY</span>，能盖住 <span class="mono">setHideOverlayWindows</span>）</td>
             <td data-label="观察结果"><span class="pass">照常可见</span></td>
+          </tr>
+          <tr>
+            <td>只读取应用包名</td>
+            <td data-label="方法">无障碍服务配置 <span class="mono">canRetrieveWindowContent = false</span></td>
+            <td data-label="观察结果">拿到的只有包名字符串，<span class="pass">不读屏幕内容</span></td>
           </tr>
           <tr>
             <td>回桌面后立即重开目标应用</td>
@@ -1276,7 +1274,7 @@
           <li><b>冷却时间</b>：最长 60 秒，免费与 Pro 的上限相同</li>
           <li><b>使用统计</b>：免费可查看 365 天记录，含每次继续或取消的原因</li>
           <li><b>暗色模式</b>：跟随系统</li>
-          <li><b>省电与自启动指引</b>：小米、华为这类后台管得严的机型，该怎么设置才不被杀</li>
+          <li><b>省电与自启动指引</b>：部分安卓机型（小米、华为等）会限制后台服务，这里给出需要开启的两项设置</li>
         </ul>
       </div>
       <div class="shot-pair">
@@ -1301,35 +1299,35 @@
       <div class="faq-list">
         <details>
           <summary>无障碍服务能看到什么？为什么一定要开？</summary>
-          <p>这是 Android 自带的一项辅助功能，Appause 只用它做一件事：知道你此刻打开的是哪个应用。
-          它拿到的就是一个包名字符串，窗口内容读取是关掉的（<span class="mono">canRetrieveWindowContent = false</span>）。
-          没有这项权限，Appause 没法知道你打开了什么，也就拦不住。</p>
+          <p>这是 Android 自带的一项辅助功能，Appause 只用它做一件事：判断当前打开的是哪个应用。
+          它读取的是前台应用的包名，窗口内容读取已关闭（<span class="mono">canRetrieveWindowContent = false</span>），
+          不涉及屏幕内容、消息、截图或键盘输入。没有这项权限就无法判断你打开了什么，也就无法拦截。</p>
         </details>
         <details>
           <summary>会耗电吗？为什么拦截有时会失灵？</summary>
-          <p>无障碍服务会一直挂在后台，本机测试里耗电影响不大。如果拦截失灵，先检查两件事：
-          把 Appause 的电池优化设为「无限制」，并允许自启动。小米 HyperOS 这类系统
-          杀掉后台服务后，不会自动把无障碍服务重新拉起来，这是排障记录里最常见的原因。</p>
+          <p>无障碍服务常驻后台，本机测试中耗电影响不大。如果拦截失灵，先检查两项设置：
+          把 Appause 的电池优化设为「无限制」，并允许自启动。部分安卓系统在终止后台服务后，
+          不会自动重新拉起无障碍服务，这是排障记录中最常见的原因。</p>
         </details>
         <details>
           <summary>暂停页会被其他应用挡住吗？</summary>
-          <p>暂停页用的是一种更高层级的窗口类型，盖在普通应用上面，实测在开了
-          「隐藏悬浮窗」的应用上依然可见。个别机型如果还是不显示，可以打开悬浮窗权限，
-          Appause 会换一套备用方式。</p>
+          <p>暂停页使用较高层级的窗口类型，覆盖在普通应用之上，实测在开启了
+          「隐藏悬浮窗」的应用上仍然可见。个别机型如果仍不显示，可以开启悬浮窗权限，
+          Appause 会改用备用方案。</p>
         </details>
         <details>
           <summary>Pro 收费吗？</summary>
-          <p>不收。四项 Pro 功能也是免费的，7 天试用到期就关掉，不会问你要钱。</p>
+          <p>不收费。四项 Pro 功能同样免费，7 天试用到期后自动关闭，不涉及任何付款。</p>
         </details>
         <details>
           <summary>永久授权码怎么申请？要花钱吗？</summary>
-          <p>到 <code>设置 → 反馈</code> 申请就行，开发者人工签发，全程免费，没有自动开通的入口，也没有内购。
-          顺序上有一点要注意：这台设备如果已经开过 7 天试用，得等试用走完才能兑换；没开过试用的新设备可以直接申请。
-          永久授权码绑定设备，一个码最多用在 3 台上。</p>
+          <p>到 <code>设置 → 反馈</code> 申请，由开发者人工签发，全程免费，没有自动开通入口，也没有内购。
+          顺序上有一点需要注意：这台设备如果已经开过 7 天试用，要等试用结束后才能兑换；没开过试用的新设备可以直接申请。
+          永久授权码绑定设备，一个码最多用于 3 台。</p>
         </details>
         <details>
           <summary>换手机后数据还在吗？</summary>
-          <p>数据只存在这台手机上，卸载就会全部清掉。分组和统计没有云同步，换机后要重新设置。</p>
+          <p>数据只存储在这台手机上，卸载会全部清除。分组和统计没有云同步，换机后需要重新设置。</p>
         </details>
       </div>
     </div>
@@ -1340,7 +1338,7 @@
     <div class="wrap">
       <div class="dl-panel">
         <h2 id="download-title">下载 Appause <span data-r="version">v0.5.45</span></h2>
-        <p class="dl-ver">公开测试版 <span class="dot">·</span> <span data-r="date">2026-09-24</span> 发布 <span class="dot">·</span> 未上架应用商店</p>
+        <p class="dl-ver">公开测试版 <span class="dot">·</span> <span data-r="date">2026-09-24</span> 发布 <span class="dot">·</span> 仅安卓，未上架应用商店</p>
         <a class="btn" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk"><span data-r="file">Appause-v0.5.45.apk</span></a>
         <p class="dl-facts">
           <span>包名 <b>com.appause.android</b></span>
@@ -1348,6 +1346,7 @@
           <span>大小 <b data-r="size">12.3 MB</b></span>
           <span>系统要求 <b>Android 8.0+</b></span>
         </p>
+        <p class="dl-ios">iOS 装不了 APK，所以暂时没有 iPhone 版。</p>
         <details>
           <summary>查看 APK SHA-256 校验值</summary>
           <code data-r="sha256">07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a</code>
