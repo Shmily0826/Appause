@@ -353,9 +353,8 @@ private suspend fun submitFeedbackViaServer(
 
 /**
  * Build the on-device diagnostic block attached to every feedback submission.
- * Uses only the structured status signals the Diagnostics screen already shows —
- * never free-text production logs. [logTail] is the in-memory ring buffer, which
- * is empty in release builds (debug-only), so it is appended only when present.
+ * Includes fixed, package-free Accessibility lifecycle breadcrumbs. [logTail]
+ * is the in-memory debug log and remains separate from release diagnostics.
  */
 private fun buildDiagnosticBlock(state: DiagnosticsState?, logTail: String): String {
     if (state == null) return ""
@@ -374,6 +373,11 @@ private fun buildDiagnosticBlock(state: DiagnosticsState?, logTail: String): Str
         appendLine("lastTargetDecision: ${state.lastTargetDecision ?: "无/none"}")
         appendLine("foreground: ${state.foregroundPackage ?: "无/none"}")
         appendLine("groups: ${state.groups.size} (activeIntercepting: ${state.activeGroups.size})")
+        if (state.accessibilityLifecycle.isNotBlank()) {
+            appendLine()
+            appendLine("--- Accessibility service lifecycle ---")
+            appendLine(state.accessibilityLifecycle)
+        }
         if (logTail.isNotBlank()) {
             appendLine()
             appendLine("--- 内存日志 (debug only) ---")

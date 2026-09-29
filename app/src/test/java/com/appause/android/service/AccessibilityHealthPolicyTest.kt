@@ -63,6 +63,9 @@ class AccessibilityHealthPolicyTest {
         processStates.value = AccessibilityProcessState.DISCONNECTED
 
         val recovered = health.first { it.status == AccessibilityHealthStatus.SERVICE_NOT_CONNECTED }
+        assertFalse(recovered.isHealthy)
+        assertEquals(AccessibilitySystemState.ENABLED, recovered.systemState)
+        assertEquals(AccessibilityProcessState.DISCONNECTED, recovered.processState)
         assertEquals(AccessibilityRecoveryAction.OPEN_ACCESSIBILITY_SETTINGS, recovered.recoveryAction)
     }
 
@@ -84,6 +87,16 @@ class AccessibilityHealthPolicyTest {
         rawProcessStates.value = AccessibilityProcessState.DISCONNECTED
 
         assertEquals(AccessibilityHealthStatus.HEALTHY, health.first().status)
+    }
+
+    @Test
+    fun `process without a live service instance is disconnected`() {
+        listOf(AccessibilityProcessState.UNKNOWN, AccessibilityProcessState.CONNECTED).forEach { state ->
+            assertEquals(
+                AccessibilityProcessState.DISCONNECTED,
+                AppauseAccessibilityService.effectiveProcessState(state, hasLiveInstance = false)
+            )
+        }
     }
 
     @Test

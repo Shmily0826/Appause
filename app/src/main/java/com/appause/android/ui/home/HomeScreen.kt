@@ -595,6 +595,25 @@ private fun SetupChecklistCard(
     onOpenBatterySettings: () -> Unit,
     onShowWhy: () -> Unit
 ) {
+    val status = accessibilityHealth.status
+    val titleRes = when (status) {
+        AccessibilityHealthStatus.SERVICE_NOT_CONNECTED -> R.string.service_not_connected_title
+        AccessibilityHealthStatus.UNKNOWN -> R.string.service_status_unknown_title
+        else -> R.string.setup_checklist_title
+    }
+    val descriptionRes = when (status) {
+        AccessibilityHealthStatus.ACCESSIBILITY_NOT_ENABLED -> R.string.service_not_enabled_desc
+        AccessibilityHealthStatus.SERVICE_NOT_CONNECTED -> R.string.service_not_connected_desc
+        AccessibilityHealthStatus.UNKNOWN -> R.string.service_status_unknown_desc
+        AccessibilityHealthStatus.HEALTHY -> R.string.setup_checklist_desc
+    }
+    val actionRes = when (status) {
+        AccessibilityHealthStatus.ACCESSIBILITY_NOT_ENABLED -> R.string.enable_accessibility
+        AccessibilityHealthStatus.SERVICE_NOT_CONNECTED -> R.string.reconnect_service
+        AccessibilityHealthStatus.UNKNOWN -> R.string.check_accessibility_status
+        AccessibilityHealthStatus.HEALTHY -> R.string.setup_checklist_action
+    }
+
     // Accessibility is the only missing state that prevents Appause from
     // observing foreground apps. Usage access and battery optimization are
     // preparation steps, so keep those states in the softer warning palette.
@@ -632,7 +651,7 @@ private fun SetupChecklistCard(
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = stringResource(R.string.setup_checklist_title),
+                    text = stringResource(titleRes),
                     style = MaterialTheme.typography.titleMedium,
                     color = contentColor
                 )
@@ -641,7 +660,7 @@ private fun SetupChecklistCard(
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = stringResource(R.string.setup_checklist_desc),
+                text = stringResource(descriptionRes),
                 style = MaterialTheme.typography.bodyMedium,
                 color = contentColor
             )
@@ -658,6 +677,8 @@ private fun SetupChecklistCard(
                         text = stringResource(
                             if (accessibilityHealth.status == AccessibilityHealthStatus.UNKNOWN) {
                                 R.string.required_permissions_accessibility_unverified
+                            } else if (accessibilityHealth.status == AccessibilityHealthStatus.SERVICE_NOT_CONNECTED) {
+                                R.string.required_permissions_accessibility_disconnected
                             } else {
                                 R.string.required_permissions_accessibility
                             }
@@ -708,7 +729,7 @@ private fun SetupChecklistCard(
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(stringResource(R.string.setup_checklist_action))
+                Text(stringResource(actionRes))
             }
         }
     }

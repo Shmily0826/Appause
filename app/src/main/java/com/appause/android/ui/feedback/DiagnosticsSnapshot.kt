@@ -40,6 +40,7 @@ data class DiagnosticsState(
     val foregroundPackage: String? = null,
     val bypassed: Set<String> = emptySet(),
     val groups: List<GroupDiag> = emptyList(),
+    val accessibilityLifecycle: String = "",
     val persistentLog: String = "",
     val crashLog: String = "",
     val forceStartResult: String? = null
@@ -63,11 +64,8 @@ data class DiagnosticsState(
  * Collects the full on-device diagnostic snapshot used by both the Diagnostics
  * screen and the Feedback screen, so the two never drift apart.
  *
- * IMPORTANT (privacy): this only reads the structured status signals the app
- * already shows on the Diagnostics screen. It does NOT read any free-text
- * production logs — [com.appause.android.util.PersistentLog] and the in-memory
- * ring buffer are debug-only and empty in release builds. So a feedback
- * submission never carries app-usage records or private content.
+ * The release lifecycle log contains only fixed event names and whether the
+ * user's Accessibility switch was enabled; it contains no app or usage data.
  */
 suspend fun collectDiagnostics(context: Context): DiagnosticsState {
     val app = context.applicationContext as AppauseApp
@@ -105,6 +103,8 @@ suspend fun collectDiagnostics(context: Context): DiagnosticsState {
         overlayResult = AppauseAccessibilityService.lastOverlayResult,
         foregroundPackage = foreground,
         bypassed = InterceptionManager.bypassedSnapshot(),
-        groups = groups
+        groups = groups,
+        accessibilityLifecycle = com.appause.android.util.PersistentLog
+            .readAccessibilityLifecycle(context)
     )
 }

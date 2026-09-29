@@ -135,10 +135,10 @@ open class SettingsDataStore(private val context: Context) {
     }
 
     /**
-     * Whether to show the persistent "monitoring" notification (and run the
-     * accessibility service as a foreground service). Default: true.
+     * Whether to show the persistent informational "monitoring" notification.
+     * Default: true.
      * Users who find the always-on notification annoying can turn it off; the
-     * service still runs as a normal (non-foreground) accessibility service.
+     * accessibility service continues under system-managed binding.
      */
     val showNotification: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[SHOW_NOTIFICATION_KEY] ?: true

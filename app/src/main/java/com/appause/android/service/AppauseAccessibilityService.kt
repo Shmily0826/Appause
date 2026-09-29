@@ -356,7 +356,7 @@ class AppauseAccessibilityService : AccessibilityService() {
 
         /**
          * Static handle to the running service instance. Lets the Settings
-         * screen toggle the monitoring notification (start/stop foreground)
+         * screen toggle the monitoring notification
          * at runtime without restarting the service.
          */
         @Volatile
@@ -388,7 +388,8 @@ class AppauseAccessibilityService : AccessibilityService() {
             processState: AccessibilityProcessState,
             hasLiveInstance: Boolean
         ): AccessibilityProcessState =
-            if (hasLiveInstance) AccessibilityProcessState.CONNECTED else processState
+            if (hasLiveInstance) AccessibilityProcessState.CONNECTED
+            else AccessibilityProcessState.DISCONNECTED
 
         // ── Diagnostics counters ──
         // Plain in-memory fields read by the Diagnostics screen (debug builds).
@@ -679,11 +680,13 @@ class AppauseAccessibilityService : AccessibilityService() {
         super.onCreate()
         _processState.value = AccessibilityProcessState.UNKNOWN
         PersistentLog.log(this, "Svc", "AccessibilityService.onCreate pid=${android.os.Process.myPid()}")
+        logAccessibilityLifecycle(PersistentLog.AccessibilityLifecycleEvent.CREATED)
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
         PersistentLog.log(this, "Svc", "onServiceConnected ENTER")
+        logAccessibilityLifecycle(PersistentLog.AccessibilityLifecycleEvent.CONNECTED)
         AppLogger.d(TAG, "AccessibilityService connected and running")
 
         try {
@@ -708,12 +711,8 @@ class AppauseAccessibilityService : AccessibilityService() {
             // persisted expiries are not — see restore docs).
             restoreTemporaryPassExpiryWakes()
 
-            // Show a persistent notification to indicate the service is actively monitoring.
-            // This also acts as a foreground service notification, which helps prevent
-            // the system from killing the service in the background.
-            // Respect the user's "show notification" preference: if disabled, the
-            // service runs as a normal (non-foreground) accessibility service with no
-            // persistent notification.
+            // AccessibilityService binding is managed by the system. This optional
+            // notification is informational and does not control service lifetime.
             createNotificationChannel()
             serviceScope.launch {
                 try {
@@ -798,12 +797,10 @@ class AppauseAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * Start or stop the persistent monitoring notification (and the foreground
-     * service state that goes with it).
-     * @param show true → startForeground with the monitoring notification;
-     *             false → stopForeground and remove it.
+     * Show or remove the optional informational monitoring notification.
      */
     private fun applyMonitoringNotification(show: Boolean) {
+        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (show) {
             try {
                 val notification = NotificationCompat.Builder(this, NOTIFICATION_CHANNEL_ID)
@@ -813,17 +810,17 @@ class AppauseAccessibilityService : AccessibilityService() {
                     .setOngoing(true)
                     .setPriority(NotificationCompat.PRIORITY_LOW)
                     .build()
-                startForeground(NOTIFICATION_ID, notification)
-                PersistentLog.log(this, "Svc", "startForeground OK")
+                notificationManager.notify(NOTIFICATION_ID, notification)
+                PersistentLog.log(this, "Svc", "monitoring notification posted")
             } catch (e: Exception) {
-                PersistentLog.log(this, "Svc", "startForeground FAILED: ${e.javaClass.simpleName}: ${e.message}")
-                AppLogger.e(TAG, "startForeground failed", e)
+                PersistentLog.log(this, "Svc", "monitoring notification failed: ${e.javaClass.simpleName}: ${e.message}")
+                AppLogger.e(TAG, "Monitoring notification failed", e)
             }
         } else {
             try {
-                stopForeground(STOP_FOREGROUND_REMOVE)
+                notificationManager.cancel(NOTIFICATION_ID)
             } catch (e: Exception) {
-                PersistentLog.log(this, "Svc", "stopForeground FAILED: ${e.javaClass.simpleName}: ${e.message}")
+                PersistentLog.log(this, "Svc", "monitoring notification removal failed: ${e.javaClass.simpleName}: ${e.message}")
             }
         }
     }
@@ -2093,24 +2090,23 @@ class AppauseAccessibilityService : AccessibilityService() {
 
     override fun onInterrupt() {
         PersistentLog.log(this, "Svc", "onInterrupt")
+        logAccessibilityLifecycle(PersistentLog.AccessibilityLifecycleEvent.INTERRUPTED)
         AppLogger.d(TAG, "AccessibilityService interrupted")
+    }
+
+    override fun onUnbind(intent: Intent?): Boolean {
+        PersistentLog.log(this, "Svc", "onUnbind")
+        logAccessibilityLifecycle(PersistentLog.AccessibilityLifecycleEvent.UNBOUND)
+        markDisconnectedIfCurrentInstance()
+        return super.onUnbind(intent)
     }
 
     override fun onDestroy() {
         PersistentLog.log(this, "Svc", "onDestroy")
+        logAccessibilityLifecycle(PersistentLog.AccessibilityLifecycleEvent.DESTROYED)
         unregisterCloseSystemDialogsReceiver()
         super.onDestroy()
-        if (instance == this && _processState.value == AccessibilityProcessState.CONNECTED) {
-            _processState.value = AccessibilityProcessState.DISCONNECTED
-        }
-
-        // Drop the static reference so a dead instance can't be toggled.
-        // The Diagnostics screen reads this to tell "enabled in system settings"
-        // apart from "actually running" (ROMs often kill the process).
-        if (instance == this) {
-            instance = null
-            connectedAt = 0L
-        }
+        markDisconnectedIfCurrentInstance()
 
         // Stop the foreground poller
         pollJob?.cancel()
@@ -2141,5 +2137,20 @@ class AppauseAccessibilityService : AccessibilityService() {
         }
 
         AppLogger.d(TAG, "AccessibilityService destroyed")
+    }
+
+    private fun logAccessibilityLifecycle(event: PersistentLog.AccessibilityLifecycleEvent) {
+        PersistentLog.logAccessibilityLifecycle(
+            this,
+            event,
+            AccessibilityServiceChecker.isEnabled(this)
+        )
+    }
+
+    private fun markDisconnectedIfCurrentInstance() {
+        if (instance != this) return
+        instance = null
+        connectedAt = 0L
+        _processState.value = AccessibilityProcessState.DISCONNECTED
     }
 }

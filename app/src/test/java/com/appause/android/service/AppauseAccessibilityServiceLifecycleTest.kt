@@ -29,9 +29,9 @@ class AppauseAccessibilityServiceLifecycleTest {
             )
         )
         assertEquals(
-            AccessibilityProcessState.UNKNOWN,
+            AccessibilityProcessState.DISCONNECTED,
             AppauseAccessibilityService.effectiveProcessState(
-                AccessibilityProcessState.UNKNOWN,
+                AccessibilityProcessState.CONNECTED,
                 hasLiveInstance = false
             )
         )
