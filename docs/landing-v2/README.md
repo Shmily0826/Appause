@@ -14,8 +14,8 @@ GitHub Pages 从 `main` 根目录发布，本目录下的 HTML 只是候选，�
 | [`timeline-refined.html`](timeline-refined.html) | `timeline.html` | 修第一屏与导航：唯一顶栏、裁切首屏图、导航高亮、中文孤字、折叠动画 | 第二版，保留对比 |
 | [`timeline-copyedit.html`](timeline-copyedit.html) | `timeline-refined.html` | 文案版：术语对齐 App、免费/Pro 口径、清翻译腔 | 第三版，保留对比 |
 | [`timeline-firstvisit.html`](timeline-firstvisit.html) | `timeline-copyedit.html` | **首访版**：重排信息顺序 + 补「三步开始用」 | 保留对比 |
-| [`timeline-humanized.html`](timeline-humanized.html) | `timeline-firstvisit.html` | **去 AI 味版**：把断言换成事实，六节副标题形状参差；再修首屏三处观感 + 用词对齐 | 待评审 |
-| [`split-cobalt.html`](split-cobalt.html) | 竞品实测结论 | **新版（换骨架换主题）**：Editorial Split + Cobalt 浅场，首屏产品视觉放大 | 待评审 |
+| [`timeline-humanized.html`](timeline-humanized.html) | `timeline-firstvisit.html` | **去 AI 味版**：把断言换成事实，六节副标题形状参差；再修首屏三处观感 + 用词对齐 | 纸墨线最完整，可上线 |
+| [`split-cobalt.html`](split-cobalt.html) | 竞品实测结论 | **新版（换骨架换主题）**：Editorial Split + Cobalt 浅场，首屏产品视觉放大；结构缺陷已补修 | 待选方向 |
 
 六个文件同目录同级，方便直接对比。**上线建议**：`split-cobalt.html` 是唯一按竞品实测重做首屏的一版，骨架与主题与前六版全部错开；`timeline-humanized.html` 是纸墨台账那条线最完整的一版。每一版的 canonical 都自指自身，同目录写错会把这一版声明成别版的重复内容。
 
@@ -43,6 +43,20 @@ GitHub Pages 从 `main` 根目录发布，本目录下的 HTML 只是候选，�
 规范检查：破折号 0、`「」` 成对、`冷却` 9 / `暂停界面` 0 / `停顿` 0 / `冷静期` 0；失效锚点 0、重复 id 0；canonical 与 og:url 自指。
 
 已知取舍：窄屏顶栏 55px + 吸底条常驻，占 844px 视口的约 13%。
+
+### 第九轮补修：三条结构缺陷（2026-09-29）
+
+冷评指出三处「浏览器能容错、但语义或打印会坏」的问题，本轮修掉（页高不变，仍为上面四档）：
+
+| 问题 | 修法 |
+| --- | --- |
+| `<dl>` 里直接放 `<li>`（4 组）——非法嵌套，读屏的关联列表语义是乱的 | 改成 `<dl><div><dt>…<dd></div></dl>`；CSS 选择器 `.perms li` → `.perms > div`（grid 布局保留） |
+| 完全没有 `@media print` | 补 print 块：关掉 fixed 顶栏与吸底条；`.dl` 深底面板改白底墨字（否则浏览器剥掉背景色 → 白纸白字，整个下载区蒸发）；`.btn` 加边框保证可见 |
+| FAQ 展开指示用 `content:"+"`，读屏会念「加号」 | 改画两条渐变线（`::before` / `::after` 用 `background` + `rotate`），加减号不再由字符承担 |
+
+顺手修：`<span class="mono">` 是死类（全 CSS 无定义）→ 换成已有样式的 `<code>`；顶栏 `backdrop-filter` 补 `-webkit-` 前缀。
+
+**仍待处理**（不在本轮范围）：`pause-crop.png` 首屏与机制节两用，且机制三张图全是「管理界面」，缺一张「拦截发生时」的素材——这需要重截图，不是 CSS 能补的。
 
 ## 每一份都做了什么
 
@@ -451,7 +465,7 @@ FAQ 从 7 条变 6 条：无障碍服务 → 耗电与失灵 → 暂停界面遮
 
 ### 验收
 
-四档 `7214 / 8525 / 10869 / 11303`，**0 溢出 / 0 断图 / 0 JS 报错**；`电池优化` 5 / `电池设置` 1（步骤三正文，App 也用这个词）/ `电池策略` **0**；`永久授权码` 5 / `永久码` **0** / `激活码` **0**；`2032` **1**；正文半角引号 **0**、`「」` 14 对平衡、破折号 0；失效锚点 0、重复 id 0；canonical 与 og:url 自指；7 个折叠项 `aria-expanded` 全部同步。
+四档 `7327 / 8614 / 10989 / 11428`（2026-09-29 复测；旧值 `7214 / 8525 / 10869 / 11303` 是批次 1–3 之前测的，改动让每档长了约 90–125px），**0 溢出 / 0 断图 / 0 JS 报错**；`电池优化` 5 / `电池设置` 1（步骤三正文，App 也用这个词）/ `电池策略` **0**；`永久授权码` 5 / `永久码` **0** / `激活码` **0**；`2032` **1**；正文半角引号 **0**、`「」` 14 对平衡、破折号 0；失效锚点 0、重复 id 0；canonical 与 og:url 自指；7 个折叠项 `aria-expanded` 全部同步。
 
 **孤字测量脚本升级**（`orphans-exact.mjs`）：逐字 `Range` 分行、只信任块内字号一致的块（否则标 `?`）、含 `<br>` 的块按主动断行跳过（首屏 h1 不再假报）。
 
@@ -492,20 +506,30 @@ FAQ 从 7 条变 6 条：无障碍服务 → 耗电与失灵 → 暂停界面遮
 
 这三件都不是页面本身的问题，而是「页面已经写好了，但它依赖的外部条件还没到位」。
 
-**1. 两条文档链接目前 404（实测）**
+**1. 两条文档链接曾经 404（本地已修，待推送生效）**
 
 | 页面上的链接 | 实测 | 原因 |
 | --- | --- | --- |
-| `…/blob/main/docs/INSTALL.md` | **404**（2026-09-29 复测） | 文档重组已暂存但**未提交**，远端 main 上这个文件还在根目录 |
-| `…/blob/main/docs/archive/TEST_REPORT.md` | **404** | 同上，远端 main 上是根目录的 `TEST_REPORT.md` |
+| `…/blob/main/docs/INSTALL.md` | **404**（2026-09-29 复测） | 文档重组此前既没提交也没进暂存区（实测 `git diff --cached` 为空），`docs/` 那批文件当时只是工作区里未跟踪的新文件 |
+| `…/blob/main/docs/archive/TEST_REPORT.md` | **404** | 同上 |
 
 其余外链全部 200（含 `PRIVACY.md`、`issues`、`releases/tag/v0.5.45`），APK 直链实测 **206**（`-r 0-0` 取 1 字节，避免拉 12 MB），分享卡片图 **200**。
-页面链接写的是重组**之后**的路径，所以只要把已暂存的那批重命名提交并推送，这两条就会自动生效。若想今天就可用，改成根目录路径即可，但重组推送后会反过来失效。
 
-**2. 本地落后远端 main 一个提交**
+**修正**：此前这节写「重组已暂存，推送即愈」是错的。实测暂存区是空的——25 个文件处于工作区删除态（` D`）、`docs/` 下的新文件处于未跟踪态（`??`），索引里根本没有 `docs/INSTALL.md` 这个路径。所以修复需要四步：`git add -A` → `commit` → `git fetch && git rebase origin/main` → `push`。前三步已于 2026-09-29 完成（提交 `57bde20`），**这两条链接在推送后才会真正可用**。
 
-`git ls-remote` 实测：远端 `main` 在 `3d667e991`（`metrics: weekly snapshot 2026-09-27`），本地 HEAD 在 `dea3bef9`，GitHub compare 结果是 **behind_by 1 / ahead_by 0**。
-本地那个坏掉的 `origin/main` 引用会让 `git status` 谎报「领先 61 提交」，判断远端状态一律用 `git ls-remote`。直接 push 会被拒（non-fast-forward）。
+**2. 本地与远端曾经分叉（已修复）**
+
+修复前的真实状态（`git ls-remote` + `git patch-id` 实测）：
+
+- 远端 `main` = `a1e7908f`（`fix: harden accessibility service lifecycle`）+ `3d667e991`（`metrics: weekly snapshot 2026-09-27`）
+- 本地 HEAD = `4fb2d96c`，**与远端 `a1e7908` 是同一个补丁**（patch-id 相同：`f679f9b2`）——该提交推上去过，之后本地又 rebase 重写成了孤儿
+- 关系是**分叉**（本地独有 1 / 远端独有 2），不是单纯的「落后 1」
+
+⚠️ **此时 `push --force` 会直接冲掉远端的 `3d667e991`（metrics 快照）**。正确做法是 `git fetch origin && git rebase origin/main`——同 patch-id 的孤儿提交会被自动识别丢弃（实测输出 `skipped previously applied commit 4fb2d96`），只重放 metrics 那一个提交。
+
+现已 rebase 完成，关系为**本地领先 1 / 落后 0**，`push` 是 fast-forward，**不需要也不需要 `--force`**。
+
+本地那个坏掉的 `origin/main` 引用会让 `git status` 谎报「领先 61 提交」，判断远端状态一律用 `git ls-remote` 或 `git log --oneline origin/main..HEAD`。
 
 **3. 图片体积是实际需要的 4 至 5 倍**
 

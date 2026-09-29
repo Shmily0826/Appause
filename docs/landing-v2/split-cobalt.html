@@ -124,6 +124,7 @@
   .top {
     position: sticky; top: 0; z-index: 30;
     background: rgba(245, 246, 248, 0.92);
+    -webkit-backdrop-filter: saturate(1.6) blur(8px);
     backdrop-filter: saturate(1.6) blur(8px);
     border-bottom: 1px solid var(--line);
   }
@@ -307,12 +308,12 @@
   .shot.compact { max-width: 300px; }
 
   /* ---------- 权限：清单而不是大表 ---------- */
-  .perms { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
-  .perms li {
+  .perms { margin: 0; border-top: 1px solid var(--line); }
+  .perms > div {
     display: grid; gap: 0.3rem 1rem;
     padding-block: 1rem; border-bottom: 1px solid var(--line);
   }
-  @media (min-width: 44rem) { .perms li { grid-template-columns: 11rem minmax(0, 1fr); } }
+  @media (min-width: 44rem) { .perms > div { grid-template-columns: 11rem minmax(0, 1fr); } }
   .perms dt { font-weight: 700; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
   .perms dd { margin: 0; color: var(--ink-soft); }
   .pill {
@@ -355,11 +356,19 @@
     font-weight: 700; font-size: 1.03rem; line-height: 1.6;
   }
   .faq summary::-webkit-details-marker { display: none; }
+  /* 展开指示画成两条线（加号 / 减号），不用 content:"+" —— 读屏会把字符念出来 */
   .faq summary::after {
-    content: "+"; position: absolute; right: 0.2rem; top: 1rem;
-    font-family: var(--font-mono); font-size: 1.1rem; color: var(--cobalt); line-height: 1.6;
+    content: ""; position: absolute; right: 0.3rem; top: 1.55rem;
+    width: 0.7rem; height: 2px; background: var(--cobalt);
+    transform: translateY(-50%);
   }
-  .faq details[open] summary::after { content: "\2212"; }
+  .faq summary::before {
+    content: ""; position: absolute; right: 0.3rem; top: 1.55rem;
+    width: 0.7rem; height: 2px; background: var(--cobalt);
+    transform: translateY(-50%) rotate(90deg);
+    transition: transform 0.16s ease, opacity 0.16s ease;
+  }
+  .faq details[open] summary::before { transform: translateY(-50%) rotate(0deg); opacity: 0; }
   .faq details p { margin: 0 0 1.1rem; color: var(--ink-soft); max-width: 44em; }
   @media (hover: hover) { .faq summary:hover { color: var(--cobalt-deep); } }
 
@@ -421,6 +430,26 @@
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     .bar, .btn, .nav a { transition: none; }
+    .faq summary::before { transition: none; }
+  }
+
+  @media print {
+    /* 吸底条是 fixed，不关掉会印在每一页页脚 */
+    .top, .bar, .skip { display: none; }
+    body { background: #fff; color: #000; }
+    /* 浏览器默认不打印背景图形：深底下载面板会变成白底浅字，整块蒸发。
+       改成白底墨字加边框，按钮同理。 */
+    .dl { background: #fff !important; color: #000 !important; border: 1.5px solid #000; }
+    .dl .sub, .dl-facts { color: #333 !important; }
+    .btn {
+      background: #fff !important; color: #000 !important;
+      border: 1.5px solid #000 !important; box-shadow: none !important;
+    }
+    /* 只对小组件禁止跨页断开；整节禁止会把短小节推到新页，留下大片空白 */
+    .perms > div, details, .dl, figure, .step { break-inside: avoid; }
+    h2, h3 { break-after: avoid; }
+    /* 打印不播放动画，展开指示会停在过渡中间态 */
+    .faq summary::before, .faq summary::after { transition: none !important; }
   }
 </style>
 </head>
@@ -563,22 +592,22 @@
         <p>只有无障碍服务是必须的，其余按需要开。每一项都可以随时在系统设置里关掉。</p>
       </div>
       <dl class="perms">
-        <li>
+        <div>
           <dt>无障碍服务 <span class="pill req">必须</span></dt>
           <dd>只读到你打开的哪个应用。屏幕内容、消息、截图和键盘输入都读不到，窗口内容读取是关掉的。</dd>
-        </li>
-        <li>
+        </div>
+        <div>
           <dt>电池优化 <span class="pill rec">建议关掉</span></dt>
           <dd>关掉它，系统才不会在省电时终止后台服务。这是小米 HyperOS 这类机型上「拦截失灵」最常见的原因。</dd>
-        </li>
-        <li>
+        </div>
+        <div>
           <dt>使用情况访问 <span class="pill rec">建议开启</span></dt>
           <dd>在本机确认真正显示在屏幕上的应用。不开的话，切换应用或打开最近任务时，可能为你根本没打开的应用弹出暂停页。</dd>
-        </li>
-        <li>
+        </div>
+        <div>
           <dt>显示悬浮窗 <span class="pill opt">可选</span></dt>
           <dd>个别机型不显示暂停页时，用它兜底。</dd>
-        </li>
+        </div>
       </dl>
       <p class="plain-note">
         <strong>日常使用不联网。</strong>只在开启试用、兑换永久授权码或发送反馈时才会连一次服务器。
@@ -634,7 +663,7 @@
       <div class="faq">
         <details>
           <summary>这种要开无障碍权限的应用，安全吗？</summary>
-          <p>它拿到的就是一个包名字符串，窗口内容读取是关掉的（<span class="mono">canRetrieveWindowContent = false</span>）。
+          <p>它拿到的就是一个包名字符串，窗口内容读取是关掉的（<code>canRetrieveWindowContent = false</code>）。
           不需要用的时候，随时可以在系统设置里关掉这项权限，Appause 只是拦不住而已，不会出别的问题。
           代码是 MIT 开源的，你可以自己看它到底做了什么。</p>
         </details>
