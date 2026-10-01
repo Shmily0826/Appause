@@ -52,31 +52,12 @@ open class AppGroupRepository(
      * If the group is new (id == 0): inserts the group, then inserts all apps.
      * If the group exists (id > 0): updates the group, replaces all apps.
      *
-     * Why replace all apps?
-     * - When editing a group, the user may add AND remove apps.
-     * - It's simpler to delete all existing apps and re-insert the new list
-     *   than to figure out which were added, removed, or unchanged.
-     * - This is safe because we're inside a single user action (save button tap).
+     * The whole sequence runs inside a single Room transaction — see
+     * [AppGroupDao.saveGroupWithApps] for why the transaction matters
+     * (an interrupted save must not leave an empty, non-intercepting group).
      */
-    suspend fun saveGroupWithApps(group: AppGroup, packageNames: List<String>): Long {
-        val groupId: Long = if (group.id == 0L) {
-            // New group — insert and get the generated ID
-            groupDao.insertGroup(group)
-        } else {
-            // Existing group — update
-            groupDao.updateGroup(group)
-            group.id
-        }
-
-        // Replace all apps for this group
-        groupDao.removeAllAppsFromGroup(groupId)
-        val groupApps = packageNames.map { packageName ->
-            GroupApp(packageName = packageName, groupId = groupId)
-        }
-        groupDao.insertGroupApps(groupApps)
-
-        return groupId
-    }
+    suspend fun saveGroupWithApps(group: AppGroup, packageNames: List<String>): Long =
+        groupDao.saveGroupWithApps(group, packageNames)
 
     /** Delete a group and all its apps (CASCADE handles the apps automatically). */
     suspend fun deleteGroup(group: AppGroup) {

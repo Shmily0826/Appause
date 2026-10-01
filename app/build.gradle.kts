@@ -132,6 +132,17 @@ android {
         // drawables) on the JVM classpath to instantiate a working Context.
         unitTests.isIncludeAndroidResources = true
     }
+
+    sourceSets {
+        // MigrationTestHelper loads Room's exported schema JSONs as assets.
+        // Robolectric unit tests read the DEBUG variant's merged assets (see
+        // test_config.properties → android_merged_assets), so expose
+        // app/schemas (the room.schemaLocation configured at the top of this
+        // file) on the debug sourceSet. Release builds never get them.
+        getByName("debug") {
+            assets.srcDir("schemas")
+        }
+    }
 }
 
 dependencies {

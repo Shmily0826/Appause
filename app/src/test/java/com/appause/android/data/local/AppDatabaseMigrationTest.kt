@@ -1,9 +1,9 @@
 package com.appause.android.data.local
 
-import androidx.sqlite.db.SupportSQLiteDatabase
-import androidx.sqlite.db.framework.FrameworkSQLiteOpenHelperFactory
-import androidx.sqlite.db.SupportSQLiteOpenHelper
+import androidx.room.Room
+import androidx.room.testing.MigrationTestHelper
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -11,101 +11,65 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Migration test for [AppDatabase]: the app has shipped 6 schema versions and
- * until now every migration was verified only by hand. A broken migration loses
- * the user's interception history and statistics — data that is *not*
- * renewable, so this test locks in "v1 database -> v6, nothing lost".
+ * Migration tests for [AppDatabase] using Room's OFFICIAL MigrationTestHelper.
  *
- * It opens a v1 database (hand-built v1 table shape, seeded with representative
- * data) and then applies the REAL migration objects
- * [AppDatabase.MIGRATION_1_2] .. [AppDatabase.MIGRATION_5_6] exactly as Room
- * would at upgrade time. Finally it asserts every row survived and the newly
- * added columns carry their documented defaults. The real migration code is
- * exercised end-to-end; no Room schema-JSON assets are needed, so the test is
- * portable across JVM unit-test runners.
+ * The app has shipped 6 schema versions and a broken migration loses the
+ * user's interception history and statistics — data that is *not* renewable.
+ * Two layers of protection:
  *
- * Runs on the JVM under Robolectric (no device/emulator needed).
+ * 1. [migrate1To6_validatesAgainstExportedSchema_keepsAllData] — creates a
+ *    real v1 database FROM THE EXPORTED 1.json (no hand-written CREATE
+ *    TABLE), runs the real MIGRATION_1_2..MIGRATION_5_6, and validates the
+ *    result against the exported 6.json: a migration that forgets a column,
+ *    writes a wrong default, or leaves a stale identity hash FAILS here.
+ *
+ * 2. [everyVersionStepHasAMigration] — the "forgot the migration" guard.
+ *    Reflects over AppDatabase's MIGRATION_* constants and asserts every
+ *    adjacent step from v1 up to the @Database version is covered with no
+ *    gaps, so bumping `version` without adding a migration fails in CI
+ *    instead of crashing the app on a real user's phone at upgrade time.
+ *
+ * The schema JSONs are read as unit-test assets (see the `test` sourceSet
+ * in app/build.gradle.kts). Runs on the JVM under Robolectric.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class AppDatabaseMigrationTest {
 
+    private val helper = MigrationTestHelper(
+        InstrumentationRegistry.getInstrumentation(),
+        AppDatabase::class.java
+    )
+
     @Test
-    fun migrate1To6_keepsAllDataAndFillsNewColumnDefaults() {
+    fun migrate1To6_validatesAgainstExportedSchema_keepsAllData() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        val dbName = "migration-test"
-        context.deleteDatabase(dbName)
+        context.deleteDatabase(DB_NAME)
 
-        // 1) Build a v1 database with the exact v1 table shape and seed it.
-        val v1Helper = FrameworkSQLiteOpenHelperFactory().create(
-            SupportSQLiteOpenHelper.Configuration.builder(context)
-                .name(dbName)
-                .callback(object : SupportSQLiteOpenHelper.Callback(1) {
-                    override fun onCreate(db: SupportSQLiteDatabase) {
-                        db.execSQL(
-                            """CREATE TABLE app_groups (
-                               id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                               name TEXT NOT NULL,
-                               cooldownSeconds INTEGER NOT NULL,
-                               createdAt INTEGER NOT NULL)"""
-                        )
-                        db.execSQL(
-                            """CREATE TABLE group_apps (
-                               packageName TEXT NOT NULL,
-                               groupId INTEGER NOT NULL,
-                               PRIMARY KEY(packageName),
-                               FOREIGN KEY(groupId) REFERENCES app_groups(id) ON UPDATE NO ACTION ON DELETE CASCADE)"""
-                        )
-                        db.execSQL(
-                            """CREATE TABLE app_launch_records (
-                               id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                               packageName TEXT NOT NULL,
-                               groupId INTEGER NOT NULL,
-                               timestamp INTEGER NOT NULL,
-                               action TEXT NOT NULL)"""
-                        )
-                        // 2 groups, 3 mapped apps, 3 launch records.
-                        db.execSQL("INSERT INTO app_groups (id, name, cooldownSeconds, createdAt) VALUES (1, 'Social', 30, 1000)")
-                        db.execSQL("INSERT INTO app_groups (id, name, cooldownSeconds, createdAt) VALUES (2, 'Games', 60, 2000)")
-                        db.execSQL("INSERT INTO group_apps (packageName, groupId) VALUES ('com.tiktok', 1)")
-                        db.execSQL("INSERT INTO group_apps (packageName, groupId) VALUES ('com.instagram', 1)")
-                        db.execSQL("INSERT INTO group_apps (packageName, groupId) VALUES ('com.game', 2)")
-                        db.execSQL("INSERT INTO app_launch_records (id, packageName, groupId, timestamp, action) VALUES (1, 'com.tiktok', 1, 5000, 'proceeded')")
-                        db.execSQL("INSERT INTO app_launch_records (id, packageName, groupId, timestamp, action) VALUES (2, 'com.instagram', 1, 6000, 'cancelled')")
-                        db.execSQL("INSERT INTO app_launch_records (id, packageName, groupId, timestamp, action) VALUES (3, 'com.game', 2, 7000, 'proceeded')")
-                    }
+        // 1) Build a v1 database from the exported 1.json and seed it with
+        //    representative data (v1 has no type/reason/reRemind columns yet).
+        helper.createDatabase(DB_NAME, 1).use { db ->
+            db.execSQL("INSERT INTO app_groups (id, name, cooldownSeconds, createdAt) VALUES (1, 'Social', 30, 1000)")
+            db.execSQL("INSERT INTO app_groups (id, name, cooldownSeconds, createdAt) VALUES (2, 'Games', 60, 2000)")
+            db.execSQL("INSERT INTO group_apps (packageName, groupId) VALUES ('com.tiktok', 1)")
+            db.execSQL("INSERT INTO group_apps (packageName, groupId) VALUES ('com.instagram', 1)")
+            db.execSQL("INSERT INTO group_apps (packageName, groupId) VALUES ('com.game', 2)")
+            db.execSQL("INSERT INTO app_launch_records (id, packageName, groupId, timestamp, action) VALUES (1, 'com.tiktok', 1, 5000, 'proceeded')")
+            db.execSQL("INSERT INTO app_launch_records (id, packageName, groupId, timestamp, action) VALUES (2, 'com.instagram', 1, 6000, 'cancelled')")
+            db.execSQL("INSERT INTO app_launch_records (id, packageName, groupId, timestamp, action) VALUES (3, 'com.game', 2, 7000, 'proceeded')")
+        }
 
-                    override fun onUpgrade(db: SupportSQLiteDatabase, oldV: Int, newV: Int) {
-                        // No-op: this helper only ever creates at v1.
-                    }
-                })
-                .build()
+        // 2) Reopen and migrate to v6 — runMigrationsAndValidate checks the
+        //    final schema against the exported 6.json (columns, defaults,
+        //    identity hash) IN ADDITION to running our real migrations.
+        val db = helper.runMigrationsAndValidate(
+            DB_NAME, 6, true,
+            AppDatabase.MIGRATION_1_2,
+            AppDatabase.MIGRATION_2_3,
+            AppDatabase.MIGRATION_3_4,
+            AppDatabase.MIGRATION_4_5,
+            AppDatabase.MIGRATION_5_6
         )
-        v1Helper.writableDatabase.close()
-        v1Helper.close()
-
-        // 2) Reopen the SAME database at v6 and apply the real migrations in order.
-        val migrateHelper = FrameworkSQLiteOpenHelperFactory().create(
-            SupportSQLiteOpenHelper.Configuration.builder(context)
-                .name(dbName)
-                .callback(object : SupportSQLiteOpenHelper.Callback(6) {
-                    override fun onCreate(db: SupportSQLiteDatabase) {
-                        // DB already exists at v1; onCreate is not called on upgrade.
-                    }
-
-                    override fun onUpgrade(db: SupportSQLiteDatabase, oldV: Int, newV: Int) {
-                        // Room applies every migration whose [startVersion, endVersion]
-                        // is crossed. We apply them in sequence, exactly as Room does.
-                        AppDatabase.MIGRATION_1_2.migrate(db)
-                        AppDatabase.MIGRATION_2_3.migrate(db)
-                        AppDatabase.MIGRATION_3_4.migrate(db)
-                        AppDatabase.MIGRATION_4_5.migrate(db)
-                        AppDatabase.MIGRATION_5_6.migrate(db)
-                    }
-                })
-                .build()
-        )
-        val db = migrateHelper.writableDatabase
 
         // --- app_groups: original columns preserved, new columns get defaults ---
         db.query("SELECT * FROM app_groups ORDER BY id").use { cursor ->
@@ -153,6 +117,48 @@ class AppDatabaseMigrationTest {
         }
 
         db.close()
-        migrateHelper.close()
+    }
+
+    @Test
+    fun everyVersionStepHasAMigration() {
+        // The schema version Room will actually create/upgrade to — read from
+        // a real in-memory instance instead of hardcoding, so this test cannot
+        // drift from AppDatabase's @Database(version = N).
+        val db = Room.inMemoryDatabaseBuilder(
+            ApplicationProvider.getApplicationContext(),
+            AppDatabase::class.java
+        ).allowMainThreadQueries().build()
+        val currentVersion = db.openHelper.writableDatabase.version
+        db.close()
+
+        // MIGRATION_* live as Kotlin companion vals, which the compiler emits
+        // as getMIGRATION_*() GETTERS (no backing fields — javap-verified), so
+        // reflect over methods and read the authoritative start/end versions
+        // from the Migration objects themselves.
+        val companion = AppDatabase.Companion
+        val steps = AppDatabase.Companion::class.java.declaredMethods
+            .filter { it.name.startsWith("getMIGRATION_") && it.parameterCount == 0 }
+            .map { method ->
+                method.isAccessible = true
+                val migration = method.invoke(companion) as androidx.room.migration.Migration
+                migration.startVersion to migration.endVersion
+            }
+            .sortedBy { it.first }
+
+        // Every adjacent step from v1 to the current version must have exactly
+        // one migration: no gaps ("forgot MIGRATION_5_6"), no duplicates, and
+        // the chain must END at the declared version (bumped `version` without
+        // a new migration = runtime crash for every upgrading user).
+        val expected = (1 until currentVersion).map { it to it + 1 }
+        assertEquals(
+            "AppDatabase v$currentVersion needs one MIGRATION_<n>_<n+1> per step: " +
+                "expected $expected but found $steps",
+            expected,
+            steps
+        )
+    }
+
+    private companion object {
+        const val DB_NAME = "migration-test"
     }
 }

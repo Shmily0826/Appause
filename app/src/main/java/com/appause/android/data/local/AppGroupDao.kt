@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -105,4 +106,31 @@ interface AppGroupDao {
      */
     @Query("SELECT groupId, COUNT(packageName) AS appCount FROM group_apps GROUP BY groupId")
     suspend fun getAppCounts(): List<GroupAppCount>
+
+    /**
+     * Save a group with its app list in ONE transaction.
+     *
+     * If the group is new (id == 0): inserts the group, then inserts all apps.
+     * If the group exists (id > 0): updates the group, replaces all apps.
+     *
+     * Why a transaction here (on the DAO, where Room honors @Transaction)?
+     * - The replace is two destructive steps: DELETE all apps, then INSERT the
+     *   new list. If the process dies between them, the group would be left
+     *   with ZERO apps — and a group with no apps silently stops intercepting.
+     * - @Transaction wraps every statement below: a mid-save death rolls the
+     *   whole save back, so the group keeps its previous (non-empty) app list.
+     *
+     * @Transaction on a default interface method is Room's official way to
+     * group several DAO calls into one atomic unit.
+     */
+    @Transaction
+    suspend fun saveGroupWithApps(group: AppGroup, packageNames: List<String>): Long {
+        val groupId = if (group.id == 0L) insertGroup(group) else {
+            updateGroup(group)
+            group.id
+        }
+        removeAllAppsFromGroup(groupId)
+        insertGroupApps(packageNames.map { GroupApp(packageName = it, groupId = groupId) })
+        return groupId
+    }
 }
