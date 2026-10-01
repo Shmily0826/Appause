@@ -10,6 +10,7 @@ import com.appause.android.ui.appselect.AppSelectScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
@@ -212,7 +213,14 @@ class GroupEditorViewModel(application: Application) : AndroidViewModel(applicat
         viewModelScope.launch {
             // Re-remind is a Pro feature. Free users can never persist it, even
             // if a legacy value was loaded from the DB — force it off here.
-            val reRemindOn = if (isPro.value) _reRemindEnabled.value else false
+            // Read the live Pro state via first(), NOT the isPro StateFlow's
+            // .value: its SharingStarted.WhileSubscribed initialValue is false,
+            // so a save in the first frames (before anything collected the
+            // entitlement flow) would treat a paying Pro user as free and wipe
+            // their re-remind settings. first() suspends until the entitlement
+            // flow emits its real current value.
+            val proUnlocked = proState.isPro.first()
+            val reRemindOn = if (proUnlocked) _reRemindEnabled.value else false
             val group = AppGroup(
                 id = existingGroupId,
                 name = groupName,
