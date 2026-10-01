@@ -93,15 +93,24 @@ def appause_windows() -> list[str]:
     """PAUSE-OVERLAY windows only. HyperOS dumpsys layout differs from the
     emulator (the mToken line sits ~9 lines below the header), so match the
     window BLOCK: header 'Window #N Window{... appause ...}' plus a following
-    line carrying ty=ACCESSIBILITY_OVERLAY / type=2032 within 12 lines.
-    MainActivity blocks carry ty=BASE_APPLICATION and are excluded."""
+    line carrying the overlay type within 12 lines.
+    MainActivity blocks carry ty=BASE_APPLICATION and are excluded.
+
+    Type spelling is ROM-dependent and MUST all be accepted — the AOSP
+    emulator prints the numeric `ty=2032` (verified 2026-10-02 on
+    emulator-5554: a live pause overlay rendered `ty=2032 fmt=TRANSLUCENT`
+    while this helper still reported "no overlay", which silently turned a
+    passing interception into a FAIL). HyperOS prints ty=ACCESSIBILITY_OVERLAY
+    and some dumpsys builds print type=2032."""
     out = shell("dumpsys window windows").splitlines()
     hits: list[str] = []
     for i, line in enumerate(out):
         s = line.strip()
         if s.startswith("Window #") and "appause" in s:
             block = "\n".join(out[i + 1:i + 13])
-            if "ty=ACCESSIBILITY_OVERLAY" in block or "type=2032" in block:
+            if ("ty=ACCESSIBILITY_OVERLAY" in block
+                    or "ty=2032" in block
+                    or "type=2032" in block):
                 hits.append(s)
     return hits
 
@@ -112,7 +121,11 @@ def overlay_present() -> bool:
 
 def focus_pkg() -> str:
     out = shell("dumpsys window | grep mCurrentFocus")
-    m = re.search(r"u0\s+([a-zA-Z0-9._]+)/", out)
+    # A pause overlay reports a BARE package with no activity:
+    #   mCurrentFocus=Window{76b2b2c u0 com.appause.android.debug}
+    # so the trailing char must be either '/' (activity) or '}' (bare pkg),
+    # otherwise the overlay itself reads as "no focus" (empty string).
+    m = re.search(r"u0\s+([a-zA-Z0-9._]+)[/}]", out)
     if m:
         return m.group(1)
     # HyperOS: mCurrentFocus can be a bare PopupWindow/overlay name — fall
