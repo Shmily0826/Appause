@@ -7,13 +7,17 @@ in groups, and set a cooldown. When a target app comes to the foreground,
 Appause shows a short pause screen so you can breathe and decide whether to
 continue.
 
-## Latest release: v0.5.44 Public Beta
+## Latest release: v0.5.45 Public Beta
 
-Download the signed APK from the canonical [GitHub Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.44):
+Download the signed APK from the canonical [GitHub Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.45):
 
-- [Appause-v0.5.44.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.44/Appause-v0.5.44.apk)
+- [Appause-v0.5.45.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk)
 - Package: `com.appause.android`
-- versionCode: `96`
+- versionCode: `97`
+
+> The version above tracks `app/build.gradle.kts` (`versionName` / `versionCode`),
+> which is the single source of truth. If you bump one, bump the other and update
+> this block in the same change.
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
 `versionCode` is internal metadata and is not part of the public filename.
@@ -111,6 +115,11 @@ Diagnostics and Pro test controls are isolated to the `debug` build
 APK and are not a production activation path.
 
 ## v0.5.44 Public Beta validation status
+
+> **This section documents the evidence for `v0.5.44` specifically.** It is kept
+> under its own version heading because that is the build the ADB/logcat runs
+> below were actually performed against. It is not a claim about newer builds —
+> see `docs/archive/PROGRESS.md` for per-version status.
 
 - The public GitHub Release is `v0.5.44`, package `com.appause.android`,
   versionCode `96`. The accepted APK SHA-256 is

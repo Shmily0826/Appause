@@ -292,12 +292,36 @@
     text-decoration: none;
     white-space: nowrap;
   }
-  /* 栏目链接只在宽屏出现；窄屏靠小节标题与吸底下载条导航 */
-  .navbar .section-nav { display: none; }
-  /* 窄屏：下载交给吸底条，顶栏只留品牌，避免两个常驻下载入口 */
+  /* 栏目导航：窄屏与品牌同排横向滚动。
+     ⚠️ 此前窄屏直接 display:none，顶栏只剩品牌——本页近万像素高，没有站内跳转是真缺口。
+     换行（flex-wrap）会把顶栏撑到约 99px，同排横向滚动只占 55px，所以选后者。 */
+  .navbar .section-nav {
+    display: flex;
+    flex-wrap: nowrap;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.25rem;
+    padding: 0;
+    font-size: 0.78rem;
+  }
+  .navbar .section-nav::-webkit-scrollbar { display: none; }
+  .navbar .section-nav a { flex: none; padding: 0.34rem 0.6rem; }
+  /* 品牌不能被导航挤扁 */
+  .navbar .brand { flex: none; }
+  /* 窄屏：下载交给吸底条，顶栏只留品牌与目录，避免两个常驻下载入口 */
   @media (max-width: 61.99rem) { .navbar .mini { display: none; } }
   @media (min-width: 62rem) {
-    .navbar .section-nav { display: flex; padding: 0; gap: var(--space-2); }
+    .navbar .section-nav {
+      flex-wrap: wrap;
+      overflow: visible;
+      font-size: 0.86rem;
+      gap: var(--space-2);
+    }
+    .navbar .section-nav a { padding: 0.42rem 0.7rem; }
   }
 
   .section-nav {
@@ -1023,7 +1047,7 @@
       <p class="kicker">APPAUSE · ANDROID 专注工具</p>
       <h1 id="hero-title">先停一下，<br>再决定。</h1>
       <p class="hero-lede">
-        Appause 在你选定的应用前加一道冷却，
+        Appause 在你选定的应用前加一道<span class="nb">冷却</span>，
         给「要不要打开」留出几秒。
       </p>
       <div class="cta-row">
@@ -1033,10 +1057,8 @@
       <p class="hero-badges" aria-label="版本与信任要点">
         <span>公开测试版 <b data-r="version">v0.5.45</b></span>
         <span>仅安卓 · Android 8.0+</span>
+        <span>使用记录仅存本机，日常不联网</span>
         <span>MIT 开源</span>
-        <span>数据只存本机</span>
-        <span>日常使用不联网</span>
-        <span>不统计你的使用行为</span>
       </p>
     </div>
     <figure class="hero-shot">
@@ -1053,10 +1075,7 @@
         <h2 class="preface-statement" id="preface-title">手指先到了，<span class="nb">人还没决定</span>。</h2>
       </div>
       <div class="preface-body">
-        <p>
-          在打开前留出几秒冷却，为「是否打开」留一点判断时间。
-        </p>
-        <p>它不替你做决定，只做两件事：在打开时拦一下，然后把<span class="nb">每一次</span>选择记录下来。</p>
+        <p>它不替你做决定。打开时拦一下，然后把每一次选择记下来——<span class="nb">仅存本机</span>，供你自己回看。</p>
       </div>
     </div>
   </section>
@@ -1073,13 +1092,14 @@
           <p>点上面的下载按钮。系统会提示「禁止安装未知应用」，按提示给浏览器或文件管理器放行一次。</p>
         </li>
         <li class="start-step">
-          <h3>打开 Appause，开启无障碍服务</h3>
-          <p>首页会列出还差哪几项，按提示点「去开启」逐项完成。这项权限只用来判断你打开了哪个应用。</p>
+          <h3>打开 Appause，按指引开好三项权限</h3>
+          <p>首页会列出还差哪几项，按提示点「去开启」逐项完成：无障碍服务、电池优化设为「无限制」、
+          允许自启动。系统会在省电时终止后台服务，表现为第一次打开目标应用不拦截，所以后两项<span class="nb">同样必做</span>。</p>
         </li>
         <li class="start-step">
-          <h3>放开电池优化和自启动</h3>
-          <p>在应用设置里把 Appause 的电池优化设为「无限制」，并允许自启动。这两项与无障碍服务同为必做项：
-          系统会在省电时终止后台服务，表现为第一次打开目标应用不拦截。设置一次即可，之后无需再调整。</p>
+          <h3>建一个分组，选好要冷却的应用</h3>
+          <p>把需要冷却的应用放进同一组，设定冷却时间（1 到 60 秒，新分组默认 10 秒）。
+          到这里拦截就开始生效了。使用过程中如果失灵，先回到<a href="#faq">常见问题</a>检查那三项权限。</p>
         </li>
       </ol>
       <p class="start-note">安装新版会直接覆盖旧版，不需要先卸载。卸载会一并清除本机的分组与统计。</p>
@@ -1091,7 +1111,8 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="privacy-title">权限与隐私</h2>
-        <p>必须开三项：无障碍服务、电池优化设为「无限制」、允许自启动。少了任何一项都会拦截失灵。其余按需要开。</p>
+        <p>必须开三项：无障碍服务、电池优化设为「无限制」、允许自启动。在后台管理较严格的机型上（小米、华为等），
+          少开任一项都可能出现拦截失灵。其余按需要开。</p>
       </div>
       <table class="ledger">
         <thead>
@@ -1203,7 +1224,7 @@
           <h3>这几秒里你可以想一下</h3>
           <p>冷却结束前，「继续」不可点击。这段等待时间里，可以先选一个原因：
           工作需要、无聊、查消息，或其他。冷却时长可自行设置，1 到 60 秒，新分组默认 10 秒。
-          暂停页始终显示在最上层，即使该应用开启了防干扰设置也依然出现。</p>
+          暂停页显示在应用之上，即使该应用开启了防干扰设置也会出现。</p>
         </li>
         <li class="tl-fade">
           <span class="tl-t">第三步</span>
@@ -1399,9 +1420,23 @@
     links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
     // 按文档顺序取导航指向的小节（Object.keys 的顺序是导航顺序，不一定是页面顺序）
     var sections = [].slice.call(document.querySelectorAll('main section[id]')).filter(function (s) { return byId[s.id]; });
+    // 窄屏目录是横向滚动条，当前项可能落在可视区外，需要滚进来。
+    // ⚠️ 只动容器的 scrollLeft，不能用 scrollIntoView —— 那会连带把整页
+    // 竖向滚动，用户正在读的位置会被顶掉。
+    var nav = document.getElementById('sectionNav');
+    var reveal = function (a) {
+      if (!nav || !a || nav.scrollWidth <= nav.clientWidth + 1) { return; }
+      // ⚠️ 不能用 a.offsetLeft：它是相对最近的已定位祖先（这里是 sticky 的 .navbar），
+      // 而不是滚动容器本身，算出来的位移会多出品牌那一截的宽度。
+      // 用两个 rect 的差值才是"当前项相对容器可视区左边"的真实距离。
+      var ar = a.getBoundingClientRect();
+      var nr = nav.getBoundingClientRect();
+      var delta = (ar.left - nr.left) - (nr.width - ar.width) / 2;
+      nav.scrollLeft = Math.max(0, Math.min(nav.scrollWidth - nav.clientWidth, nav.scrollLeft + delta));
+    };
     var setCurrent = function (id) {
       links.forEach(function (a) {
-        if (a === byId[id]) { a.setAttribute('aria-current', 'true'); }
+        if (a === byId[id]) { a.setAttribute('aria-current', 'true'); reveal(a); }
         else { a.removeAttribute('aria-current'); }
       });
     };
