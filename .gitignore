@@ -98,3 +98,7 @@ db2/
 # device database / persistent log. Contains real-device package names and
 # usage records — never commit.
 scripts/stress/evidence/
+# Same thing at the repo root: the drivers default to a RELATIVE --evidence
+# path, so running one from the repo root drops the tree next to gradlew
+# instead of under scripts/stress/. Ignore the root copy too (2026-10-02).
+/evidence/
