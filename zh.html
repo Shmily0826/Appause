@@ -1,1624 +1,467 @@
 <!DOCTYPE html>
+<!-- 中文落地页（线上版）。草稿与评审历史见 docs/landing-v2/。2026-10-01 转正，APPAUSE-20261001-1735。 -->
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#f7f8fb" />
-  <title>Appause | 打开前，先等一会儿</title>
-  <meta name="description" content="打开选定的 Android 应用前先等待一段时间。Appause 显示倒计时，之后你可以继续或返回桌面。核心功能免费，无需注册账号。" />
-  <link rel="canonical" href="https://shmily0826.github.io/Appause/zh.html" />
-  <link rel="alternate" hreflang="en" href="https://shmily0826.github.io/Appause/" />
-  <link rel="alternate" hreflang="zh-CN" href="https://shmily0826.github.io/Appause/zh.html" />
-  <link rel="alternate" hreflang="x-default" href="https://shmily0826.github.io/Appause/" />
-  <link rel="icon" href="images/favicon-32.png" sizes="32x32" type="image/png" />
-  <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Appause" />
-  <meta property="og:locale" content="zh_CN" />
-  <meta property="og:url" content="https://shmily0826.github.io/Appause/zh.html" />
-  <meta property="og:title" content="Appause | 打开前，先等一会儿" />
-  <meta property="og:description" content="为选定的 Android 应用设置等待时间。倒计时结束后，由你选择继续或返回桌面。核心功能免费。" />
-  <meta property="og:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png" />
-  <meta property="og:image:type" content="image/png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Appause 在打开选定应用时显示倒计时，并提供继续或返回桌面的选项。" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Appause | 打开前，先等一会儿" />
-  <meta name="twitter:description" content="打开选定的 Android 应用前先等待一段时间。Appause 显示倒计时，之后你可以继续或返回桌面。核心功能免费，无需注册账号。" />
-  <meta name="twitter:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png" />
-  <meta name="twitter:image:alt" content="Appause 在打开选定应用时显示倒计时，并提供继续或返回桌面的选项。" />
-  <style>
-    /* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt · enrichment: real product captures · nav: N1b · footer: Ft2 · tone: calm-utilitarian */
-    :root {
-      --color-paper: oklch(98% 0.006 255);
-      --color-paper-soft: oklch(95.5% 0.015 255);
-      --color-paper-blue: oklch(93% 0.035 260);
-      --color-surface: oklch(100% 0 0);
-      --color-ink: oklch(24% 0.045 258);
-      --color-ink-soft: oklch(47% 0.035 258);
-      --color-rule: oklch(88% 0.018 258);
-      --color-accent: oklch(57% 0.205 263);
-      --color-accent-deep: oklch(44% 0.18 263);
-      --color-accent-ink: oklch(99% 0.004 255);
-      --color-focus: oklch(66% 0.19 263);
-      --color-success: oklch(57% 0.13 158);
-      --color-shadow: oklch(25% 0.04 258 / 0.13);
-
-      --font-display: "Aptos Display", "Segoe UI Variable Display", "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
-      --font-body: "Aptos", "Segoe UI Variable Text", "Segoe UI", "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
-      --font-utility: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
-
-      --space-3xs: 0.25rem;
-      --space-2xs: 0.5rem;
-      --space-xs: 0.75rem;
-      --space-sm: 1rem;
-      --space-md: 1.5rem;
-      --space-lg: 2rem;
-      --space-xl: 3rem;
-      --space-2xl: 4.5rem;
-      --space-3xl: 7rem;
-
-      --text-xs: 0.75rem;
-      --text-sm: 0.875rem;
-      --text-body: 1rem;
-      --text-lead: clamp(1.05rem, 1.5vw, 1.22rem);
-      --text-h3: clamp(1.35rem, 2vw, 1.7rem);
-      --text-h2: clamp(2.25rem, 4.8vw, 4.35rem);
-      --text-display: clamp(3.15rem, 7.1vw, 6.65rem);
-
-      --radius-sm: 0.65rem;
-      --radius-md: 1.1rem;
-      --radius-lg: 1.75rem;
-      --radius-pill: 999px;
-      --rule-thin: 1px;
-      --content: 74rem;
-      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-      --dur-short: 180ms;
-    }
-
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      margin: 0;
-      background: var(--color-paper);
-      color: var(--color-ink);
-      font-family: var(--font-body);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    img {
-      max-width: 100%;
-    }
-
-    a {
-      color: inherit;
-    }
-
-    a:focus-visible {
-      outline: 3px solid var(--color-focus);
-      outline-offset: 4px;
-      border-radius: var(--radius-sm);
-    }
-
-    .nav-toggle:focus-visible {
-      outline: 3px solid var(--color-focus);
-      outline-offset: 2px;
-      border-radius: var(--radius-sm);
-    }
-
-    .nav-toggle {
-      display: none;
-    }
-
-    .skip-link {
-      position: fixed;
-      z-index: 20;
-      top: var(--space-sm);
-      left: var(--space-sm);
-      padding: var(--space-xs) var(--space-sm);
-      border-radius: var(--radius-sm);
-      background: var(--color-ink);
-      color: var(--color-surface);
-      text-decoration: none;
-      transform: translateY(-180%);
-      transition: transform var(--dur-short) var(--ease-out);
-    }
-
-    .skip-link:focus {
-      transform: translateY(0);
-    }
-
-    .container {
-      width: min(var(--content), calc(100% - 3rem));
-      margin-inline: auto;
-    }
-
-    .site-header {
-      position: relative;
-      z-index: 5;
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-      background: var(--color-paper);
-    }
-
-    .nav {
-      min-height: 4.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-lg);
-    }
-
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-xs);
-      flex: 0 0 auto;
-      color: var(--color-ink);
-      font-family: var(--font-display);
-      font-size: 1.08rem;
-      font-weight: 720;
-      letter-spacing: -0.03em;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .brand img {
-      width: 2rem;
-      height: 2rem;
-      border-radius: 0.55rem;
-      box-shadow: 0 0.35rem 1rem var(--color-shadow);
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: clamp(1rem, 2.5vw, 2rem);
-      min-width: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-      font-weight: 640;
-    }
-
-    .nav-links a {
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .nav-links a:hover {
-      color: var(--color-ink);
-    }
-
-    .nav-download {
-      min-height: 2.55rem;
-      display: inline-flex;
-      align-items: center;
-      padding: 0.55rem 1rem;
-      border-radius: var(--radius-pill);
-      background: var(--color-ink);
-      color: var(--color-surface) !important;
-    }
-
-    .hero {
-      padding: clamp(3.5rem, 6vw, 5.25rem) 0 clamp(4rem, 7vw, 5.5rem);
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.04fr) minmax(25rem, 0.96fr);
-      align-items: center;
-      gap: clamp(3rem, 8vw, 7.5rem);
-    }
-
-    .hero-copy,
-    .section-copy,
-    .chapter-copy {
-      min-width: 0;
-    }
-
-    .hero-label {
-      margin: 0 0 var(--space-lg);
-      color: var(--color-accent-deep);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      letter-spacing: 0.11em;
-      text-transform: uppercase;
-    }
-
-    h1,
-    h2,
-    h3,
-    p {
-      margin-top: 0;
-    }
-
-    h1,
-    h2,
-    h3 {
-      font-family: var(--font-display);
-      font-style: normal;
-      letter-spacing: -0.055em;
-      overflow-wrap: anywhere;
-    }
-
-    h1 {
-      max-width: none;
-      margin-bottom: var(--space-lg);
-      font-size: var(--text-display);
-      font-weight: 720;
-      line-height: 0.91;
-    }
-
-    h1 span {
-      display: block;
-    }
-
-    h2 {
-      max-width: 13ch;
-      margin-bottom: var(--space-md);
-      font-size: var(--text-h2);
-      font-weight: 700;
-      line-height: 0.98;
-    }
-
-    h3 {
-      margin-bottom: var(--space-xs);
-      font-size: var(--text-h3);
-      font-weight: 690;
-      line-height: 1.05;
-    }
-
-    .hero-intro {
-      max-width: 35rem;
-      margin-bottom: var(--space-lg);
-      color: var(--color-ink-soft);
-      font-size: var(--text-lead);
-      line-height: 1.55;
-    }
-
-    .actions {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: var(--space-xs);
-    }
-
-    .button {
-      min-height: 3.1rem;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--space-2xs);
-      padding: 0.75rem 1.15rem;
-      border: var(--rule-thin) solid transparent;
-      border-radius: var(--radius-pill);
-      font-size: var(--text-sm);
-      font-weight: 720;
-      line-height: 1;
-      text-decoration: none;
-      white-space: nowrap;
-      transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
-    }
-
-    /* Touch devices latch :hover after a tap, leaving buttons stuck mid-lift. */
-    @media (hover: hover) {
-      .button:hover {
-        transform: translateY(-2px);
-      }
-    }
-
-    .button:active {
-      transform: translateY(0);
-    }
-
-    .button-primary {
-      background: var(--color-accent);
-      color: var(--color-accent-ink);
-      box-shadow: 0 0.65rem 1.7rem var(--color-shadow);
-    }
-
-    .button-primary:hover {
-      background: var(--color-accent-deep);
-    }
-
-    .button-secondary {
-      border-color: var(--color-rule);
-      background: var(--color-surface);
-      color: var(--color-ink);
-    }
-
-    .hero-trust {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-2xs);
-      margin: var(--space-sm) 0 0;
-    }
-
-    .hero-trust span {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.3rem 0.7rem;
-      border: var(--rule-thin) solid var(--color-rule);
-      border-radius: var(--radius-pill);
-      color: var(--color-ink-soft);
-      font-size: var(--text-xs);
-      line-height: 1.4;
-    }
-
-    .release-line {
-      margin: var(--space-sm) 0 0;
-      color: var(--color-ink-soft);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-    }
-
-    .moment-board {
-      min-width: 0;
-      display: grid;
-      place-items: center;
-      padding: clamp(1.25rem, 3vw, 2.25rem);
-      border: var(--rule-thin) solid var(--color-rule);
-      border-radius: var(--radius-lg);
-      background: var(--color-paper-soft);
-    }
-
-    .product-shot {
-      margin: 0;
-      min-width: 0;
-    }
-
-    .product-shot img {
-      display: block;
-      width: 100%;
-      height: auto;
-      aspect-ratio: auto;
-      object-fit: contain;
-      border: var(--rule-thin) solid var(--color-rule);
-      border-radius: var(--radius-md);
-      background: var(--color-surface);
-      box-shadow: 0 1rem 2.5rem var(--color-shadow);
-      transform: none !important;
-    }
-
-    .hero-shot {
-      width: min(100%, 19rem);
-    }
-
-    .hero-shot figcaption {
-      margin-top: var(--space-xs);
-      color: var(--color-ink-soft);
-      font-size: var(--text-xs);
-      line-height: 1.4;
-    }
-
-    .hero-shot figcaption strong {
-      display: block;
-      color: var(--color-ink);
-      font-weight: 700;
-    }
-
-    .section {
-      padding: clamp(4rem, 7vw, 5.5rem) 0;
-    }
-
-    .section-heading {
-      max-width: 54rem;
-      margin-bottom: clamp(2rem, 4vw, 3rem);
-    }
-
-    .section-heading h2 {
-      margin-bottom: var(--space-md);
-    }
-
-    .section-intro {
-      max-width: 34rem;
-      margin-bottom: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-lead);
-    }
-
-    .mechanism-section {
-      border-top: var(--rule-thin) solid var(--color-rule);
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-      background: var(--color-surface);
-    }
-
-    .choice-rail {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      border-top: var(--rule-thin) solid var(--color-rule);
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .choice-rail li {
-      position: relative;
-      min-width: 0;
-      padding: var(--space-lg) clamp(1.25rem, 3vw, 2.5rem) var(--space-xl) 0;
-    }
-
-    .choice-rail li + li {
-      padding-left: clamp(1.25rem, 3vw, 2.5rem);
-      border-left: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .choice-rail li:last-child {
-      padding-right: 0;
-    }
-
-    .choice-index {
-      display: block;
-      margin-bottom: var(--space-xl);
-      color: var(--color-accent-deep);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      font-weight: 700;
-    }
-
-    .choice-rail p {
-      max-width: 18rem;
-      margin-bottom: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .product-section {
-      background: var(--color-paper);
-    }
-
-    .tour-chapter {
-      display: grid;
-      grid-template-columns: minmax(17rem, 0.68fr) minmax(0, 1.32fr);
-      align-items: center;
-      gap: clamp(2.5rem, 8vw, 7rem);
-      padding: clamp(3rem, 7vw, 5.5rem) 0;
-      border-top: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .tour-chapter:last-child {
-      padding-bottom: 0;
-    }
-
-    .product-section .section-heading h2 {
-      max-width: 16ch;
-      font-size: clamp(2.15rem, 4vw, 3.65rem);
-    }
-
-    .chapter-number {
-      display: inline-block;
-      margin-bottom: var(--space-lg);
-      color: var(--color-accent-deep);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      letter-spacing: 0.08em;
-    }
-
-    .chapter-copy p {
-      max-width: 31rem;
-      margin-bottom: 0;
-      color: var(--color-ink-soft);
-    }
-
-    .paired-shots {
-      min-width: 0;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: start;
-      gap: clamp(0.75rem, 3vw, 1.75rem);
-      padding: clamp(1rem, 3vw, 2rem);
-      border-radius: var(--radius-lg);
-      background: var(--color-paper-blue);
-    }
-
-    .paired-shots .product-shot:nth-child(2) {
-      margin-top: clamp(2rem, 5vw, 4rem);
-    }
-
-    .screen-caption {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      gap: var(--space-xs);
-      margin-top: var(--space-sm);
-      align-items: baseline;
-      font-size: var(--text-xs);
-      line-height: 1.4;
-    }
-
-    .screen-caption strong {
-      color: var(--color-ink);
-      font-weight: 720;
-    }
-
-    .screen-caption span {
-      color: var(--color-ink-soft);
-    }
-
-    .tour-chapter-review {
-      grid-template-columns: minmax(0, 1.15fr) minmax(17rem, 0.85fr);
-    }
-
-    .tour-chapter-review .chapter-copy {
-      order: 2;
-    }
-
-    .review-visual {
-      display: grid;
-      grid-template-columns: minmax(0, 15.5rem) minmax(10rem, 1fr);
-      align-items: center;
-      gap: clamp(1.25rem, 4vw, 3rem);
-      padding: clamp(1rem, 3vw, 2rem);
-      border: var(--rule-thin) solid var(--color-rule);
-      border-radius: var(--radius-lg);
-      background: var(--color-surface);
-    }
-
-    .review-notes {
-      margin: 0;
-    }
-
-    .review-notes div {
-      padding: var(--space-md) 0;
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .review-notes div:last-child {
-      border-bottom: 0;
-    }
-
-    .review-notes dt {
-      color: var(--color-ink);
-      font-size: var(--text-sm);
-      font-weight: 720;
-    }
-
-    .review-notes dd {
-      margin: var(--space-3xs) 0 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-xs);
-      line-height: 1.45;
-    }
-
-    .tour-cta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-lg);
-      margin-top: var(--space-xl);
-      padding: var(--space-md) 0;
-      border-top: var(--rule-thin) solid var(--color-rule);
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .tour-cta p {
-      margin-bottom: 0;
-      font-weight: 690;
-    }
-
-    .tour-cta .button {
-      flex: 0 0 auto;
-    }
-
-    .trust-section {
-      border-top: var(--rule-thin) solid var(--color-rule);
-      background: var(--color-surface);
-    }
-
-    .permission-ledger {
-      border-top: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .permission-row {
-      display: grid;
-      grid-template-columns: minmax(8rem, 0.35fr) minmax(13rem, 0.65fr) minmax(18rem, 1fr);
-      gap: clamp(1.25rem, 4vw, 3rem);
-      padding: var(--space-lg) 0;
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-      align-items: start;
-    }
-
-    .permission-status {
-      color: var(--color-accent-deep);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      font-weight: 700;
-    }
-
-    .permission-row h3 {
-      margin-bottom: 0;
-      font-size: 1.12rem;
-      letter-spacing: -0.025em;
-      line-height: 1.35;
-    }
-
-    .permission-row p {
-      margin-bottom: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .trust-note {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      gap: var(--space-lg);
-      margin-top: var(--space-xl);
-      padding: var(--space-lg);
-      border-radius: var(--radius-md);
-      background: var(--color-paper-soft);
-    }
-
-    .trust-note p {
-      max-width: 48rem;
-      margin-bottom: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .trust-note-copy p + p {
-      margin-top: var(--space-sm);
-    }
-
-    .text-links {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: var(--space-md);
-      font-size: var(--text-sm);
-      font-weight: 700;
-    }
-
-    .text-links a:hover {
-      color: var(--color-accent-deep);
-    }
-
-    .pro-section {
-      border-top: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .opensource-section {
-      border-top: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .opensource-more {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-md);
-      margin-top: var(--space-lg);
-      font-size: var(--text-sm);
-      font-weight: 700;
-    }
-
-    .opensource-more a:hover {
-      color: var(--color-accent-deep);
-    }
-
-    .faq-section {
-      border-top: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .faq-section .container {
-      max-width: 60rem;
-    }
-
-    .faq-list {
-      display: grid;
-      gap: var(--space-sm);
-    }
-
-    .faq-list details {
-      border: var(--rule-thin) solid var(--color-rule);
-      border-radius: var(--radius-sm);
-      background: var(--color-surface);
-      padding: var(--space-sm) var(--space-md);
-    }
-
-    .faq-list summary {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: var(--space-md);
-      cursor: pointer;
-      font-weight: 700;
-      font-size: var(--text-body);
-      color: var(--color-ink);
-      list-style: none;
-    }
-
-    .faq-list summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .faq-list summary::after {
-      content: "+";
-      color: var(--color-ink-soft);
-      font-family: var(--font-utility);
-      font-weight: 400;
-    }
-
-    .faq-list details[open] summary::after {
-      content: "\2212";
-    }
-
-    .faq-list summary:focus-visible {
-      outline: 2px solid var(--color-focus);
-      outline-offset: 2px;
-    }
-
-    .faq-list details p {
-      margin: var(--space-xs) 0 0;
-      max-width: 52rem;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-      line-height: 1.75;
-    }
-
-    .release-line a {
-      color: inherit;
-      text-decoration: underline;
-      text-underline-offset: 0.2em;
-    }
-
-    .release-line a:hover {
-      color: var(--color-accent-deep);
-    }
-
-    .pro-columns {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      border-top: var(--rule-thin) solid var(--color-rule);
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .pro-access {
-      display: grid;
-      grid-template-columns: minmax(10rem, 0.35fr) minmax(0, 1fr);
-      align-items: baseline;
-      gap: var(--space-lg);
-      padding: var(--space-lg) 0;
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .pro-access h3 {
-      margin: 0;
-      font-size: 1.2rem;
-    }
-
-    .pro-access p {
-      margin: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-      line-height: 1.75;
-    }
-
-    .pro-column {
-      min-width: 0;
-      padding: var(--space-lg) clamp(1.25rem, 3vw, 2.5rem) var(--space-lg) 0;
-    }
-
-    .pro-column + .pro-column {
-      padding-left: clamp(1.25rem, 3vw, 2.5rem);
-      border-left: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .pro-column-label {
-      display: block;
-      margin-bottom: var(--space-md);
-      color: var(--color-accent-deep);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .pro-list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .pro-list li {
-      display: grid;
-      gap: var(--space-2xs);
-      padding: var(--space-xs) 0;
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .pro-list li:last-child {
-      border-bottom: 0;
-    }
-
-    .pro-list strong {
-      display: block;
-      color: var(--color-ink);
-      font-weight: 700;
-    }
-
-    .download-section {
-      padding-bottom: clamp(4rem, 9vw, 6.5rem);
-    }
-    .download-panel {
-      display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
-      gap: clamp(2rem, 7vw, 6rem);
-      padding: clamp(2rem, 6vw, 4.5rem);
-      border-radius: var(--radius-lg);
-      background: var(--color-ink);
-      color: var(--color-surface);
-    }
-
-    .download-panel h2 {
-      max-width: none;
-      margin-bottom: var(--space-md);
-    }
-
-    .download-panel p {
-      max-width: 38rem;
-      color: var(--color-paper-blue);
-    }
-
-    .download-panel .button-primary {
-      margin-top: var(--space-xs);
-      background: var(--color-surface);
-      color: var(--color-accent-deep);
-      box-shadow: none;
-    }
-
-    .download-panel .button-primary:hover {
-      background: var(--color-paper-blue);
-    }
-
-    .install-facts {
-      margin: 0;
-    }
-
-    .install-facts div {
-      display: grid;
-      grid-template-columns: 6.5rem minmax(0, 1fr);
-      gap: var(--space-sm);
-      padding: var(--space-sm) 0;
-      border-bottom: var(--rule-thin) solid var(--color-ink-soft);
-    }
-
-    .install-facts div:last-child {
-      border-bottom: 0;
-    }
-
-    .install-facts dt {
-      color: var(--color-paper-blue);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-    }
-
-    .install-facts dd {
-      margin: 0;
-      color: var(--color-surface);
-      font-size: var(--text-sm);
-      overflow-wrap: anywhere;
-    }
-
-    .download-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-lg);
-      margin-top: var(--space-lg);
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .download-links a:hover {
-      color: var(--color-ink);
-    }
-
-    .site-footer {
-      padding: var(--space-lg) 0 var(--space-xl);
-      border-top: var(--rule-thin) solid var(--color-rule);
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .footer-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-lg);
-    }
-
-    .footer-row p {
-      margin-bottom: 0;
-    }
-
-    .footer-row a {
-      color: var(--color-ink);
-      text-decoration: none;
-    }
-
-    .footer-row a:hover {
-      text-decoration: underline;
-    }
-
-    @media (max-width: 900px) {
-      .hero-grid {
-        grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.8fr);
-        gap: var(--space-xl);
-      }
-
-      .tour-chapter,
-      .tour-chapter-review {
-        grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 1.3fr);
-        gap: var(--space-xl);
-      }
-
-      .review-visual {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .review-visual .product-shot {
-        width: min(100%, 13rem);
-        justify-self: center;
-      }
-
-      .permission-row {
-        grid-template-columns: 7rem minmax(10rem, 0.75fr) minmax(14rem, 1fr);
-      }
-    }
-
-    @media (max-width: 820px) {
-      .container {
-        width: min(var(--content), calc(100% - 2rem));
-      }
-
-      .nav {
-        min-height: 4.25rem;
-        gap: var(--space-sm);
-        position: relative;
-      }
-
-      .nav-links {
-        gap: var(--space-xs);
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        flex-direction: column;
-        align-items: stretch;
-        background: var(--color-paper);
-        border-bottom: var(--rule-thin) solid var(--color-rule);
-        padding: var(--space-sm);
-        display: none;
-      }
-
-      .nav-links.is-open {
-        display: flex;
-      }
-
-      .nav-links a:not(.nav-download) {
-        display: block;
-        padding: var(--space-2xs) 0;
-      }
-
-      .nav-download {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        margin-top: var(--space-xs);
-      }
-
-      .nav-toggle {
-        display: block;
-        background: none;
-        border: none;
-        padding: var(--space-2xs);
-        cursor: pointer;
-        color: var(--color-ink);
-      }
-
-      .nav-toggle svg {
-        width: 1.5rem;
-        height: 1.5rem;
-      }
-
-      /* Turn the three bars into a close glyph when the menu is open. */
-      .nav-toggle svg line {
-        transform-box: view-box;
-        transform-origin: 12px 12px;
-        transition: transform var(--dur-short) var(--ease-out), opacity var(--dur-short) var(--ease-out);
-      }
-
-      .nav-toggle.is-open svg line:nth-child(1) {
-        transform: translateY(6px) rotate(45deg);
-      }
-
-      .nav-toggle.is-open svg line:nth-child(2) {
-        opacity: 0;
-      }
-
-      .nav-toggle.is-open svg line:nth-child(3) {
-        transform: translateY(-6px) rotate(-45deg);
-      }
-
-      /* Keep the page still behind the open menu. */
-      body.nav-open {
-        overflow: hidden;
-      }
-
-      .hero {
-        padding-top: var(--space-2xl);
-      }
-
-      .hero-grid,
-      .tour-chapter,
-      .tour-chapter-review,
-      .permission-row,
-      .trust-note,
-      .download-panel {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .pro-columns {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .pro-access {
-        grid-template-columns: minmax(0, 1fr);
-        gap: var(--space-xs);
-      }
-
-      .pro-column,
-      .pro-column + .pro-column {
-        padding: var(--space-md) 0;
-        border-left: 0;
-      }
-
-      .pro-column + .pro-column {
-        border-top: var(--rule-thin) solid var(--color-rule);
-      }
-
-      .actions {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .button {
-        width: 100%;
-      }
-
-      .section-heading {
-        margin-bottom: var(--space-xl);
-      }
-
-      .choice-rail {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .choice-rail li,
-      .choice-rail li + li,
-      .choice-rail li:last-child {
-        padding: var(--space-lg) 0;
-        border-left: 0;
-        border-bottom: var(--rule-thin) solid var(--color-rule);
-      }
-
-      .choice-rail li:last-child {
-        border-bottom: 0;
-      }
-
-      .choice-index {
-        margin-bottom: var(--space-sm);
-      }
-
-      .tour-chapter-review .chapter-copy {
-        order: 0;
-      }
-
-      .tour-chapter .chapter-copy {
-        max-width: 35rem;
-      }
-
-      .review-visual {
-        grid-template-columns: minmax(0, 0.75fr) minmax(9rem, 1fr);
-      }
-
-      .review-visual .product-shot {
-        width: auto;
-      }
-
-      .permission-row {
-        gap: var(--space-xs);
-      }
-
-      .permission-row h3 {
-        margin-bottom: var(--space-2xs);
-      }
-
-      .text-links {
-        justify-content: flex-start;
-      }
-
-      .tour-cta {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .footer-row {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: var(--space-xs);
-      }
-    }
-
-    @media (max-width: 440px) {
-      .paired-shots {
-        padding: var(--space-xs);
-        gap: var(--space-xs);
-      }
-
-      .paired-shots .product-shot:nth-child(2) {
-        margin-top: var(--space-lg);
-      }
-
-      .screen-caption {
-        display: block;
-        margin-top: var(--space-xs);
-      }
-
-      .screen-caption span {
-        display: block;
-        margin-top: 0.1rem;
-      }
-
-      .review-visual {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .review-visual .product-shot {
-        width: min(100%, 12rem);
-        justify-self: center;
-      }
-
-      .review-notes div {
-        padding-block: var(--space-sm);
-      }
-
-      .download-panel {
-        padding: var(--space-lg);
-      }
-
-      .install-facts div {
-        grid-template-columns: minmax(0, 1fr);
-        gap: var(--space-3xs);
-      }
-
-      .download-links {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: var(--space-sm);
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      html {
-        scroll-behavior: auto;
-      }
-
-      *,
-      *::before,
-      *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-
-      .button:hover {
-        transform: none;
-      }
-    }
-
-    /* ── CJK overrides ──
-       The ch unit is measured against "0" in the Latin font, which is far
-       narrower than a Han glyph, so the Latin measures and type scale wrap
-       Chinese headings far too early (and can strand a lone full stop on its
-       own line). These retune the display type for 中文. */
-    h1 {
-      font-size: clamp(2.4rem, 5.2vw, 4.25rem);
-      line-height: 1.06;
-      letter-spacing: -0.02em;
-    }
-
-    h2 {
-      max-width: 30ch;
-      font-size: clamp(2rem, 3.5vw, 3rem);
-      line-height: 1.15;
-    }
-
-    .product-section .section-heading h2 {
-      max-width: 30ch;
-    }
-
-    .hero-label,
-    .chapter-number,
-    .choice-index,
-    .permission-status,
-    .pro-column-label {
-      letter-spacing: 0.04em;
-      text-transform: none;
-    }
-
-    h2,
-    h3 {
-      letter-spacing: -0.02em;
-    }
-
-    .hero-intro,
-    .section-intro,
-    .chapter-copy p,
-    .permission-row p,
-    .pro-list li,
-    .trust-note p {
-      line-height: 1.75;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f1e8">
+<title>Appause · 先停一下，再决定</title>
+<meta name="description" content="Appause 在你选定的应用前加几秒冷却，让你再决定要不要打开。核心功能永久免费，Android 8.0+，MIT 开源。">
+<link rel="canonical" href="https://shmily0826.github.io/Appause/zh.html">
+<link rel="alternate" hreflang="en" href="https://shmily0826.github.io/Appause/">
+<link rel="alternate" hreflang="zh-CN" href="https://shmily0826.github.io/Appause/zh.html">
+<link rel="alternate" hreflang="x-default" href="https://shmily0826.github.io/Appause/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Appause">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:url" content="https://shmily0826.github.io/Appause/zh.html">
+<meta property="og:title" content="Appause · 先停一下，再决定">
+<meta property="og:description" content="打开选定的应用时先冷却几秒，再决定继续还是回桌面。核心功能永久免费，MIT 开源。">
+<meta property="og:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Appause 暂停页与冷却倒计时">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Appause · 先停一下，再决定">
+<meta name="twitter:description" content="打开选定的应用时先冷却几秒，再决定继续还是回桌面。核心功能永久免费，MIT 开源。">
+<meta name="twitter:image" content="https://shmily0826.github.io/Appause/images/og-card-zh.png">
+  <meta name="twitter:image:alt" content="Appause 暂停页与冷却倒计时">
+<link rel="icon" href="./images/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="./images/apple-touch-icon.png">
+<style>
+  :root {
+    color-scheme: light;
+    --paper: #f5f1e8;
+    --raised: #ece7d9;
+    --ink: #1d1a16;
+    --muted: #5c554a;
+    --rule: #d9d2c3;
+    --red: #a63a2b;
+    --red-dark: #7f2c20;
+    --display: "Source Han Serif SC", "Noto Serif SC", "Songti SC", "STSong", "SimSun", serif;
+    --body: system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+    --s1: .5rem;
+    --s2: 1rem;
+    --s3: 1.5rem;
+    --s4: 2rem;
+    --s5: 3rem;
+    --s6: 5rem;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scrollbar-color: var(--muted) var(--paper); }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.75 var(--body); -webkit-font-smoothing: antialiased; }
+  ::selection { background: var(--red); color: var(--paper); }
+  a { color: inherit; text-underline-offset: .25em; }
+  a:hover { color: var(--red-dark); }
+  :focus-visible { outline: 3px solid var(--red); outline-offset: 4px; }
+  .button:focus-visible { outline-color: var(--ink); }
+  img { display: block; max-width: 100%; height: auto; }
+  figure, p, h1, h2, h3, dl, dd { margin: 0; }
+  p, li, dd { text-wrap: pretty; line-break: strict; }
+  h1, h2, h3 { text-wrap: balance; }
+  h2 { font: 700 clamp(1.65rem, 3vw, 2.35rem)/1.3 var(--display); }
+  h3 { font-size: 1.05rem; line-height: 1.5; }
+  code { font: .9em var(--mono); }
+  .path { white-space: nowrap; }
+  .wrap { width: min(1080px, 100%); padding-inline: var(--s3); margin-inline: auto; }
+  .section { padding-block: var(--s6); border-top: 1px solid var(--rule); scroll-margin-top: 4.5rem; }
+  .section-heading { margin-bottom: var(--s5); }
+  .section-heading p { color: var(--muted); margin-top: var(--s2); max-width: 38em; }
+  .skip { position: absolute; left: -9999px; z-index: 60; background: var(--ink); color: var(--paper); padding: var(--s2); }
+  .skip:focus { left: var(--s2); top: 4rem; }
+  .topbar { position: sticky; top: 0; z-index: 30; background: var(--paper); border-top: 5px solid var(--ink); border-bottom: 1px solid var(--rule); }
+  .topbar-row { display: flex; align-items: center; gap: var(--s4); min-height: 62px; }
+  .brand { display: inline-flex; align-items: center; gap: .5rem; flex: none; text-decoration: none; font: 700 1.25rem var(--display); }
+  .brand svg { flex: none; }
+  .nav { display: flex; align-items: center; gap: var(--s2); margin-left: auto; }
+  .nav a { display: flex; align-items: center; justify-content: center; min-height: 44px; padding-inline: .5rem; text-decoration: none; color: var(--muted); font-size: .9rem; }
+  .nav a:hover, .nav a[aria-current="true"] { color: var(--red-dark); text-decoration: underline; text-decoration-thickness: 2px; }
+  .short-label { display: none; }
+  .button { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: .75rem 1.6rem; background: var(--red); color: var(--paper); border: 1px solid var(--red-dark); text-decoration: none; font-weight: 600; white-space: nowrap; }
+  .button:hover { background: var(--red-dark); color: var(--paper); }
+  .top-download { min-height: 44px; padding: .5rem 1rem; font-size: .9rem; }
+  .hero { display: grid; grid-template-columns: minmax(0, 1fr) 370px; grid-template-rows: auto 1fr; column-gap: var(--s6); row-gap: var(--s4); padding-block: 4rem var(--s5); }
+  .hero-copy { grid-column: 1; grid-row: 1; padding-top: var(--s4); }
+  h1 { font: 700 clamp(2.65rem, 6vw, 4.6rem)/1.18 var(--display); letter-spacing: .01em; }
+  .hero-lede { margin-top: var(--s3); color: var(--muted); font-size: 1.13rem; max-width: 25em; }
+  .hero-shot { grid-column: 2; grid-row: 1 / span 2; }
+  .hero-shot a { display: block; padding: .75rem; background: var(--raised); }
+  .hero-shot img { border: 1px solid var(--rule); }
+  figcaption { margin-top: .75rem; color: var(--muted); font-size: .8rem; line-height: 1.5; }
+  .hero-shot figcaption { text-align: center; }
+  .hero-actions { grid-column: 1; grid-row: 2; align-self: start; }
+  .cta-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3); }
+  .cta-row .source-link { font-size: .88rem; padding-block: .65rem; }
+  .hero-facts { margin-top: var(--s2); font-size: .88rem; color: var(--muted); }
+  .hero-facts strong { color: var(--ink); font-weight: 600; }
+  .hero-version { margin-top: .35rem; font-size: .78rem; color: var(--muted); }
+  .hero-note { margin-top: var(--s5); padding-top: var(--s3); border-top: 1px solid var(--rule); color: var(--muted); max-width: 28em; }
+  .hero-note b { display: block; color: var(--ink); font: 700 1.25rem/1.5 var(--display); margin-bottom: .35rem; }
+  .experience { padding-top: var(--s5); }
+  .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s4); list-style: none; margin: 0; padding: 0; counter-reset: step; }
+  .steps li { border-top: 2px solid var(--ink); padding-top: var(--s3); counter-increment: step; }
+  .steps li::before { content: counter(step, decimal-leading-zero); display: block; color: var(--red); font: .8rem var(--mono); margin-bottom: var(--s2); }
+  .steps h3 { margin-bottom: var(--s1); }
+  .steps p { color: var(--muted); }
+  .feature-grid { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.15fr); gap: var(--s5); align-items: center; }
+  .feature-copy h2 { margin-bottom: var(--s4); }
+  .feature-list > div { padding-block: var(--s2); border-bottom: 1px solid var(--rule); }
+  .feature-list > div:last-child { border: 0; }
+  .feature-list dt { font-weight: 600; }
+  .feature-list dd { margin-top: .3rem; color: var(--muted); }
+  .gallery { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+  .gallery a { display: block; border: 1px solid var(--rule); }
+  .gallery img { width: 100%; }
+  .gallery-hint { display: none; }
+  .setup-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s6); }
+  .install-steps { margin: 0; padding-left: 1.35rem; }
+  .install-steps li { padding-left: .35rem; margin-bottom: var(--s3); }
+  .install-steps li::marker { color: var(--red); font-weight: 600; }
+  .install-steps b { display: block; margin-bottom: .25rem; }
+  .install-steps p { color: var(--muted); }
+  .small-note { margin-top: var(--s3); color: var(--muted); font-size: .85rem; }
+  .privacy { padding: var(--s4); background: var(--raised); align-self: start; }
+  .privacy h3 { font: 700 1.3rem/1.5 var(--display); margin-bottom: var(--s2); }
+  .privacy > p { color: var(--muted); }
+  details { padding-block: .25rem; border-bottom: 1px solid var(--rule); }
+  summary { position: relative; display: flex; align-items: center; min-height: 48px; cursor: pointer; list-style: none; padding: .65rem 2rem .65rem 0; font-weight: 600; }
+  summary::-webkit-details-marker { display: none; }
+  summary::before, summary::after { content: ""; position: absolute; right: .25rem; top: calc(50% - 1px); width: 12px; height: 2px; background: var(--red); }
+  summary::after { transform: rotate(90deg); }
+  details[open] > summary::after { transform: none; }
+  summary:hover { color: var(--red-dark); }
+  details > p, details > ol, details > dl { margin-bottom: var(--s2); color: var(--muted); }
+  details > p + p { margin-top: .75rem; }
+  .privacy details { margin-top: var(--s3); border-top: 1px solid var(--rule); }
+  .permissions > div { padding-block: .75rem; border-top: 1px solid var(--rule); }
+  .permissions dt { color: var(--ink); font-weight: 600; }
+  .permissions dd { margin-top: .25rem; font-size: .9rem; }
+  .permission-status { margin-left: .5rem; color: var(--red-dark); font-size: .8rem; font-weight: 400; white-space: nowrap; }
+  .permission-status.optional { color: var(--muted); }
+  .pro-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s6); }
+  .pro-copy h2 { margin-bottom: var(--s3); }
+  .pro-copy p { color: var(--muted); }
+  .pro-copy p + p { margin-top: var(--s2); }
+  .pro-features { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s3); align-content: start; }
+  .pro-features > div { border-top: 1px solid var(--rule); padding-top: var(--s2); }
+  .pro-features dt { font-weight: 600; }
+  .pro-features dd { color: var(--muted); margin-top: .25rem; font-size: .9rem; }
+  .pro-copy details { margin-top: var(--s3); }
+  .pro-copy details ol { padding-left: 1.25rem; font-size: .9rem; }
+  .pro-copy details li + li { margin-top: .5rem; }
+  .faq-grid { display: grid; grid-template-columns: minmax(0, .55fr) minmax(0, 1fr); gap: var(--s5); }
+  .faq-list { min-width: 0; }
+  .faq-list details:first-child { border-top: 1px solid var(--rule); }
+  .faq-list summary { min-height: 64px; }
+  .download { padding-block: var(--s5) var(--s6); scroll-margin-top: 4.5rem; }
+  .download-panel { padding: var(--s5); background: var(--raised); border: 1px solid var(--ink); }
+  .download-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s4); }
+  .download-row p { color: var(--muted); margin-top: var(--s2); }
+  .download-panel details { margin-top: var(--s4); border-top: 1px solid var(--rule); }
+  .release-info > div { display: grid; grid-template-columns: 6rem minmax(0, 1fr); gap: var(--s2); margin-bottom: .5rem; font-size: .85rem; }
+  .release-info dt { color: var(--muted); }
+  .release-info dd { color: var(--ink); overflow-wrap: anywhere; }
+  .release-info .hash { line-height: 1.7; }
+  .download-links { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem var(--s3); margin-top: var(--s2); font-size: .85rem; color: var(--muted); }
+  .download-links a { padding-block: .5rem; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; gap: var(--s2); padding: .65rem var(--s2) calc(.65rem + env(safe-area-inset-bottom, 0px)); background: var(--paper); border-top: 1px solid var(--ink); transform: translateY(110%); visibility: hidden; }
+  .bar.show { transform: none; visibility: visible; }
+  .bar p { font-size: .8rem; color: var(--muted); }
+  .bar b { color: var(--ink); }
+  .bar .button { min-height: 44px; padding: .5rem 1rem; font-size: .9rem; }
+  footer { border-top: 3px solid var(--ink); padding-block: var(--s4) calc(var(--s5) + 4rem); color: var(--muted); font-size: .85rem; }
+  .footer-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }
+  .footer-row a { padding-block: .5rem; }
+  .footer-brand { font: 700 1.1rem var(--display); color: var(--ink); margin-right: auto; }
+  .copyright { margin-top: var(--s2); font-size: .75rem; }
+  @media (min-width: 881px) { .bar { display: none; } footer { padding-bottom: var(--s5); } }
+  @media (max-width: 1000px) { .hero { column-gap: var(--s5); grid-template-columns: minmax(0, 1fr) 330px; } .topbar-row { gap: var(--s2); } }
+  @media (max-width: 880px) {
+    .hero { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; padding-block: var(--s5); gap: var(--s3); }
+    .hero-copy, .hero-shot, .hero-actions { grid-column: auto; grid-row: auto; }
+    .hero-copy { padding: 0; }
+    .hero-shot { width: min(330px, 100%); justify-self: center; }
+    .hero-actions { text-align: center; }
+    .cta-row { justify-content: center; }
+    .hero-note { display: none; }
+    .top-download { display: none; }
+    .feature-grid, .setup-grid, .pro-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+    .feature-grid { align-items: start; }
+    .gallery { max-width: 580px; width: 100%; margin-inline: auto; }
+    .feature-copy h2 { margin-bottom: var(--s3); }
+    .feature-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); }
+    .feature-list > div { border: 0; padding: 0; }
+    .privacy { padding: var(--s3); }
+    .faq-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
+    .download-panel { padding: var(--s4); }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding-inline: var(--s2); }
+    .section { padding-block: var(--s5); }
+    .section-heading { margin-bottom: var(--s3); }
+    .topbar-row { min-height: 56px; gap: .5rem; }
+    .brand { font-size: 1.1rem; gap: .4rem; }
+    .nav { gap: .1rem; }
+    .nav a { font-size: .85rem; }
+    .long-label { display: none; }
+    .short-label { display: inline; }
+    .hero { padding-block: var(--s4); gap: var(--s3); }
+    h1 { font-size: clamp(2.5rem, 11vw, 2.9rem); line-height: 1.15; }
+    .hero-lede { font-size: 1rem; margin-top: var(--s2); max-width: 24em; }
+    .hero-shot { width: 250px; }
+    .hero-shot a { padding: .5rem; }
+    .hero-shot figcaption { margin-top: .5rem; font-size: .75rem; }
+    .hero-actions .cta-row { display: block; }
+    .hero-actions .button { width: min(320px, 100%); }
+    .hero-actions .source-link { display: none; }
+    .hero-facts { font-size: .82rem; }
+    .hero-version { font-size: .75rem; }
+    .steps { grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
+    .steps li { position: relative; padding: var(--s2) 0 0 2.5rem; border-top-width: 1px; }
+    .steps li::before { position: absolute; left: 0; top: 1.4rem; }
+    .steps h3 { font-size: 1rem; }
+    .steps p { font-size: .93rem; }
+    .feature-list { display: block; }
+    .feature-list > div { padding-block: .75rem; border-bottom: 1px solid var(--rule); }
+    .gallery { display: flex; overflow-x: auto; gap: var(--s2); padding-bottom: .5rem; scroll-snap-type: x proximity; scrollbar-color: var(--muted) var(--raised); }
+    .gallery figure { flex: 0 0 84%; scroll-snap-align: start; }
+    .gallery-hint { display: block; margin-bottom: var(--s2); color: var(--muted); font-size: .8rem; }
+    .pro-features { gap: var(--s3) var(--s2); }
+    .pro-features dt { font-size: .95rem; }
+    .pro-features dd { font-size: .85rem; }
+    .download { padding-block: var(--s4) var(--s5); }
+    .download-panel { padding: var(--s3); }
+    .download-row { display: block; }
+    .download-row .button { width: 100%; margin-top: var(--s3); }
+    .release-info > div { grid-template-columns: minmax(0, 1fr); gap: .1rem; }
+    .footer-brand { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media print {
+    .topbar, .bar, .skip { display: none; }
+    body, .privacy, .download-panel { background: #fff; color: #000; }
+    .section { padding-block: var(--s4); }
+    .button { background: #fff; color: #000; border: 1px solid #000; }
+    .gallery { display: grid; overflow: visible; }
+    figure, details, .steps li { break-inside: avoid; }
+    h2, h3 { break-after: avoid; }
+    footer { padding-bottom: var(--s4); }
+  }
+</style>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@graph":[
+    {"@type":"SoftwareApplication","name":"Appause","operatingSystem":"Android 8.0+","applicationCategory":"UtilitiesApplication","softwareVersion":"0.5.45","fileSize":"12.3MB","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"},"author":{"@type":"Organization","name":"Appause authors"},"license":"https://opensource.org/licenses/MIT","downloadUrl":"https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk","description":"Appause 在你选定的应用前加几秒冷却，让你再决定要不要打开。"},
+    {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"为什么有时没有拦截？会耗电吗？","acceptedAnswer":{"@type":"Answer","text":"先回首页检查无障碍服务是否仍在运行，以及电池优化和自启动设置。部分系统终止后台服务后不会自动恢复，设置完成也不能保证所有机型都一致。无障碍服务常驻后台，本机测试中耗电影响不大。"}},
+      {"@type":"Question","name":"暂停页会被其他应用挡住吗？","acceptedAnswer":{"@type":"Answer","text":"暂停页覆盖在普通应用之上，实测在开启「隐藏悬浮窗」的应用上仍然可见。个别机型不显示时，可以开启悬浮窗权限使用备用方案。"}},
+      {"@type":"Question","name":"换手机或卸载后，数据还在吗？","acceptedAnswer":{"@type":"Answer","text":"分组和统计只存在这台手机上，没有云同步。卸载会清除数据，换机后需要重新设置。"}},
+      {"@type":"Question","name":"iPhone 可以用吗？","acceptedAnswer":{"@type":"Answer","text":"目前只有 Android 版，需要 Android 8.0 或更新版本。"}}
+    ]}
+  ]}
+  </script>
 </head>
 <body>
-  <a class="skip-link" href="#main-content">跳到正文</a>
-
-  <header class="site-header">
-    <nav class="nav container" aria-label="主导航">
-      <a class="brand" href="zh.html" aria-label="Appause 首页">
-        <img src="images/appause-icon.png" alt="" width="32" height="32" />
-        <span>Appause</span>
-      </a>
-      <button class="nav-toggle" aria-label="菜单" aria-expanded="false" aria-controls="primary-nav">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-          <line x1="4" y1="6" x2="20" y2="6" />
-          <line x1="4" y1="12" x2="20" y2="12" />
-          <line x1="4" y1="18" x2="20" y2="18" />
-        </svg>
-      </button>
-      <div class="nav-links" id="primary-nav">
-        <a href="#how-it-works">工作原理</a>
-        <a href="#product">应用界面</a>
-        <a href="#privacy">权限与隐私</a>
-        <a href="#pro">Pro 介绍</a>
-        <a href="#faq">常见问题</a>
-        <a href="index.html" lang="en" aria-label="English">EN</a>
-        <a class="nav-download" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 v0.5.45 测试版</a>
-      </div>
+<a class="skip" href="#main">跳到正文</a>
+<header class="topbar" id="top">
+  <div class="wrap topbar-row">
+    <a class="brand" href="#top" aria-label="Appause 首页">
+      <svg width="22" height="22" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="11" fill="none" stroke="currentColor" stroke-width="3"/><path d="M10.7 7.5v11M15.3 7.5v11" stroke="#a63a2b" stroke-width="2.6"/></svg>
+      Appause
+    </a>
+    <nav class="nav" id="sectionNav" aria-label="页面栏目">
+      <a href="#how"><span class="long-label">使用体验</span><span class="short-label">体验</span></a>
+      <a href="#start"><span class="long-label">安装设置</span><span class="short-label">安装</span></a>
+      <a href="#faq"><span class="long-label">常见问题</span><span class="short-label">问答</span></a>
     </nav>
-  </header>
+    <a class="button top-download" href="#download">下载 Android 版</a>
+  </div>
+</header>
+<main id="main">
+  <section class="wrap hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <h1 id="hero-title">先停一下，<br>再决定。</h1>
+      <p class="hero-lede">Appause 在你选定的应用前加几秒冷却。<br>等一等，再决定要不要打开。</p>
+    </div>
+    <figure class="hero-shot">
+      <a href="./images/screenshots/zh/pause-crop.png" target="_blank" rel="noopener" aria-label="查看暂停页原图，在新标签页打开">
+        <picture>
+          <source type="image/webp" srcset="./images/screenshots/zh/pause-crop-360.webp 360w, ./images/screenshots/zh/pause-crop-720.webp 720w" sizes="(max-width: 560px) 232px, (max-width: 880px) 304px, 344px">
+          <img src="./images/screenshots/zh/pause-crop.png" width="1080" height="1631" alt="YouTube 打开前的暂停页：冷却倒计时、打开原因，以及继续和取消按钮" fetchpriority="high">
+        </picture>
+      </a>
+      <figcaption>打开前的暂停页 · 点图查看大图</figcaption>
+    </figure>
+    <div class="hero-actions">
+      <div class="cta-row">
+        <a class="button" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 Android 版</a>
+        <a class="source-link" href="https://github.com/Shmily0826/Appause">查看源码</a>
+      </div>
+      <p class="hero-facts"><strong>核心功能永久免费</strong> · Android 8.0+</p>
+      <p class="hero-version">公开测试版 <span data-r="version">v0.5.45</span> · <span data-r="size">12.3 MB</span> · MIT 开源</p>
+      <p class="hero-note"><b>手指先到了，人还没决定。</b>把顺手打开的那一下，变成一次自己的选择。</p>
+    </div>
+  </section>
 
-  <main id="main-content">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-grid container">
-        <div class="hero-copy">
-          <p class="hero-label">Android 免费公开测试版</p>
-          <h1 id="hero-title"><span>打开前，</span><span>先等一会儿。</span></h1>
-          <p class="hero-intro">把想管理的应用加进分组，设一个等待时间。下次打开时，Appause 先弹停顿屏，让你决定继续还是回桌面。</p>
-          <div class="actions" aria-label="主要操作">
-            <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">免费下载 Appause <span aria-hidden="true">↗</span></a>
-            <a class="button button-secondary" href="#how-it-works">查看使用流程</a>
-          </div>
-          <p class="hero-trust">
-            <span>本地优先，数据留在本机</span>
-            <span>日常使用不联网</span>
-            <span>无需注册账号</span>
-          </p>
-          <p class="release-line">v0.5.45 预发布测试版 &#183; Android 8.0+ &#183; <a href="#privacy">需开启无障碍服务</a></p>
-        </div>
+  <section class="section experience" id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <div class="section-heading"><h2 id="how-title">点开之后，多这几秒。</h2></div>
+      <ol class="steps">
+        <li><h3>打开你选定的应用</h3><p>暂停页先出现。哪些应用需要冷却，由你自己选。</p></li>
+        <li><h3>等一等，选个打开原因</h3><p>冷却结束前，「继续」不可点击。工作需要、无聊、查消息，先想一下这次是为什么。</p></li>
+        <li><h3>继续，或者回桌面</h3><p>想好了就继续；点「取消」回桌面。离开目标应用后再次打开，会重新拦截。</p></li>
+      </ol>
+    </div>
+  </section>
 
-        <div class="moment-board" aria-label="Appause 暂停界面截图">
-          <figure class="product-shot hero-shot">
-            <img src="images/screenshots/zh/pause.png" alt="Appause 在打开 YouTube 时显示倒计时，并提供继续或取消选项" width="1080" height="2400" fetchpriority="high" decoding="async" sizes="(max-width: 820px) 100vw, 40vw" />
-            <figcaption><strong>停顿屏</strong>下一步由你决定</figcaption>
-          </figure>
+  <section class="section" id="features" aria-labelledby="features-title">
+    <div class="wrap feature-grid">
+      <div class="feature-copy">
+        <h2 id="features-title">分组、冷却与记录</h2>
+        <dl class="feature-list">
+          <div><dt>把应用放进一个分组</dt><dd>一组应用共用一条冷却规则。核心功能包含 1 个分组。</dd></div>
+          <div><dt>冷却 1 到 60 秒</dt><dd>新分组默认 10 秒，也可以改成适合你的时长。免费与 Pro 的上限相同。</dd></div>
+          <div><dt>回看每次继续与取消</dt><dd>统计可查看 365 天记录，包含选择的打开原因。记录只存本机，暗色模式跟随系统。</dd></div>
+        </dl>
+      </div>
+      <div>
+        <p class="gallery-hint">左右滑动查看两张截图 · 点图可放大</p>
+        <div class="gallery" tabindex="0" role="region" aria-label="分组与统计截图，可横向滚动">
+          <figure><a href="./images/screenshots/zh/group.png" target="_blank" rel="noopener" aria-label="查看分组编辑页原图，在新标签页打开"><picture><source type="image/webp" srcset="./images/screenshots/zh/group-360.webp 360w, ./images/screenshots/zh/group-720.webp 720w" sizes="(max-width: 560px) 84vw, (max-width: 880px) calc(min(580px, 100vw - 48px)), 565px"><img src="./images/screenshots/zh/group.png" width="1080" height="2400" alt="分组编辑页：选择目标应用，设置冷却时间" loading="lazy" decoding="async"></picture></a><figcaption>分组：选应用，设冷却时间</figcaption></figure>
+          <figure><a href="./images/screenshots/zh/statistics.png" target="_blank" rel="noopener" aria-label="查看统计页原图，在新标签页打开"><picture><source type="image/webp" srcset="./images/screenshots/zh/statistics-360.webp 360w, ./images/screenshots/zh/statistics-720.webp 720w" sizes="(max-width: 560px) 84vw, (max-width: 880px) calc(min(580px, 100vw - 48px)), 565px"><img src="./images/screenshots/zh/statistics.png" width="1080" height="2400" alt="统计页：继续和取消的次数、应用分布及原因记录" loading="lazy" decoding="async"></picture></a><figcaption>统计：回看自己的选择</figcaption></figure>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section class="section mechanism-section" id="how-it-works" aria-labelledby="mechanism-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="mechanism-title">怎么使用</h2>
-          <p class="section-intro">打开被管理应用时，Appause 会先显示倒计时。</p>
+  <section class="section" id="start" aria-labelledby="start-title">
+    <div class="wrap">
+      <div class="section-heading"><h2 id="start-title">三步开始用</h2><p>公开测试版通过 APK 安装。第一次使用，按首页指引完成设置。</p></div>
+      <div class="setup-grid">
+        <div>
+          <ol class="install-steps">
+            <li><b>下载并允许安装</b><p>下载 APK 后，按系统提示允许浏览器或文件管理器「安装未知应用」。</p></li>
+            <li><b>按首页指引开好三项权限</b><p>开启无障碍服务，电池优化设为「无限制」，并允许自启动。后台管理较严格的机型上，后两项也需要设置。</p></li>
+            <li><b>建分组，选好目标应用</b><p>添加需要冷却的应用，设置时长，保存后即可开始使用。</p></li>
+          </ol>
+          <p class="small-note">安装新版可直接覆盖旧版。不要先卸载，否则会清除本机的分组与统计。<a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">查看安装指南</a></p>
         </div>
-
-        <ol class="choice-rail" role="list">
-          <li>
-            <span class="choice-index">01</span>
-            <h3>选择应用</h3>
-            <p>将想管理的应用加入分组。</p>
-          </li>
-          <li>
-            <span class="choice-index">02</span>
-            <h3>设置等待时间</h3>
-            <p>为分组设置等待时间。</p>
-          </li>
-          <li>
-            <span class="choice-index">03</span>
-            <h3>决定下一步</h3>
-            <p>倒计时结束后，继续或返回桌面。</p>
-          </li>
-        </ol>
-      </div>
-    </section>
-
-    <section class="section product-section" id="product" aria-labelledby="product-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="product-title">分组设置与使用记录</h2>
-          <p class="section-intro">按分组管理应用和等待时间，并查看每次继续或取消的记录。</p>
-        </div>
-
-        <article class="tour-chapter">
-          <div class="chapter-copy">
-            <span class="chapter-number">01 / 添加应用</span>
-            <h3>把应用加入分组</h3>
-            <p>把要管理的应用加入分组，再为每个分组设置等待时间。等待时也可以选择临时放行。</p>
-          </div>
-
-          <div class="paired-shots" aria-label="首页和分组设置界面">
-            <figure class="product-shot">
-              <img src="images/screenshots/zh/home.png" alt="Appause 首页：查看服务状态、今日记录和应用分组" width="1080" height="2400" loading="lazy" decoding="async" sizes="(max-width: 820px) 100vw, 35vw" />
-              <figcaption class="screen-caption"><strong>首页</strong><span>查看服务和今日记录</span></figcaption>
-            </figure>
-            <figure class="product-shot">
-              <img src="images/screenshots/zh/group.png" alt="Appause 分组设置：选择要管理的应用并设置等待时间" width="1080" height="2400" loading="lazy" decoding="async" sizes="(max-width: 820px) 100vw, 35vw" />
-              <figcaption class="screen-caption"><strong>分组</strong><span>选择应用和等待时间</span></figcaption>
-            </figure>
-          </div>
-        </article>
-
-        <article class="tour-chapter tour-chapter-review">
-          <div class="chapter-copy">
-            <span class="chapter-number">02 / 查看使用记录</span>
-            <h3>每次决定都有记录</h3>
-            <p>查看倒计时后继续打开或取消并返回桌面的次数。记录保存在本机。</p>
-          </div>
-
-          <div class="review-visual" aria-label="使用统计界面与记录说明">
-            <figure class="product-shot">
-            <img src="images/screenshots/zh/statistics.png" alt="Appause 统计页面：记录继续、临时放行或取消的次数" width="1080" height="2400" loading="lazy" decoding="async" sizes="(max-width: 820px) 100vw, 35vw" />
-            </figure>
-            <dl class="review-notes">
-              <div>
-                <dt>完成</dt>
-                <dd>选择继续或临时放行的次数。</dd>
-              </div>
-              <div>
-                <dt>阻止</dt>
-                <dd>取消并返回桌面的次数。</dd>
-              </div>
-              <div>
-                <dt>本地历史</dt>
-                <dd>统计记录保存在本机。</dd>
-              </div>
+        <aside class="privacy" id="privacy" aria-labelledby="privacy-title">
+          <h3 id="privacy-title">只识别当前打开的应用。</h3>
+          <p>无障碍服务不读取屏幕文字、消息、截图或键盘输入。日常拦截和统计不联网，记录留在这台手机上。</p>
+          <details>
+            <summary>各项权限的用途</summary>
+            <dl class="permissions">
+              <div><dt>无障碍服务<span class="permission-status">必需</span></dt><dd>识别当前打开的应用。可以随时在系统设置里关闭；关闭后拦截停止。</dd></div>
+              <div><dt>电池优化<span class="permission-status">必需</span></dt><dd>设为「无限制」，减少系统省电策略终止后台服务的情况。</dd></div>
+              <div><dt>允许自启动<span class="permission-status">必需</span></dt><dd>部分系统重启或清理后台后，需要这项设置恢复服务。</dd></div>
+              <div><dt>使用情况访问<span class="permission-status optional">建议开启</span></dt><dd>在本机确认真正显示在屏幕上的应用，减少切换应用或最近任务时的误拦截。</dd></div>
+              <div><dt>显示悬浮窗<span class="permission-status optional">可选备用</span></dt><dd>个别机型不显示暂停页时，用作备用方案。</dd></div>
+              <div><dt>通知<span class="permission-status optional">可选</span></dt><dd>Android 13+ 的运行状态通知。</dd></div>
+              <div><dt>网络<span class="permission-status optional">仅你操作时</span></dt><dd>开启 Pro 试用、兑换授权码或发送反馈时联网。日常拦截和统计不发网络请求。</dd></div>
             </dl>
-          </div>
-        </article>
-
-        <aside class="tour-cta" aria-label="下载 Appause">
-          <p>选择一个应用并设置等待时间，开始使用 Appause。</p>
-            <a class="button button-secondary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 v0.5.45 <span aria-hidden="true">↗</span></a>
+          </details>
+          <p class="small-note"><a href="privacy-policy.html">完整隐私政策</a></p>
         </aside>
       </div>
-    </section>
-
-    <section class="section trust-section" id="privacy" aria-labelledby="trust-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="trust-title">Appause 需要哪些权限</h2>
-          <p class="section-intro">无障碍服务用于识别当前打开的应用并在需要时显示倒计时。应用分组、等待时间和统计保存在本机。</p>
-        </div>
-
-        <div class="permission-ledger">
-          <article class="permission-row">
-            <span class="permission-status">必需</span>
-            <h3>无障碍服务</h3>
-            <p>用于识别当前打开的应用并显示倒计时。此服务未启用读取窗口内容的能力，不读取屏幕文字或输入内容。</p>
-          </article>
-          <article class="permission-row">
-            <span class="permission-status">建议开启</span>
-            <h3>使用情况访问权限</h3>
-            <p>可选。用于辅助确认当前前台应用，例如判断是否仍停留在同一个 App，或已经回到桌面。是否拦截依据无障碍事件判定，不依赖此权限；未授权也能正常工作。</p>
-          </article>
-          <article class="permission-row">
-            <span class="permission-status">部分机型备用</span>
-            <h3>悬浮窗权限</h3>
-            <p>可选备用权限。Appause 通常通过无障碍服务显示倒计时；个别机型无法显示时，可启用悬浮窗备用。</p>
-          </article>
-        </div>
-
-        <div class="trust-note">
-          <div class="trust-note-copy">
-            <p><strong>日常使用不联网。</strong>分组、等待时间和统计保存在本机。开始 Pro 试用、激活授权或发送反馈时会联网；发送前可先查看反馈内容。</p>
-            <p>无需注册账号。Pro 授权令牌在本机验证并保存，之后可离线检查。</p>
-          </div>
-          <div class="text-links">
-            <a href="privacy-policy.html">查看隐私政策</a>
-            <a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">安装指南</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section opensource-section" id="open-source" aria-labelledby="opensource-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="opensource-title">源码公开，采用 MIT 许可证</h2>
-          <p class="section-intro">全部代码在 MIT 许可证下公开，包括无障碍权限相关实现。你可以查看、构建和修改源码。</p>
-        </div>
-
-        <div class="opensource-more">
-          <a href="https://github.com/Shmily0826/Appause">查看 GitHub 源码</a>
-          <a href="https://github.com/Shmily0826/Appause/blob/main/LICENSE">阅读 MIT 许可证</a>
-          <a href="https://github.com/Shmily0826/Appause/issues">报告问题或提出建议</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section pro-section" id="pro" aria-labelledby="pro-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="pro-title">核心功能免费，Pro 可选</h2>
-          <p class="section-intro">公开测试版目前免费，无支付或订阅。Pro 是一组仍在测试的额外功能。</p>
-        </div>
-
-        <div class="pro-columns">
-          <section class="pro-column" aria-label="免费版已包含的功能">
-            <span class="pro-column-label">免费版功能</span>
-            <ul class="pro-list" role="list">
-              <li><strong>打开前倒计时</strong><span>为选定的应用设置等待时间，最长 60 秒。</span></li>
-              <li><strong>应用分组</strong><span>最多创建 1 个分组；等待时可选择临时放行。</span></li>
-              <li><strong>本机统计</strong><span>查看继续或取消的记录，数据保存在设备上。</span></li>
-            </ul>
-          </section>
-
-          <section class="pro-column" aria-label="Pro 功能">
-            <span class="pro-column-label">Pro 功能</span>
-            <ul class="pro-list" role="list">
-              <li><strong>不限分组数量</strong><span>按需要创建和管理分组。</span></li>
-              <li><strong>再次提醒</strong><span>等待结束后，可在设定时间再次显示提醒。</span></li>
-              <li><strong>自定义停顿文案和打开理由</strong><span>按自己的习惯调整暂停界面。</span></li>
-            </ul>
-          </section>
-        </div>
-
-        <div class="pro-access">
-          <h3>试用与授权</h3>
-          <p>Pro 目前处于公开测试阶段，不收费。每台设备可在「设置 → Appause Pro」点击「开始试用」，主动开启一次 7 天试用；结束后可在「设置 → 反馈」申请永久授权码，由开发者人工发放。</p>
-        </div>
-
-      </div>
-    </section>
-
-    <section class="section faq-section" id="faq" aria-labelledby="faq-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="faq-title">常见问题</h2>
-          <p class="section-intro">安装、权限、数据和 Pro 的常见问题。更多细节请查看安装指南和隐私政策。</p>
-        </div>
-
-        <div class="faq-list">
-          <details>
-            <summary>Appause 会强制锁住应用吗？</summary>
-            <p>不会。等待结束后，你可以继续打开，也可以取消并返回桌面；还可以随时关闭服务或修改分组。</p>
-          </details>
-          <details>
-            <summary>Pro 是收费的吗？</summary>
-            <p>公开测试阶段免费，无订阅。可主动开启一次 7 天试用；结束后在「设置 → 反馈」申请永久授权码，由开发者人工发放。</p>
-          </details>
-          <details>
-            <summary>为什么需要无障碍权限？会读我的屏幕吗？</summary>
-            <p>Appause 只读前台应用包名，不读取屏幕内容、消息或按键输入。</p>
-          </details>
-          <details>
-            <summary>我的数据会上传吗？</summary>
-            <p>分组、等待时间和统计保存在本机。日常使用不联网；开始 Pro 试用、激活授权或主动发送反馈时会联网。通过 Appause 发送反馈前，可先查看将要发送的内容。</p>
-          </details>
-          <details>
-            <summary>安装时提示风险，该怎么办？</summary>
-            <p>确认 APK 来自 Appause 的 GitHub Releases 并核对版本。Android 对侧载应用的提示本身不能证明应用安全或有害；若 Play Protect 或厂商安全提示仍拦截，先查看提示详情和安装指南，不确定时先停止安装并反馈。</p>
-          </details>
-          <details>
-            <summary>小米 / HyperOS 上需要额外设置吗？</summary>
-            <p>部分机型可能会限制后台服务。按安装指南检查自启动和电池策略；具体选项因系统版本和机型而异。</p>
-          </details>
-          <details>
-            <summary>为什么有时候通知也会触发暂停？</summary>
-            <p>Appause 依据无障碍事件判定前台应用。部分机型的媒体通知会产生类似切换应用的事件，偶尔也会因此触发一次暂停，这是当前方案的已知取舍。可选的「使用情况访问权限」可辅助核实前台应用。</p>
-          </details>
-          <details>
-            <summary>怎么更新？换手机怎么办？</summary>
-            <p>下载新版 APK 直接覆盖安装；不要先卸载，否则本机数据会被清除。换机后需重新设置分组；Pro 授权绑定设备，需在新设备重新激活。</p>
-          </details>
-        </div>
-      </div>
-    </section>
-
-    <section class="section download-section" id="download" aria-labelledby="download-title">
-      <div class="container">
-        <div class="download-panel">
-          <div>
-            <h2 id="download-title">下载 Appause</h2>
-            <p>Android 免费公开测试版。从 GitHub Releases 下载 APK。安装前需允许浏览器或文件管理器安装应用；遇到系统安全提示时，请先查看提示详情并参照安装指南。首次安装后建议保留 APK，便于后续覆盖更新。</p>
-           <a class="button button-primary" href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 v0.5.45 APK <span aria-hidden="true">↗</span></a>
-          </div>
-
-          <dl class="install-facts">
-            <div>
-              <dt>文件</dt>
-              <dd>Appause-v0.5.45.apk</dd>
-            </div>
-            <div>
-              <dt>系统要求</dt>
-              <dd>Android 8.0 或更高</dd>
-            </div>
-            <div>
-              <dt>账号</dt>
-              <dd>不需要</dd>
-            </div>
-            <div>
-              <dt>许可</dt>
-              <dd>MIT 许可证</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div class="download-links" aria-label="其他下载与支持链接">
-          <a href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.45">查看 v0.5.45 预发布</a>
-          <a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">安装说明</a>
-          <a href="https://shmily0826.lanzoup.com/b01eunt29a">镜像下载页（不计入下载统计）</a>
-          <a href="https://github.com/Shmily0826/Appause/issues">报告问题或提出建议</a>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="footer-row container">
-      <p>Appause：打开前，先等一会儿。</p>
-      <p><a href="privacy-policy.html">隐私</a> &#183; <a href="https://github.com/Shmily0826/Appause">GitHub</a> &#183; MIT 许可 &#183; <a href="index.html" lang="en">英文版</a></p>
     </div>
-  </footer>
-  <script>
-    const toggle = document.querySelector('.nav-toggle');
-    const navLinks = document.querySelector('.nav-links');
-    if (toggle && navLinks) {
-      const setOpen = (open) => {
-        navLinks.classList.toggle('is-open', open);
-        toggle.classList.toggle('is-open', open);
-        toggle.setAttribute('aria-expanded', String(open));
-        document.body.classList.toggle('nav-open', open);
-      };
-      toggle.addEventListener('click', () => {
-        setOpen(!navLinks.classList.contains('is-open'));
+  </section>
+
+  <section class="section" id="pro" aria-labelledby="pro-title">
+    <div class="wrap pro-grid">
+      <div class="pro-copy">
+        <h2 id="pro-title">核心一直免费。<br>Pro 也不收费。</h2>
+        <p>分组、冷却和统计可以一直用。Pro 多提供四项功能：先在应用里开始 7 天试用，结束后可申请免费永久授权码。</p>
+        <p class="small-note">试用到期会关闭四项 Pro 功能，已有分组与统计保留，不会自动变成付费。</p>
+        <details><summary>怎样获取 Pro 永久权限？</summary><ol><li>在 Pro 页面主动点击「开始试用」，每台设备可试用一次，时长 7 天。</li><li>试用结束后，通过 <code class="path">设置 → 反馈</code> 申请免费永久授权码，由开发者人工签发。</li><li>回到 Pro 页面兑换。必须等试用结束后才能兑换，一个授权码最多用于 3 台设备。</li></ol></details>
+      </div>
+      <dl class="pro-features">
+        <div><dt>无限分组</dt><dd>为不同应用设置不同规则。</dd></div>
+        <div><dt>再次提醒</dt><dd>停留在目标应用时，再提醒一次。</dd></div>
+        <div><dt>自定义暂停提示语</dt><dd>换成你自己写的句子。</dd></div>
+        <div><dt>自定义打开原因</dt><dd>改成适合你的选项。</dd></div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="section" id="faq" aria-labelledby="faq-title">
+    <div class="wrap faq-grid">
+      <h2 id="faq-title">还有几个问题。</h2>
+      <div class="faq-list">
+        <details><summary>为什么有时没有拦截？会耗电吗？</summary><p>先回首页检查无障碍服务是否仍在运行，以及电池优化和自启动设置。部分系统终止后台服务后不会自动恢复，设置完成也不能保证所有机型都一致。</p><p>无障碍服务常驻后台，本机测试中耗电影响不大。仍有问题时，可通过 <code class="path">设置 → 反馈</code> 提交，并自行决定是否附带诊断快照。</p></details>
+        <details><summary>暂停页会被其他应用挡住吗？</summary><p>暂停页覆盖在普通应用之上，实测在开启「隐藏悬浮窗」的应用上仍然可见。个别机型不显示时，可以开启悬浮窗权限使用备用方案。</p></details>
+        <details><summary>换手机或卸载后，数据还在吗？</summary><p>分组和统计只存在这台手机上，没有云同步。卸载会清除数据，换机后需要重新设置。</p></details>
+        <details><summary>iPhone 可以用吗？</summary><p>目前只有 Android 版，需要 Android 8.0 或更新版本。</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="download wrap" id="download" aria-labelledby="download-title">
+    <div class="download-panel">
+      <div class="download-row">
+        <div><h2 id="download-title">下载 Appause</h2><p>公开测试版 <span data-r="version">v0.5.45</span> · <span data-r="size">12.3 MB</span> · Android 8.0+</p></div>
+        <a class="button" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 Android 版</a>
+      </div>
+      <p class="small-note">暂未上架应用商店，安装时需要允许「安装未知应用」。</p>
+      <details><summary>版本与 APK 校验信息</summary><dl class="release-info"><div><dt>文件名</dt><dd data-r="file">Appause-v0.5.45.apk</dd></div><div><dt>发布日期</dt><dd data-r="date">2026-09-24</dd></div><div><dt>包名</dt><dd><code>com.appause.android</code></dd></div><div><dt>versionCode</dt><dd data-r="code">97</dd></div><div><dt>SHA-256</dt><dd class="hash"><code data-r="sha256">07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a</code></dd></div></dl></details>
+      <div class="download-links"><a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">安装指南</a><a data-release href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.45">GitHub Release</a></div>
+    </div>
+  </section>
+</main>
+<div class="bar" id="bar" role="region" aria-label="下载 Appause"><p><b>Appause</b><br>核心永久免费 · Android</p><a class="button" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载</a></div>
+<footer><div class="wrap"><div class="footer-row"><span class="footer-brand">Appause</span><a href="https://github.com/Shmily0826/Appause">源码（MIT）</a><a href="privacy-policy.html">隐私政策</a><a href="https://github.com/Shmily0826/Appause/issues">反馈问题</a><a href="index.html" lang="en">英文版</a></div><p class="copyright">© 2026 Appause authors · MIT License</p></div></footer>
+<script>
+  // 沿用原候选页的发布信息；这份预览不升级 APK 版本。
+  var RELEASE = {
+    version: '0.5.45', versionCode: '97', date: '2026-09-24', size: '12.3 MB',
+    sha256: '07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a'
+  };
+  (function () {
+    var v = 'v' + RELEASE.version;
+    var apk = 'https://github.com/Shmily0826/Appause/releases/download/' + v + '/Appause-' + v + '.apk';
+    var map = {version: v, code: RELEASE.versionCode, date: RELEASE.date, size: RELEASE.size, sha256: RELEASE.sha256, file: 'Appause-' + v + '.apk'};
+    Object.keys(map).forEach(function (key) {
+      document.querySelectorAll('[data-r="' + key + '"]').forEach(function (el) { el.textContent = map[key]; });
+    });
+    document.querySelectorAll('[data-apk]').forEach(function (el) { el.href = apk; });
+    document.querySelectorAll('[data-release]').forEach(function (el) { el.href = 'https://github.com/Shmily0826/Appause/releases/tag/' + v; });
+  })();
+  document.querySelectorAll('details').forEach(function (details) {
+    var summary = details.querySelector('summary');
+    var sync = function () { summary.setAttribute('aria-expanded', details.open ? 'true' : 'false'); };
+    sync();
+    details.addEventListener('toggle', sync);
+  });
+  // 沿用原页的位置高亮。手机导航三项均可见，无需自动横向滚动。
+  (function () {
+    if (!('IntersectionObserver' in window)) { return; }
+    var links = [].slice.call(document.querySelectorAll('#sectionNav a'));
+    var byId = {};
+    links.forEach(function (a) { byId[a.getAttribute('href').slice(1)] = a; });
+    var sections = [].slice.call(document.querySelectorAll('main section[id]')).filter(function (s) { return byId[s.id]; });
+    var active = {};
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { active[entry.target.id] = true; }
+        else { delete active[entry.target.id]; }
       });
-      navLinks.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => setOpen(false));
+      var current = sections.find(function (section) { return active[section.id]; });
+      links.forEach(function (a) {
+        if (current && a === byId[current.id]) { a.setAttribute('aria-current', 'true'); }
+        else { a.removeAttribute('aria-current'); }
       });
-      document.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && navLinks.classList.contains('is-open')) {
-          setOpen(false);
-          toggle.focus();
-        }
-      });
-    }
-  </script>
+    }, {rootMargin: '-15% 0px -70% 0px', threshold: 0});
+    sections.forEach(function (section) { observer.observe(section); });
+  })();
+  // 首屏之外提供下载入口，下载区进入视野时收起。
+  (function () {
+    var bar = document.getElementById('bar');
+    if (!('IntersectionObserver' in window)) { return; }
+    var heroOut = false, downloadIn = false;
+    var apply = function () { bar.classList.toggle('show', heroOut && !downloadIn); };
+    new IntersectionObserver(function (entries) { heroOut = !entries[0].isIntersecting; apply(); }, {threshold: 0}).observe(document.querySelector('.hero'));
+    new IntersectionObserver(function (entries) { downloadIn = entries[0].isIntersecting; apply(); }, {threshold: 0}).observe(document.getElementById('download'));
+  })();
+</script>
 </body>
 </html>
