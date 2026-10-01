@@ -551,6 +551,11 @@ class AppauseAccessibilityService : AccessibilityService() {
      */
     private val systemImageCache = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
 
+    // The timer/signal maps below are ConcurrentHashMap, NOT plain mutableMapOf:
+    // overlay button callbacks write into them from Dispatchers.IO while
+    // accessibility events read them on the main thread (same cross-thread
+    // model as SessionState). A plain HashMap can corrupt its internal buckets
+    // under concurrent put and spin the CPU at 100%.
     /**
      * Scheduled re-remind timers (in-app periodic nudge), keyed by package.
      *
@@ -558,7 +563,7 @@ class AppauseAccessibilityService : AccessibilityService() {
      * the cooldown again every N minutes of wall-clock time while the user is
      * still in the app, and stops only when the session is re-armed.
      */
-    private val reRemindJobs = mutableMapOf<String, Job>()
+    private val reRemindJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
 
     /**
      * Per-package signal completed when the user taps Continue (or Cancel) on a
@@ -566,13 +571,13 @@ class AppauseAccessibilityService : AccessibilityService() {
      * interval, so the wait is measured from "user continued" rather than from
      * "overlay appeared".
      */
-    private val reRemindContinue = mutableMapOf<String, CompletableDeferred<Unit>>()
+    private val reRemindContinue = java.util.concurrent.ConcurrentHashMap<String, CompletableDeferred<Unit>>()
     /** Signalled when the user taps Continue on the INITIAL cooldown, so the
      *  first re-remind pop is anchored to that tap (not to session start). */
-    private val initialContinueSignal = mutableMapOf<String, CompletableDeferred<Unit>>()
+    private val initialContinueSignal = java.util.concurrent.ConcurrentHashMap<String, CompletableDeferred<Unit>>()
 
     /** One bounded wake per persisted Temporary Pass; no broad polling. */
-    private val temporaryPassExpiryJobs = mutableMapOf<String, Job>()
+    private val temporaryPassExpiryJobs = java.util.concurrent.ConcurrentHashMap<String, Job>()
 
     /**
      * Away cooldown timers (3-min "leave window"), keyed by package.
@@ -585,7 +590,7 @@ class AppauseAccessibilityService : AccessibilityService() {
      * This replaces the old "clear bypass on any switch" logic that caused the
      * cooldown to re-pop on every in-app detour (gallery/chooser/player).
      */
-    private val leaveTimers = mutableMapOf<String, Job>()
+    private val leaveTimers = java.util.concurrent.ConcurrentHashMap<String, Job>()
 
     /**
      * Guards against starting a session/loop twice for the same package. The
