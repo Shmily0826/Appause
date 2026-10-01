@@ -1,6 +1,8 @@
 package com.appause.android.ui.feedback
 
+import android.app.ActivityManager
 import android.content.Context
+import android.os.Build
 import android.os.PowerManager
 import com.appause.android.AppauseApp
 import com.appause.android.interception.InterceptionManager
@@ -19,6 +21,29 @@ data class GroupDiag(
     val packages: List<String>
 ) {
     val intercepts: Boolean get() = type != com.appause.android.data.local.AppGroup.TYPE_LEARNING
+}
+
+data class ProcessExitDiagnostic(
+    val reason: Int,
+    val timestamp: Long,
+    val importance: Int,
+    val descriptionHint: String?
+) {
+    fun toReportLine(): String = buildString {
+        append("reason=").append(reason)
+        append(" timestamp=").append(timestamp)
+        append(" importance=").append(importance)
+        sanitizeProcessExitDescription(descriptionHint)?.let { append(" descriptionHint=").append(it) }
+    }
+}
+
+fun sanitizeProcessExitDescription(description: String?): String? {
+    val normalized = description
+        ?.replace(Regex("\\s+"), " ")
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?: return null
+    return normalized.take(160)
 }
 
 /** Structured status included only when the user chooses to send feedback. */
@@ -43,6 +68,7 @@ data class DiagnosticsState(
     val accessibilityLifecycle: String = "",
     val persistentLog: String = "",
     val crashLog: String = "",
+    val previousProcessExit: ProcessExitDiagnostic? = null,
     val forceStartResult: String? = null
 ) {
     val activeGroups: List<GroupDiag> get() = groups.filter { it.intercepts && it.packages.isNotEmpty() }
@@ -105,6 +131,25 @@ suspend fun collectDiagnostics(context: Context): DiagnosticsState {
         bypassed = InterceptionManager.bypassedSnapshot(),
         groups = groups,
         accessibilityLifecycle = com.appause.android.util.PersistentLog
-            .readAccessibilityLifecycle(context)
+            .readAccessibilityLifecycle(context),
+        previousProcessExit = readPreviousProcessExit(context)
     )
 }
+
+private suspend fun readPreviousProcessExit(context: Context): ProcessExitDiagnostic? =
+    withContext(Dispatchers.IO) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return@withContext null
+
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            ?: return@withContext null
+        val exit = activityManager.getHistoricalProcessExitReasons(null, 0, 5)
+            .firstOrNull { it.processName == context.packageName }
+            ?: return@withContext null
+
+        ProcessExitDiagnostic(
+            reason = exit.reason,
+            timestamp = exit.timestamp,
+            importance = exit.importance,
+            descriptionHint = sanitizeProcessExitDescription(exit.description)
+        )
+    }

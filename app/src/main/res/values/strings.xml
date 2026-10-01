@@ -39,7 +39,7 @@
     <string name="service_not_enabled_title">Service not enabled</string>
     <string name="service_not_enabled_desc">Enable accessibility permission to use Appause.</string>
     <string name="service_not_connected_title">Accessibility is enabled, but Appause is not connected</string>
-    <string name="service_not_connected_desc">In Accessibility settings, open Appause and switch it off, then on. Return here to check again. If it still does not reconnect, restart your phone.</string>
+    <string name="service_not_connected_desc">Accessibility is enabled, but Appause is not connected. Simply reopening or restarting Appause may not restore the connection. Open Accessibility settings, switch Appause off and then on, and return here to check again.</string>
     <string name="service_status_unknown_title">Accessibility status not confirmed</string>
     <string name="service_status_unknown_desc">Appause cannot confirm the service connection yet. Return to this screen or open Accessibility settings to check it.</string>
     <string name="service_active">Service active</string>
@@ -71,7 +71,8 @@
     <string name="service_off_help">Why it keeps turning off</string>
     <string name="service_help_title">Keeping the service running</string>
     <string name="got_it">Got it</string>
-    <string name="service_help_body">On some Android devices (especially those with aggressive battery management, such as Xiaomi, Huawei, etc.), the system may turn off Appause\'s accessibility service after you clear background apps or restart the phone. This is the system\'s background management, not an Appause bug.\n\nTo keep it running:\n• Allow Appause to autostart in your phone\'s app settings.\n• Set battery optimization to no restrictions.\n• Lock Appause in the recent-tasks screen.\n\nThen re-enable the service in Accessibility settings.</string>
+    <string name="service_help_body">On Xiaomi/HyperOS, Autostart and unrestricted battery settings may reduce background restrictions, but they cannot guarantee Appause will remain connected or prevent every force-stop. If Accessibility is enabled but Appause is not connected, switch Appause off and on in Accessibility settings, then return here to check again.</string>
+    <string name="open_autostart_settings">Open Autostart</string>
 
     <string name="appause_enabled">Enabled</string>
     <string name="appause_disabled">Disabled</string>
@@ -391,6 +392,21 @@
     <string name="home_pro_expired_desc">Your trial has ended. Core Appause features remain free; view activation details.</string>
     <string name="home_pro_active_desc">Your Pro access is active on this device. View status details.</string>
     <string name="home_pro_open">View Pro status and activation</string>
+    <string name="home_pro_title">Pro</string>
+    <string name="home_pro_trial">Pro trial</string>
+    <string name="home_pro_lifetime">Lifetime Pro</string>
+    <string name="home_pro_inactive">Inactive</string>
+    <string name="home_pro_active">Active</string>
+    <string name="home_pro_manage">Manage Pro</string>
+    <string name="home_pro_view_details">View details</string>
+    <plurals name="home_pro_days_left">
+        <item quantity="one">%d day left</item>
+        <item quantity="other">%d days left</item>
+    </plurals>
+    <plurals name="home_pro_hours_left">
+        <item quantity="one">%d hour left</item>
+        <item quantity="other">%d hours left</item>
+    </plurals>
     <string name="home_trial_cta_title">Try Pro free for 7 days</string>
     <string name="home_trial_cta_desc">Start your one-time trial on the Pro page. No activation code required.</string>
     <string name="home_trial_cta_action">View 7-day trial</string>

@@ -372,6 +372,7 @@ private fun buildDiagnosticBlock(state: DiagnosticsState?, logTail: String): Str
         appendLine("lastDecision: ${state.lastDecision ?: "无/none"}")
         appendLine("lastTargetDecision: ${state.lastTargetDecision ?: "无/none"}")
         appendLine("foreground: ${state.foregroundPackage ?: "无/none"}")
+        appendLine("previousProcessExit: ${state.previousProcessExit?.toReportLine() ?: "none"}")
         appendLine("groups: ${state.groups.size} (activeIntercepting: ${state.activeGroups.size})")
         if (state.accessibilityLifecycle.isNotBlank()) {
             appendLine()

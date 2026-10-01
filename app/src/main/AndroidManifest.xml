@@ -69,6 +69,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:excludeFromRecents="true"
             android:theme="@style/Theme.Appause">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

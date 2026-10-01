@@ -39,7 +39,7 @@
     <string name="service_not_enabled_title">服务未启用</string>
     <string name="service_not_enabled_desc">请开启无障碍权限以使用 Appause。</string>
     <string name="service_not_connected_title">无障碍权限已开启，但 Appause 尚未连接</string>
-    <string name="service_not_connected_desc">请在无障碍设置中打开 Appause，先关闭再重新开启，然后返回此处检查。如果仍未连接，再尝试重启手机。</string>
+    <string name="service_not_connected_desc">无障碍权限已开启，但 Appause 尚未连接。仅重新打开或重启 Appause 可能无法恢复连接。请打开无障碍设置，将 Appause 关闭后再开启，然后返回此处重新检查。</string>
     <string name="service_status_unknown_title">尚未确认无障碍状态</string>
     <string name="service_status_unknown_desc">Appause 当前无法确认服务连接状态。请返回此页面或打开无障碍设置重新检查。</string>
     <string name="service_active">服务运行中</string>
@@ -71,7 +71,8 @@
     <string name="service_off_help">为什么总是被关闭</string>
     <string name="service_help_title">让服务保持运行</string>
     <string name="got_it">知道了</string>
-    <string name="service_help_body">在部分安卓设备上（尤其是小米、华为等后台管理较严格的机型），清理后台或重启手机后，系统可能会关闭 Appause 的无障碍服务。这是系统的后台管理行为，并非 Appause 的故障。\n\n要让服务保持运行：\n• 在手机的应用设置中允许 Appause 自启动。\n• 将电池优化设为无限制。\n• 在最近任务界面锁定 Appause。\n\n之后再回到无障碍设置中重新开启服务。</string>
+    <string name="service_help_body">在小米/HyperOS 上，允许自启动并将电池策略设为无限制，可能有助于减少后台限制，但无法保证 Appause 始终保持连接或避免所有强行停止。如果无障碍权限已开启但 Appause 尚未连接，请在无障碍设置中关闭再开启 Appause，然后返回此处检查。</string>
+    <string name="open_autostart_settings">打开自启动设置</string>
 
     <string name="appause_enabled">已启用</string>
     <string name="appause_disabled">已禁用</string>
@@ -458,6 +459,19 @@
     <string name="home_pro_expired_desc">试用已结束。Appause 核心功能仍永久免费；可查看激活信息。</string>
     <string name="home_pro_active_desc">此设备上的 Pro 权限已生效。查看状态详情。</string>
     <string name="home_pro_open">查看 Pro 状态与激活</string>
+    <string name="home_pro_title">Pro</string>
+    <string name="home_pro_trial">Pro 试用</string>
+    <string name="home_pro_lifetime">永久 Pro</string>
+    <string name="home_pro_inactive">未激活</string>
+    <string name="home_pro_active">已激活</string>
+    <string name="home_pro_manage">管理 Pro</string>
+    <string name="home_pro_view_details">查看详情</string>
+    <plurals name="home_pro_days_left">
+        <item quantity="other">剩余 %d 天</item>
+    </plurals>
+    <plurals name="home_pro_hours_left">
+        <item quantity="other">剩余 %d 小时</item>
+    </plurals>
     <string name="onboarding_finish_title">准备就绪</string>
     <string name="onboarding_finish_desc">你可以稍后在设置中查看权限和运行建议。</string>
     <string name="onboarding_finish">完成</string>

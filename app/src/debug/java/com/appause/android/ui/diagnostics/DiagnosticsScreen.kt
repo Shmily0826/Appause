@@ -724,6 +724,9 @@ private fun buildReport(state: DiagnosticsState, logs: List<String>): String {
         appendLine()
         appendLine("--- 上次崩溃堆栈 ---")
         appendLine(state.crashLog.ifBlank { "（无）" })
+        appendLine()
+        appendLine("--- Previous process exit (system record) ---")
+        appendLine(state.previousProcessExit?.toReportLine() ?: "（无记录）")
     }
 }
 

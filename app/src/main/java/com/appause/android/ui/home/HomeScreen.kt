@@ -54,6 +54,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -69,7 +70,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.R
 import com.appause.android.data.local.AppGroup
-import com.appause.android.data.pro.ProAccessStatus
+import com.appause.android.data.pro.ProEntitlement
 import com.appause.android.data.pro.ProState
 import com.appause.android.service.AccessibilityHealthState
 import com.appause.android.service.AccessibilityHealthStatus
@@ -241,8 +242,8 @@ fun HomeScreen(
 
             // ── Pro status and activation ──
             item {
-                TrialCtaCard(
-                    status = entitlement.status,
+                HomeProStatusCard(
+                    entitlement = entitlement,
                     onNavigateToPro = onNavigateToPro
                 )
             }
@@ -411,43 +412,52 @@ fun HomeScreen(
 }
 
 @Composable
-private fun TrialCtaCard(
-    status: ProAccessStatus,
+private fun HomeProStatusCard(
+    entitlement: ProEntitlement,
     onNavigateToPro: () -> Unit
 ) {
-    val title = when (status) {
-        ProAccessStatus.FREE -> R.string.home_pro_free_title
-        ProAccessStatus.TRIAL_ACTIVE, ProAccessStatus.EXPIRING_ACTIVE -> R.string.pro_settings_trial_active
-        ProAccessStatus.TRIAL_EXPIRED -> R.string.pro_settings_trial_expired
-        ProAccessStatus.LIFETIME -> R.string.pro_settings_lifetime
-        ProAccessStatus.DEBUG -> R.string.pro_active_label
-    }
-    val description = when (status) {
-        ProAccessStatus.FREE -> R.string.home_pro_free_desc
-        ProAccessStatus.TRIAL_ACTIVE, ProAccessStatus.EXPIRING_ACTIVE -> R.string.home_pro_trial_desc
-        ProAccessStatus.TRIAL_EXPIRED -> R.string.home_pro_expired_desc
-        ProAccessStatus.LIFETIME, ProAccessStatus.DEBUG -> R.string.home_pro_active_desc
-    }
+    val presentation = homeProPresentation(entitlement, System.currentTimeMillis())
     Card(
         modifier = Modifier.fillMaxWidth(),
-        onClick = onNavigateToPro,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = stringResource(title),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(description),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Text(stringResource(R.string.home_pro_open))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(presentation.title),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                val detail = when (presentation.kind) {
+                    HomeProKind.INACTIVE -> stringResource(R.string.home_pro_inactive)
+                    HomeProKind.TRIAL -> {
+                        val count = presentation.remainingCount!!
+                        when (presentation.remainingUnit) {
+                            HomeProTimeUnit.DAYS -> pluralStringResource(R.plurals.home_pro_days_left, count, count)
+                            HomeProTimeUnit.HOURS -> pluralStringResource(R.plurals.home_pro_hours_left, count, count)
+                            null -> ""
+                        }
+                    }
+                    HomeProKind.LIFETIME -> stringResource(R.string.home_pro_active)
+                }
+                Text(
+                    text = detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            TextButton(onClick = onNavigateToPro) {
+                Text(
+                    stringResource(
+                        if (presentation.kind == HomeProKind.INACTIVE) R.string.home_pro_view_details
+                        else R.string.home_pro_manage
+                    )
+                )
+            }
         }
     }
 }
@@ -759,6 +769,7 @@ private fun StatusHeaderCard(
 ) {
     // Controls the OEM guidance dialog shown from the warning card.
     var showServiceHelp by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     if (!accessibilityHealth.isHealthy) {
         val isUnknown = accessibilityHealth.status == AccessibilityHealthStatus.UNKNOWN
@@ -888,8 +899,18 @@ private fun StatusHeaderCard(
             title = { Text(stringResource(R.string.service_help_title)) },
             text = { Text(stringResource(R.string.service_help_body)) },
             confirmButton = {
-                TextButton(onClick = { showServiceHelp = false }) {
-                    Text(stringResource(R.string.got_it))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (isXiaomiManufacturer(Build.MANUFACTURER)) {
+                        TextButton(onClick = {
+                            showServiceHelp = false
+                            openXiaomiAutostartSettings(context)
+                        }) {
+                            Text(stringResource(R.string.open_autostart_settings))
+                        }
+                    }
+                    TextButton(onClick = { showServiceHelp = false }) {
+                        Text(stringResource(R.string.got_it))
+                    }
                 }
             }
         )
