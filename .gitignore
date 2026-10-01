@@ -92,6 +92,7 @@ db2/
 # Local tooling scratch dirs (agent/browser tool state, not project content)
 .impeccable/
 .playwright-cli/
+.playwright-mcp/
 
 # Stress-test evidence output: raw logcat, screenshots, and copies of the
 # device database / persistent log. Contains real-device package names and
