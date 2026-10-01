@@ -413,7 +413,9 @@
 <div class="bar" id="bar" role="region" aria-label="下载 Appause"><p><b>Appause</b><br>核心永久免费 · Android</p><a class="button" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载</a></div>
 <footer><div class="wrap"><div class="footer-row"><span class="footer-brand">Appause</span><a href="https://github.com/Shmily0826/Appause">源码（MIT）</a><a href="privacy-policy.html">隐私政策</a><a href="https://github.com/Shmily0826/Appause/issues">反馈问题</a><a href="index.html" lang="en">英文版</a></div><p class="copyright">© 2026 Appause authors · MIT License</p></div></footer>
 <script>
-  // 沿用原候选页的发布信息；这份预览不升级 APK 版本。
+  // 发布信息的单一真实源。边界：markup 里仍保留 4 处 v0.5.45 href 字面量
+  // （3 个 data-apk + 1 个 data-release）和 2 处静态兜底 span——无 JS 环境靠它们
+  // 兜底，所以发版时除改本对象外，仍需一次全局替换，只改这里不生效。
   var RELEASE = {
     version: '0.5.45', versionCode: '97', date: '2026-09-24', size: '12.3 MB',
     sha256: '07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a'
