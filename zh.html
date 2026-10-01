@@ -184,7 +184,7 @@
     .hero-shot { width: min(330px, 100%); justify-self: center; }
     .hero-actions { text-align: center; }
     .cta-row { justify-content: center; }
-    .hero-note { display: none; }
+    .hero-note { text-align: left; margin-inline: auto; }
     .top-download { display: none; }
     .feature-grid, .setup-grid, .pro-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
     .feature-grid { align-items: start; }
@@ -253,6 +253,7 @@
   {"@context":"https://schema.org","@graph":[
     {"@type":"SoftwareApplication","name":"Appause","operatingSystem":"Android 8.0+","applicationCategory":"UtilitiesApplication","softwareVersion":"0.5.45","fileSize":"12.3MB","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"},"author":{"@type":"Organization","name":"Appause authors"},"license":"https://opensource.org/licenses/MIT","downloadUrl":"https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk","description":"Appause 在你选定的应用前加几秒冷却，让你再决定要不要打开。"},
     {"@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"无障碍服务能看到什么？为什么一定要开？","acceptedAnswer":{"@type":"Answer","text":"这是 Android 自带的一项辅助功能，Appause 只用它判断当前打开的是哪个应用，只读取应用名，不读取屏幕文字、消息、截图或键盘输入。没有这项权限拦截无法生效。"}},
       {"@type":"Question","name":"为什么有时没有拦截？会耗电吗？","acceptedAnswer":{"@type":"Answer","text":"先回首页检查无障碍服务是否仍在运行，以及电池优化和自启动设置。部分系统终止后台服务后不会自动恢复，设置完成也不能保证所有机型都一致。无障碍服务常驻后台，本机测试中耗电影响不大。"}},
       {"@type":"Question","name":"暂停页会被其他应用挡住吗？","acceptedAnswer":{"@type":"Answer","text":"暂停页覆盖在普通应用之上，实测在开启「隐藏悬浮窗」的应用上仍然可见。个别机型不显示时，可以开启悬浮窗权限使用备用方案。"}},
       {"@type":"Question","name":"换手机或卸载后，数据还在吗？","acceptedAnswer":{"@type":"Answer","text":"分组和统计只存在这台手机上，没有云同步。卸载会清除数据，换机后需要重新设置。"}},
@@ -294,11 +295,11 @@
     </figure>
     <div class="hero-actions">
       <div class="cta-row">
-        <a class="button" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 Android 版</a>
+        <a class="button" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">下载 APK · <span data-r="size">12.3 MB</span></a>
         <a class="source-link" href="https://github.com/Shmily0826/Appause">查看源码</a>
       </div>
       <p class="hero-facts"><strong>核心功能永久免费</strong> · Android 8.0+</p>
-      <p class="hero-version">公开测试版 <span data-r="version">v0.5.45</span> · <span data-r="size">12.3 MB</span> · MIT 开源</p>
+      <p class="hero-version">公开测试版 <span data-r="version">v0.5.45</span> · MIT 开源</p>
       <p class="hero-note"><b>手指先到了，人还没决定。</b>把顺手打开的那一下，变成一次自己的选择。</p>
     </div>
   </section>
@@ -341,12 +342,12 @@
         <div>
           <ol class="install-steps">
             <li><b>下载并允许安装</b><p>下载 APK 后，按系统提示允许浏览器或文件管理器「安装未知应用」。</p></li>
-            <li><b>按首页指引开好三项权限</b><p>开启无障碍服务，电池优化设为「无限制」，并允许自启动。后台管理较严格的机型上，后两项也需要设置。</p></li>
+            <li><b>按首页指引开好三项权限</b><p>开启无障碍服务，电池优化设为「无限制」，并允许自启动。小米、华为等后台管理较严格的机型上，后两项也需要设置。</p></li>
             <li><b>建分组，选好目标应用</b><p>添加需要冷却的应用，设置时长，保存后即可开始使用。</p></li>
           </ol>
           <p class="small-note">安装新版可直接覆盖旧版。不要先卸载，否则会清除本机的分组与统计。<a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">查看安装指南</a></p>
         </div>
-        <aside class="privacy" id="privacy" aria-labelledby="privacy-title">
+        <aside class="privacy" aria-labelledby="privacy-title">
           <h3 id="privacy-title">只识别当前打开的应用。</h3>
           <p>无障碍服务不读取屏幕文字、消息、截图或键盘输入。日常拦截和统计不联网，记录留在这台手机上。</p>
           <details>
@@ -371,7 +372,7 @@
     <div class="wrap pro-grid">
       <div class="pro-copy">
         <h2 id="pro-title">核心一直免费。<br>Pro 也不收费。</h2>
-        <p>分组、冷却和统计可以一直用。Pro 多提供四项功能：先在应用里开始 7 天试用，结束后可申请免费永久授权码。</p>
+        <p>拦截、分组、冷却和统计都可以一直用，不限时间，也不限次数。Pro 多提供四项功能：先在应用里开始 7 天试用，结束后可申请免费永久授权码。</p>
         <p class="small-note">试用到期会关闭四项 Pro 功能，已有分组与统计保留，不会自动变成付费。</p>
         <details><summary>怎样获取 Pro 永久权限？</summary><ol><li>在 Pro 页面主动点击「开始试用」，每台设备可试用一次，时长 7 天。</li><li>试用结束后，通过 <code class="path">设置 → 反馈</code> 申请免费永久授权码，由开发者人工签发。</li><li>回到 Pro 页面兑换。必须等试用结束后才能兑换，一个授权码最多用于 3 台设备。</li></ol></details>
       </div>
@@ -388,6 +389,7 @@
     <div class="wrap faq-grid">
       <h2 id="faq-title">还有几个问题。</h2>
       <div class="faq-list">
+        <details><summary>无障碍服务能看到什么？为什么一定要开？</summary><p>这是 Android 自带的一项辅助功能，Appause 只用它做一件事：判断当前打开的是哪个应用。它读取的只有应用名，不会读取屏幕上的文字、消息、截图或键盘输入。没有这项权限就无法判断你打开了什么，拦截也就无法生效。</p></details>
         <details><summary>为什么有时没有拦截？会耗电吗？</summary><p>先回首页检查无障碍服务是否仍在运行，以及电池优化和自启动设置。部分系统终止后台服务后不会自动恢复，设置完成也不能保证所有机型都一致。</p><p>无障碍服务常驻后台，本机测试中耗电影响不大。仍有问题时，可通过 <code class="path">设置 → 反馈</code> 提交，并自行决定是否附带诊断快照。</p></details>
         <details><summary>暂停页会被其他应用挡住吗？</summary><p>暂停页覆盖在普通应用之上，实测在开启「隐藏悬浮窗」的应用上仍然可见。个别机型不显示时，可以开启悬浮窗权限使用备用方案。</p></details>
         <details><summary>换手机或卸载后，数据还在吗？</summary><p>分组和统计只存在这台手机上，没有云同步。卸载会清除数据，换机后需要重新设置。</p></details>
