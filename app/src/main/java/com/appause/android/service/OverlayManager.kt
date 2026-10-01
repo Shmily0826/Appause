@@ -40,6 +40,8 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.appause.android.AppauseApp
 import com.appause.android.R
 import com.appause.android.data.query.AppInfo
+import com.appause.android.ui.pause.PauseIntentFactory
+import com.appause.android.ui.pause.PauseSpec
 import com.appause.android.data.query.AppQueryService
 import com.appause.android.interception.InterceptionManager
 import com.appause.android.ui.pause.PauseScreenContent
@@ -690,34 +692,25 @@ class OverlayManager {
             AppauseAccessibilityService.lastOverlayResult = "fallback_pauseactivity"
             AppLogger.w(TAG, "Overlay addView failed (type=$usedType) — falling back to PauseActivity")
             PersistentLog.log(context, "Overlay", "Overlay FAILED type=$usedType → PauseActivity fallback")
-            val intent = Intent(context, com.appause.android.ui.pause.PauseActivity::class.java).apply {
-                putExtra("target_package", targetPackage)
-                putExtra("group_id", groupId)
-                putExtra("cooldown_seconds", cooldownSeconds)
-                putExtra("re_remind_minutes", reRemindMinutes)
-                putExtra("re_remind_cooldown_seconds", reRemindCooldownSeconds)
-                putExtra("re_remind_repeat", reRemindRepeat)
-                putExtra("re_remind_escalate", reRemindEscalate)
-                putExtra("is_re_remind", isReRemind)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            }
+            val spec = PauseSpec(
+                targetPackage = targetPackage,
+                groupId = groupId,
+                cooldownSeconds = cooldownSeconds,
+                reRemindMinutes = reRemindMinutes,
+                reRemindCooldownSeconds = reRemindCooldownSeconds,
+                reRemindRepeat = reRemindRepeat,
+                reRemindEscalate = reRemindEscalate,
+                isReRemind = isReRemind
+            )
+            val intent = PauseIntentFactory.activityIntent(context, spec)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             try {
                 context.startActivity(intent)
                 AppLogger.d(TAG, "PauseActivity direct launch attempted for $targetPackage")
             } catch (e2: Exception) {
                 AppLogger.w(TAG, "Direct PauseActivity launch failed (AlarmManager backup): ${e2.message}")
             }
-            schedulePauseViaAlarm(
-                context,
-                targetPackage,
-                groupId,
-                cooldownSeconds,
-                reRemindMinutes,
-                reRemindCooldownSeconds,
-                reRemindRepeat,
-                reRemindEscalate,
-                isReRemind
-            )
+            schedulePauseViaAlarm(context, spec)
         }
     }
 
@@ -730,29 +723,20 @@ class OverlayManager {
      * the front. This is the real fallback used when the WindowManager overlay
      * can't be added (e.g. TYPE_ACCESSIBILITY_OVERLAY rejected on Android 16).
      */
-    private fun schedulePauseViaAlarm(
-        context: Context,
-        targetPackage: String,
-        groupId: Long,
-        cooldownSeconds: Int,
-        reRemindMinutes: Int,
-        reRemindCooldownSeconds: Int,
-        reRemindRepeat: Boolean,
-        reRemindEscalate: Boolean,
-        isReRemind: Boolean
-    ) {
+    private fun schedulePauseViaAlarm(context: Context, spec: PauseSpec) {
         try {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val alarmIntent = Intent(context, com.appause.android.service.PauseAlarmReceiver::class.java).apply {
-                putExtra("target_package", targetPackage)
-                putExtra("group_id", groupId)
-                putExtra("cooldown_seconds", cooldownSeconds)
-                putExtra("re_remind_minutes", reRemindMinutes)
-                putExtra("re_remind_cooldown_seconds", reRemindCooldownSeconds)
-                putExtra("re_remind_repeat", reRemindRepeat)
-                putExtra("re_remind_escalate", reRemindEscalate)
-                putExtra("is_re_remind", isReRemind)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // Diagnostics for "why did we end up on the Handler path?":
+                // SCHEDULE_EXACT_ALARM is deliberately not declared, so on
+                // Android 12+ this logs false and the exact-alarm call below
+                // always throws SecurityException into the catch block.
+                PersistentLog.log(
+                    context, "Overlay",
+                    "canScheduleExactAlarms=${alarmManager.canScheduleExactAlarms()}"
+                )
             }
+            val alarmIntent = PauseIntentFactory.alarmIntent(context, spec)
             val pi = PendingIntent.getBroadcast(
                 context,
                 0,
@@ -766,9 +750,9 @@ class OverlayManager {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi)
             }
             AppLogger.d(TAG, "Scheduled PauseActivity via AlarmManager (MIUI/HyperOS fallback)")
-            PersistentLog.log(context, "Overlay", "AlarmManager backup scheduled for $targetPackage")
+            PersistentLog.log(context, "Overlay", "AlarmManager backup scheduled for ${spec.targetPackage}")
         } catch (e: Exception) {
-            AppLogger.e(TAG, "AlarmManager fallback failed for $targetPackage", e)
+            AppLogger.e(TAG, "AlarmManager fallback failed for ${spec.targetPackage}", e)
             PersistentLog.log(context, "Overlay", "AlarmManager FAILED: ${e.javaClass.simpleName}: ${e.message}")
             // v0.5.22: Android 14+ denies setExactAndAllowWhileIdle without
             // SCHEDULE_EXACT_ALARM (SecurityException). The service process is
@@ -776,21 +760,15 @@ class OverlayManager {
             // perfectly good backup and needs no permission.
             try {
                 android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                    val retry = Intent(context, com.appause.android.ui.pause.PauseActivity::class.java).apply {
-                        putExtra("target_package", targetPackage)
-                putExtra("group_id", groupId)
-                putExtra("cooldown_seconds", cooldownSeconds)
-                putExtra("re_remind_minutes", reRemindMinutes)
-                putExtra("re_remind_cooldown_seconds", reRemindCooldownSeconds)
-                putExtra("re_remind_repeat", reRemindRepeat)
-                putExtra("re_remind_escalate", reRemindEscalate)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    }
+                    // Same PauseSpec as every other path — the re-remind flag
+                    // can no longer be dropped here (see PauseIntentFactory).
+                    val retry = PauseIntentFactory.activityIntent(context, spec)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                     context.startActivity(retry)
-                    PersistentLog.log(context, "Overlay", "PauseActivity Handler backup fired for $targetPackage")
+                    PersistentLog.log(context, "Overlay", "PauseActivity Handler backup fired for ${spec.targetPackage}")
                 }, 250L)
             } catch (e2: Exception) {
-                AppLogger.e(TAG, "Handler backup also failed for $targetPackage", e2)
+                AppLogger.e(TAG, "Handler backup also failed for ${spec.targetPackage}", e2)
                 PersistentLog.log(context, "Overlay", "Handler backup FAILED: ${e2.javaClass.simpleName}: ${e2.message}")
             }
         }
