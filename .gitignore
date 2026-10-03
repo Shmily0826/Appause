@@ -81,9 +81,13 @@ images/screenshots/*.png
 images/screenshots/*.xml
 
 # Stray dir with a Windows reserved name, created by wrangler writing logs to
-# "NUL" (2026-09-22). Normal Windows APIs cannot open or delete it; ignoring it
-# stops git from warning on every scan. Delete it manually from Git Bash:
-#   rm NUL/*.log && rmdir NUL
+# "NUL" (2026-09-22): a directory named after the reserved Windows device name,
+# created by a stray `> NUL`-style redirect. Inside the sandbox it cannot be
+# removed at all - Git Bash `rm`/`mv` report "Permission denied" and
+# .NET Directory::Move reports "Access is denied" even with a \\?\ prefix.
+# It has to be deleted from OUTSIDE the sandbox:
+#   rd /s /q \\?\D:\CODE\project\Appause\NUL
+# (or simply delete it in Explorer). Ignoring it stops git warning on every scan.
 /NUL/
 
 # Misc local debug artifacts (never part of the app)
