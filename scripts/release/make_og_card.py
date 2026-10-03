@@ -8,8 +8,9 @@ Output (English):
 Output (Chinese, --lang zh):
   images/og-card-zh.png         1200x630  social preview
 
-The card matches the landing page palette (Cobalt theme from index.html) and
-uses real app captures from images/screenshots/<lang>/, so sharing the link
+The card matches the landing page palette of the language it belongs to —
+Cobalt (index.html) for English, 纸墨朱红 (zh.html) for Chinese — and uses real
+app captures from images/screenshots/<lang>/, so sharing the link
 shows the actual product rather than a mock. The version string is read from
 app/build.gradle.kts, so re-run this after every release:
 
@@ -63,10 +64,10 @@ COPY = {
         "fonts": (FONT_CJK_BOLD, FONT_CJK_REGULAR, FONT_CJK_REGULAR),
         "label": "每 一 次 打 开 都 可 以 是 一 次 选 择",
         "label_tracking": 0.0,
-        "headline": "在点开和下滑之间，放一个你的决定。",
-        "headline_fit": "在点开和下滑之间，",
-        "body": "Appause 在你打开分心应用的那一刻插入一次停顿，让「继续」重新成为你自己做的决定。",
-        "alt": "Appause 停顿屏：在选定应用打开前先问你为什么",
+        "headline": "先停一下，再决定。",
+        "headline_fit": "先停一下，",
+        "body": "Appause 在你选定的应用打开前加一道冷却，让「继续」重新成为你自己做的决定。",
+        "alt": "Appause 暂停页：在选定应用打开前先问你为什么",
     },
 }
 
@@ -100,13 +101,27 @@ def oklch(lightness: float, chroma: float, hue_deg: float) -> tuple[int, int, in
     return encode(r), encode(g), encode(bl)
 
 
-PAPER = oklch(0.980, 0.006, 255)
-PAPER_BLUE = oklch(0.930, 0.035, 260)
-SURFACE = (255, 255, 255)
-INK = oklch(0.240, 0.045, 258)
-INK_SOFT = oklch(0.470, 0.035, 258)
-RULE = oklch(0.880, 0.018, 258)
-ACCENT_DEEP = oklch(0.440, 0.180, 263)
+# One palette per landing page. A share card painted in the other page's theme
+# reads as a different product from the page it links to, so they are kept apart.
+PALETTE: dict[str, dict[str, tuple[int, int, int]]] = {
+    "en": {
+        "paper": oklch(0.980, 0.006, 255),
+        "panel": oklch(0.930, 0.035, 260),
+        "ink": oklch(0.240, 0.045, 258),
+        "ink_soft": oklch(0.470, 0.035, 258),
+        "rule": oklch(0.880, 0.018, 258),
+        "accent": oklch(0.440, 0.180, 263),
+    },
+    "zh": {
+        # Copied from zh.html's :root tokens. If that page is restyled, re-check these.
+        "paper": (0xF5, 0xF1, 0xE8),      # --paper         #f5f1e8
+        "panel": (0xEC, 0xE7, 0xD9),      # --paper-raise   #ece7d9
+        "ink": (0x1D, 0x1A, 0x16),        # --ink           #1d1a16
+        "ink_soft": (0x5C, 0x55, 0x4A),   # --ink-soft      #5c554a
+        "rule": (0xD9, 0xD2, 0xC3),       # --rule          #d9d2c3
+        "accent": (0x7F, 0x2C, 0x20),     # --cinnabar-deep #7f2c20
+    },
+}
 
 # The icon art is ~9.2% empty on every side (Android adaptive icon safe zone),
 # so crop that padding before drawing it in the wordmark row.
@@ -226,9 +241,10 @@ def content_crop(img: Image.Image, padding: int = 32) -> Image.Image:
 
 def build_card(lang: str) -> Image.Image:
     copy = COPY[lang]
+    pal = PALETTE[lang]
     font_head, font_body, font_util = copy["fonts"]
 
-    canvas = Image.new("RGBA", CANVAS, PAPER + (255,))
+    canvas = Image.new("RGBA", CANVAS, pal["paper"] + (255,))
 
     margin = 72
     version = version_name()
@@ -243,7 +259,7 @@ def build_card(lang: str) -> Image.Image:
     shot_w = round(shot_h * shot.width / shot.height)
     panel = (CANVAS[0] - margin - shot_w - pad * 2, 58, CANVAS[0] - margin, 608)
 
-    draw.rounded_rectangle(panel, radius=38, fill=PAPER_BLUE + (255,))
+    draw.rounded_rectangle(panel, radius=38, fill=pal["panel"] + (255,))
 
     shot_x = panel[0] + pad
     shot_y = 58 + pad
@@ -253,7 +269,7 @@ def build_card(lang: str) -> Image.Image:
     draw.rounded_rectangle(
         (shot_x, shot_y, shot_x + shot_w - 1, shot_y + shot_h - 1),
         radius=24,
-        outline=RULE + (255,),
+        outline=pal["rule"] + (255,),
         width=1,
     )
 
@@ -263,7 +279,7 @@ def build_card(lang: str) -> Image.Image:
     icon = rounded(load_icon(), 12).resize((52, 52), Image.LANCZOS)
     canvas.alpha_composite(icon, (margin, 66))
     draw.text((margin + 68, 74), "Appause",
-              font=ImageFont.truetype(str(font_head), 34), fill=INK)
+              font=ImageFont.truetype(str(font_head), 34), fill=pal["ink"])
 
     # ---- label ------------------------------------------------------------
     tracked_text(
@@ -271,7 +287,7 @@ def build_card(lang: str) -> Image.Image:
         (margin, 186),
         copy["label"],
         ImageFont.truetype(str(font_head), 19),
-        ACCENT_DEEP,
+        pal["accent"],
         copy["label_tracking"],
     )
 
@@ -289,7 +305,7 @@ def build_card(lang: str) -> Image.Image:
     head_lines = wrap(copy["headline"], head_font, text_max)
     y = head_y
     for line in head_lines:
-        draw.text((margin, y), line, font=head_font, fill=INK)
+        draw.text((margin, y), line, font=head_font, fill=pal["ink"])
         y += round(head_font.size * head_lead)
 
     # ---- supporting copy --------------------------------------------------
@@ -297,7 +313,7 @@ def build_card(lang: str) -> Image.Image:
     body_lines = wrap(copy["body"], body_font, text_max)
     y += 16
     for line in body_lines:
-        draw.text((margin, y), line, font=body_font, fill=INK_SOFT)
+        draw.text((margin, y), line, font=body_font, fill=pal["ink_soft"])
         y += body_lead
 
     # ---- footer facts -----------------------------------------------------
@@ -307,7 +323,7 @@ def build_card(lang: str) -> Image.Image:
         if lang == "en"
         else f"v{version}  \u00b7  Android 8.0 及以上  \u00b7  无需注册账号  \u00b7  MIT 开源"
     )
-    draw.text((margin, 546), facts, font=mono, fill=INK_SOFT)
+    draw.text((margin, 546), facts, font=mono, fill=pal["ink_soft"])
 
     # Guard rails: the copy must stay in its column and above the footer.
     if mono.getlength(facts) > text_max:
@@ -347,7 +363,7 @@ def main() -> None:
     icon = load_icon()
     icon.resize((32, 32), Image.LANCZOS).save(IMAGES / "favicon-32.png", optimize=True)
     # iOS masks the icon itself and renders transparency as black, so flatten first.
-    apple = Image.new("RGB", (180, 180), PAPER)
+    apple = Image.new("RGB", (180, 180), PALETTE["en"]["paper"])
     apple.paste(icon.resize((180, 180), Image.LANCZOS), (0, 0), icon.resize((180, 180), Image.LANCZOS))
     apple.save(IMAGES / "apple-touch-icon.png", optimize=True)
     print("wrote images/favicon-32.png 32x32")
