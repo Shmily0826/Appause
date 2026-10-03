@@ -852,3 +852,49 @@ Pages 直接支持 WebP。改动方式是 `<picture>` + `type="image/webp"`，PN
 **遗留拍板项**：① Pro 段标题候选「核心永久免费，Pro 一样免费。」未采纳也未否决；② 清单 18 整页信息重排未动，建议单独开轮；③ 对外权威隐私文档仍是 `privacy-policy.html`（根）与 GitHub `PRIVACY.md` 并存，B 批沿用前者，统一口径待定。
 
 **未跟踪遗留**：`docs/landing-v2/timeline-preview.html` 已被 `zh.html` 取代，保留作转正前快照，后续可删。
+
+## 2026-10-03 交付候选：`timeline-final.html`（humanized + 线上技术层）
+
+**先纠正本 README 顶部那段「当前结论」（第 11–30 行）——它已过期。** 那里写的"当前候选 = timeline-humanized / split-cobalt""5 个提交未推送""`docs/INSTALL.md` 404"全部不成立：推送阻塞早已解除，且 2026-10-01 17:38 转正为根 `zh.html` 的是 **`timeline-preview.html`**，不是 `timeline-humanized.html`。以本节为准。
+
+**谱系（复核自 git 与文件头注释）**
+
+`landing-drafts/zh.html` → `timeline` → `refined` → `copyedit` → `firstvisit` → **`timeline-humanized`（十六轮，1472 行）** → **`timeline-preview`（453 行，精简 + 重排，带 `noindex`）** → **根 `zh.html`（线上，10-01 `dc80735` 转正 + B/C/D/E 四批）**
+
+- `timeline-preview.html` 不只是"精简"：它把本 README 第 726 行标注为**等用户拍板**的整页信息顺序重排（首屏→拦截经过→分组→开始使用→权限→Pro→FAQ）直接落地了，同时丢掉了 humanized 的「序」段、首屏 4 条 badge、独立「权限与隐私」章节与窄屏目录导航。（顺带：第 852 行的转正记录仍写"整页信息重排未动"，与事实不符。）
+- 正文体量：humanized 中文 1987 字 / preview 1374 字 / 线上 zh 1493 字。
+
+**本次新增候选（未覆盖任何既有文件）**
+
+| 文件 | 定位 |
+| --- | --- |
+| [`timeline-final.html`](timeline-final.html) | humanized 的交付候选：结构、顺序、视觉**未动**，只灌入线上 `zh.html` 已有的技术层，外加两处文案订正（见第 6 条） |
+
+改动清单（`git diff --numstat` = 60 insertions / 11 deletions）：
+
+1. 3 张截图包 `<picture>` + WebP `srcset`（360w/720w），PNG 保留作兜底；`sizes` 经浏览器实测校准（390 / 880 / 900 / 1440 / 1920 五档）
+2. 补 JSON-LD：`SoftwareApplication` + `FAQPage`（6 条问答按**本页** `#faq` 文案重建，不是照抄线上那版）
+3. 补 `hreflang` 三连（`en` / `zh-CN` / `x-default`）
+4. 加 `noindex, nofollow`（候选期不参与索引，转正时删掉即可）
+5. hero 图加 `fetchpriority="high"`，三图加 `decoding="async"`
+6. **两处文案订正**（2026-10-03 下午，用户检阅后拍板。正文差异只有这 3 行，其余逐字节相同）：
+   - 下载区原写「iOS 装不了 APK，所以暂时没有 iPhone 版。」。字面对，但**拿 APK 的格式当作"没有 iPhone 版"的理由是同义反复**（APK 本就是安卓的包格式），读者会想"那你出个 iOS 包不就行了"。已改为「目前只有 Android 版。Appause 靠 Android 的系统能力拦截应用启动，iOS 上的做法完全不同。」。<br>真实原因（已查证 Apple 开发者论坛 DTS 答复 [thread/785700](https://developer.apple.com/forums/thread/785700)）：iOS **没有**让第三方应用监测或拦截其他应用启动的通用接口，官方原话 "In general, no."。唯一沾边的是 Screen Time 三件套（`FamilyControls` / `ManagedSettings` / `DeviceActivity`），可 shield 应用并显示开发者自己写的 shield 页，但 ① 需 Apple 单独批准的 `com.apple.developer.family-controls` 能力（Distribution 签名需申请、4–8 周、主要限家长控制用途）② picker 只返回**不透明 token**，App 不知道用户选了哪个应用 ③ 用户在设置里撤销授权即全部失效。**故对外口径取"机制不同"，不写"iOS 做不了"**（后者会被懂行的人挑）。
+   - SHA-256 折叠区原来只有一串裸哈希，读者既不知道用途也没法用。已补一句用途说明，以及 Windows / macOS 两平台的校验命令（命令行内用 `<apk>` 占位，避免把会随版本变动的文件名写死两遍）。
+
+**实测验收（Playwright，2026-10-03）**
+
+- **技术层版式零变化**：1440 / 1920 页高均 `6396`，与底稿逐档一致；横向溢出 `0`（320 / 390 / 900 / 1440 / 1920 五档）。
+- 320px 页高 `10462`（同一文件灌完技术层、尚未改文案时为 `10412`；`+50px` 全部来自第 6 条把 `dl-ios` 从 1 行改成 4 行，属预期，不是技术层引入的）。
+- WebP 确实被选中：hero → `pause-crop-720.webp`；图库 → `group-360.webp` / `statistics-360.webp`。
+- 图片重量（桌面 DPR1）：`379,063 B → 40,196 B`，**降 89.4%**。
+- JSON-LD 可解析，6 条 FAQ 与页面一致；`[data-r]` 注入正常（`sha256` 与 `file` 均正确）；控制台 0 报错。
+- 正文一致性：剥掉 `<head>` 与 `<picture>` 包装后，正文差异**只有第 6 条的那 3 行**（20,709 → 20,970 字符），其余逐字节相同。
+
+**未做（有意）**
+
+- **字阶收敛**：线上 `zh.html` 把 12–14.4px 的 8 档收成 5 档，但那会改变折行，而底稿第四轮的 CJK 断行工作（`.nb` 锁词、孤字测量）与全部页高/溢出实测都要重跑。本次目标是保住 humanized 的观感，故留到单独一轮。
+- **转正**：尚未动根 `zh.html`；`timeline-final.html` 文件头注释里列了转正要改的 5 处。
+
+**顺带记录（本轮未处理）**
+
+`images/og-card-zh.png` 的卡面文案含「停顿」（第 3 条铁律要求机制词统一「冷却」）与「分心应用」（用户明确觉得别扭）；主标题「在点开和下滑之间，放一个你的决定。」也不等于 humanized 的 h1「先停一下，再决定。」；且 `scripts/release/make_og_card.py` 的调色板写死 Cobalt。要么重做卡面，要么接受它只作"摘要卡"。
