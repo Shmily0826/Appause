@@ -1,11 +1,15 @@
 package com.appause.android.ui.settings
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -56,6 +60,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -235,6 +240,15 @@ fun PermissionsSettingsScreen(
     val isIgnoringBattery by viewModel.isIgnoringBattery.collectAsStateWithLifecycle()
     val canDrawOverlays by viewModel.canDrawOverlays.collectAsStateWithLifecycle()
     val showNotification by viewModel.showNotification.collectAsStateWithLifecycle()
+
+    // Android 13+ gates notifications behind a runtime permission. Ask for it at the moment
+    // the user turns this switch on, and only persist the preference once it is granted —
+    // otherwise the switch would claim to show a notification the system silently drops.
+    val notificationPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) viewModel.setShowNotification(true)
+    }
 
     // "Enabled" green — legible on both light and dark surfaces.
     val enabledGreen = if (isSystemInDarkTheme()) Color(0xFF81C784) else Color(0xFF2E7D32)
@@ -466,7 +480,19 @@ fun PermissionsSettingsScreen(
                     Spacer(modifier = Modifier.weight(1f))
                     Switch(
                         checked = showNotification,
-                        onCheckedChange = viewModel::setShowNotification
+                        onCheckedChange = { want ->
+                            when {
+                                !want -> viewModel.setShowNotification(false)
+                                // Below Android 13 there is no such runtime permission.
+                                Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ->
+                                    viewModel.setShowNotification(true)
+                                ContextCompat.checkSelfPermission(
+                                    context, Manifest.permission.POST_NOTIFICATIONS
+                                ) == PackageManager.PERMISSION_GRANTED ->
+                                    viewModel.setShowNotification(true)
+                                else -> notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        }
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))

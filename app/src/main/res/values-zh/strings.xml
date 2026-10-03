@@ -138,7 +138,7 @@
     <string name="cd_expand_section">展开</string>
     <string name="cd_collapse_section">收起</string>
     <string name="show_notification_title">显示监测通知</string>
-    <string name="show_notification_desc">常驻的“Appause 正在监测”通知。关闭后不再显示，服务仍正常运行（部分手机系统可能更易在后台杀掉它）。</string>
+    <string name="show_notification_desc">常驻的“Appause 正在监测”通知。关闭后不再显示，服务仍正常运行（部分手机系统可能更易在后台杀掉它）。Android 13 及以上需要先授予通知权限。</string>
 
     <string name="label_seconds">秒</string>
     <string name="select_apps_button">选择应用（已选 %d 个）</string>
