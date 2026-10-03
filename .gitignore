@@ -9,6 +9,12 @@ build/
 */build/
 .kotlin/
 
+# Android sandbox/test scaffolding (its debug.keystore files are matched by *.keystore
+# separately, but the directories themselves were not ignored -> any new file type
+# dropped in there would show up as untracked noise)
+.android-task/
+.android-user-home/
+
 # Local release output (APKs you keep for sideloading; never commit to git)
 # 2026-10-03: dropped the !output/screenshots/ and !output/appause-icon.png exceptions.
 # The 4 screenshots were superseded by images/screenshots/{en,zh}/ and referenced
