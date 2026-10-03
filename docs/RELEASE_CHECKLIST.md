@@ -59,7 +59,7 @@
 - [ ] GitHub Pages（根目录 `index.html` / `privacy-policy.html`）版本信息、下载说明与新版一致
 - [ ] `docs/INSTALL.md` 安装步骤仍准确（权限授予路径、使用情况访问说明）
 - [ ] 应用内 onboarding / About 的版本号显示正确（如有）
-- [ ] 截图（`output/screenshots/`，会发布到 Pages）与新 UI 一致
+- [ ] 截图（`images/screenshots/en/` 与 `images/screenshots/zh/`，会发布到 Pages）与新 UI 一致
 
 ## 8. Git 与收尾
 
