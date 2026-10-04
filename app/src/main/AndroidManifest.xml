@@ -82,6 +82,15 @@
             Launched from AccessibilityService with FLAG_ACTIVITY_NEW_TASK.
             Separate from MainActivity because the Service has no access
             to the main Activity's NavController.
+
+            configChanges: the cooldown must keep running across rotation,
+            fold/unfold, split-screen, keyboard and dark-mode changes. Without
+            this, recreation restarts the countdown from full length
+            (rememberCountdownState seeds startTime at composition time) and
+            onDestroy releases the pause guard + clears a finished-but-not-
+            continued bypass mid-recreation. The layout already handles every
+            orientation via PauseLayoutPolicy, so letting the Activity survive
+            these changes loses nothing.
         -->
         <activity
             android:name=".ui.pause.PauseActivity"
@@ -89,7 +98,8 @@
             android:theme="@style/Theme.Appause"
             android:excludeFromRecents="true"
             android:taskAffinity=""
-            android:launchMode="singleInstance" />
+            android:launchMode="singleInstance"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|fontScale" />
 
         <!--
             Receiver for AlarmManager fallback launch of PauseActivity.
