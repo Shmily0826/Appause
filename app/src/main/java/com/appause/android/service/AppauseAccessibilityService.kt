@@ -1,6 +1,7 @@
 package com.appause.android.service
 
 import android.accessibilityservice.AccessibilityService
+import android.annotation.SuppressLint
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.BroadcastReceiver
@@ -189,7 +190,13 @@ internal class ForegroundChangeSingleFlight {
     }
 }
 
-class AppauseAccessibilityService : AccessibilityService() {
+/**
+ * open so orchestration tests can subclass it and swap the cooldown
+ * presentation for a recording test double (the real overlay hosts a Compose
+ * frame loop that cannot run under Robolectric's looper). Production
+ * behavior is unchanged.
+ */
+open class AppauseAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "AppauseA11yService"
@@ -736,6 +743,7 @@ class AppauseAccessibilityService : AccessibilityService() {
     }
 
     @Suppress("DEPRECATION")
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private fun registerCloseSystemDialogsReceiver() {
         if (closeSystemDialogsReceiver != null) return
 
@@ -781,6 +789,8 @@ class AppauseAccessibilityService : AccessibilityService() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
             } else {
+                // Keep the legacy platform overload until system-broadcast
+                // delivery is verified across supported OEMs.
                 registerReceiver(receiver, filter)
             }
             closeSystemDialogsReceiver = receiver
@@ -1318,7 +1328,9 @@ class AppauseAccessibilityService : AccessibilityService() {
      * 7. Does it belong to a configured group? → if yes, INTERCEPT
      * 8. Otherwise → skip (not a target app)
      */
-    private suspend fun handleForegroundChange(
+    // internal (not private) so the orchestration tests can drive the exact
+    // decision→side-effect boundary the poller and the event path both use.
+    internal suspend fun handleForegroundChange(
         packageName: String,
         homeEventConfirmed: Boolean = false
     ) = foregroundChangeSingleFlight.run {
@@ -1624,7 +1636,10 @@ class AppauseAccessibilityService : AccessibilityService() {
      * screen on every device (Xiaomi, Huawei, OPPO, vivo, realme, Meizu,
      * Honor, Nothing, etc.) without maintaining a fragile, always-incomplete list.
      */
-    private fun refreshHomePackages() {
+    // internal (not private) so the production-input adapter tests can drive
+    // the HOME-intent resolution and observe the resulting package set through
+    // behavior (system-package filtering), not through a parallel implementation.
+    internal fun refreshHomePackages() {
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
         homePackages = try {
             val queriedPackages = packageManager.queryIntentActivities(intent, 0)
@@ -1677,7 +1692,7 @@ class AppauseAccessibilityService : AccessibilityService() {
      * - The overlay captures all touches, so the user can only interact
      *   with the Cancel or Continue buttons.
      */
-    private fun showCooldownOverlay(
+    internal open fun showCooldownOverlay(
         packageName: String,
         groupId: Long,
         cooldownSeconds: Int,
@@ -1749,10 +1764,9 @@ class AppauseAccessibilityService : AccessibilityService() {
     internal fun scheduleReRemind(targetPackage: String, groupId: Long, cooldownSeconds: Int, minutes: Int, reRemindCooldownSeconds: Int, repeat: Boolean = true, escalate: Boolean = false) {
         if (minutes <= 0) return
 
-        // Grab the shared initial-continue signal BEFORE cancelReRemind() runs.
-        // cancelReRemind() removes it from the map, and if we grabbed it after,
-        // await() would hang forever (the Continue tap's completed signal would be
-        // gone). Holding the reference here survives the map removal.
+        // Keep one initial-Continue signal for the whole session. Replacing a
+        // loop reuses this signal (completed or pending); ending the session
+        // removes it in cancelReRemind().
         val initialSignal = initialContinueSignal[targetPackage]
             ?: CompletableDeferred<Unit>().also { initialContinueSignal[targetPackage] = it }
 
@@ -1775,7 +1789,6 @@ class AppauseAccessibilityService : AccessibilityService() {
             // `minutes` (not minutes + cooldown, which the user reported as "等了
             // 不止 1 分钟").
             initialSignal.await()
-            initialContinueSignal.remove(targetPackage)
             var lastContinueAt = System.currentTimeMillis()
             AppLogger.d(TAG, "Re-remind CLOCK START (initial continue) @ $lastContinueAt for $targetPackage")
             while (true) {
@@ -1873,10 +1886,11 @@ class AppauseAccessibilityService : AccessibilityService() {
         reRemindJobs.remove(packageName)?.cancel()
         // Cancel any pending "user continued" signal so the loop's await() ends.
         reRemindContinue.remove(packageName)?.cancel()
-        // Also cancel the initial-cooldown wait (e.g. user cancelled the first
-        // cooldown before tapping Continue) so the loop doesn't hang forever.
-        initialContinueSignal.remove(packageName)?.cancel()
         if (endSession) {
+            // Keep this signal across loop replacement so a replacement can
+            // reuse the original (possibly already completed) Continue event.
+            // Ending the session still releases it if the user never continued.
+            initialContinueSignal.remove(packageName)?.cancel()
             // Session is over → allow a fresh one to start on next entry.
             sessionState.end(packageName)
             cancelTemporaryPassExpiry(packageName)
@@ -2166,6 +2180,10 @@ class AppauseAccessibilityService : AccessibilityService() {
         // Cancel all pending re-remind timers
         reRemindJobs.values.forEach { it.cancel() }
         reRemindJobs.clear()
+        initialContinueSignal.values.forEach { it.cancel() }
+        initialContinueSignal.clear()
+        reRemindContinue.values.forEach { it.cancel() }
+        reRemindContinue.clear()
 
         temporaryPassExpiryJobs.values.forEach { it.cancel() }
         temporaryPassExpiryJobs.clear()

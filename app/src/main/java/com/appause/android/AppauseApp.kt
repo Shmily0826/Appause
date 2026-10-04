@@ -26,13 +26,22 @@ import java.util.Locale
  * - It is created before any Activity, so dependencies are ready when needed.
  * - We use `lazy` so objects are only created when first accessed (saves startup time).
  */
-class AppauseApp : Application() {
+/**
+ * open so Robolectric tests can subclass it and swap the Room database for an
+ * in-memory instance (see TestAppauseApp); production behavior is unchanged.
+ */
+open class AppauseApp : Application() {
 
     /**
      * Room database — the single source of persistent data.
      * Created lazily on first access.
+     *
+     * open so a Robolectric test Application can swap in an in-memory database
+     * (Robolectric's SQLite shadow cannot safely share one on-disk connection
+     * across tests). All other dependencies derive from this property, so one
+     * override redirects the whole graph.
      */
-    val database: AppDatabase by lazy {
+    open val database: AppDatabase by lazy {
         AppDatabase.getInstance(this)
     }
 
