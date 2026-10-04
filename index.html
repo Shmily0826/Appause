@@ -15,7 +15,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Appause" />
   <meta property="og:url" content="https://shmily0826.github.io/Appause/" />
-  <meta property="og:title" content="Appause | Free public beta. Pause first, then decide." />
+  <meta property="og:title" content="Appause | Open with a reason, not a reflex" />
   <meta property="og:description" content="A free Android focus tool that gives you a few seconds before distracting apps open. No subscription, and no paid tier planned." />
   <meta property="og:image" content="https://shmily0826.github.io/Appause/images/og-card.png" />
   <meta property="og:image:type" content="image/png" />
@@ -27,15 +27,17 @@
   <meta name="twitter:description" content="Appause interrupts distracting app openings at the moment of action, so continuing becomes an intentional choice. Local-first Android app, no account required." />
   <meta name="twitter:image" content="https://shmily0826.github.io/Appause/images/og-card.png" />
   <meta name="twitter:image:alt" content="Appause pause screen asking for a reason before a selected app opens, beside the headline Put intention between tap and scroll." />
-  <!-- 结构化数据：FAQPage 的 6 条严格对应本页 #faq 的可见问答（6 条中与语义重复的
-       「Xiaomi / HyperOS extra setup」并入下面第 2 条），改了页面文案必须同步这里。 -->
+  <!-- 结构化数据：FAQPage 覆盖本页 #faq 里除「Show the APK SHA-256 checksum」
+       （那是折叠区，不是问答）之外的全部问答，共 8 条。改页面文案必须同步这里。 -->
   <script type="application/ld+json">
   {"@context":"https://schema.org","@graph":[
     {"@type":"SoftwareApplication","name":"Appause","operatingSystem":"Android 8.0+","applicationCategory":"UtilitiesApplication","softwareVersion":"0.5.45","fileSize":"12.3MB","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"author":{"@type":"Organization","name":"Appause authors"},"license":"https://opensource.org/licenses/MIT","downloadUrl":"https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk","inLanguage":"en","description":"Appause is a local-first Android focus tool that puts a short cooldown in front of the apps you choose, so opening one becomes a decision instead of a reflex. Core features are free, and the source is MIT licensed."},
     {"@type":"FAQPage","mainEntity":[
-      {"@type":"Question","name":"Install warns the app is harmful. Is something wrong?","acceptedAnswer":{"@type":"Answer","text":"No. Appause ships the APK directly and is not on an app store, so this is the generic warning Android shows for every non-store APK. Allow install from unknown sources for the app you downloaded with, then choose Install anyway if asked."}},
-      {"@type":"Question","name":"Why is the accessibility permission required? Does it read my screen?","acceptedAnswer":{"@type":"Answer","text":"The service only detects which app is in the foreground, so Appause knows when to step in. It is configured without window-content access and never reads screen content, messages, screenshots, or keystrokes. On phones with strict background management such as Xiaomi and HyperOS you should also set battery use to Unrestricted and allow Autostart, otherwise interception can stop working. These checks have so far run on one physical device (Xiaomi, HyperOS) and one emulator, so they do not cover every phone."}},
-      {"@type":"Question","name":"Is my data uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"Groups, cooldowns, and statistics are stored on your device with Room and DataStore. No account, no ads, no analytics SDK, no cloud sync. The network is used only when you start the Pro trial, redeem a code, or send feedback."}},
+      {"@type":"Question","name":"Install shows a warning about an unknown app. Is something wrong?","acceptedAnswer":{"@type":"Answer","text":"Appause is not distributed through an app store, so Android asks you to allow installs from the app you downloaded with. That prompt is expected for any APK that did not come from a store. Google Play Protect may also label the app as unknown, which reflects that it has no install history rather than the result of a scan. You can verify the file by comparing its SHA-256 against the published checksum and reading the source. If a warning names a specific threat or blocks the install with no way to continue, do not install it."}},
+      {"@type":"Question","name":"Why is the accessibility permission required? Does it read my screen?","acceptedAnswer":{"@type":"Answer","text":"The service only detects which app is in the foreground, so Appause knows when to step in. It is configured without window-content access and never reads screen content, messages, screenshots, or keystrokes. This is the one setting required on every device."}},
+      {"@type":"Question","name":"Is my data uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"Groups, cooldowns, and statistics are stored on your device with Room and DataStore, and uninstalling clears them. No account, no ads, no analytics SDK, no cloud sync. The network is used only when you start the Pro trial, redeem a code, or send feedback. A trial or redemption leaves the device binding and that record on the activation server, but no groups, statistics, or usage history."}},
+      {"@type":"Question","name":"Does Xiaomi / HyperOS need extra setup?","acceptedAnswer":{"@type":"Answer","text":"Yes. On phones with aggressive background management such as Xiaomi/HyperOS, two settings beyond the accessibility service are required in practice: battery use set to Unrestricted, and Autostart allowed. If the system removes Appause from memory in the background, interception stops until it is running again. This has so far been verified on one physical device (Xiaomi, HyperOS) and one emulator, so it does not cover every phone."}},
+      {"@type":"Question","name":"Why did a notification trigger a pause?","acceptedAnswer":{"@type":"Answer","text":"On some devices, a media notification can produce an accessibility event that resembles an app switch and occasionally trigger a pause. Optional Usage access can help confirm which app is in the foreground, but it cannot prevent every false trigger."}},
       {"@type":"Question","name":"Does it force-lock my phone?","acceptedAnswer":{"@type":"Answer","text":"No. After the countdown you can continue or return to the home screen, and you can disable the service or change groups at any time. Appause is a habit aid, not a monitoring or security tool."}},
       {"@type":"Question","name":"Do I have to pay for Pro?","acceptedAnswer":{"@type":"Answer","text":"No. The public beta is free and no paid tier is planned. Pro adds unlimited groups, re-remind, custom pause text, and custom open reasons. Start one free 7-day trial per device, then request free lifetime access through Settings, Feedback."}},
       {"@type":"Question","name":"How do I update, and what happens when I switch phones?","acceptedAnswer":{"@type":"Answer","text":"Install the new APK over the old one and do not uninstall first, because uninstalling removes local data. There is no config export; groups are set up again on a new phone and the Pro license needs re-activation there."}}
@@ -211,10 +213,22 @@
       min-height: 2.55rem;
       display: inline-flex;
       align-items: center;
+      /* The long label is split into three flex items by the data-r version span
+         ("Download" / "v0.5.45" / "Public Beta"). Without a gap the
+         whitespace-only text nodes collapse and the words run together as
+         "Downloadv0.5.45Public Beta". em-based so it shrinks with the
+         smaller font on narrow screens. */
+      gap: 0.32em;
       padding: 0.55rem 1rem;
       border-radius: var(--radius-pill);
       background: var(--color-ink);
       color: var(--color-surface) !important;
+    }
+
+    /* Two label variants; the short one is swapped in on very narrow screens
+       where the full label would push the button past the viewport edge. */
+    .nav-download-short {
+      display: none;
     }
 
     .hero {
@@ -1356,6 +1370,20 @@
       }
     }
 
+    /* Below ~360px the full nav label ("Download v0.5.45 Public Beta") pushes
+       the button about 12px past the right edge. The page clips overflow, so
+       the text is cut rather than scrollable. Swap to the compact label, which
+       carries the version in the link target instead of the visible text. */
+    @media (max-width: 360px) {
+      .nav-download-long {
+        display: none;
+      }
+
+      .nav-download-short {
+        display: inline;
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       html {
         scroll-behavior: auto;
@@ -1391,7 +1419,7 @@
         <a href="#pro">Free beta</a>
         <a href="#faq">FAQ</a>
         <a href="zh.html" lang="zh-CN">中文</a>
-        <a class="nav-download" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">Download <span data-r="version">v0.5.45</span> Public Beta</a>
+        <a class="nav-download" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk"><span class="nav-download-long">Download <span data-r="version">v0.5.45</span> Public Beta</span><span class="nav-download-short">Download APK</span></a>
       </div>
     </nav>
   </header>
@@ -1540,7 +1568,7 @@
           <p class="section-intro">Appause explains each permission by the job it performs. Core detection uses app identity, not the content on your screen.</p>
         </div>
 
-        <p class="permission-must">Three settings are required, not suggested: <strong>Accessibility service</strong>, <strong>battery optimization set to Unrestricted</strong>, and <strong>Autostart allowed</strong>. On phones with aggressive background management (Xiaomi, Huawei, and similar), leaving any one of them off can make interception stop working. The rest are optional.</p>
+        <p class="permission-must"><strong>Accessibility service</strong> is required on every Android device: without it Appause cannot tell which app opened, so nothing is intercepted. On phones with aggressive background management (Xiaomi/HyperOS, Huawei, and similar), two more settings are required in practice: <strong>battery optimization set to Unrestricted</strong> and <strong>Autostart allowed</strong>. On those phones, leaving either off can make interception stop working after a while. The rest of the list is optional.</p>
 
         <div class="permission-ledger">
           <article class="permission-row">
@@ -1604,7 +1632,7 @@
           </div>
           <div class="opensource-item">
             <span class="opensource-label">No strings</span>
-            <p>No account, no analytics SDK, no cloud sync, and no planned paid tier. Uninstalling removes everything, because nothing is stored anywhere else.</p>
+            <p>No account, no analytics SDK, no cloud sync, and no planned paid tier. Your groups, cooldowns, and statistics live only on this device, so uninstalling clears them. If you started a trial or redeemed a code, the activation server keeps the device binding and that trial record; it holds no groups, stats, or usage history. The privacy policy lists exactly what is stored.</p>
           </div>
         </div>
 
@@ -1666,8 +1694,10 @@
 
         <div class="faq-list">
           <details>
-            <summary>Install warns the app is "harmful". Is something wrong?</summary>
-            <p>No. Appause ships the APK directly and is not on an app store, so this is the generic warning Android shows for every non-store APK. Allow "Install unknown apps" for the app you downloaded with, then choose "Install anyway" if asked.</p>
+            <summary>Install shows a warning about an unknown app. Is something wrong?</summary>
+            <p>Appause is not distributed through an app store, so Android asks you to allow installs from the app you downloaded with (usually the browser or a file manager). That prompt is expected: it appears for any APK that did not come from a store.</p>
+            <p>Google Play Protect may also label the app as unknown. That is a different signal: Play Protect rates apps by how widely it has seen them, and a direct download from a small open-source project has no such history. It is not a scan result. If you want to check the file yourself, compare its SHA-256 against the checksum published below and read the source.</p>
+            <p>If you see a warning naming a specific threat, or one that blocks the install with no way to continue, do not install it: that is a different message from the generic prompts above, and it can mean the file was modified in transit.</p>
           </details>
           <details>
             <summary>Why is the accessibility permission required? Does it read my screen?</summary>
@@ -1675,7 +1705,7 @@
           </details>
           <details>
             <summary>Is my data uploaded anywhere?</summary>
-            <p>Groups, cooldowns, and statistics are stored on your device with Room and DataStore. No account, no ads, no analytics SDK, no cloud sync. The network is used only when you start the Pro trial, redeem a code, or send feedback.</p>
+            <p>Groups, cooldowns, and statistics are stored on your device with Room and DataStore, and uninstalling clears them. No account, no ads, no analytics SDK, no cloud sync. The network is used only when you start the Pro trial, redeem a code, or send feedback. A trial or redemption leaves the device binding and that record on the activation server, but no groups, statistics, or usage history.</p>
           </details>
           <details>
             <summary>Does Xiaomi / HyperOS need extra setup?</summary>

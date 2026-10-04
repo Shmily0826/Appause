@@ -299,6 +299,9 @@
     flex: none;
     display: inline-flex;
     align-items: center;
+    /* 标签被 data-r 的版本 span 拆成两个 flex 项（「下载」/「v0.5.45」）；
+       不设 gap 时空格文本节点会被丢弃，渲染成「下载v0.5.45」。用 em 随字号缩放。 */
+    gap: 0.32em;
     min-height: 2.5rem;
     font-size: 0.82rem;
     font-weight: 600;
@@ -1112,7 +1115,8 @@
           <h3>这几秒里你可以想一下</h3>
           <p>冷却结束前，「继续」不可点击。这段等待时间里，可以先选一个原因：
           工作需要、无聊、查消息，或其他。冷却时长可自行设置，1 到 60 秒，新分组默认 10 秒。
-          暂停页显示在应用之上，即使该应用开启了防干扰设置也会出现。</p>
+          暂停页使用较高层级的窗口，覆盖在应用之上，实测在开启了「隐藏悬浮窗」的应用上仍然可见。
+          个别机型如果仍不显示，可以开启悬浮窗权限，Appause 会改用备用方案。</p>
         </li>
         <li class="tl-fade">
           <span class="tl-t">第三步</span>
@@ -1189,8 +1193,9 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="privacy-title">权限与隐私</h2>
-        <p>必须开三项：<b class="must">无障碍服务</b>、<b class="must">电池优化设为「无限制」</b>、<b class="must">允许自启动</b>。
-          在后台管理较严格的机型上（小米、华为等），少开任一项都可能出现拦截失灵。其余按需要开。</p>
+        <p><b class="must">无障碍服务</b>是所有安卓机型都必须开的一项：没有它就无法判断你打开了什么，拦截完全不会生效。
+          在后台管理较严格的机型上（小米/HyperOS、华为等），另外两项也相当于必需：<b class="must">电池优化设为「无限制」</b>、<b class="must">允许自启动</b>。
+          这类机型上少开任一项，用一段时间后都可能出现拦截失灵。其余按需要开。</p>
       </div>
       <table class="ledger">
         <thead>
@@ -1209,12 +1214,12 @@
           <tr>
             <td>电池优化</td>
             <td data-label="状态"><span class="status s-req">必需</span></td>
-            <td data-label="用途">设为「无限制」。系统省电时会终止后台服务，拦截随之失效。</td>
+            <td data-label="用途">设为「无限制」。系统省电时会终止后台服务，拦截随之失效。国产定制系统（小米/HyperOS、华为等）上基本必须设。</td>
           </tr>
           <tr>
             <td>允许自启动</td>
             <td data-label="状态"><span class="status s-req">必需</span></td>
-            <td data-label="用途">在应用设置里开启。手机重启或清理后台后，系统需要靠它把服务重新拉起来，否则重启后的第一次拦截会失效。</td>
+            <td data-label="用途">在应用设置里开启。手机重启或清理后台后，系统需要靠它把服务重新拉起来，否则重启后的第一次拦截会失效。同样多见于国产定制系统。</td>
           </tr>
           <tr>
             <td>使用情况访问</td>
@@ -1247,7 +1252,7 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="pro-title">不收费，也没有<span class="nb">付费版</span></h2>
-        <p>全部功能都不收费。Pro 的增强功能先试用 7 天，之后申请一个免费授权码就能一直用。</p>
+        <p>核心功能永久免费，也没有付费版。Pro 的增强功能先试用 7 天，之后申请一个免费授权码就能一直用。</p>
       </div>
       <div class="pro-grid">
         <section class="pro-col" aria-label="免费包含的功能">
