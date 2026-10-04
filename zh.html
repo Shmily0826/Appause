@@ -1024,7 +1024,7 @@
   {"@type":"SoftwareApplication","name":"Appause","operatingSystem":"Android 8.0+","applicationCategory":"UtilitiesApplication","softwareVersion":"0.5.45","fileSize":"12.3MB","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"},"isAccessibleForFree":true,"author":{"@type":"Organization","name":"Appause authors"},"license":"https://opensource.org/licenses/MIT","downloadUrl":"https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk","inLanguage":"zh-CN","description":"Appause 是一款本地优先的 Android 专注工具：在你选定的应用前面加几秒冷却，打开前先等一等，想清楚了再进。核心功能永久免费，MIT 开源。"},
   {"@type":"FAQPage","mainEntity":[
     {"@type":"Question","name":"无障碍服务能看到什么？为什么一定要开？","acceptedAnswer":{"@type":"Answer","text":"这是 Android 自带的一项辅助功能，Appause 只用它做一件事：判断当前打开的是哪个应用。它读取的只有应用名，不会读取屏幕上的文字、消息、截图或键盘输入。没有这项权限就无法判断你打开了什么，拦截也就无法生效。"}},
-    {"@type":"Question","name":"会耗电吗？为什么拦截有时会失灵？","acceptedAnswer":{"@type":"Answer","text":"无障碍服务常驻后台，本机测试中耗电影响不大。如果拦截失灵，先检查三项：无障碍服务是否还在运行、电池优化是否设为「无限制」、是否允许了自启动。部分安卓系统在终止后台服务后，不会自动重新拉起无障碍服务，这是排障记录中最常见的原因。"}},
+    {"@type":"Question","name":"会耗电吗？为什么拦截有时会失灵？","acceptedAnswer":{"@type":"Answer","text":"无障碍服务常驻后台，本机测试中耗电影响不大。这些验证目前只在一台真机（小米 HyperOS）和一台模拟器上做过，覆盖不到所有机型。如果拦截失灵，先检查三项：无障碍服务是否还在运行、电池优化是否设为「无限制」、是否允许了自启动。部分安卓系统在终止后台服务后，不会自动重新拉起无障碍服务，这是排障记录中最常见的原因。"}},
     {"@type":"Question","name":"暂停页会被其他应用挡住吗？","acceptedAnswer":{"@type":"Answer","text":"暂停页使用较高层级的窗口类型，覆盖在普通应用之上，实测在开启了「隐藏悬浮窗」的应用上仍然可见。个别机型如果仍不显示，可以开启悬浮窗权限，Appause 会改用备用方案。"}},
     {"@type":"Question","name":"Pro 收费吗？","acceptedAnswer":{"@type":"Answer","text":"不收费。Pro 的增强功能先试用 7 天，到期后自动关闭，之后申请一个免费授权码即可继续用。"}},
     {"@type":"Question","name":"永久授权码怎么申请？要花钱吗？","acceptedAnswer":{"@type":"Answer","text":"先在这台设备上完成 7 天试用，试用结束后通过设置 → 反馈申请，由开发者人工签发，全程免费。永久授权码与设备绑定，可以绑 3 台，换手机不用重新申请。"}},
@@ -1168,11 +1168,11 @@
       <ol class="start-grid">
         <li class="start-step">
           <h3>下载并允许安装</h3>
-          <p>点上面的下载按钮。系统会提示「禁止安装未知应用」，按提示给浏览器或文件管理器放行一次。</p>
+          <p>点页首或页底的下载按钮。系统会提示「禁止安装未知应用」，按提示给浏览器或文件管理器放行一次。</p>
         </li>
         <li class="start-step">
           <h3>打开 Appause，按指引开好<span class="nb">三项权限</span></h3>
-          <p>首页会列出还差哪几项，点「去开启」逐项完成。每一项的作用与必要性，下一节有说明。</p>
+          <p>首页会列出还差哪几项，点「去开启」逐项完成：<b class="must">无障碍服务</b>、<b class="must">电池优化设为「无限制」</b>、<b class="must">允许自启动</b>。每一项的作用与必要性，下一节有说明。</p>
         </li>
         <li class="start-step">
           <h3>建一个分组，选好要冷却的应用</h3>
@@ -1298,7 +1298,8 @@
           <p>无障碍服务常驻后台，本机测试中耗电影响不大。如果拦截失灵，先检查三项：
           无障碍服务是否还在运行、电池优化是否设为「无限制」、是否允许了自启动。
           部分安卓系统在终止后台服务后，不会自动重新拉起无障碍服务，这是排障记录中最常见的原因。</p>
-          <p>按上面三项检查后仍无法拦截，请通过 <code class="nb">设置 → 反馈</code> 提交，并可附上诊断快照，便于定位问题。</p>
+          <p>这些验证目前只在一台真机（小米 HyperOS）和一台模拟器上做过，覆盖不到所有机型。
+          按上面三项检查后仍无法拦截，请通过 <code class="nb">设置 → 反馈</code> 提交，并可附上诊断快照，便于定位问题。</p>
         </details>
         <details>
           <summary>暂停页会被其他应用挡住吗？</summary>
