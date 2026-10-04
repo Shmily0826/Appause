@@ -1335,3 +1335,19 @@ Two independent read-only model reviews of main@601fc9d (Claude Sonnet 5.5 Mediu
 | Full suite + build | **PASS** | `testDebugUnitTest` 272 tests, 0 failures, 0 errors (263 baseline + 9 new); `assembleDebug` green after each batch (JDK 17 override). |
 | Deep-sleep device experiment (screen-off ≥3.5 min → return → expect cooldown) | **NOT TESTED** | Unit tests pin the predicate only; the end-to-end sleep/wake path needs the emulator/physical run (mind the logcat keep-alive trap: disconnect adb or use wireless debugging). |
 | #3 rebind reconcile | **NOT STARTED** | Awaiting PersistentLog rebind-frequency data from the Xiaomi device before choosing clear-all vs foreground-preserving reconcile. Reproduction must use a11y off/on toggling, NOT `am force-stop`. |
+
+## 39. Batch A+B emulator verification (2026-10-04, APPAUSE-20261004-1448, emulator round)
+
+Environment: Medium_Phone headless running a clean build of main@d5d3d14. The PauseActivity
+`exported=true` variant used only for experiment ②'s direct launch was a temporary working-tree
+manifest change, reverted before the interception rounds (clean d5d3d14 build reinstalled). The
+AVD's old TestGroup2/Chrome data was gone → group "SleepTest" (Chrome, 10s cooldown) created via
+the DB-edit path.
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| #4 configChanges: rotation keeps the cooldown running (PauseActivity fallback path) | **PASS** | Direct-launched PauseActivity (60s): screenshots 57 → 22s later 35 (landscape two-pane relayout) → 28 → 24 (portrait restored). Two configuration changes, countdown continuous throughout; the old behavior would have restarted from ~60 at each rotation. |
+| #1 normal re-arm path regression | **PASS** | Continue → Home → leave timer armed (180s) → fired at +180.0s → return to Chrome → fresh full INTERCEPT (2032 window = 1, screenshot). |
+| #1 wall-clock reconcile (the deep-sleep desync path) | **PASS (deterministic equivalent)** | The AVD refused to deep-suspend today (two rounds — plain screen-off, and Doze force-idle + battery unplug; the coroutine timer fired at exactly +180.0s both times, so monotonic never froze). The desync state was therefore produced deterministically: armed the leave timer, jumped the device wall clock +600s via `cmd alarm set-time` (deadline 7 min in the past while the uptime timer still had ~178s pending — exactly the state deep sleep creates). Returning to Chrome: `Poller: leave window expired by wall clock → re-arm` + `Re-armed` + a fresh full INTERCEPT with overlay (screenshot); no RESUME, and the old timer never won the race. Device clock restored to host time afterward. |
+| Real deep-sleep run (screen-off ≥3.5 min on device) | **NOT TESTED** | Emulator would not suspend today; the clock-jump equivalence covers the reconcile logic, and the platform premise (deep sleep defers uptime-based Handler delays) is the already-recorded 2026-09-13 observation. A Xiaomi physical-device run remains the final confirmation. |
+| Setup notes for future rounds | — | `run-as … sh -c 'cat > …'` redirect fails (ENOENT) — use `run-as … cp` with absolute paths; `run-as am start` cannot start the app's own non-exported components (calling-package/uid mismatch); production image = no `adb root`. Current overlay tap coords (physical 1080x2400): Continue (540,1492), Cancel (540,1618) — the 2026-09-13 coords (1702/1827) are stale for this build. "SleepTest" group (Chrome, 10s) remains in the AVD DB. |
