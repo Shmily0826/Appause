@@ -1,9 +1,7 @@
 name: CI
 
-# Every push to main and every PR must pass the unit-test suite and compile
-# the debug APK. This is the project's only automated regression gate — the
-# 134 JVM tests pin the interception decision logic that historically broke
-# (v0.5.11–v0.5.27), so it must never be skipped.
+# Every push to main and every PR must pass both unit-test variants, lint both
+# build variants, and compile the debug APK.
 on:
   push:
     branches: [main]
@@ -22,8 +20,11 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Unit tests
-        run: ./gradlew testDebugUnitTest
+      - name: Unit tests (debug and release)
+        run: ./gradlew testDebugUnitTest testReleaseUnitTest
+
+      - name: Lint (debug and release)
+        run: ./gradlew lintDebug lintRelease
 
       - name: Assemble debug APK
         run: ./gradlew assembleDebug

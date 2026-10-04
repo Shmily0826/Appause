@@ -133,13 +133,14 @@ android {
         unitTests.isIncludeAndroidResources = true
     }
 
+    androidResources {
+        // Room's JVM MigrationTestHelper reads schemas from merged assets;
+        // keep them available to both test variants but omit them from APKs.
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:<dir>_*:!CVS:!thumbs.db:!picasa.ini:!*.scc:*~:!*.json"
+    }
+
     sourceSets {
-        // MigrationTestHelper loads Room's exported schema JSONs as assets.
-        // Robolectric unit tests read the DEBUG variant's merged assets (see
-        // test_config.properties → android_merged_assets), so expose
-        // app/schemas (the room.schemaLocation configured at the top of this
-        // file) on the debug sourceSet. Release builds never get them.
-        getByName("debug") {
+        getByName("main") {
             assets.srcDir("schemas")
         }
     }
