@@ -873,6 +873,31 @@ class AppauseAccessibilityService : AccessibilityService() {
                 val fg = withContext(Dispatchers.IO) {
                     ForegroundChecker.getForegroundPackage(applicationContext)
                 } ?: continue
+
+                // Wake reconcile for the leave window (see LeaveWindowPolicy):
+                // after deep sleep the pending leave timers may not have fired
+                // even though their wall-clock deadlines passed. The poller is
+                // what runs first on wake, so sweep expired windows whose app
+                // is NOT on screen right now; the on-screen return is handled
+                // by the event path's eager re-arm in handleForegroundChangeImpl.
+                val deadlinesNow = _leaveCooldownDeadlines.value
+                if (deadlinesNow.isNotEmpty()) {
+                    val nowMillis = System.currentTimeMillis()
+                    for ((pkg, deadline) in deadlinesNow) {
+                        if (pkg == fg) continue
+                        if (LeaveWindowPolicy.shouldReArmOnWallClock(
+                                deadlineMillis = deadline,
+                                nowMillis = nowMillis,
+                                isBypassed = InterceptionManager.isBypassed(pkg),
+                                isSessionActive = sessionState.isForegroundActive(pkg)
+                            )
+                        ) {
+                            AppLogger.d(TAG, "Poller: leave window expired by wall clock → re-arm $pkg")
+                            reArm(pkg)
+                        }
+                    }
+                }
+
                 // The watchdog is intentionally lazy, but the poller must
                 // evaluate it before the grouped-target short circuit so an
                 // attached surface cannot prevent expiry indefinitely.
@@ -1321,6 +1346,24 @@ class AppauseAccessibilityService : AccessibilityService() {
         if (shouldSkipLateSystemHomeTarget(packageName)) {
             decide("SKIP: stale target event after system Home")
             return
+        }
+
+        // Wall-clock reconcile for the leave window: deep sleep freezes the
+        // uptime clock that leaveTimers' delay() runs on, while the recorded
+        // deadline keeps counting wall time. Re-arm BEFORE deciding, so a
+        // returning user takes the fresh-cooldown path instead of the Resume
+        // branch — Resume would cancel the still-pending timer and the
+        // cooldown would never happen, even though the Home card already
+        // showed the window as expired (see LeaveWindowPolicy).
+        if (LeaveWindowPolicy.shouldReArmOnWallClock(
+                deadlineMillis = _leaveCooldownDeadlines.value[packageName],
+                nowMillis = System.currentTimeMillis(),
+                isBypassed = InterceptionManager.isBypassed(packageName),
+                isSessionActive = sessionState.isForegroundActive(packageName)
+            )
+        ) {
+            AppLogger.d(TAG, "Leave window expired by wall clock → eager re-arm for $packageName")
+            reArm(packageName)
         }
 
         // Steps 1–5: pure decision (suspends only for the enabled check, as before).
