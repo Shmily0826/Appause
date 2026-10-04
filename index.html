@@ -415,6 +415,13 @@
       min-width: 0;
     }
 
+    /* The picture element is inline by default, which would shrink-wrap the
+       image and break the `width: 100%` on the img below. Make it a block. */
+    .product-shot picture {
+      display: block;
+      width: 100%;
+    }
+
     .product-shot img {
       display: block;
       width: 100%;
@@ -1419,7 +1426,10 @@
             </div>
           </dl>
           <figure class="product-shot hero-shot">
-            <img src="images/screenshots/en/pause.png" alt="Appause pause screen asking why YouTube is being opened before offering Continue or Cancel" width="1080" height="2400" />
+            <picture>
+              <source type="image/webp" srcset="images/screenshots/en/pause-360.webp 360w, images/screenshots/en/pause-720.webp 720w" sizes="224px" />
+              <img src="images/screenshots/en/pause.png" alt="Appause pause screen asking why YouTube is being opened before offering Continue or Cancel" width="1080" height="2400" fetchpriority="high" decoding="async" />
+            </picture>
             <figcaption><strong>Pause screen</strong>The decision is still yours</figcaption>
           </figure>
         </div>
@@ -1469,11 +1479,17 @@
 
           <div class="paired-shots" aria-label="Home and group setup screens">
             <figure class="product-shot">
-              <img src="images/screenshots/en/home.png" alt="Appause home screen showing service status, today's activity, and an Entertainment group" width="1080" height="2400" loading="lazy" decoding="async" />
+              <picture>
+                <source type="image/webp" srcset="images/screenshots/en/home-360.webp 360w, images/screenshots/en/home-720.webp 720w" sizes="(max-width: 880px) 357px, 311px" />
+                <img src="images/screenshots/en/home.png" alt="Appause home screen showing service status, today's activity, and an Entertainment group" width="1080" height="2400" loading="lazy" decoding="async" />
+              </picture>
               <figcaption class="screen-caption"><strong>Home</strong><span>See the boundary at a glance</span></figcaption>
             </figure>
             <figure class="product-shot">
-              <img src="images/screenshots/en/group.png" alt="Appause group editor showing a cooldown and selected apps" width="1080" height="2400" loading="lazy" decoding="async" />
+              <picture>
+                <source type="image/webp" srcset="images/screenshots/en/group-360.webp 360w, images/screenshots/en/group-720.webp 720w" sizes="(max-width: 880px) 357px, 311px" />
+                <img src="images/screenshots/en/group.png" alt="Appause group editor showing a cooldown and selected apps" width="1080" height="2400" loading="lazy" decoding="async" />
+              </picture>
               <figcaption class="screen-caption"><strong>Groups</strong><span>Fit the friction to your context</span></figcaption>
             </figure>
           </div>
@@ -1488,7 +1504,10 @@
 
           <div class="review-visual" aria-label="Statistics screen with an explanation of what it shows">
             <figure class="product-shot">
-              <img src="images/screenshots/en/statistics.png" alt="Appause statistics screen showing completed and avoided openings" width="1080" height="2400" loading="lazy" decoding="async" />
+              <picture>
+                <source type="image/webp" srcset="images/screenshots/en/statistics-360.webp 360w, images/screenshots/en/statistics-720.webp 720w" sizes="248px" />
+                <img src="images/screenshots/en/statistics.png" alt="Appause statistics screen showing completed and avoided openings" width="1080" height="2400" loading="lazy" decoding="async" />
+              </picture>
             </figure>
             <dl class="review-notes">
               <div>
