@@ -217,6 +217,25 @@ class ProState(
 
     private val lastObservedWallClockMillis = AtomicLong(System.currentTimeMillis())
 
+    /**
+     * Last claims the REAL license path successfully verified, with the token
+     * they were verified under.
+     *
+     * Why hold on to them: entitlement resolution reads the Android Keystore
+     * on every (re)collection of the entitlement flow, and Keystore can fail
+     * TRANSIENTLY (early boot, KeyMint hiccup, after an OTA). Collapsing such
+     * a failure to FREE used to make [isPro] lie to every gate — most
+     * destructively, GroupEditorViewModel.save() persists a re-remind wipe
+     * whenever it observes isPro == false. Holding the last claims verified
+     * for the SAME token keeps the entitlement stable across the outage while
+     * still failing closed when nothing has ever verified (no claims → FREE)
+     * and when the answer is a hard "invalid" (null claims → FREE).
+     */
+    private data class VerifiedClaims(val token: String, val claims: LicenseClaims)
+
+    @Volatile
+    private var lastVerified: VerifiedClaims? = null
+
     /** Keep a wall-clock rollback from extending an entitlement in this process. */
     private fun wallClockNowMillis(): Long = lastObservedWallClockMillis.updateAndGet { previous ->
         nonDecreasingClockMillis(previous, System.currentTimeMillis())
@@ -231,6 +250,23 @@ class ProState(
             LicenseVerifier.parsePublicKey(ServerKeys.SERVER_PUBLIC_KEY_PEM),
             fp,
             requireDeviceBinding = ServerKeys.IS_PRODUCTION_KEY
+        )
+    }
+
+    /**
+     * Verifier for the entitlement re-resolution path ([resolveRealEntitlement]).
+     * Unlike [defaultVerifier] it skips the verifier's own expiry check: the
+     * classification re-evaluates "exp" against the (debug-offset) clock on
+     * every resolution, so an expired token must still classify as
+     * TRIAL_EXPIRED (which gates redemption) rather than vanish into FREE.
+     */
+    private val defaultRealVerifier: (String, String) -> LicenseClaims? = { token, fp ->
+        LicenseVerifier.verify(
+            token,
+            LicenseVerifier.parsePublicKey(ServerKeys.SERVER_PUBLIC_KEY_PEM),
+            fp,
+            requireDeviceBinding = ServerKeys.IS_PRODUCTION_KEY,
+            checkExpiry = false
         )
     }
     private val defaultFingerprint: () -> String = {
@@ -273,24 +309,32 @@ class ProState(
      * The entitlement the REAL license path produces, ignoring any debug
      * override. Unchanged from before the override existed, so production
      * behaviour is identical.
+     *
+     * Transient verification failures (a thrown Keystore/verifier error) hold
+     * the last claims verified for this token instead of resolving to FREE —
+     * see [lastVerified]. A non-throwing "invalid" answer (null claims) is
+     * authoritative and always resolves FREE.
      */
     private fun resolveRealEntitlement(token: String, debugFlag: Boolean): ProEntitlement {
         if (debugFlag) return ProEntitlement(ProAccessStatus.DEBUG)
         if (token.isBlank()) return ProEntitlement(ProAccessStatus.FREE)
-        return runCatching {
-            val fingerprint = DeviceKeyStore.getDeviceFingerprint(context)
-            val publicKey = LicenseVerifier.parsePublicKey(ServerKeys.SERVER_PUBLIC_KEY_PEM)
-            classifyLicenseClaims(
-                LicenseVerifier.verify(
-                    token,
-                    publicKey,
-                    fingerprint,
-                    requireDeviceBinding = ServerKeys.IS_PRODUCTION_KEY,
-                    checkExpiry = false
-                ),
-                effectiveNowMillis() / 1000L
-            )
-        }.getOrDefault(ProEntitlement(ProAccessStatus.FREE))
+        val claims = runCatching {
+            val fingerprint = fingerprintProvider?.invoke() ?: defaultFingerprint()
+            (tokenVerifier ?: defaultRealVerifier)(token, fingerprint)
+        }.fold(
+            onSuccess = { claims ->
+                // A non-throwing answer — including null ("signature/binding
+                // invalid") — is authoritative: only a genuinely verified
+                // token may refresh the last-known-good state.
+                if (claims != null) lastVerified = VerifiedClaims(token, claims)
+                claims
+            },
+            // Verification THREW (Keystore/KeyMint outage), which says nothing
+            // about the token itself. Hold the claims last verified for THIS
+            // token instead of collapsing to FREE; nothing ever verified → FREE.
+            onFailure = { lastVerified?.takeIf { it.token == token }?.claims }
+        )
+        return classifyLicenseClaims(claims, effectiveNowMillis() / 1000L)
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
