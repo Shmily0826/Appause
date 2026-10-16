@@ -9,10 +9,10 @@ Output (Chinese, --lang zh):
   images/og-card-zh.png         1200x630  social preview
 
 The card matches the landing page palette of the language it belongs to —
-Cobalt (index.html) for English, 纸墨朱红 (zh.html) for Chinese — and uses real
-app captures from images/screenshots/<lang>/, so sharing the link
+the shared cool-paper and cobalt theme for both languages — and uses real
+emulator captures from assets/landing/shots/, so sharing the link
 shows the actual product rather than a mock. The version string is read from
-app/build.gradle.kts, so re-run this after every release:
+assets/landing/release.js, so unpublished Android builds do not appear on the card:
 
     python scripts/release/make_og_card.py           # English card + icons
     python scripts/release/make_og_card.py --lang zh # Chinese card
@@ -21,7 +21,6 @@ app/build.gradle.kts, so re-run this after every release:
 from __future__ import annotations
 
 import argparse
-import math
 import re
 from pathlib import Path
 
@@ -38,6 +37,8 @@ CANVAS = (1200, 630)
 FONT_SEMIBOLD = Path("C:/Windows/Fonts/seguisb.ttf")
 FONT_REGULAR = Path("C:/Windows/Fonts/segoeui.ttf")
 FONT_MONO = Path("C:/Windows/Fonts/consola.ttf")
+FONT_SERIF = Path("C:/Windows/Fonts/georgiab.ttf")
+FONT_CJK_SERIF = Path("C:/Windows/Fonts/NotoSerifSC-VF.ttf")
 FONT_CJK_BOLD = Path("C:/Windows/Fonts/msyhbd.ttc")
 FONT_CJK_REGULAR = Path("C:/Windows/Fonts/msyh.ttc")
 
@@ -45,26 +46,26 @@ FONT_CJK_REGULAR = Path("C:/Windows/Fonts/msyh.ttc")
 # (分组 / 冷却 / 再次提醒 / 自定义提示) rather than a literal translation.
 COPY = {
     "en": {
-        "shot": Path("screenshots/en/pause.png"),
+        "shot": Path("en-pause-counting.png"),
         "output": "og-card.png",
-        "fonts": (FONT_SEMIBOLD, FONT_REGULAR, FONT_MONO),
-        "label": "AN INTENTIONAL OPENING STARTS HERE",
-        "label_tracking": 2.4,
-        "headline": "Put intention between tap and scroll.",
-        "headline_fit": "Put intention between",
+        "fonts": (FONT_SERIF, FONT_REGULAR, FONT_REGULAR),
+        "label": "Free Android focus tool",
+        "label_tracking": 0.0,
+        "headline": "Pause first.\nThen decide.",
+        "headline_fit": "Then decide.",
         "body": (
-            "Appause interrupts distracting app openings at the moment of action, "
-            "so continuing becomes a decision you make on purpose."
+            "A short cooldown before an app opens. "
+            "Continue, or go home. You decide."
         ),
         "alt": "Appause pause screen asking for a reason before a selected app opens",
     },
     "zh": {
-        "shot": Path("screenshots/zh/pause.png"),
+        "shot": Path("zh-pause-counting.png"),
         "output": "og-card-zh.png",
-        "fonts": (FONT_CJK_BOLD, FONT_CJK_REGULAR, FONT_CJK_REGULAR),
-        "label": "每 一 次 打 开 都 可 以 是 一 次 选 择",
+        "fonts": (FONT_CJK_SERIF, FONT_CJK_REGULAR, FONT_CJK_REGULAR),
+        "label": "安卓专注工具 · 免费开源",
         "label_tracking": 0.0,
-        "headline": "先停一下，再决定。",
+        "headline": "先停一下，\n再决定。",
         "headline_fit": "先停一下，",
         "body": "Appause 在你选定的应用打开前加一道冷却，让「继续」重新成为你自己做的决定。",
         "alt": "Appause 暂停页：在选定应用打开前先问你为什么",
@@ -73,55 +74,16 @@ COPY = {
 
 
 
-# --------------------------------------------------------------------------
-# Palette: parsed straight out of index.html's oklch() custom properties so the
-# card cannot drift away from the page.
-# --------------------------------------------------------------------------
-def oklch(lightness: float, chroma: float, hue_deg: float) -> tuple[int, int, int]:
-    """Convert oklch(L% C H) to an 8-bit sRGB tuple."""
-    hue = math.radians(hue_deg)
-    a = chroma * math.cos(hue)
-    b = chroma * math.sin(hue)
-
-    l_ = lightness + 0.3963377774 * a + 0.2158037573 * b
-    m_ = lightness - 0.1055613458 * a - 0.0638541728 * b
-    s_ = lightness - 0.0894841775 * a - 1.2914855480 * b
-
-    l, m, s = l_**3, m_**3, s_**3
-
-    r = 4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s
-    g = -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s
-    bl = -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
-
-    def encode(channel: float) -> int:
-        channel = max(0.0, min(1.0, channel))
-        gamma = 1.055 * (channel ** (1 / 2.4)) - 0.055 if channel > 0.0031308 else 12.92 * channel
-        return round(max(0.0, min(1.0, gamma)) * 255)
-
-    return encode(r), encode(g), encode(bl)
-
-
-# One palette per landing page. A share card painted in the other page's theme
-# reads as a different product from the page it links to, so they are kept apart.
-PALETTE: dict[str, dict[str, tuple[int, int, int]]] = {
-    "en": {
-        "paper": oklch(0.980, 0.006, 255),
-        "panel": oklch(0.930, 0.035, 260),
-        "ink": oklch(0.240, 0.045, 258),
-        "ink_soft": oklch(0.470, 0.035, 258),
-        "rule": oklch(0.880, 0.018, 258),
-        "accent": oklch(0.440, 0.180, 263),
-    },
-    "zh": {
-        # Copied from zh.html's :root tokens. If that page is restyled, re-check these.
-        "paper": (0xF5, 0xF1, 0xE8),      # --paper         #f5f1e8
-        "panel": (0xEC, 0xE7, 0xD9),      # --paper-raise   #ece7d9
-        "ink": (0x1D, 0x1A, 0x16),        # --ink           #1d1a16
-        "ink_soft": (0x5C, 0x55, 0x4A),   # --ink-soft      #5c554a
-        "rule": (0xD9, 0xD2, 0xC3),       # --rule          #d9d2c3
-        "accent": (0x7F, 0x2C, 0x20),     # --cinnabar-deep #7f2c20
-    },
+# Both published pages use the same Appause palette.
+PAGE_PALETTE = {
+    "paper": (245, 247, 252),
+    "panel": (220, 227, 255),
+    "ink": (27, 27, 31),
+    "ink_soft": (74, 79, 99),
+    "rule": (217, 221, 232),
+    "accent": (41, 98, 255),
 }
+PALETTE = {"en": PAGE_PALETTE, "zh": PAGE_PALETTE}
 
 # The icon art is ~9.2% empty on every side (Android adaptive icon safe zone),
 # so crop that padding before drawing it in the wordmark row.
@@ -129,11 +91,11 @@ ICON_CROP_INSET = 0.092
 
 
 def version_name() -> str:
-    """Read versionName from app/build.gradle.kts so the card tracks releases."""
-    gradle = (ROOT / "app" / "build.gradle.kts").read_text(encoding="utf-8")
-    match = re.search(r'versionName\s*=\s*"([^"]+)"', gradle)
+    """Use the public website version, not an unpublished Android build."""
+    release = (ROOT / "assets" / "landing" / "release.js").read_text(encoding="utf-8")
+    match = re.search(r"version:\s*'([^']+)'", release)
     if not match:
-        raise SystemExit("versionName not found in app/build.gradle.kts")
+        raise SystemExit("version not found in assets/landing/release.js")
     return match.group(1)
 
 
@@ -253,7 +215,7 @@ def build_card(lang: str) -> Image.Image:
     # ---- right stage: tinted panel holding the signature pause screen -----
     # The panel is sized to the capture plus even padding, so the shot is never
     # cropped further and the copy column gets a fixed width.
-    shot = content_crop(Image.open(IMAGES / copy["shot"]).convert("RGBA"))
+    shot = content_crop(Image.open(ROOT / "assets" / "landing" / "shots" / copy["shot"]).convert("RGBA"))
     pad = 32
     shot_h = 608 - 58 - pad * 2
     shot_w = round(shot_h * shot.width / shot.height)
@@ -279,7 +241,7 @@ def build_card(lang: str) -> Image.Image:
     icon = rounded(load_icon(), 12).resize((52, 52), Image.LANCZOS)
     canvas.alpha_composite(icon, (margin, 66))
     draw.text((margin + 68, 74), "Appause",
-              font=ImageFont.truetype(str(font_head), 34), fill=pal["ink"])
+              font=ImageFont.truetype(str(FONT_SEMIBOLD), 34), fill=pal["ink"])
 
     # ---- label ------------------------------------------------------------
     tracked_text(
@@ -302,7 +264,7 @@ def build_card(lang: str) -> Image.Image:
     body_lead = 33 if is_zh else 35
 
     head_font = fit_font(font_head, copy["headline_fit"], text_max, head_start)
-    head_lines = wrap(copy["headline"], head_font, text_max)
+    head_lines = [line for paragraph in copy["headline"].split("\n") for line in wrap(paragraph, head_font, text_max)]
     y = head_y
     for line in head_lines:
         draw.text((margin, y), line, font=head_font, fill=pal["ink"])
@@ -319,9 +281,9 @@ def build_card(lang: str) -> Image.Image:
     # ---- footer facts -----------------------------------------------------
     mono = ImageFont.truetype(str(font_util), 18)
     facts = (
-        f"v{version}  \u00b7  Android 8.0+  \u00b7  no account required  \u00b7  MIT"
+        f"v{version}  \u00b7  Android 8.0+  \u00b7  MIT"
         if lang == "en"
-        else f"v{version}  \u00b7  Android 8.0 及以上  \u00b7  无需注册账号  \u00b7  MIT 开源"
+        else f"v{version}  \u00b7  Android 8.0 及以上  \u00b7  MIT 开源"
     )
     draw.text((margin, 546), facts, font=mono, fill=pal["ink_soft"])
 

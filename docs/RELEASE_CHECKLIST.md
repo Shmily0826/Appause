@@ -1,11 +1,18 @@
 # Appause 发版清单（Release Checklist）
 
 > 面向"准备给陌生用户使用"的发版流程。每次发 release 前**从上到下过一遍**，
-> 全部勾完才打包。当前公开版本为 v0.5.43 / versionCode 95，改配置后请同步更新。
+> 全部勾完才打包。当前蓝奏云下载为 v0.5.46 / versionCode 98；GitHub 仍为旧版 v0.5.45 / 97。
+> 2026-10-17 已完成候选 APK 的签名、版本、双变体单元测试与 lint 检查；用户已上传同一文件到蓝奏云并确认可下载。
+> 最终候选包：`output/release-candidate-APPAUSE-20261016-2356/Appause-v0.5.46.apk`。
+> SHA-256：`ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`。
+> 2026-10-17 已将此 release APK 覆盖升级到 Android 16 / HyperOS 真机：数据可见状态保留、核心拦截和 3 分钟后重新拦截通过。
+> 已测核心真机流程通过。选择器按 Back 回桌面、再开应用重新拦截，用户已确认符合预期，不作为缺陷或发布阻塞（TEST_REPORT §47）。
+> 完整发版清单尚未全部验收：临时通行到期等路径未测。代理下载遇到蓝奏网络验证页，未取得镜像字节；上传文件身份及下载可用性由用户确认。
+> 中英文页面使用蓝奏云 v0.5.46 主入口、GitHub v0.5.45 旧版备用入口；部署后需核对线上下载版本、密码和文件校验值。
 
 ## 1. 版本与构建配置
 
-- [ ] `app/build.gradle.kts`：`versionCode` +1（当前 95 / v0.5.43），`versionName` 按语义更新
+- [ ] `app/build.gradle.kts`：相对已发布版本递增 versionCode（当前候选 98 / v0.5.46；已发布版本 97 / v0.5.45），`versionName` 按语义更新
   - debug flavor 的 `versionNameSuffix = "-debug"` 依赖 **更高的** versionCode 保证共存，勿降
 - [ ] minSdk 26 / targetSdk 未被意外改动；新增依赖在 version catalog（`gradle/libs.versions.toml`），未硬编码版本号
 - [ ] `./gradlew assembleDebug` 与 `./gradlew assembleRelease` 均通过（需 `JAVA_HOME=D:\Dev-Setup\jdk`）

@@ -7,17 +7,18 @@ in groups, and set a cooldown. When a target app comes to the foreground,
 Appause shows a short pause screen so you can breathe and decide whether to
 continue.
 
-## Latest release: v0.5.45 Public Beta
+## Latest download: v0.5.46 Public Beta
 
-Download the signed APK from the canonical [GitHub Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.45):
+Download the signed APK from [Lanzou](https://shmily0826.lanzoup.com/b01eunt29a), password **1234**.
+Select **Appause-v0.5.46.apk** on the share page.
 
-- [Appause-v0.5.45.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk)
 - Package: `com.appause.android`
-- versionCode: `97`
+- versionCode: `98`
+- SHA-256: `ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`
 
-> The version above tracks `app/build.gradle.kts` (`versionName` / `versionCode`),
-> which is the single source of truth. If you bump one, bump the other and update
-> this block in the same change.
+The signed APK passed offline checks and core HyperOS device checks.
+GitHub still hosts the [older v0.5.45 release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.45).
+Its APK has a different checksum; do not use the v0.5.46 checksum for that older file.
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
 `versionCode` is internal metadata and is not part of the public filename.

@@ -1,3 +1,77 @@
+# Appause v0.5.46 — 发布说明 (Release Notes)
+
+> 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
+> 当前下载：[蓝奏云](https://shmily0826.lanzoup.com/b01eunt29a)，提取密码 **1234**，选择 `Appause-v0.5.46.apk`。
+> SHA-256：`ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`。
+> GitHub v0.5.46 尚未发布；GitHub 备用下载仍为旧版 v0.5.45。
+
+> Source note: this release carries the crash-loop and app-picker crash fixes
+> found during the 2026-10-12 overnight release-hardening session. The v0.5.45
+> and earlier notes are kept below as the historical record.
+
+---
+
+## 🇨🇳 中文
+
+### 本次更新 (v0.5.46) — 稳定性与修复
+- **版本更新**：版本为 `0.5.46`，Android versionCode 为 `98`；公开 APK 使用 `Appause-v0.5.46.apk`。
+- **临时放行显示开关**：在「设置 → 暂停设置」中选择是否显示冷却结束后的临时放行入口，默认开启。
+- **修复选应用页崩溃**：部分应用（如 Google 套件）会注册多个桌面入口，此前在选择应用页搜索或滚动时
+  可能触发闪退（"Key was already used"）。现在每个应用只显示一次。
+- **修复启动死循环崩溃**：极少数情况下本地设置文件损坏会让应用每次打开都闪退。现在会自动恢复为默认
+  设置并重新显示引导页（分组与统计等数据保存在另一个数据库中，不受影响）。
+- **通知权限**：Android 13+ 首次使用时会主动请求通知权限，常驻状态通知可以正常显示。
+- **冷却更稳**：旋转屏幕、切换深色模式等配置变化不再中断冷却倒计时；手机深度休眠后，
+  退出目标应用 3 分钟的再拦截计时按真实时间恢复，不再失准。
+- **Pro 更稳**：系统安全存储临时不可用时保留最近一次已验证的 Pro 状态；Pro 过期后在分组编辑器
+  保存不再意外清空"再次提醒"配置；暂停页弹出路径统一，兜底路径上"再次提醒"不再失效。
+- **数据更稳**：保存分组改为原子操作，进程被杀不再出现"分组存在但应用列表为空"的情况；
+  无障碍服务生命周期进一步加固，新增小米机型的可靠性设置入口与进程退出诊断。
+
+### 本次更新 (v0.5.46) — English summary
+- Public APK: `Appause-v0.5.46.apk`, package `com.appause.android`, versionCode `98`.
+- Added Show Temporary Pass under Settings → Pause behavior. It controls the post-cooldown entry and is on by default.
+- Fixed a crash in the app picker when an app registers multiple launcher activities
+  ("Key was already used"): each app now appears once.
+- Fixed a startup crash loop when the local settings file is corrupted: the app now
+  recovers to defaults and re-shows onboarding (groups and stats live in a separate
+  database and are unaffected).
+- Requests POST_NOTIFICATIONS on Android 13+ so the persistent status notification can show.
+- Cooldown survives configuration changes (rotation, dark mode) and deep sleep re-arms
+  the 3-minute leave window by wall clock.
+- Pro state survives transient Keystore outages; saving a group after Pro expiry no longer
+  wipes its re-remind configuration; the alarm/Handler fallback path no longer loses the
+  re-remind flag. Group saving is atomic; accessibility lifecycle hardened; Xiaomi
+  reliability settings entry and process-exit diagnostics added.
+
+---
+
+# Appause v0.5.45 — 发布说明 (Release Notes)
+
+> 下载链接：`https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk`
+
+> Source note: this release simplified onboarding and aligned the free public beta
+> Pro access (self-serve 7-day trial, lifetime access by request). The v0.5.44
+> and earlier notes are kept below as the historical record.
+
+---
+
+## 🇨🇳 中文
+
+### 本次更新 (v0.5.45) — 引导简化与免费 Pro 对齐
+- **版本更新**：版本为 `0.5.45`，Android versionCode 为 `97`；公开 APK 使用 `Appause-v0.5.45.apk`。
+- **引导简化**：首次使用流程精简，语言选择与权限说明更直接。
+- **免费 Pro 对齐**：公开 beta 保持免费；Pro 提供每设备一次的 7 天试用，试用结束后的
+  永久 Pro 权限通过应用内反馈免费申请、人工发放。
+
+### 本次更新 (v0.5.45) — English summary
+- Public APK: `Appause-v0.5.45.apk`, package `com.appause.android`, versionCode `97`.
+- Simplified the first-run onboarding flow.
+- Aligned free public beta Pro access: one self-serve 7-day trial per device, with
+  lifetime Pro available for free on request via in-app feedback after the trial.
+
+---
+
 # Appause v0.5.44 — 发布说明 (Release Notes)
 
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。

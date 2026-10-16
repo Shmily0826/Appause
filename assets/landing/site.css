@@ -1,0 +1,1007 @@
+/* Appause landing v3 r2 · stylesheet for en-r2.html and zh-r2.html (review fixes applied)
+   Two materials (see ../DESIGN.md):
+   - the PAGE: cool paper, hairline rules, serif headings, square corners
+   - the APP:  everything inside the phone copies the Android app 1:1
+   Colors come from app/src/main/java/com/appause/android/ui/theme/Color.kt. */
+
+@font-face {
+  font-family: "Appause Serif";
+  /* Source Serif 4 (OFL), instanced at wght 600 / opsz 48 and subset to Latin.
+     Renamed because OFL reserves the name "Source" for unmodified fonts. */
+  src: url("fonts/appause-serif-600-latin.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* page */
+  --paper: #f5f7fc;
+  --surface: #ffffff;
+  --ink: #1b1b1f;
+  --ink-soft: #4a4f63;
+  --rule: #d9dee8;
+  --cobalt: #2962ff;
+  --cobalt-deep: #1a4ad6;
+  --wash: #dce3ff;
+  --wash-ink: #14308f;
+  --amber: #ff8f00;
+  --amber-deep: #a65400;
+
+  /* app (only used inside the phone) */
+  --app-outline: #7a7e8c;
+  --app-disabled: #e2e2e2;
+  --app-disabled-ink: #9e9e9e;
+  --app-prompt: #44474f;
+
+  --font-serif: "Appause Serif", "Source Han Serif SC", "Noto Serif CJK SC", "Noto Serif SC", "Songti SC", "STSong", Georgia, serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-app: Roboto, "Segoe UI", system-ui, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  --font-code: ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  /* type scale: the only six sizes on the page */
+  --t-sm: 0.875rem;
+  --t-body: 1rem;
+  --t-lead: 1.125rem;
+  --t-h3: 1.5rem;
+  --t-h2: clamp(1.875rem, 4vw, 2.25rem);
+  --t-h1: clamp(2.75rem, 6vw, 4.5rem);
+
+  --gutter: 1rem;
+  --content: 72rem;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--t-body);
+  line-height: 1.6;
+}
+
+:lang(zh) body, body:lang(zh) { line-height: 1.75; }
+
+img { display: block; max-width: 100%; height: auto; }
+
+a { color: inherit; }
+
+:focus-visible {
+  outline: 3px solid var(--cobalt);
+  outline-offset: 3px;
+}
+
+.skip {
+  position: absolute;
+  left: -999px;
+  top: 0.5rem;
+  z-index: 50;
+  padding: 0.6rem 1rem;
+  background: var(--ink);
+  color: var(--surface);
+}
+.skip:focus { left: 0.5rem; }
+
+.wrap {
+  width: min(var(--content), 100% - 2 * var(--gutter));
+  margin-inline: auto;
+}
+
+/* ---------- header ---------- */
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+}
+
+.top-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  min-height: 3.75rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex: none;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+/* The app icon is an app object, so it keeps the app's rounded corners. */
+.brand img { width: 1.75rem; height: 1.75rem; border-radius: 0.45rem; }
+
+.nav {
+  display: flex;
+  gap: 1.25rem;
+  min-width: 0;
+  font-size: var(--t-sm);
+}
+
+.nav a {
+  padding-block: 0.6rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav a:hover { color: var(--ink); }
+
+.top-end {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+  flex: none;
+  font-size: var(--t-sm);
+}
+
+.lang {
+  padding-block: 0.6rem;
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+
+/* ---------- buttons ----------
+   The download button is shaped like the app's Continue button on purpose:
+   it is the one place where the page borrows the app's material. */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0 1.4rem;
+  border-radius: 999px;
+  background: var(--cobalt);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btn:hover { background: var(--cobalt-deep); }
+
+.btn-sm { min-height: 2.5rem; padding: 0 1rem; font-size: var(--t-sm); }
+
+/* Two link styles only: standalone links are cobalt 600; links inside sentences
+   inherit the text colour and keep the underline (the default `a` rule). */
+.link, .more-links a {
+  color: var(--cobalt);
+  font-weight: 600;
+  text-underline-offset: 0.25em;
+}
+
+/* ---------- hero ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 37rem);
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: center;
+  padding-block: clamp(2.5rem, 6vw, 4.5rem) clamp(3rem, 7vw, 5.5rem);
+}
+
+.hero h1 {
+  margin: 0 0 1.5rem;
+  font-family: var(--font-serif);
+  font-size: var(--t-h1);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+}
+
+:lang(zh) .hero h1 { line-height: 1.25; letter-spacing: 0.02em; }
+
+.lede {
+  max-width: 30rem;
+  margin: 0 0 2rem;
+  color: var(--ink-soft);
+  font-size: var(--t-lead);
+}
+
+:lang(zh) .lede { max-width: 22em; }
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+}
+
+.facts {
+  max-width: 30rem;
+  margin: 1.5rem 0 0;
+  color: var(--ink-soft);
+  font-size: var(--t-sm);
+}
+
+/* ---------- stage: the one memorable thing ---------- */
+
+.stage {
+  /* The stage is part of the page, so it stays square.
+     Its color is the app's selected-state wash. */
+  background: var(--wash);
+  padding: clamp(1.25rem, 3vw, 2rem);
+}
+
+.stage-grid {
+  display: grid;
+  grid-template-columns: auto minmax(11rem, 1fr);
+  gap: 1.75rem;
+  align-items: center;
+}
+
+.steps {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.steps li {
+  counter-increment: step;
+  position: relative;
+  padding: 0.6rem 0 0.6rem 2.1rem;
+  color: var(--wash-ink);
+  font-size: var(--t-sm);
+  line-height: 1.45;
+}
+
+.steps li + li { border-top: 1px solid rgb(20 48 143 / 0.18); }
+
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.55rem;
+  width: 1.45rem;
+  height: 1.45rem;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: inherit;
+  font-weight: 700;
+}
+
+/* Inactive steps keep full contrast (8.9:1). The current one is bold with a bar on the left,
+   so the difference does not rely on fading. */
+.steps li.is-now { font-weight: 700; }
+.steps li.is-now::after {
+  content: "";
+  position: absolute;
+  left: -0.85rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 3px;
+  background: currentColor;
+}
+
+/* While counting down, step 2 is the "time is passing" step, so it turns amber. */
+.steps li.is-now.is-wait { color: var(--amber-deep); }
+
+.stage-note {
+  margin: 1rem 0 0;
+  color: var(--wash-ink);
+  font-size: var(--t-sm);
+  line-height: 1.5;
+}
+
+/* One-line summary of the three steps, shown only on phones where the list is hidden. */
+.steps-line { display: none; margin: 0; color: var(--wash-ink); font-size: var(--t-sm); font-weight: 600; text-align: center; }
+
+.tabs { display: flex; gap: 0.5rem; margin-top: 1rem; }
+.tabs[hidden] { display: none; }
+
+.tab {
+  min-height: 2.25rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgb(20 48 143 / 0.35);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--wash-ink);
+  font: inherit;
+  font-size: var(--t-sm);
+  cursor: pointer;
+}
+
+.tab[aria-pressed="true"] { background: var(--wash-ink); border-color: var(--wash-ink); color: #fff; }
+
+.replay {
+  margin-top: 0.75rem;
+  padding: 0.5rem 0;
+  border: 0;
+  background: none;
+  color: var(--cobalt);
+  font: inherit;
+  font-size: var(--t-sm);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+  cursor: pointer;
+}
+
+.replay[hidden] { display: none; }
+
+/* ---------- phone (APP material from here down) ---------- */
+
+.phone {
+  /* 1dp in the app = --dp here. Every size inside the phone is written in dp
+     measured from the real 1080 px (= 360 dp) screenshots. */
+  --phone-w: 16.5rem;
+  --dp: calc(var(--phone-w) / 360);
+  position: relative;
+  width: var(--phone-w);
+  aspect-ratio: 360 / 600;
+  overflow: hidden;
+  border: 1px solid #c7cfe4;
+  border-radius: calc(28 * var(--dp));
+  background: var(--surface);
+  box-shadow: 0 1.25rem 2.5rem rgb(20 48 143 / 0.16);
+  font-family: var(--font-app);
+  color: var(--ink);
+}
+
+/* frames variant: real screenshots */
+.phone .frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* contain, not cover: cover cropped the sides and pushed Cancel to the edge */
+  object-fit: contain;
+  object-position: top;
+}
+
+.phone .frame[hidden] { display: none; }
+
+/* live variant: home screen */
+.home {
+  position: absolute;
+  inset: 0;
+  padding: calc(56 * var(--dp)) calc(28 * var(--dp)) 0;
+  background: linear-gradient(#eef1fa, #e3e8f6);
+}
+
+.home-clock {
+  margin: 0 0 calc(40 * var(--dp));
+  font-size: calc(44 * var(--dp));
+  font-weight: 300;
+  line-height: 1;
+  color: #2b2f3a;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: calc(22 * var(--dp)) calc(12 * var(--dp));
+}
+
+.home-app {
+  display: grid;
+  justify-items: center;
+  gap: calc(6 * var(--dp));
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: calc(11 * var(--dp));
+  color: #2b2f3a;
+}
+
+.home-app i {
+  display: block;
+  width: calc(52 * var(--dp));
+  height: calc(52 * var(--dp));
+  border-radius: calc(16 * var(--dp));
+  background: #cfd6e8;
+}
+
+.home-app.is-target { cursor: pointer; }
+
+.home-app.is-target i {
+  background: var(--ink);
+  position: relative;
+}
+
+/* A generic "feed" glyph: three bars. No real app's mark. */
+.home-app.is-target i::before {
+  content: "";
+  position: absolute;
+  inset: 32% 26%;
+  background:
+    linear-gradient(#fff, #fff) 0 0 / 100% 18% no-repeat,
+    linear-gradient(#fff, #fff) 0 50% / 70% 18% no-repeat,
+    linear-gradient(#fff, #fff) 0 100% / 85% 18% no-repeat;
+}
+
+.home-app.is-target:focus-visible { outline-offset: calc(4 * var(--dp)); }
+
+.home-hint {
+  position: relative;
+  width: fit-content;
+  max-width: calc(200 * var(--dp));
+  /* centre of the 3rd column sits at 62.5% of the grid; the arrow is 24dp in from the left */
+  margin: calc(14 * var(--dp)) 0 0 calc(62.5% - 24 * var(--dp));
+  padding: calc(10 * var(--dp)) calc(12 * var(--dp));
+  border-radius: calc(12 * var(--dp));
+  background: rgb(27 27 31 / 0.82);
+  color: #fff;
+  font-size: calc(13 * var(--dp));
+  line-height: 1.4;
+  text-align: left;
+}
+
+.home-hint::before {
+  content: "";
+  position: absolute;
+  top: calc(-6 * var(--dp));
+  left: calc(18 * var(--dp));
+  border: calc(6 * var(--dp)) solid transparent;
+  border-top: 0;
+  border-bottom-color: rgb(27 27 31 / 0.82);
+}
+
+/* live variant: pause screen (copies PauseActivity layout) */
+.pause {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: calc(24 * var(--dp)) calc(12 * var(--dp)) 0;
+  background: var(--surface);
+  transform: translateY(100%);
+  transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.pause.is-up { transform: none; }
+
+.pause-icon {
+  width: calc(50 * var(--dp));
+  height: calc(50 * var(--dp));
+  border-radius: calc(14 * var(--dp));
+  background: var(--ink);
+  position: relative;
+}
+
+.pause-icon::before {
+  content: "";
+  position: absolute;
+  inset: 32% 26%;
+  background:
+    linear-gradient(#fff, #fff) 0 0 / 100% 18% no-repeat,
+    linear-gradient(#fff, #fff) 0 50% / 70% 18% no-repeat,
+    linear-gradient(#fff, #fff) 0 100% / 85% 18% no-repeat;
+}
+
+.pause-name {
+  margin: calc(10 * var(--dp)) 0 calc(6 * var(--dp));
+  font-size: calc(26 * var(--dp));
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.pause-prompt {
+  margin: 0;
+  padding-inline: calc(8 * var(--dp));
+  font-size: calc(15 * var(--dp));
+  line-height: 1.45;
+  color: var(--app-prompt);
+  text-align: center;
+}
+
+/* CountdownRing.kt: 140 dp, 6 dp stroke, arc from 12 o'clock,
+   color lerps primary -> tertiary, pulsing primary glow while counting. */
+.ring {
+  position: relative;
+  width: calc(140 * var(--dp));
+  height: calc(140 * var(--dp));
+  margin: calc(22 * var(--dp)) 0 calc(24 * var(--dp));
+}
+
+.ring svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+.ring-glow {
+  fill: var(--cobalt);
+  opacity: 0.25;
+  transform-origin: 50% 50%;
+  animation: glow 2s linear infinite alternate;
+}
+
+@keyframes glow {
+  from { opacity: 0.15; transform: scale(0.95); }
+  to { opacity: 0.35; transform: scale(1.05); }
+}
+
+.ring-track { fill: none; stroke: rgb(233 237 246 / 0.3); }
+.ring-arc { fill: none; stroke-linecap: round; }
+
+.ring-num {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: calc(48 * var(--dp));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.ring-check { display: none; }
+
+.ring.is-done .ring-glow { display: none; }
+.ring.is-done .ring-num { display: none; }
+.ring.is-done .ring-check { display: block; }
+
+.chips {
+  display: grid;
+  grid-template-columns: repeat(2, calc(139 * var(--dp)));
+  gap: calc(8 * var(--dp));
+}
+
+.chip {
+  min-height: calc(40 * var(--dp));
+  padding: 0 calc(6 * var(--dp));
+  border: 1px solid var(--app-outline);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--cobalt);
+  font: inherit;
+  font-size: calc(14 * var(--dp));
+  font-weight: 500;
+  line-height: 1.15;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  border-color: var(--cobalt);
+  background: var(--wash);
+  color: var(--wash-ink);
+}
+
+.continue {
+  width: calc(183 * var(--dp));
+  min-height: calc(44 * var(--dp));
+  margin-top: calc(18 * var(--dp));
+  border: 0;
+  border-radius: 999px;
+  background: var(--cobalt);
+  color: #fff;
+  font: inherit;
+  font-size: calc(15 * var(--dp));
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.continue:disabled {
+  background: var(--app-disabled);
+  color: var(--app-disabled-ink);
+  cursor: not-allowed;
+}
+
+.cancel {
+  margin-top: calc(10 * var(--dp));
+  padding: calc(8 * var(--dp)) calc(16 * var(--dp));
+  border: 0;
+  background: none;
+  color: var(--cobalt);
+  font: inherit;
+  font-size: calc(15 * var(--dp));
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* live variant: the "opened" example app */
+.opened {
+  position: absolute;
+  inset: 0;
+  padding: calc(56 * var(--dp)) calc(20 * var(--dp)) 0;
+  background: var(--surface);
+}
+
+.opened-bar {
+  display: flex;
+  align-items: center;
+  gap: calc(10 * var(--dp));
+  margin-bottom: calc(18 * var(--dp));
+  font-size: calc(16 * var(--dp));
+  font-weight: 700;
+}
+
+.opened-bar .pause-icon { width: calc(28 * var(--dp)); height: calc(28 * var(--dp)); border-radius: calc(8 * var(--dp)); }
+
+.opened-card {
+  height: calc(120 * var(--dp));
+  margin-bottom: calc(12 * var(--dp));
+  border-radius: calc(12 * var(--dp));
+  background: #eceff6;
+}
+
+.home[hidden], .pause[hidden], .opened[hidden] { display: none; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 880px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .stage { justify-self: stretch; }
+}
+
+/* Narrow screens: section links move to their own row and scroll sideways,
+   so the page keeps in-page navigation without a menu button. */
+@media (max-width: 720px) {
+  .top-row { gap: 0.75rem; min-height: 3.25rem; }
+  .nav {
+    flex: 1 1 auto;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 1rem;
+  }
+  .nav::-webkit-scrollbar { display: none; }
+}
+
+@media (max-width: 520px) {
+  .stage-grid { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  .steps { width: 100%; }
+  .phone { --phone-w: min(13rem, 70vw); }
+  /* The mobile download bar already gives a permanent way to download,
+     so the header does not need to stick and take screen space. */
+  .top { position: static; }
+  .steps { display: none; }
+  .steps-line { display: block; }
+  .stage-note { text-align: center; }
+  .cta .btn { flex: 1 1 100%; }
+  .top-end .btn-sm { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pause { transition: none; }
+  .ring-glow { animation: none; }
+}
+
+/* Keep short Chinese terms on one line; CJK can otherwise break inside a word. */
+.nb { white-space: nowrap; }
+
+/* ======================================================================
+   Sections below the hero (PAGE material: rules, no cards, square corners)
+   ====================================================================== */
+
+.section {
+  padding-block: clamp(3.5rem, 8vw, 6rem);
+  border-top: 1px solid var(--rule);
+  scroll-margin-top: 4rem;
+}
+
+.section-head { max-width: 40rem; margin-bottom: clamp(2rem, 5vw, 3rem); }
+
+.section-head h2 {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-serif);
+  font-size: var(--t-h2);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+:lang(zh) .section-head h2 { line-height: 1.35; letter-spacing: 0.02em; }
+
+.section-head p { margin: 0; color: var(--ink-soft); font-size: var(--t-lead); }
+
+h3 { margin: 0 0 0.35rem; font-size: var(--t-lead); font-weight: 650; line-height: 1.4; }
+
+/* Two columns: copy on the left, an app screen on the right. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: start;
+}
+
+.split .phone { --phone-w: 15rem; aspect-ratio: auto; }
+.split .phone img { width: 100%; }
+.shot { margin: 0; }
+
+/* ---------- install steps (a real sequence, so it is numbered) ---------- */
+
+.install {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: inst;
+}
+
+.install li {
+  counter-increment: inst;
+  position: relative;
+  padding: 1.25rem 0 1.25rem 3rem;
+  border-top: 1px solid var(--rule);
+  max-width: 34rem;
+}
+
+.install li:last-child { border-bottom: 1px solid var(--rule); }
+
+.install li::before {
+  content: counter(inst);
+  position: absolute;
+  left: 0;
+  top: 1.3rem;
+  width: 1.9rem;
+  height: 1.9rem;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--ink);
+  border-radius: 50%;
+  font-size: var(--t-sm);
+  font-weight: 700;
+}
+
+.install p, .note { margin: 0; color: var(--ink-soft); }
+
+.note { max-width: 34rem; margin-top: 1.25rem; font-size: var(--t-sm); }
+
+/* ---------- permissions: grouped by which phones need them ---------- */
+
+.perm-group {
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: 1rem clamp(1.5rem, 5vw, 4rem);
+  padding-block: 1.5rem;
+  border-top: 1px solid var(--rule);
+}
+
+.perm-group:last-of-type { border-bottom: 1px solid var(--rule); }
+
+.perm-group h3 { font-size: var(--t-body); }
+
+/* Only the "every phone" group gets the strong ink rule: it is the one hard requirement. */
+.perm-group.is-all { border-top: 2px solid var(--ink); }
+
+.perm-group dl { margin: 0; display: grid; gap: 1.1rem; }
+.perm-group dt { font-weight: 650; }
+.perm-group dd { margin: 0.15rem 0 0; color: var(--ink-soft); max-width: 40rem; }
+
+.privacy {
+  max-width: 44rem;
+  margin: 2rem 0 0;
+  color: var(--ink-soft);
+}
+
+.privacy strong { color: var(--ink); }
+
+/* ---------- record ---------- */
+
+.facts-list { margin: 0; display: grid; gap: 1rem; max-width: 32rem; }
+.facts-list div { padding-top: 1rem; border-top: 1px solid var(--rule); }
+.facts-list dt { font-weight: 650; }
+.facts-list dd { margin: 0.15rem 0 0; color: var(--ink-soft); }
+
+/* ---------- free and Pro ---------- */
+
+.plans {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 2px solid var(--ink);
+}
+
+.plans > div { padding: 1.25rem 2rem 1.5rem 0; }
+.plans > div + div { padding-left: 2rem; border-left: 1px solid var(--rule); }
+
+.plans ul { margin: 0.75rem 0 0; padding: 0; list-style: none; }
+.plans li { padding: 0.55rem 0; border-top: 1px solid var(--rule); color: var(--ink-soft); }
+.plans li b { color: var(--ink); font-weight: 650; }
+
+.order {
+  max-width: 40rem;
+  margin: 2rem 0 0;
+  padding: 0 0 0 1.4rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.order li::marker { font-weight: 700; }
+
+code {
+  font-family: var(--font-code);
+  font-size: 0.9em;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- FAQ ---------- */
+
+.faq { max-width: 46rem; }
+
+.faq details { border-top: 1px solid var(--rule); }
+.faq details:last-child { border-bottom: 1px solid var(--rule); }
+
+.faq summary {
+  position: relative;
+  padding: 1rem 2.5rem 1rem 0;
+  font-weight: 650;
+  cursor: pointer;
+  list-style: none;
+}
+
+.faq summary::-webkit-details-marker { display: none; }
+
+/* Plus and minus are drawn with two bars so screen readers do not announce a symbol. */
+.faq summary::after {
+  content: "";
+  position: absolute;
+  right: 0.25rem;
+  top: 1.45rem;
+  width: 0.85rem;
+  height: 0.85rem;
+  background:
+    linear-gradient(var(--ink), var(--ink)) center / 100% 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) center / 2px 100% no-repeat;
+}
+
+.faq details[open] summary::after {
+  background: linear-gradient(var(--ink), var(--ink)) center / 100% 2px no-repeat;
+}
+
+.faq details p { margin: 0 0 1rem; color: var(--ink-soft); }
+
+/* ---------- download ---------- */
+
+.download {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
+  gap: clamp(2rem, 6vw, 5rem);
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+.download h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-serif);
+  font-size: var(--t-h2);
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.download .meta { margin: 0 0 1.5rem; color: var(--ink-soft); }
+
+.spec { margin: 0; }
+.spec div { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 1rem; padding: 0.55rem 0; border-top: 1px solid var(--rule); }
+.spec div:last-child { border-bottom: 1px solid var(--rule); }
+.spec dt { color: var(--ink-soft); font-size: var(--t-sm); }
+.spec dd { margin: 0; font-size: var(--t-sm); overflow-wrap: anywhere; }
+
+.sha { margin-top: 1.5rem; max-width: 46rem; }
+.sha { border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.sha summary { position: relative; padding: 0.9rem 2.5rem 0.9rem 0; font-weight: 650; cursor: pointer; list-style: none; }
+.sha summary::-webkit-details-marker { display: none; }
+.sha summary::after {
+  content: "";
+  position: absolute;
+  right: 0.25rem;
+  top: 1.3rem;
+  width: 0.85rem;
+  height: 0.85rem;
+  background:
+    linear-gradient(var(--ink), var(--ink)) center / 100% 2px no-repeat,
+    linear-gradient(var(--ink), var(--ink)) center / 2px 100% no-repeat;
+}
+.sha[open] summary::after { background: linear-gradient(var(--ink), var(--ink)) center / 100% 2px no-repeat; }
+.sha p { margin: 0.5rem 0; color: var(--ink-soft); font-size: var(--t-sm); }
+.sha .hash { display: block; padding: 0.75rem; background: var(--paper); border: 1px solid var(--rule); word-break: break-all; }
+
+.more-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.75rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--t-sm);
+}
+
+.more-links a { display: inline-block; padding-block: 0.6rem; }
+
+.ios { max-width: 40rem; margin: 1.5rem 0 0; color: var(--ink-soft); font-size: var(--t-sm); }
+
+/* ---------- footer ---------- */
+
+.foot {
+  padding-block: 2rem 3rem;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-soft);
+  font-size: var(--t-sm);
+}
+
+.foot ul { display: flex; flex-wrap: wrap; gap: 0.25rem 1.5rem; margin: 0; padding: 0; list-style: none; }
+.foot a { display: inline-block; padding-block: 0.5rem; }
+.foot p { margin: 0.75rem 0 0; }
+
+/* ---------- mobile download bar: appears after the hero, hides at the download section ---------- */
+
+.bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--rule);
+  background: var(--paper);
+  transform: translateY(110%);
+  visibility: hidden;
+  transition: transform 220ms ease, visibility 0s linear 220ms;
+}
+
+.bar.show { transform: none; visibility: visible; transition: transform 220ms ease, visibility 0s; }
+.bar span { margin-right: auto; color: var(--ink-soft); font-size: var(--t-sm); }
+
+@media (max-width: 880px) {
+  .split { grid-template-columns: minmax(0, 1fr); }
+  .split .phone { justify-self: center; }
+  .download { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 720px) {
+  .perm-group { grid-template-columns: minmax(0, 1fr); }
+  .plans { grid-template-columns: minmax(0, 1fr); }
+  .plans > div, .plans > div + div { padding: 1.25rem 0; border-left: 0; }
+  .plans > div + div { border-top: 1px solid var(--rule); }
+}
+
+@media (max-width: 520px) {
+  .bar { display: flex; }
+  .foot { padding-bottom: 5.5rem; }
+  .download .btn { width: 100%; }
+  .spec div { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar { transition: none; }
+}
+
+@media print {
+  .top, .bar, .skip, .stage { display: none; }
+}
+
+/* The source section has three short facts: lay them side by side on wide screens
+   instead of leaving the right half of the page empty. */
+.facts-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 2rem; max-width: none; }
+@media (max-width: 880px) { .facts-row { grid-template-columns: minmax(0, 1fr); gap: 1rem; } }
+
+/* 10. FAQ: heading column on the left, questions on the right */
+.faq-split {
+  display: grid;
+  grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+  gap: clamp(2rem, 6vw, 5rem);
+  align-items: start;
+}
+.faq-split .section-head { margin-bottom: 0; }
+.faq-split .section-head p { font-size: var(--t-body); }
+@media (max-width: 880px) {
+  .faq-split { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+}
+
+.download-note { color: var(--ink-soft); font-size: var(--t-sm); max-width: 42ch; }

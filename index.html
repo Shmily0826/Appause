@@ -1,1832 +1,423 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#f7f8fb" />
-  <title>Appause | Open with a reason, not a reflex</title>
-  <meta name="description" content="Appause interrupts distracting app openings at the moment of action, so continuing becomes an intentional choice. Local-first Android app, no account required." />
-  <link rel="canonical" href="https://shmily0826.github.io/Appause/" />
-  <link rel="alternate" hreflang="en" href="https://shmily0826.github.io/Appause/" />
-  <link rel="alternate" hreflang="zh-CN" href="https://shmily0826.github.io/Appause/zh.html" />
-  <link rel="alternate" hreflang="x-default" href="https://shmily0826.github.io/Appause/" />
-  <link rel="icon" href="images/favicon-32.png" sizes="32x32" type="image/png" />
-  <link rel="apple-touch-icon" href="images/apple-touch-icon.png" />
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Appause" />
-  <meta property="og:url" content="https://shmily0826.github.io/Appause/" />
-  <meta property="og:title" content="Appause | Open with a reason, not a reflex" />
-  <meta property="og:description" content="A free Android focus tool that gives you a few seconds before distracting apps open. No subscription, and no paid tier planned." />
-  <meta property="og:image" content="https://shmily0826.github.io/Appause/images/og-card.png" />
-  <meta property="og:image:type" content="image/png" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-  <meta property="og:image:alt" content="Appause pause screen giving you a few seconds before a selected app opens." />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Appause | Open with a reason, not a reflex" />
-  <meta name="twitter:description" content="Appause interrupts distracting app openings at the moment of action, so continuing becomes an intentional choice. Local-first Android app, no account required." />
-  <meta name="twitter:image" content="https://shmily0826.github.io/Appause/images/og-card.png" />
-  <meta name="twitter:image:alt" content="Appause pause screen asking for a reason before a selected app opens, beside the headline Put intention between tap and scroll." />
-  <!-- 结构化数据：FAQPage 覆盖本页 #faq 里除「Show the APK SHA-256 checksum」
-       （那是折叠区，不是问答）之外的全部问答，共 8 条。改页面文案必须同步这里。 -->
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@graph":[
-    {"@type":"SoftwareApplication","name":"Appause","operatingSystem":"Android 8.0+","applicationCategory":"UtilitiesApplication","softwareVersion":"0.5.45","fileSize":"12.3MB","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"isAccessibleForFree":true,"author":{"@type":"Organization","name":"Appause authors"},"license":"https://opensource.org/licenses/MIT","downloadUrl":"https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk","inLanguage":"en","description":"Appause is a local-first Android focus tool that puts a short cooldown in front of the apps you choose, so opening one becomes a decision instead of a reflex. Core features are free, and the source is MIT licensed."},
-    {"@type":"FAQPage","mainEntity":[
-      {"@type":"Question","name":"Install shows a warning about an unknown app. Is something wrong?","acceptedAnswer":{"@type":"Answer","text":"Appause is not distributed through an app store, so Android asks you to allow installs from the app you downloaded with. That prompt is expected for any APK that did not come from a store. Google Play Protect may also label the app as unknown, which reflects that it has no install history rather than the result of a scan. You can verify the file by comparing its SHA-256 against the published checksum and reading the source. If a warning names a specific threat or blocks the install with no way to continue, do not install it."}},
-      {"@type":"Question","name":"Why is the accessibility permission required? Does it read my screen?","acceptedAnswer":{"@type":"Answer","text":"The service only detects which app is in the foreground, so Appause knows when to step in. It is configured without window-content access and never reads screen content, messages, screenshots, or keystrokes. This is the one setting required on every device."}},
-      {"@type":"Question","name":"Is my data uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"Groups, cooldowns, and statistics are stored on your device with Room and DataStore, and uninstalling clears them. No account, no ads, no analytics SDK, no cloud sync. The network is used only when you start the Pro trial, redeem a code, or send feedback. A trial or redemption leaves the device binding and that record on the activation server, but no groups, statistics, or usage history."}},
-      {"@type":"Question","name":"Does Xiaomi / HyperOS need extra setup?","acceptedAnswer":{"@type":"Answer","text":"Yes. On phones with aggressive background management such as Xiaomi/HyperOS, two settings beyond the accessibility service are required in practice: battery use set to Unrestricted, and Autostart allowed. If the system removes Appause from memory in the background, interception stops until it is running again. This has so far been verified on one physical device (Xiaomi, HyperOS) and one emulator, so it does not cover every phone."}},
-      {"@type":"Question","name":"Why did a notification trigger a pause?","acceptedAnswer":{"@type":"Answer","text":"On some devices, a media notification can produce an accessibility event that resembles an app switch and occasionally trigger a pause. Optional Usage access can help confirm which app is in the foreground, but it cannot prevent every false trigger."}},
-      {"@type":"Question","name":"Does it force-lock my phone?","acceptedAnswer":{"@type":"Answer","text":"No. After the countdown you can continue or return to the home screen, and you can disable the service or change groups at any time. Appause is a habit aid, not a monitoring or security tool."}},
-      {"@type":"Question","name":"Do I have to pay for Pro?","acceptedAnswer":{"@type":"Answer","text":"No. The public beta is free and no paid tier is planned. Pro adds unlimited groups, re-remind, custom pause text, and custom open reasons. Start one free 7-day trial per device, then request free lifetime access through Settings, Feedback."}},
-      {"@type":"Question","name":"How do I update, and what happens when I switch phones?","acceptedAnswer":{"@type":"Answer","text":"Install the new APK over the old one and do not uninstall first, because uninstalling removes local data. There is no config export; groups are set up again on a new phone and the Pro license needs re-activation there."}}
-    ]}
-  ]}
-  </script>
-  <style>
-    /* Hallmark · genre: modern-minimal · macrostructure: Workbench · theme: Cobalt · enrichment: real product captures · nav: N1b · footer: Ft2 · tone: calm-utilitarian */
-    :root {
-      --color-paper: oklch(98% 0.006 255);
-      --color-paper-soft: oklch(95.5% 0.015 255);
-      --color-paper-blue: oklch(93% 0.035 260);
-      --color-surface: oklch(100% 0 0);
-      --color-ink: oklch(24% 0.045 258);
-      --color-ink-soft: oklch(47% 0.035 258);
-      --color-rule: oklch(88% 0.018 258);
-      --color-accent: oklch(57% 0.205 263);
-      --color-accent-deep: oklch(44% 0.18 263);
-      --color-accent-ink: oklch(99% 0.004 255);
-      --color-focus: oklch(66% 0.19 263);
-      --color-success: oklch(57% 0.13 158);
-      --color-shadow: oklch(25% 0.04 258 / 0.13);
-
-      --font-display: "Aptos Display", "Segoe UI Variable Display", "Segoe UI", sans-serif;
-      --font-body: "Aptos", "Segoe UI Variable Text", "Segoe UI", sans-serif;
-      --font-utility: "Cascadia Mono", "SFMono-Regular", Consolas, monospace;
-
-      --space-3xs: 0.25rem;
-      --space-2xs: 0.5rem;
-      --space-xs: 0.75rem;
-      --space-sm: 1rem;
-      --space-md: 1.5rem;
-      --space-lg: 2rem;
-      --space-xl: 3rem;
-      --space-2xl: 4.5rem;
-      --space-3xl: 7rem;
-
-      --text-xs: 0.75rem;
-      --text-sm: 0.875rem;
-      --text-body: 1rem;
-      --text-lead: clamp(1.05rem, 1.5vw, 1.22rem);
-      --text-h3: clamp(1.35rem, 2vw, 1.7rem);
-      --text-h2: clamp(2.25rem, 4.8vw, 4.35rem);
-      --text-display: clamp(3.15rem, 7.1vw, 6.65rem);
-
-      --radius-sm: 0.65rem;
-      --radius-md: 1.1rem;
-      --radius-lg: 1.75rem;
-      --radius-pill: 999px;
-      --rule-thin: 1px;
-      --content: 74rem;
-      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-      --dur-short: 180ms;
-    }
-
-    *,
-    *::before,
-    *::after {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      overflow-x: clip;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
-    body {
-      margin: 0;
-      background: var(--color-paper);
-      color: var(--color-ink);
-      font-family: var(--font-body);
-      line-height: 1.6;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    img {
-      max-width: 100%;
-    }
-
-    a {
-      color: inherit;
-    }
-
-    a:focus-visible {
-      outline: 3px solid var(--color-focus);
-      outline-offset: 4px;
-      border-radius: var(--radius-sm);
-    }
-
-    .skip-link {
-      position: fixed;
-      z-index: 20;
-      top: var(--space-sm);
-      left: var(--space-sm);
-      padding: var(--space-xs) var(--space-sm);
-      border-radius: var(--radius-sm);
-      background: var(--color-ink);
-      color: var(--color-surface);
-      text-decoration: none;
-      transform: translateY(-180%);
-      transition: transform var(--dur-short) var(--ease-out);
-    }
-
-    .skip-link:focus {
-      transform: translateY(0);
-    }
-
-    .container {
-      width: min(var(--content), calc(100% - 3rem));
-      margin-inline: auto;
-    }
-
-    .site-header {
-      position: relative;
-      z-index: 5;
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-      background: var(--color-paper);
-    }
-
-    .nav {
-      min-height: 4.75rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-lg);
-    }
-
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--space-xs);
-      flex: 0 0 auto;
-      color: var(--color-ink);
-      font-family: var(--font-display);
-      font-size: 1.08rem;
-      font-weight: 720;
-      letter-spacing: -0.03em;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .brand img {
-      width: 2rem;
-      height: 2rem;
-      border-radius: 0.55rem;
-      box-shadow: 0 0.35rem 1rem var(--color-shadow);
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: clamp(1rem, 2.5vw, 2rem);
-      min-width: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-      font-weight: 640;
-    }
-
-    .nav-links a {
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .nav-links a:hover {
-      color: var(--color-ink);
-    }
-
-    .nav-download {
-      min-height: 2.55rem;
-      display: inline-flex;
-      align-items: center;
-      /* The long label is split into three flex items by the data-r version span
-         ("Download" / "v0.5.45" / "Public Beta"). Without a gap the
-         whitespace-only text nodes collapse and the words run together as
-         "Downloadv0.5.45Public Beta". em-based so it shrinks with the
-         smaller font on narrow screens. */
-      gap: 0.32em;
-      padding: 0.55rem 1rem;
-      border-radius: var(--radius-pill);
-      background: var(--color-ink);
-      color: var(--color-surface) !important;
-    }
-
-    /* Two label variants; the short one is swapped in on very narrow screens
-       where the full label would push the button past the viewport edge. */
-    .nav-download-short {
-      display: none;
-    }
-
-    .hero {
-      padding: clamp(4.5rem, 9vw, 7.5rem) 0 clamp(5rem, 9vw, 7rem);
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.04fr) minmax(25rem, 0.96fr);
-      align-items: center;
-      gap: clamp(3rem, 8vw, 7.5rem);
-    }
-
-    .hero-copy,
-    .section-copy,
-    .chapter-copy {
-      min-width: 0;
-    }
-
-    .hero-label {
-      margin: 0 0 var(--space-lg);
-      color: var(--color-accent-deep);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      letter-spacing: 0.11em;
-      text-transform: uppercase;
-    }
-
-    h1,
-    h2,
-    h3,
-    p {
-      margin-top: 0;
-    }
-
-    h1,
-    h2,
-    h3 {
-      font-family: var(--font-display);
-      font-style: normal;
-      letter-spacing: -0.055em;
-      overflow-wrap: anywhere;
-    }
-
-    h1 {
-      max-width: 11ch;
-      margin-bottom: var(--space-lg);
-      font-size: var(--text-display);
-      font-weight: 720;
-      line-height: 0.91;
-    }
-
-    h2 {
-      max-width: 13ch;
-      margin-bottom: var(--space-md);
-      font-size: var(--text-h2);
-      font-weight: 700;
-      line-height: 0.98;
-    }
-
-    h3 {
-      margin-bottom: var(--space-xs);
-      font-size: var(--text-h3);
-      font-weight: 690;
-      line-height: 1.05;
-    }
-
-    .hero-intro {
-      max-width: 35rem;
-      margin-bottom: var(--space-lg);
-      color: var(--color-ink-soft);
-      font-size: var(--text-lead);
-      line-height: 1.55;
-    }
-
-    .actions {
-      display: flex;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: var(--space-xs);
-    }
-
-    .button {
-      min-height: 3.1rem;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: var(--space-2xs);
-      padding: 0.75rem 1.15rem;
-      border: var(--rule-thin) solid transparent;
-      border-radius: var(--radius-pill);
-      font-size: var(--text-sm);
-      font-weight: 720;
-      line-height: 1;
-      text-decoration: none;
-      white-space: nowrap;
-      transition: transform var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
-    }
-
-    .button:hover {
-      transform: translateY(-2px);
-    }
-
-    .button:active {
-      transform: translateY(0);
-    }
-
-    .button-primary {
-      background: var(--color-accent);
-      color: var(--color-accent-ink);
-      box-shadow: 0 0.65rem 1.7rem var(--color-shadow);
-    }
-
-    .button-primary:hover {
-      background: var(--color-accent-deep);
-    }
-
-    .button-secondary {
-      border-color: var(--color-rule);
-      background: var(--color-surface);
-      color: var(--color-ink);
-    }
-
-    .release-line {
-      margin: var(--space-sm) 0 0;
-      color: var(--color-ink-soft);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-    }
-
-    .moment-board {
-      min-width: 0;
-      display: grid;
-      grid-template-columns: minmax(9rem, 0.72fr) minmax(0, 1fr);
-      align-items: center;
-      gap: clamp(1.25rem, 3vw, 2.5rem);
-      padding: clamp(1.25rem, 3vw, 2.25rem);
-      border: var(--rule-thin) solid var(--color-rule);
-      border-radius: var(--radius-lg);
-      background: var(--color-paper-soft);
-    }
-
-    .decision-track {
-      position: relative;
-      margin: 0;
-    }
-
-    .decision-track::before {
-      position: absolute;
-      top: 0.65rem;
-      bottom: 0.65rem;
-      left: 0.28rem;
-      width: var(--rule-thin);
-      content: "";
-      background: var(--color-rule);
-    }
-
-    .decision-track div {
-      position: relative;
-      padding-left: 1.4rem;
-    }
-
-    .decision-track div + div {
-      margin-top: clamp(2rem, 5vw, 3.75rem);
-    }
-
-    .decision-track div::before {
-      position: absolute;
-      top: 0.45rem;
-      left: 0;
-      width: 0.62rem;
-      height: 0.62rem;
-      border: 2px solid var(--color-paper-soft);
-      border-radius: var(--radius-pill);
-      content: "";
-      background: var(--color-accent);
-      box-shadow: 0 0 0 1px var(--color-accent);
-    }
-
-    .decision-track dt {
-      color: var(--color-ink-soft);
-      font-family: var(--font-utility);
-      font-size: 0.68rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .decision-track dd {
-      margin: 0.2rem 0 0;
-      font-size: var(--text-sm);
-      font-weight: 680;
-      line-height: 1.35;
-    }
-
-    .product-shot {
-      margin: 0;
-      min-width: 0;
-    }
-
-    /* The picture element is inline by default, which would shrink-wrap the
-       image and break the `width: 100%` on the img below. Make it a block. */
-    .product-shot picture {
-      display: block;
-      width: 100%;
-    }
-
-    .product-shot img {
-      display: block;
-      width: 100%;
-      height: auto;
-      aspect-ratio: auto;
-      object-fit: contain;
-      border: var(--rule-thin) solid var(--color-rule);
-      border-radius: var(--radius-md);
-      background: var(--color-surface);
-      box-shadow: 0 1rem 2.5rem var(--color-shadow);
-      transform: none !important;
-    }
-
-    .hero-shot {
-      width: min(100%, 14rem);
-      justify-self: end;
-    }
-
-    .hero-shot figcaption {
-      margin-top: var(--space-xs);
-      color: var(--color-ink-soft);
-      font-size: var(--text-xs);
-      line-height: 1.4;
-    }
-
-    .hero-shot figcaption strong {
-      display: block;
-      color: var(--color-ink);
-      font-weight: 700;
-    }
-
-    .section {
-      padding: clamp(5.25rem, 10vw, var(--space-3xl)) 0;
-    }
-
-    .section-heading {
-      max-width: 54rem;
-      margin-bottom: clamp(3rem, 7vw, 5.5rem);
-    }
-
-    .section-heading h2 {
-      margin-bottom: var(--space-md);
-    }
-
-    .section-intro {
-      max-width: 34rem;
-      margin-bottom: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-lead);
-    }
-
-    .mechanism-section {
-      border-top: var(--rule-thin) solid var(--color-rule);
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-      background: var(--color-surface);
-    }
-
-    .choice-rail {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      border-top: var(--rule-thin) solid var(--color-rule);
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .choice-rail li {
-      position: relative;
-      min-width: 0;
-      padding: var(--space-lg) clamp(1.25rem, 3vw, 2.5rem) var(--space-xl) 0;
-    }
-
-    .choice-rail li + li {
-      padding-left: clamp(1.25rem, 3vw, 2.5rem);
-      border-left: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .choice-rail li:last-child {
-      padding-right: 0;
-    }
-
-    .choice-index {
-      display: block;
-      margin-bottom: var(--space-xl);
-      color: var(--color-accent-deep);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      font-weight: 700;
-    }
-
-    .choice-rail p {
-      max-width: 18rem;
-      margin-bottom: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .product-section {
-      background: var(--color-paper);
-    }
-
-    .tour-chapter {
-      display: grid;
-      grid-template-columns: minmax(17rem, 0.68fr) minmax(0, 1.32fr);
-      align-items: center;
-      gap: clamp(2.5rem, 8vw, 7rem);
-      padding: clamp(3rem, 7vw, 5.5rem) 0;
-      border-top: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .tour-chapter:last-child {
-      padding-bottom: 0;
-    }
-
-    .product-section .section-heading h2 {
-      max-width: 16ch;
-      font-size: clamp(2.15rem, 4vw, 3.65rem);
-    }
-
-    .chapter-number {
-      display: inline-block;
-      margin-bottom: var(--space-lg);
-      color: var(--color-accent-deep);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      letter-spacing: 0.08em;
-    }
-
-    .chapter-copy p {
-      max-width: 31rem;
-      margin-bottom: 0;
-      color: var(--color-ink-soft);
-    }
-
-    .paired-shots {
-      min-width: 0;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      align-items: start;
-      gap: clamp(0.75rem, 3vw, 1.75rem);
-      padding: clamp(1rem, 3vw, 2rem);
-      border-radius: var(--radius-lg);
-      background: var(--color-paper-blue);
-    }
-
-    .paired-shots .product-shot:nth-child(2) {
-      margin-top: clamp(2rem, 5vw, 4rem);
-    }
-
-    .screen-caption {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      gap: var(--space-xs);
-      margin-top: var(--space-sm);
-      align-items: baseline;
-      font-size: var(--text-xs);
-      line-height: 1.4;
-    }
-
-    .screen-caption strong {
-      color: var(--color-ink);
-      font-weight: 720;
-    }
-
-    .screen-caption span {
-      color: var(--color-ink-soft);
-    }
-
-    .tour-chapter-review {
-      grid-template-columns: minmax(0, 1.15fr) minmax(17rem, 0.85fr);
-    }
-
-    .tour-chapter-review .chapter-copy {
-      order: 2;
-    }
-
-    .review-visual {
-      display: grid;
-      grid-template-columns: minmax(0, 15.5rem) minmax(10rem, 1fr);
-      align-items: center;
-      gap: clamp(1.25rem, 4vw, 3rem);
-      padding: clamp(1rem, 3vw, 2rem);
-      border: var(--rule-thin) solid var(--color-rule);
-      border-radius: var(--radius-lg);
-      background: var(--color-surface);
-    }
-
-    .review-notes {
-      margin: 0;
-    }
-
-    .review-notes div {
-      padding: var(--space-md) 0;
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .review-notes div:last-child {
-      border-bottom: 0;
-    }
-
-    .review-notes dt {
-      color: var(--color-ink);
-      font-size: var(--text-sm);
-      font-weight: 720;
-    }
-
-    .review-notes dd {
-      margin: var(--space-3xs) 0 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-xs);
-      line-height: 1.45;
-    }
-
-    .tour-cta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-lg);
-      margin-top: var(--space-xl);
-      padding: var(--space-md) 0;
-      border-top: var(--rule-thin) solid var(--color-rule);
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .tour-cta p {
-      margin-bottom: 0;
-      font-weight: 690;
-    }
-
-    .tour-cta .button {
-      flex: 0 0 auto;
-    }
-
-    .trust-section {
-      border-top: var(--rule-thin) solid var(--color-rule);
-      background: var(--color-surface);
-    }
-
-    .permission-ledger {
-      border-top: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .permission-must {
-      margin: 0 0 var(--space-lg);
-      padding: var(--space-md) var(--space-lg);
-      border-left: 3px solid var(--color-accent);
-      background: var(--color-paper-blue);
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-      color: var(--color-ink);
-      font-size: var(--text-sm);
-    }
-
-    .permission-must strong {
-      font-weight: 700;
-    }
-
-    .permission-row {
-      display: grid;
-      grid-template-columns: minmax(8rem, 0.35fr) minmax(13rem, 0.65fr) minmax(18rem, 1fr);
-      gap: clamp(1.25rem, 4vw, 3rem);
-      padding: var(--space-lg) 0;
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-      align-items: start;
-    }
-
-    .permission-status {
-      color: var(--color-accent-deep);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      font-weight: 700;
-    }
-
-    /* 必需项在钴蓝里也要有「这是硬要求」的视觉重量，否则和 Recommended 只差一个词。 */
-    .permission-status--required {
-      color: var(--color-accent);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .permission-row h3 {
-      margin-bottom: 0;
-      font-size: 1.12rem;
-      letter-spacing: -0.025em;
-      line-height: 1.35;
-    }
-
-    .permission-row p {
-      margin-bottom: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .trust-note {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: center;
-      gap: var(--space-lg);
-      margin-top: var(--space-xl);
-      padding: var(--space-lg);
-      border-radius: var(--radius-md);
-      background: var(--color-paper-soft);
-    }
-
-    .trust-note p {
-      max-width: 48rem;
-      margin-bottom: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .text-links {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: var(--space-md);
-      font-size: var(--text-sm);
-      font-weight: 700;
-    }
-
-    .text-links a:hover {
-      color: var(--color-accent-deep);
-    }
-
-    .pro-section {
-      border-top: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .opensource-section {
-      border-top: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .opensource-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: var(--space-md);
-    }
-
-    .opensource-item {
-      border: var(--rule-thin) solid var(--color-rule);
-      border-radius: var(--radius-sm);
-      background: var(--color-paper-soft);
-      padding: var(--space-md);
-    }
-
-    .opensource-label {
-      display: block;
-      margin-bottom: var(--space-2xs);
-      color: var(--color-accent-deep);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .opensource-item p {
-      margin: 0;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-      line-height: 1.7;
-    }
-
-    .opensource-more {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-md);
-      margin-top: var(--space-lg);
-      font-size: var(--text-sm);
-      font-weight: 700;
-    }
-
-    .opensource-more a:hover {
-      color: var(--color-accent-deep);
-    }
-
-    .faq-section {
-      border-top: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .faq-list {
-      display: grid;
-      gap: var(--space-sm);
-      max-width: 56rem;
-    }
-
-    .faq-list details {
-      border: var(--rule-thin) solid var(--color-rule);
-      border-radius: var(--radius-sm);
-      background: var(--color-surface);
-      padding: var(--space-sm) var(--space-md);
-    }
-
-    .faq-list summary {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: var(--space-md);
-      cursor: pointer;
-      font-weight: 700;
-      font-size: var(--text-body);
-      color: var(--color-ink);
-      list-style: none;
-    }
-
-    .faq-list summary::-webkit-details-marker {
-      display: none;
-    }
-
-    .faq-list summary::after {
-      content: "+";
-      color: var(--color-ink-soft);
-      font-family: var(--font-utility);
-      font-weight: 400;
-    }
-
-    .faq-list details[open] summary::after {
-      content: "\2212";
-    }
-
-    .faq-list summary:focus-visible {
-      outline: 2px solid var(--color-focus);
-      outline-offset: 2px;
-    }
-
-    .faq-list details p {
-      margin: var(--space-xs) 0 0;
-      max-width: 52rem;
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-      line-height: 1.75;
-    }
-
-    .release-line a {
-      color: inherit;
-      text-decoration: underline;
-      text-underline-offset: 0.2em;
-    }
-
-    .release-line a:hover {
-      color: var(--color-accent-deep);
-    }
-
-    @media (max-width: 820px) {
-      .opensource-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .pro-columns {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      border-top: var(--rule-thin) solid var(--color-rule);
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .pro-column {
-      min-width: 0;
-      padding: var(--space-lg) clamp(1.25rem, 3vw, 2.5rem) var(--space-lg) 0;
-    }
-
-    .pro-column + .pro-column {
-      padding-left: clamp(1.25rem, 3vw, 2.5rem);
-      border-left: var(--rule-thin) solid var(--color-rule);
-    }
-
-    .pro-column-label {
-      display: block;
-      margin-bottom: var(--space-md);
-      color: var(--color-accent-deep);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .pro-list {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .pro-list li {
-      padding: var(--space-xs) 0;
-      border-bottom: var(--rule-thin) solid var(--color-rule);
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .pro-list li:last-child {
-      border-bottom: 0;
-    }
-
-    .pro-list strong {
-      color: var(--color-ink);
-      font-weight: 700;
-    }
-
-    .pro-order {
-      margin-top: var(--space-xl);
-      padding: var(--space-lg);
-      border-radius: var(--radius-md);
-      background: var(--color-paper-soft);
-      max-width: 46rem;
-    }
-
-    .pro-order p {
-      margin-bottom: var(--space-md);
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .pro-order ol {
-      margin: 0;
-      padding-inline-start: 1.4em;
-      display: grid;
-      gap: var(--space-sm);
-      color: var(--color-ink);
-      font-size: var(--text-sm);
-    }
-
-    .pro-order strong {
-      font-weight: 700;
-    }
-
-    .pro-order .pro-order-note {
-      margin: var(--space-md) 0 0;
-      padding-top: var(--space-md);
-      border-top: var(--rule-thin) solid var(--color-rule);
-      color: var(--color-ink-soft);
-      font-size: var(--text-xs);
-    }
-
-    .download-section {
-      padding-bottom: clamp(4rem, 9vw, 6.5rem);
-    }
-    .download-panel {
-      display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(18rem, 0.85fr);
-      gap: clamp(2rem, 7vw, 6rem);
-      padding: clamp(2rem, 6vw, 4.5rem);
-      border-radius: var(--radius-lg);
-      background: var(--color-ink);
-      color: var(--color-surface);
-    }
-
-    .download-panel h2 {
-      max-width: 10ch;
-      margin-bottom: var(--space-md);
-    }
-
-    .download-panel p {
-      max-width: 38rem;
-      color: var(--color-paper-blue);
-    }
-
-    .download-panel .button-primary {
-      margin-top: var(--space-xs);
-      background: var(--color-surface);
-      color: var(--color-accent-deep);
-      box-shadow: none;
-    }
-
-    .download-panel .button-primary:hover {
-      background: var(--color-paper-blue);
-    }
-
-    .install-facts {
-      margin: 0;
-    }
-
-    .install-facts div {
-      display: grid;
-      grid-template-columns: 6.5rem minmax(0, 1fr);
-      gap: var(--space-sm);
-      padding: var(--space-sm) 0;
-      border-bottom: var(--rule-thin) solid var(--color-ink-soft);
-    }
-
-    .install-facts div:last-child {
-      border-bottom: 0;
-    }
-
-    .install-facts dt {
-      color: var(--color-paper-blue);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-    }
-
-    .install-facts dd {
-      margin: 0;
-      color: var(--color-surface);
-      font-size: var(--text-sm);
-      overflow-wrap: anywhere;
-    }
-
-    .download-links {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-lg);
-      margin-top: var(--space-lg);
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .download-version {
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      color: var(--color-ink-soft);
-    }
-
-    .download-ios {
-      margin: var(--space-lg) 0 0;
-      padding-left: var(--space-md);
-      border-left: 2px solid var(--color-rule);
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-      max-width: 60ch;
-    }
-
-    .download-sha {
-      margin-top: var(--space-lg);
-      border-top: var(--rule-thin) solid var(--color-rule);
-      font-family: var(--font-utility);
-      font-size: var(--text-xs);
-      max-width: 60rem;
-    }
-
-    .download-sha summary {
-      display: flex;
-      align-items: center;
-      min-height: 2.75rem;
-      cursor: pointer;
-      color: var(--color-ink-soft);
-    }
-
-    .download-sha code {
-      display: block;
-      margin-top: 0.2em;
-      padding-bottom: var(--space-sm);
-      word-break: break-all;
-      color: var(--color-ink);
-      line-height: 1.7;
-    }
-
-    /* details 默认整块等宽，解释文字换回正文字体；命令行仍是等宽，
-       但只在必要时断行（默认 break-all 会把 certutil 拆开）。 */
-    .download-sha .sha-note {
-      font-family: var(--font-body);
-      font-size: var(--text-sm);
-      color: var(--color-ink-soft);
-      margin: 0.35em 0 0;
-      max-width: 60ch;
-      line-height: 1.65;
-    }
-
-    .download-sha .sha-note code {
-      display: inline;
-      font-family: var(--font-utility);
-      color: var(--color-ink);
-      word-break: normal;
-      overflow-wrap: anywhere;
-      padding: 0;
-      margin: 0;
-    }
-
-    .download-links a:hover {
-      color: var(--color-ink);
-    }
-
-    .site-footer {
-      padding: var(--space-lg) 0 var(--space-xl);
-      border-top: var(--rule-thin) solid var(--color-rule);
-      color: var(--color-ink-soft);
-      font-size: var(--text-sm);
-    }
-
-    .footer-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-lg);
-    }
-
-    .footer-row p {
-      margin-bottom: 0;
-    }
-
-    .footer-row a {
-      color: var(--color-ink);
-      text-decoration: none;
-    }
-
-    .footer-row a:hover {
-      text-decoration: underline;
-    }
-
-    @media (max-width: 900px) {
-      .hero-grid {
-        grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.8fr);
-        gap: var(--space-xl);
-      }
-
-      .moment-board {
-        grid-template-columns: minmax(8rem, 0.7fr) minmax(0, 1fr);
-      }
-
-      .tour-chapter,
-      .tour-chapter-review {
-        grid-template-columns: minmax(15rem, 0.7fr) minmax(0, 1.3fr);
-        gap: var(--space-xl);
-      }
-
-      .review-visual {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .review-visual .product-shot {
-        width: min(100%, 13rem);
-        justify-self: center;
-      }
-
-      .permission-row {
-        grid-template-columns: 7rem minmax(10rem, 0.75fr) minmax(14rem, 1fr);
-      }
-    }
-
-    @media (max-width: 820px) {
-      .container {
-        width: min(var(--content), calc(100% - 2rem));
-      }
-
-      .nav {
-        min-height: 4.25rem;
-        gap: var(--space-sm);
-      }
-
-      .nav-links {
-        gap: var(--space-xs);
-      }
-
-      .nav-links a:not(.nav-download) {
-        display: none;
-      }
-
-      .nav-download {
-        min-height: 2.35rem;
-        padding-inline: 0.85rem;
-        font-size: var(--text-xs);
-      }
-
-      .hero {
-        padding-top: var(--space-2xl);
-      }
-
-      .hero-grid,
-      .tour-chapter,
-      .tour-chapter-review,
-      .permission-row,
-      .trust-note,
-      .download-panel {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .pro-columns {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .pro-column,
-      .pro-column + .pro-column {
-        padding: var(--space-md) 0;
-        border-left: 0;
-      }
-
-      .pro-column + .pro-column {
-        border-top: var(--rule-thin) solid var(--color-rule);
-      }
-
-      h1 {
-        max-width: 10ch;
-        font-size: clamp(3.1rem, 15vw, 4.8rem);
-      }
-
-      .actions {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .button {
-        width: 100%;
-      }
-
-      .moment-board {
-        width: min(100%, 30rem);
-        justify-self: center;
-      }
-
-      .section-heading {
-        margin-bottom: var(--space-xl);
-      }
-
-      .choice-rail {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .choice-rail li,
-      .choice-rail li + li,
-      .choice-rail li:last-child {
-        padding: var(--space-lg) 0;
-        border-left: 0;
-        border-bottom: var(--rule-thin) solid var(--color-rule);
-      }
-
-      .choice-rail li:last-child {
-        border-bottom: 0;
-      }
-
-      .choice-index {
-        margin-bottom: var(--space-sm);
-      }
-
-      .tour-chapter-review .chapter-copy {
-        order: 0;
-      }
-
-      .tour-chapter .chapter-copy {
-        max-width: 35rem;
-      }
-
-      .review-visual {
-        grid-template-columns: minmax(0, 0.75fr) minmax(9rem, 1fr);
-      }
-
-      .review-visual .product-shot {
-        width: auto;
-      }
-
-      .permission-row {
-        gap: var(--space-xs);
-      }
-
-      .permission-row h3 {
-        margin-bottom: var(--space-2xs);
-      }
-
-      .text-links {
-        justify-content: flex-start;
-      }
-
-      .tour-cta {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .footer-row {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: var(--space-xs);
-      }
-    }
-
-    @media (max-width: 440px) {
-      .moment-board {
-        grid-template-columns: minmax(6.7rem, 0.65fr) minmax(0, 1fr);
-        gap: var(--space-sm);
-        padding: var(--space-sm);
-      }
-
-      .decision-track div {
-        padding-left: 1.1rem;
-      }
-
-      .decision-track div + div {
-        margin-top: var(--space-lg);
-      }
-
-      .decision-track dd {
-        font-size: var(--text-xs);
-      }
-
-      .hero-shot figcaption {
-        display: none;
-      }
-
-      .paired-shots {
-        padding: var(--space-xs);
-        gap: var(--space-xs);
-      }
-
-      .paired-shots .product-shot:nth-child(2) {
-        margin-top: var(--space-lg);
-      }
-
-      .screen-caption {
-        display: block;
-        margin-top: var(--space-xs);
-      }
-
-      .screen-caption span {
-        display: block;
-        margin-top: 0.1rem;
-      }
-
-      .review-visual {
-        grid-template-columns: minmax(0, 1fr);
-      }
-
-      .review-visual .product-shot {
-        width: min(100%, 12rem);
-        justify-self: center;
-      }
-
-      .review-notes div {
-        padding-block: var(--space-sm);
-      }
-
-      .download-panel {
-        padding: var(--space-lg);
-      }
-
-      .install-facts div {
-        grid-template-columns: minmax(0, 1fr);
-        gap: var(--space-3xs);
-      }
-
-      .download-links {
-        align-items: flex-start;
-        flex-direction: column;
-        gap: var(--space-sm);
-      }
-    }
-
-    /* Below ~360px the full nav label ("Download v0.5.45 Public Beta") pushes
-       the button about 12px past the right edge. The page clips overflow, so
-       the text is cut rather than scrollable. Swap to the compact label, which
-       carries the version in the link target instead of the visible text. */
-    @media (max-width: 360px) {
-      .nav-download-long {
-        display: none;
-      }
-
-      .nav-download-short {
-        display: inline;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      html {
-        scroll-behavior: auto;
-      }
-
-      *,
-      *::before,
-      *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-
-      .button:hover {
-        transform: none;
-      }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f7fc">
+<title>Appause | Pause first. Then decide.</title>
+<meta name="description" content="Appause is an Android focus tool. Before an app you picked opens, it adds a few seconds of cooldown, then you choose to continue or go home. The core stays free and is MIT licensed.">
+<link rel="canonical" href="https://shmily0826.github.io/Appause/">
+<link rel="alternate" hreflang="en" href="https://shmily0826.github.io/Appause/">
+<link rel="alternate" hreflang="zh-CN" href="https://shmily0826.github.io/Appause/zh.html">
+<link rel="alternate" hreflang="x-default" href="https://shmily0826.github.io/Appause/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Appause">
+<meta property="og:url" content="https://shmily0826.github.io/Appause/">
+<meta property="og:title" content="Appause | Pause first. Then decide.">
+<meta property="og:description" content="Before an app you picked opens, Appause adds a few seconds of cooldown. Then you choose: continue, or go home. Free, MIT licensed.">
+<meta property="og:image" content="https://shmily0826.github.io/Appause/images/og-card.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Appause share card: the pause screen with a cooldown ring, four reason buttons and a greyed-out Continue button.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="images/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+<link rel="preload" href="assets/landing/fonts/appause-serif-600-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/landing/site.css">
+<!-- FAQPage is generated from the visible #faq text by docs/landing-v3/build_jsonld.py --production. Re-run it after editing the FAQ. -->
+<script type="application/ld+json" id="ld">{"@context": "https://schema.org", "@graph": [{"@type": "SoftwareApplication", "name": "Appause", "operatingSystem": "Android 8.0+", "applicationCategory": "UtilitiesApplication", "softwareVersion": "0.5.46", "fileSize": "12.3MB", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "isAccessibleForFree": true, "license": "https://opensource.org/licenses/MIT", "downloadUrl": "https://shmily0826.lanzoup.com/b01eunt29a", "inLanguage": "en", "description": "Appause is an Android focus tool. Before an app you picked opens, it adds a few seconds of cooldown, then you choose to continue or go home. The core stays free and is MIT licensed."}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Android warns about an unknown app. Is that normal?", "acceptedAnswer": {"@type": "Answer", "text": "Android may ask you to allow the browser or file manager that opens the APK to install unknown apps. This install permission is separate from Google Play Protect checks. Play Protect may recommend scanning an app it has not checked before, or warn about a specific risk. Follow the actual warning. The SHA-256 below confirms that the file matches the developer-published version; it does not prove that a file is free of malware. If a warning names a threat or blocks installation, stop and report the warning. Do not disable security checks to bypass it."}}, {"@type": "Question", "name": "What can the accessibility service see? Why is it required?", "acceptedAnswer": {"@type": "Answer", "text": "Appause uses it only to tell which app just opened. It reads the app's name and nothing else: no on-screen text, messages, screenshots or keystrokes. Without it, Appause cannot tell what you opened, so nothing is intercepted."}}, {"@type": "Question", "name": "Does it drain the battery? Why does interception sometimes stop?", "acceptedAnswer": {"@type": "Answer", "text": "The accessibility service only responds when you switch apps and does no work in between. Battery use has not been measured systematically yet. If interception stops, check three things: that the accessibility service is still running, that battery optimization is set to Unrestricted, and that Autostart is allowed if your phone has that switch. So far this has been verified on one Xiaomi phone running HyperOS and one emulator, which does not cover every device. If it still fails, report it in the app through Settings → Feedback, and attach the diagnostic snapshot if you like."}}, {"@type": "Question", "name": "Can other apps cover the pause screen?", "acceptedAnswer": {"@type": "Answer", "text": "The pause screen uses a higher window layer that sits above ordinary apps, and in testing it stayed visible even over apps that hide overlays. If your phone still does not show it, turn on Display over other apps and Appause will use a fallback."}}, {"@type": "Question", "name": "Why did a pause appear for an app I did not open?", "acceptedAnswer": {"@type": "Answer", "text": "On some phones, opening Recents, switching apps or a media notification produces a system event that looks like an app switch, and a pause can appear by mistake. Turning on Usage access makes this rarer, but cannot rule it out."}}, {"@type": "Question", "name": "Does Pro cost money? How do I get a lifetime code?", "acceptedAnswer": {"@type": "Answer", "text": "No. Start the 7-day trial on the Pro screen; each device gets one. After the trial ends, request a lifetime code through Settings → Feedback. The developer issues it by hand, and you redeem it on the Pro screen. One code works on up to 3 devices."}}, {"@type": "Question", "name": "How do I update? What happens when I switch phones?", "acceptedAnswer": {"@type": "Answer", "text": "Install the new APK over the old one. Do not uninstall first, because that deletes your groups and statistics. There is no cloud sync and no export, so you set up groups again on a new phone. For Pro, redeem your existing lifetime code on the new phone; you do not need to request a new one."}}]}]}</script>
 </head>
 <body>
-  <a class="skip-link" href="#main-content">Skip to content</a>
+<a class="skip" href="#main">Skip to content</a>
 
-  <header class="site-header">
-    <nav class="nav container" aria-label="Main navigation">
-      <a class="brand" href="index.html" aria-label="Appause home">
-        <img src="images/appause-icon.png" alt="" width="32" height="32" />
-        <span>Appause</span>
-      </a>
-      <div class="nav-links">
-        <a href="#how-it-works">How it works</a>
-        <a href="#product">Inside the app</a>
-        <a href="#privacy">Privacy</a>
-        <a href="#pro">Free beta</a>
-        <a href="#faq">FAQ</a>
-        <a href="zh.html" lang="zh-CN">中文</a>
-        <a class="nav-download" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk"><span class="nav-download-long">Download <span data-r="version">v0.5.45</span> Public Beta</span><span class="nav-download-short">Download APK</span></a>
-      </div>
+<header class="top">
+  <div class="wrap top-row">
+    <a class="brand" href="#main">
+      <img src="images/appause-icon.png" alt="" width="28" height="28">
+      Appause
+    </a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#start">Install</a>
+      <a href="#permissions">Permissions</a>
+      <a href="#free">Free and Pro</a>
+      <a href="#faq">FAQ</a>
     </nav>
-  </header>
+    <div class="top-end">
+      <a class="lang" href="zh.html" lang="zh-CN" hreflang="zh-CN">中文</a>
+      <a class="btn btn-sm" href="#download">Download</a>
+    </div>
+  </div>
+</header>
 
-  <main id="main-content">
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-grid container">
-        <div class="hero-copy">
-          <p class="hero-label">Free public beta</p>
-          <h1 id="hero-title">Pause first. Then decide.</h1>
-          <p class="hero-intro">Appause is a free Android focus tool. When a selected app opens, it gives you a short pause: continue, or go home. You decide.</p>
-          <div class="actions" aria-label="Primary actions">
-            <a class="button button-primary" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">Download Appause free <span aria-hidden="true">↗</span></a>
-            <a class="button button-secondary" href="#how-it-works">See how it works</a>
-          </div>
-          <p class="release-line"><span data-r="version">v0.5.45</span> prerelease public beta &#183; Android 8.0+ &#183; <a href="#privacy">Accessibility permission required</a></p>
+<main id="main">
+
+  <!-- ================= Hero ================= -->
+  <section class="wrap hero" aria-labelledby="hero-title">
+    <div>
+      <h1 id="hero-title">Pause first.<br>Then decide.</h1>
+      <p class="lede">Before an app you picked opens, Appause adds a few seconds of cooldown. Then you choose: continue, or go home.</p>
+      <div class="cta">
+        <a class="btn" data-apk href="https://shmily0826.lanzoup.com/b01eunt29a">Download via Lanzou (<span data-r="size">12.3 MB</span>)</a>
+        <a class="link" href="https://github.com/Shmily0826/Appause">Read the source</a>
+      </div>
+      <p class="facts">Free, with no paid version. Android 8.0 and later.</p>
+      <p class="facts">Lanzou password: <strong>1234</strong>. Open the share page and select v0.5.46. <a href="#download">Download details</a></p>
+    </div>
+
+    <div class="stage" data-demo data-seconds="5"
+         data-say-pause="Pause screen open. 5 second cooldown."
+         data-say-done="Cooldown over. You can continue now."
+         data-say-home="Cancelled. Back on the home screen."
+         data-say-open="Example app opened.">
+      <div class="stage-grid">
+        <div class="phone" data-phone>
+          <picture>
+            <source type="image/webp" srcset="assets/landing/shots/en-pause-counting-360.webp 360w, assets/landing/shots/en-pause-counting-720.webp 720w" sizes="264px">
+            <img class="frame" data-frame="counting" src="assets/landing/shots/en-pause-counting.png" width="1080" height="1664" alt="The pause screen in an emulator: 8 seconds of cooldown left, Continue is greyed out.">
+          </picture>
+          <img class="frame" data-frame="done" hidden src="assets/landing/shots/en-pause-done-720.webp" width="720" height="1109" alt="The pause screen after the cooldown: the ring shows an amber check and Continue is available.">
         </div>
-
-        <div class="moment-board" aria-label="From automatic tap to intentional choice">
-          <dl class="decision-track">
-            <div>
-              <dt>Tap</dt>
-              <dd>The familiar reflex</dd>
-            </div>
-            <div>
-              <dt>Appause</dt>
-              <dd>The opening becomes visible</dd>
-            </div>
-            <div>
-              <dt>Your choice</dt>
-              <dd>Continue or return home</dd>
-            </div>
-          </dl>
-          <figure class="product-shot hero-shot">
-            <picture>
-              <source type="image/webp" srcset="images/screenshots/en/pause-360.webp 360w, images/screenshots/en/pause-720.webp 720w" sizes="224px" />
-              <img src="images/screenshots/en/pause.png" alt="Appause pause screen asking why YouTube is being opened before offering Continue or Cancel" width="1080" height="2400" fetchpriority="high" decoding="async" />
-            </picture>
-            <figcaption><strong>Pause screen</strong>The decision is still yours</figcaption>
-          </figure>
+        <div>
+          <ol class="steps">
+            <li data-step="1">Open an app you picked</li>
+            <li data-step="2">Wait out a short cooldown, and name a reason if you like</li>
+            <li data-step="3">Continue, or go home</li>
+          </ol>
+          <div class="tabs" data-tabs hidden>
+            <button type="button" class="tab" data-show="counting" aria-pressed="true">Counting</button>
+            <button type="button" class="tab" data-show="done" aria-pressed="false">Done</button>
+          </div>
+          <p class="steps-line">Open the app, wait a few seconds, then continue or go home.</p>
+          <p class="stage-note">This demo waits 5 seconds; in the app, new groups start at 10.</p>
+          <button type="button" class="replay" data-replay hidden>Try again</button>
+          <p class="sr-only" aria-live="polite" data-live></p>
         </div>
       </div>
-    </section>
 
-    <section class="section mechanism-section" id="how-it-works" aria-labelledby="mechanism-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="mechanism-title">The useful moment is before the feed.</h2>
-          <p class="section-intro">Appause does not decide which apps are bad or lock you out. It makes an automatic opening noticeable while the choice still matters.</p>
+      <template data-live-tpl>
+        <div class="home">
+          <p class="home-clock" aria-hidden="true">9:41</p>
+          <div class="home-grid">
+            <span class="home-app" aria-hidden="true"><i></i>Camera</span>
+            <span class="home-app" aria-hidden="true"><i></i>Photos</span>
+            <button type="button" class="home-app is-target"><i></i>Example app</button>
+            <span class="home-app" aria-hidden="true"><i></i>Settings</span>
+          </div>
+          <p class="home-hint" data-hint-again="Tap here to try again">Example app is in a group. Tap here to try</p>
         </div>
+        <div class="pause" role="dialog" aria-modal="false" aria-labelledby="demo-name" hidden>
+          <span class="pause-icon" aria-hidden="true"></span>
+          <p class="pause-name" id="demo-name" tabindex="-1">Example app</p>
+          <p class="pause-prompt">Take a few seconds before deciding whether to continue.</p>
+          <div class="ring" aria-hidden="true">
+            <svg viewBox="0 0 140 140">
+              <circle class="ring-glow" cx="70" cy="70" r="73"></circle>
+              <circle class="ring-track" cx="70" cy="70" r="67" stroke-width="6"></circle>
+              <circle class="ring-arc" cx="70" cy="70" r="67" stroke-width="6" transform="rotate(-90 70 70)"></circle>
+              <path class="ring-check" d="M50 72 L64 90 L94 52" fill="none" stroke="#ff8f00" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+            <span class="ring-num">5</span>
+          </div>
+          <div class="chips" role="group" aria-label="Reason for opening">
+            <button type="button" class="chip" aria-pressed="false">Work</button>
+            <button type="button" class="chip" aria-pressed="false">Bored</button>
+            <button type="button" class="chip" aria-pressed="false">Check messages</button>
+            <button type="button" class="chip" aria-pressed="false">Other</button>
+          </div>
+          <button type="button" class="continue" disabled>Continue</button>
+          <button type="button" class="cancel">Cancel</button>
+        </div>
+        <div class="opened" hidden>
+          <div class="opened-bar"><span class="pause-icon" aria-hidden="true"></span>Example app</div>
+          <div class="opened-card"></div>
+          <div class="opened-card"></div>
+          <div class="opened-card"></div>
+        </div>
+      </template>
+    </div>
+  </section>
 
-        <ol class="choice-rail" role="list">
+  <!-- ================= Install ================= -->
+  <section class="section" id="start" aria-labelledby="start-title">
+    <div class="wrap split">
+      <div>
+        <div class="section-head">
+          <h2 id="start-title">Set up in three steps</h2>
+          <p>Appause is not in an app store. Download the APK from Lanzou with password 1234.</p>
+        </div>
+        <ol class="install">
           <li>
-            <span class="choice-index">01</span>
-            <h3>Notice the opening</h3>
-            <p>The pause appears as a selected app comes to the foreground, before the habit takes over.</p>
+            <h3>Download and allow the install</h3>
+            <p>Tap a download button on this page. Android will block unknown apps at first; allow installs only for the browser or file manager you use to open the APK.</p>
           </li>
           <li>
-            <span class="choice-index">02</span>
-            <h3>Name the reason</h3>
-            <p>A simple prompt turns “just checking” into a reason you can see and reconsider.</p>
+            <h3>Open Appause and turn on permissions</h3>
+            <p>The home screen lists what is still missing. Turn each one on as prompted. Which phones need which permissions is in <a href="#permissions">the next section</a>.</p>
           </li>
           <li>
-            <span class="choice-index">03</span>
-            <h3>Make the call</h3>
-            <p>Continue when it is intentional, or cancel and return home. The decision stays yours.</p>
+            <h3>Create a group</h3>
+            <p>Pick the apps you want a cooldown on and set its length. Interception starts working from here.</p>
           </li>
         </ol>
+        <p class="note">To update later, install the new APK over the old one. Do not uninstall first: uninstalling deletes your groups and statistics. Full steps are in the <a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">install guide</a>.</p>
       </div>
-    </section>
-
-    <section class="section product-section" id="product" aria-labelledby="product-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="product-title">A guided tour of your boundary.</h2>
-          <p class="section-intro">The interface follows one continuous story: choose where you want friction, then learn what happened when it appeared.</p>
-        </div>
-
-        <article class="tour-chapter">
-          <div class="chapter-copy">
-            <span class="chapter-number">01 / Set the boundary</span>
-            <h3>Group apps by the habits you want to change.</h3>
-            <p>Group apps that pull you into the same habit, choose a cooldown, and keep a better next action visible when you need it.</p>
-          </div>
-
-          <div class="paired-shots" aria-label="Home and group setup screens">
-            <figure class="product-shot">
-              <picture>
-                <source type="image/webp" srcset="images/screenshots/en/home-360.webp 360w, images/screenshots/en/home-720.webp 720w" sizes="(max-width: 880px) 357px, 311px" />
-                <img src="images/screenshots/en/home.png" alt="Appause home screen showing service status, today's activity, and an Entertainment group" width="1080" height="2400" loading="lazy" decoding="async" />
-              </picture>
-              <figcaption class="screen-caption"><strong>Home</strong><span>See the boundary at a glance</span></figcaption>
-            </figure>
-            <figure class="product-shot">
-              <picture>
-                <source type="image/webp" srcset="images/screenshots/en/group-360.webp 360w, images/screenshots/en/group-720.webp 720w" sizes="(max-width: 880px) 357px, 311px" />
-                <img src="images/screenshots/en/group.png" alt="Appause group editor showing a cooldown and selected apps" width="1080" height="2400" loading="lazy" decoding="async" />
-              </picture>
-              <figcaption class="screen-caption"><strong>Groups</strong><span>Fit the friction to your context</span></figcaption>
-            </figure>
-          </div>
-        </article>
-
-        <article class="tour-chapter tour-chapter-review">
-          <div class="chapter-copy">
-            <span class="chapter-number">02 / Learn from the result</span>
-            <h3>See choices, not surveillance.</h3>
-            <p>Statistics stay on your device and show completed or avoided openings, helping you notice patterns without creating an account.</p>
-          </div>
-
-          <div class="review-visual" aria-label="Statistics screen with an explanation of what it shows">
-            <figure class="product-shot">
-              <picture>
-                <source type="image/webp" srcset="images/screenshots/en/statistics-360.webp 360w, images/screenshots/en/statistics-720.webp 720w" sizes="248px" />
-                <img src="images/screenshots/en/statistics.png" alt="Appause statistics screen showing completed and avoided openings" width="1080" height="2400" loading="lazy" decoding="async" />
-              </picture>
-            </figure>
-            <dl class="review-notes">
-              <div>
-                <dt>Completed</dt>
-                <dd>You continued after making the opening explicit.</dd>
-              </div>
-              <div>
-                <dt>Avoided</dt>
-                <dd>You chose not to enter the selected app.</dd>
-              </div>
-              <div>
-                <dt>Local history</dt>
-                <dd>Your activity remains available on your device.</dd>
-              </div>
-            </dl>
-          </div>
-        </article>
-
-        <aside class="tour-cta" aria-label="Download Appause after the product tour">
-          <p>Set one boundary and see how the next opening feels.</p>
-          <a class="button button-secondary" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">Download <span data-r="version">v0.5.45</span> <span aria-hidden="true">↗</span></a>
-        </aside>
-      </div>
-    </section>
-
-    <section class="section trust-section" id="privacy" aria-labelledby="trust-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="trust-title">Powerful enough to interrupt. Limited enough to trust.</h2>
-          <p class="section-intro">Appause explains each permission by the job it performs. Core detection uses app identity, not the content on your screen.</p>
-        </div>
-
-        <p class="permission-must"><strong>Accessibility service</strong> is required on every Android device: without it Appause cannot tell which app opened, so nothing is intercepted. On phones with aggressive background management (Xiaomi/HyperOS, Huawei, and similar), two more settings are required in practice: <strong>battery optimization set to Unrestricted</strong> and <strong>Autostart allowed</strong>. On those phones, leaving either off can make interception stop working after a while. The rest of the list is optional.</p>
-
-        <div class="permission-ledger">
-          <article class="permission-row">
-            <span class="permission-status permission-status--required">Required</span>
-            <h3>Accessibility service</h3>
-            <p>Detects which app comes to the foreground and shows the Appause intervention. <code>canRetrieveWindowContent=false</code>, so Appause does not retrieve screen content or read your input.</p>
-          </article>
-          <article class="permission-row">
-            <span class="permission-status permission-status--required">Required</span>
-            <h3>Battery optimization</h3>
-            <p>Set Appause to Unrestricted. When the system tries to save power it terminates the background service, and interception stops with it. On Xiaomi/HyperOS this is the most common cause of a pause screen that never appears.</p>
-          </article>
-          <article class="permission-row">
-            <span class="permission-status permission-status--required">Required</span>
-            <h3>Autostart</h3>
-            <p>Turn this on in the app's system settings. After a restart or after the system clears background apps, Android needs it to bring the service back up, otherwise the first interception after a reboot is missed.</p>
-          </article>
-          <article class="permission-row">
-            <span class="permission-status">Recommended</span>
-            <h3>Usage Access</h3>
-            <p>Optionally confirms which app is in the foreground to help clarify a suspected app switch. It cannot prevent every false trigger; the core pause flow uses Accessibility.</p>
-          </article>
-          <article class="permission-row">
-            <span class="permission-status">Device fallback</span>
-            <h3>Display over other apps</h3>
-            <p>The preferred accessibility overlay path does not need this separate permission. Some device-specific fallback paths may require it.</p>
-          </article>
-          <article class="permission-row">
-            <span class="permission-status">Optional</span>
-            <h3>Notifications</h3>
-            <p>The ongoing status notification on Android 13 and later. Skipping it does not affect interception.</p>
-          </article>
-        </div>
-
-        <div class="trust-note">
-          <p><strong>Free, and mostly on your phone.</strong> Interception, groups, and statistics run on-device: no account and no background analytics. Day to day the app does not need the network; it connects only when you start the trial, redeem a code, or send feedback.</p>
-          <div class="text-links">
-            <a href="privacy-policy.html">Privacy policy</a>
-            <a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">Install guide</a>
-            <a href="https://github.com/Shmily0826/Appause">Source code</a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section opensource-section" id="open-source" aria-labelledby="opensource-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="opensource-title">Open source, so you can check all of this.</h2>
-          <p class="section-intro">Appause is MIT licensed and developed in the open. The claims on this page are backed by code you can read and build yourself.</p>
-        </div>
-
-        <div class="opensource-grid">
-          <div class="opensource-item">
-            <span class="opensource-label">MIT license</span>
-            <p>Read it, build it, change it. If Appause ever stops, the source and your right to continue it do not disappear.</p>
-          </div>
-          <div class="opensource-item">
-            <span class="opensource-label">Auditable limits</span>
-            <p>The accessibility service is declared with <code>canRetrieveWindowContent=false</code> in the public source, so Android never delivers it screen content or input.</p>
-          </div>
-          <div class="opensource-item">
-            <span class="opensource-label">No strings</span>
-            <p>No account, no analytics SDK, no cloud sync, and no planned paid tier. Your groups, cooldowns, and statistics live only on this device, so uninstalling clears them. If you started a trial or redeemed a code, the activation server keeps the device binding and that trial record; it holds no groups, stats, or usage history. The privacy policy lists exactly what is stored.</p>
-          </div>
-        </div>
-
-        <div class="opensource-more">
-          <a href="https://github.com/Shmily0826/Appause">Read the source on GitHub</a>
-          <a href="https://github.com/Shmily0826/Appause/blob/main/LICENSE">MIT license text</a>
-          <a href="https://github.com/Shmily0826/Appause/issues">Questions? Open an issue</a>
-        </div>
-      </div>
-    </section>
-
-    <section class="section pro-section" id="pro" aria-labelledby="pro-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="pro-title">Free beta. Optional Pro.</h2>
-          <p class="section-intro">Core features work without activation. No payments, subscriptions, or paid tier are planned.</p>
-        </div>
-
-        <div class="pro-columns">
-          <section class="pro-column" aria-label="Included in the free version">
-            <span class="pro-column-label">Included now</span>
-            <ul class="pro-list" role="list">
-              <li><strong>Interception, cooldown, pause screen, statistics</strong> Unlimited time and unlimited uses.</li>
-              <li><strong>Groups</strong> One group by default.</li>
-              <li><strong>Feedback channel</strong> Attaches a diagnostic snapshot you choose whether to send.</li>
-            </ul>
-          </section>
-
-          <section class="pro-column" aria-label="Appause Pro access">
-            <span class="pro-column-label">Request once, also free</span>
-            <ul class="pro-list" role="list">
-              <li><strong>Unlimited groups</strong> The default limit is one.</li>
-              <li><strong>Re-remind</strong> Ask again while you stay in the selected app.</li>
-              <li><strong>Custom pause text</strong> Replace it with a sentence of your own.</li>
-              <li><strong>Custom open reasons</strong> Change them to options you would actually pick.</li>
-            </ul>
-          </section>
-        </div>
-
-        <div class="pro-order">
-          <p>Pro is free, but you get it in this order:</p>
-          <ol>
-            <li>On the Pro screen tap <strong>Start trial</strong>. It runs for 7 days at no cost.</li>
-            <li>After 7 days the trial ends and the Pro extras switch off. Your existing groups and statistics are not affected.</li>
-            <li>Then request a free lifetime code through <strong>Settings → Feedback</strong> and redeem it on the Pro screen.</li>
-          </ol>
-          <p class="pro-order-note">A lifetime code can only be redeemed after the trial ends. One code binds up to 3 devices, so switching phones does not mean applying again.</p>
-        </div>
-
-      </div>
-    </section>
-
-    <section class="section faq-section" id="faq" aria-labelledby="faq-title">
-      <div class="container">
-        <div class="section-heading">
-          <h2 id="faq-title">Questions people actually ask.</h2>
-          <p class="section-intro">Short answers on installing, permissions, data, and Pro. The install guide and privacy policy cover the rest.</p>
-        </div>
-
-        <div class="faq-list">
-          <details>
-            <summary>Install shows a warning about an unknown app. Is something wrong?</summary>
-            <p>Appause is not distributed through an app store, so Android asks you to allow installs from the app you downloaded with (usually the browser or a file manager). That prompt is expected: it appears for any APK that did not come from a store.</p>
-            <p>Google Play Protect may also label the app as unknown. That is a different signal: Play Protect rates apps by how widely it has seen them, and a direct download from a small open-source project has no such history. It is not a scan result. If you want to check the file yourself, compare its SHA-256 against the checksum published below and read the source.</p>
-            <p>If you see a warning naming a specific threat, or one that blocks the install with no way to continue, do not install it: that is a different message from the generic prompts above, and it can mean the file was modified in transit.</p>
-          </details>
-          <details>
-            <summary>Why is the accessibility permission required? Does it read my screen?</summary>
-            <p>The service only detects which app is in the foreground, so Appause knows when to step in. It is configured without window-content access and never reads screen content, messages, screenshots, or keystrokes.</p>
-          </details>
-          <details>
-            <summary>Is my data uploaded anywhere?</summary>
-            <p>Groups, cooldowns, and statistics are stored on your device with Room and DataStore, and uninstalling clears them. No account, no ads, no analytics SDK, no cloud sync. The network is used only when you start the Pro trial, redeem a code, or send feedback. A trial or redemption leaves the device binding and that record on the activation server, but no groups, statistics, or usage history.</p>
-          </details>
-          <details>
-            <summary>Does Xiaomi / HyperOS need extra setup?</summary>
-            <p>Yes. Three settings are required there, not suggested: Accessibility, battery use set to Unrestricted, and Autostart allowed. If the system removes Appause from memory in the background, interception stops until it is running again. The Permission section above lists all of them.</p>
-            <p>This has so far been verified on one physical device (Xiaomi, HyperOS) and one emulator, so it does not cover every phone. If interception still fails after those three settings, send it through Settings, Feedback with the diagnostic snapshot attached.</p>
-          </details>
-          <details>
-            <summary>Why did a notification trigger a pause?</summary>
-            <p>On some devices, a media notification can produce an accessibility event that resembles an app switch and occasionally trigger a pause. Optional Usage access can help confirm which app is in the foreground, but it cannot prevent every false trigger.</p>
-          </details>
-          <details>
-            <summary>Does it force-lock my phone?</summary>
-            <p>No. After the countdown you can continue or return to the home screen, and you can disable the service or change groups at any time. Appause is a habit aid, not a monitoring or security tool.</p>
-          </details>
-          <details>
-            <summary>Do I have to pay for Pro?</summary>
-            <p>The public beta is free and no paid tier is planned. Pro is optional: unlimited groups, re-remind, custom pause text, and custom open reasons. You can start one free 7-day trial per device, then request free lifetime access through Settings → Feedback.</p>
-          </details>
-          <details>
-            <summary>How do I update, and what happens when I switch phones?</summary>
-            <p>Install the new APK over the old one and do not uninstall first, because uninstalling removes local data. There is no config export; groups are set up again on a new phone and the Pro license needs re-activation there.</p>
-          </details>
-        </div>
-      </div>
-    </section>
-
-    <section class="section download-section" id="download" aria-labelledby="download-title">
-      <div class="container">
-        <div class="download-panel">
-          <div>
-            <h2 id="download-title">Download it free and try it.</h2>
-            <p class="download-version">Public beta &#183; released <span data-r="date">2026-09-24</span> &#183; Android only, not on any app store</p>
-            <p>Download the free Appause public beta from GitHub Releases, review the source, and follow the installation guide if Android asks about installing an app from your browser.</p>
-            <a class="button button-primary" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">Download <span data-r="version">v0.5.45</span> APK <span aria-hidden="true">↗</span></a>
-          </div>
-
-          <dl class="install-facts">
-            <div>
-              <dt>File</dt>
-              <dd><span data-r="file">Appause-v0.5.45.apk</span></dd>
-            </div>
-            <div>
-              <dt>Version code</dt>
-              <dd><span data-r="code">97</span></dd>
-            </div>
-            <div>
-              <dt>Size</dt>
-              <dd><span data-r="size">12.3 MB</span></dd>
-            </div>
-            <div>
-              <dt>Requires</dt>
-              <dd>Android 8.0 or later</dd>
-            </div>
-            <div>
-              <dt>Package</dt>
-              <dd>com.appause.android</dd>
-            </div>
-            <div>
-              <dt>Account</dt>
-              <dd>Not required</dd>
-            </div>
-            <div>
-              <dt>License</dt>
-              <dd>MIT licensed source</dd>
-            </div>
-          </dl>
-        </div>
-
-        <p class="download-ios">Android only for now. Appause intercepts app launches using system capabilities that Android exposes, and the equivalent on iOS works differently.</p>
-
-        <details class="download-sha">
-          <summary>Show the APK SHA-256 checksum</summary>
-          <p class="sha-note">Compute the SHA-256 on your own machine. If it matches the value below, the installer you downloaded has not been altered. It is worth checking, especially if you got the file from a mirror.</p>
-          <code data-r="sha256">07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a</code>
-          <p class="sha-note">How to check: on Windows run <code>certutil -hashfile &lt;apk&gt; SHA256</code>; on macOS or Linux run <code>shasum -a 256 &lt;apk&gt;</code>.</p>
-        </details>
-
-        <div class="download-links" aria-label="Other download and support links">
-          <a data-release href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.45">View <span data-r="version">v0.5.45</span> prerelease</a>
-          <a href="https://shmily0826.lanzoup.com/b01eunt29a">Mirror download page (not counted)</a>
-          <a href="https://github.com/Shmily0826/Appause/issues">Report an issue</a>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="footer-row container">
-      <p>Appause gives the opening moment back to you.</p>
-      <p><a href="privacy-policy.html">Privacy</a> &#183; <a href="https://github.com/Shmily0826/Appause">GitHub</a> &#183; MIT License &#183; <a href="zh.html" lang="zh-CN">中文</a></p>
+      <figure class="phone shot">
+        <picture>
+          <source type="image/webp" srcset="images/screenshots/en/group-360.webp 360w, images/screenshots/en/group-720.webp 720w" sizes="240px">
+          <img src="images/screenshots/en/group.png" width="1080" height="2400" alt="The Appause group editor: group name, a cooldown slider from 1 to 60 seconds, and the apps in the group." loading="lazy" decoding="async">
+        </picture>
+      </figure>
     </div>
-  </footer>
+  </section>
 
-  <script>
-    /* ---------- 发版相关的单一真实源 ----------
-       页面上所有 [data-r] / [data-apk] / [data-release] 都由下面这个对象填充，
-       包括藏在折叠区里的 SHA-256 与表格里的 versionCode（这两个手改最容易漏）。
-       边界：markup 里仍保留 'v0.5.45' 字面量（5 个下载 href 各含两段 URL，
-       外加静态兜底文案）。JS 生效时会被覆盖，无 JS 时靠它们兜底，所以发版仍需
-       一次全局替换；只改本对象而不动字面量，无 JS 环境会看到旧值。
-       ⚠️ 本页与 zh.html 是两份独立的 RELEASE 对象，发版时两处都要改。
-       本页没有别的脚本：结构化数据的 softwareVersion / fileSize 也硬编码在
-       JSON-LD 里（爬虫不执行 JS），改版本时那两处同样是手改点。 */
-    var RELEASE = {
-      version: '0.5.45',
-      versionCode: '97',
-      date: '2026-09-24',
-      size: '12.3 MB',
-      sha256: '07cfbfaace902ea718f46abc1bcfd2011f42087e73ed3c60a34a62921bf30b6a'
-    };
-    (function () {
-      var v = 'v' + RELEASE.version;
-      var apk = 'https://github.com/Shmily0826/Appause/releases/download/v' + RELEASE.version + '/Appause-v' + RELEASE.version + '.apk';
-      var rel = 'https://github.com/Shmily0826/Appause/releases/tag/v' + RELEASE.version;
-      var map = { version: v, code: RELEASE.versionCode, date: RELEASE.date, size: RELEASE.size, sha256: RELEASE.sha256, file: 'Appause-' + v + '.apk' };
-      Object.keys(map).forEach(function (k) {
-        document.querySelectorAll('[data-r="' + k + '"]').forEach(function (el) { el.textContent = map[k]; });
-      });
-      document.querySelectorAll('[data-apk]').forEach(function (el) { el.setAttribute('href', apk); });
-      document.querySelectorAll('[data-release]').forEach(function (el) { el.setAttribute('href', rel); });
-    })();
-  </script>
+  <!-- ================= Permissions ================= -->
+  <section class="section" id="permissions" aria-labelledby="perm-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="perm-title">Which permissions to turn on</h2>
+        <p>It depends on your phone. There are three cases.</p>
+      </div>
+
+      <div class="perm-group is-all">
+        <h3>Every Android phone</h3>
+        <dl>
+          <div>
+            <dt>Accessibility service</dt>
+            <dd>Tells Appause which app just opened, and shows the pause screen on top of it. It does not read screen content, messages, screenshots or keystrokes. Without it, nothing is intercepted.</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="perm-group">
+        <h3>Also on phones with strict background limits (Xiaomi, Huawei and others)</h3>
+        <dl>
+          <div>
+            <dt>Battery optimization set to Unrestricted</dt>
+            <dd>To save power, the system stops Appause's background service and does not restart it. You notice it when a limited app opens without a pause.</dd>
+          </div>
+          <div>
+            <dt>Autostart</dt>
+            <dd>Brings the service back after a restart or after the system clears background apps. The name varies by brand; Huawei calls it App launch. Stock Android has no such switch, so you can skip it there.</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="perm-group">
+        <h3>Optional</h3>
+        <dl>
+          <div>
+            <dt>Usage access</dt>
+            <dd>Confirms which app is really on screen. Without it, opening Recents or switching apps can now and then show a pause for an app you did not open.</dd>
+          </div>
+          <div>
+            <dt>Display over other apps</dt>
+            <dd>Not needed day to day. Turn it on as a fallback only if your phone does not show the pause screen.</dd>
+          </div>
+          <div>
+            <dt>Notifications</dt>
+            <dd>The ongoing status notification on Android 13 and later. Interception works without it.</dd>
+          </div>
+        </dl>
+      </div>
+
+      <p class="privacy"><strong>No network in daily use.</strong> Appause connects only when you start the trial, redeem a code or send feedback. Groups, cooldown settings and statistics stay on this phone and are deleted when you uninstall. Details are in the <a href="privacy-policy.html">privacy policy</a>.</p>
+    </div>
+  </section>
+
+  <!-- ================= Record ================= -->
+  <section class="section" id="record" aria-labelledby="record-title">
+    <div class="wrap split">
+      <div>
+        <div class="section-head">
+          <h2 id="record-title">Your record</h2>
+          <p>Each time a pause ends, Appause notes whether you continued or cancelled, for you to look back on.</p>
+        </div>
+        <dl class="facts-list">
+          <div>
+            <dt>Completed</dt>
+            <dd>You waited out the cooldown and continued.</dd>
+          </div>
+          <div>
+            <dt>Avoided</dt>
+            <dd>You tapped Cancel on the pause screen and went home.</dd>
+          </div>
+          <div>
+            <dt>Reasons</dt>
+            <dd>The reason you picked when continuing is saved too. The free version keeps 365 days of history.</dd>
+          </div>
+        </dl>
+      </div>
+      <figure class="phone shot">
+        <picture>
+          <source type="image/webp" srcset="images/screenshots/en/statistics-360.webp 360w, images/screenshots/en/statistics-720.webp 720w" sizes="240px">
+          <img src="images/screenshots/en/statistics.png" width="1080" height="2400" alt="The Appause statistics screen: completed and avoided counts for the week, the most intercepted apps, and reasons." loading="lazy" decoding="async">
+        </picture>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ================= Free and Pro ================= -->
+  <section class="section" id="free" aria-labelledby="free-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="free-title">Free, with no paid version</h2>
+        <p>Pro&#39;s four features are free too. Try them for 7 days, then request a lifetime code.</p>
+      </div>
+      <div class="plans">
+        <div>
+          <h3>Included from the start</h3>
+          <ul>
+            <li><b>Interception, cooldown, pause screen and statistics</b>, with no time or usage limit</li>
+            <li><b>1 group</b></li>
+            <li><b>Cooldowns from 1 to 60 seconds</b>, the same limit as Pro</li>
+            <li><b>365 days of statistics</b></li>
+            <li><b>A diagnostic snapshot with feedback</b>, sent only if you choose</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Pro adds</h3>
+          <ul>
+            <li><b>Unlimited groups</b></li>
+            <li><b>Re-remind</b>: a second nudge while you stay in the app</li>
+            <li><b>Your own pause text</b></li>
+            <li><b>Your own open reasons</b></li>
+          </ul>
+        </div>
+      </div>
+      <ol class="order">
+        <li>Start the 7-day trial on the app's Pro screen. Each device gets one.</li>
+        <li>When the trial ends, the four Pro features switch off. Your groups and statistics stay.</li>
+        <li>Request a free lifetime code through <span class="nb">Settings → Feedback</span>, then redeem it on the Pro screen. One code works on up to 3 devices.</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ================= Source ================= -->
+  <section class="section" id="source" aria-labelledby="source-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="source-title">Check it in the source</h2>
+        <p>Appause is open source under the MIT license. What this page says can be traced to the code.</p>
+      </div>
+      <dl class="facts-list facts-row">
+        <div>
+          <dt>MIT license</dt>
+          <dd>Read it, build it, change it. If the project ever stops, the source and your right to keep using it remain.</dd>
+        </div>
+        <div>
+          <dt>The accessibility service only gets app names</dt>
+          <dd>The <a href="https://github.com/Shmily0826/Appause/blob/main/app/src/main/res/xml/accessibility_service_config.xml">config file</a> sets <code>canRetrieveWindowContent="false"</code>, so Android never hands it screen content.</dd>
+        </div>
+        <div>
+          <dt>The activation server keeps none of your usage data</dt>
+          <dd>When you start the trial or redeem a code, the server stores only the device binding and that license record. No groups, statistics or usage history.</dd>
+        </div>
+      </dl>
+      <ul class="more-links">
+        <li><a href="https://github.com/Shmily0826/Appause">GitHub repository</a></li>
+        <li><a href="https://github.com/Shmily0826/Appause/issues">Ask a question or report a bug</a></li>
+        <li><a href="https://github.com/Shmily0826/Appause/blob/main/LICENSE">Full MIT license</a></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= FAQ ================= -->
+  <section class="section" id="faq" aria-labelledby="faq-title">
+    <div class="wrap faq-split">
+      <div class="section-head">
+        <h2 id="faq-title">Questions</h2>
+        <p>Not answered here? <a href="https://github.com/Shmily0826/Appause/issues">Ask on GitHub</a>.</p>
+      </div>
+      <div class="faq">
+        <details>
+          <summary>Android warns about an unknown app. Is that normal?</summary>
+          <p>Android may ask you to allow the browser or file manager that opens the APK to install unknown apps. This install permission is separate from Google Play Protect checks. Play Protect may recommend scanning an app it has not checked before, or warn about a specific risk. Follow the actual warning. The SHA-256 below confirms that the file matches the developer-published version; it does not prove that a file is free of malware.</p>
+          <p>If a warning names a threat or blocks installation, stop and report the warning. Do not disable security checks to bypass it.</p>
+        </details>
+        <details>
+          <summary>What can the accessibility service see? Why is it required?</summary>
+          <p>Appause uses it only to tell which app just opened. It reads the app's name and nothing else: no on-screen text, messages, screenshots or keystrokes. Without it, Appause cannot tell what you opened, so nothing is intercepted.</p>
+        </details>
+        <details>
+          <summary>Does it drain the battery? Why does interception sometimes stop?</summary>
+          <p>The accessibility service only responds when you switch apps and does no work in between. Battery use has not been measured systematically yet. If interception stops, check three things: that the accessibility service is still running, that battery optimization is set to Unrestricted, and that Autostart is allowed if your phone has that switch.</p>
+          <p>So far this has been verified on one Xiaomi phone running HyperOS and one emulator, which does not cover every device. If it still fails, report it in the app through <span class="nb">Settings → Feedback</span>, and attach the diagnostic snapshot if you like.</p>
+        </details>
+        <details>
+          <summary>Can other apps cover the pause screen?</summary>
+          <p>The pause screen uses a higher window layer that sits above ordinary apps, and in testing it stayed visible even over apps that hide overlays. If your phone still does not show it, turn on Display over other apps and Appause will use a fallback.</p>
+        </details>
+        <details>
+          <summary>Why did a pause appear for an app I did not open?</summary>
+          <p>On some phones, opening Recents, switching apps or a media notification produces a system event that looks like an app switch, and a pause can appear by mistake. Turning on Usage access makes this rarer, but cannot rule it out.</p>
+        </details>
+        <details>
+          <summary>Does Pro cost money? How do I get a lifetime code?</summary>
+          <p>No. Start the 7-day trial on the Pro screen; each device gets one. After the trial ends, request a lifetime code through <span class="nb">Settings → Feedback</span>. The developer issues it by hand, and you redeem it on the Pro screen. One code works on up to 3 devices.</p>
+        </details>
+        <details>
+          <summary>How do I update? What happens when I switch phones?</summary>
+          <p>Install the new APK over the old one. Do not uninstall first, because that deletes your groups and statistics. There is no cloud sync and no export, so you set up groups again on a new phone. For Pro, redeem your existing lifetime code on the new phone; you do not need to request a new one.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Download ================= -->
+  <section class="section" id="download" aria-labelledby="download-title">
+    <div class="wrap">
+      <div class="download">
+        <div>
+          <h2 id="download-title">Download Appause <span data-r="version">v0.5.46</span></h2>
+          <p class="meta">Public beta, released <span data-r="date">2026-10-17</span>. Android only, not in any app store.</p>
+          <a class="btn" data-apk href="https://shmily0826.lanzoup.com/b01eunt29a">Download via Lanzou (<span data-r="size">12.3 MB</span>)</a>
+          <ul class="more-links">
+            <li><a data-release href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.45">Older v0.5.45 GitHub release</a></li>
+            <li><a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">Install guide</a></li>
+            <li><a href="https://github.com/Shmily0826/Appause/releases/download/v0.5.45/Appause-v0.5.45.apk">Older v0.5.45 GitHub APK</a></li>
+          </ul>
+          <p class="download-note">Lanzou password: <strong>1234</strong>. Select <strong>Appause-v0.5.46.apk</strong>; the APK download does not require GitHub. The GitHub fallback is still v0.5.45. The checksum below applies only to v0.5.46.</p>
+        </div>
+        <dl class="spec">
+          <div><dt>File</dt><dd data-r="file">Appause-v0.5.46.apk</dd></div>
+          <div><dt>Size</dt><dd data-r="size">12.3 MB</dd></div>
+          <div><dt>Requires</dt><dd>Android 8.0 or later</dd></div>
+          <div><dt>Package</dt><dd>com.appause.android</dd></div>
+          <div><dt>versionCode</dt><dd data-r="code">98</dd></div>
+          <div><dt>Account</dt><dd>Not needed</dd></div>
+        </dl>
+      </div>
+      <details class="sha">
+        <summary>Check the APK's SHA-256</summary>
+        <p>Compute the SHA-256 of the downloaded file on your computer. If it matches the value below, the installer has not been altered. This is worth doing if you used the mirror.</p>
+        <code class="hash" data-r="sha256">ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927</code>
+        <p>On Windows run <code>certutil -hashfile &lt;apk&gt; SHA256</code>; on macOS or Linux run <code>shasum -a 256 &lt;apk&gt;</code>.</p>
+      </details>
+      <p class="ios">Android only for now. Appause intercepts app launches with system features Android provides, and iOS works differently.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <ul>
+      <li><a href="https://github.com/Shmily0826/Appause">Source</a></li>
+      <li><a href="privacy-policy.html">Privacy policy</a></li>
+      <li><a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">Install guide</a></li>
+      <li><a href="https://github.com/Shmily0826/Appause/issues">Report an issue</a></li>
+      <li><a href="zh.html" lang="zh-CN" hreflang="zh-CN">中文</a></li>
+    </ul>
+    <p>© 2026 Appause authors. MIT license.</p>
+  </div>
+</footer>
+
+<div class="bar" data-bar role="region" aria-label="Download">
+  <span>Appause <span data-r="version">v0.5.46</span>, free</span>
+  <a class="btn btn-sm" href="#download">Download</a>
+</div>
+
+<script src="assets/landing/release.js"></script>
+<script src="assets/landing/site.js"></script>
 </body>
 </html>

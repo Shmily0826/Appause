@@ -1,85 +1,93 @@
 # 如何安装 Appause（侧载 / 直链安装指南）
 
-Appause 通过本页面或网盘链接**直接分发 APK**（未上架传统应用商店）。
-安卓默认禁止"未知来源"安装，首次安装需手动放行。按下面三步即可。
+Appause 目前未上架应用商店。最新版 **v0.5.46 / versionCode 98** 通过
+[Appause v0.5.46] 分享，蓝奏云提取密码 **1234**，文件名为 `Appause-v0.5.46.apk`。
+GitHub 暂时保留旧版 v0.5.45，下载最新版请选择蓝奏云。
 
-> 提示：安装过程中任何"此应用可能有害"的提示，都是系统对**所有非商店 APK** 的通用警告，并非 Appause 有问题。按第三步放行即可。
+## 第一步：从官方页面下载并核对文件
 
----
+从 [Appause v0.5.46] 下载 `Appause-v0.5.46.apk`，密码 **1234**。预期 SHA-256：
+`ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`。
+在本机计算下载文件的值；两者不一致时不要安装，应从官方页面重新下载。
 
-## 第一步：下载 APK
+- Windows：`Get-FileHash .\Appause-v0.5.46.apk -Algorithm SHA256`
+- macOS / Linux：`shasum -a 256 Appause-v0.5.46.apk`
 
-从 [GitHub Releases] 下载最新的公开 APK。当前版本文件名为
-`Appause-v0.5.44.apk`；后续版本遵循 `Appause-v<version>.apk`。
+Android 会在安装时验证 APK 签名。如果系统报告签名无效、安装包损坏，或更新包与已安装应用
+签名不匹配，请停止安装并重新从官方下载页面获取文件；不要尝试绕过签名检查。
 
-## 第二步：允许"安装未知应用"
+## 第二步：仅为下载来源允许安装
 
-安卓 8（API 26）及以上，需要给**用来打开这个 APK 的 App**
-（浏览器 / 文件管理器 / 网盘）单独授予安装权限：
+Android 8（API 26）及以上，需要给**用来打开 APK 的应用**（浏览器或文件管理器）单独授予
+“安装未知应用”权限：点击 APK；如果系统提示禁止安装，进入设置并仅为该来源打开“允许来自此来源”，
+返回安装器继续。不同机型的设置名称可能略有不同。安装后可关闭该来源的安装权限。
 
-1. 下载完成后点击 APK；
-2. 若提示"禁止安装未知应用"，点**设置**；
-3. 打开"**允许来自此来源**"开关；
-4. 返回，继续安装。
+## 第三步：认真处理安全提示
 
-> 不同机型入口名称略有差异，可能是"未知来源应用""安装未知应用"
-> 或"允许安装应用"，含义相同。
-
-## 第三步：放行安全扫描警告（重要）
-
-- **Google Play Protect**：提示时选"**仍要安装**"（或"了解更多 → 仍然安装"）。
-  也可临时在 Play 商店 → 右上头像 → Play Protect → 关闭"扫描应用"后再装。
-- **小米（MIUI / HyperOS）**：弹"有风险"时点"**继续安装**"；若被"手机管家"拦截，
-  进入管家 → 防护中心 → 临时关闭"安装监控"。
-- **华为（EMUI / HarmonyOS）**：弹"纯净模式"拦截时点"**退出纯净模式**"或"继续安装（风险自负）"。
-- **OPPO / vivo**：类似，选"**允许安装**"即可。
+“允许来自此来源”只允许用户发起侧载，不代表 APK 已通过安全扫描。若 Play Protect 或设备厂商的
+安全功能显示具体威胁、拦截安装或要求关闭扫描，请保持保护功能开启并停止安装。先从官方下载页面
+重新下载并核对 SHA-256；如提示仍存在，等待官方澄清或联系设备安全功能提供方。不要因 APK 来自
+应用商店之外就把所有安全警告视为通用提示，也不要关闭 Play Protect、厂商扫描或其他安全保护。
 
 ## 第四步：完成安装并配置运行权限
 
-打开 Appause 后，首页顶部会列出还没开的权限，点「去开启」逐个授权。
-**无障碍服务必须开启：**
-
-1. **无障碍服务（AccessibilityService）** —— 用来检测你打开了哪个应用。
-   没有它，Appause 不知道该在什么时候介入。
-2. 将 Appause 加入系统**自启动白名单 / 电池无限制 / 多任务锁定**，
-   避免被系统杀后台（否则拦截会失效）；
-3. 为减少误报，建议在系统设置 → 应用 → 特殊应用权限 → **使用情况访问**
-   里给 Appause 授权（设置页也有入口）。授权后，通知栏里的媒体通知
-   （例如 b 站"正在播放"）就不会误触发暂停。
-4. **显示悬浮窗 / 在其他应用上层显示是可选的兼容性备用权限。**暂停页通常
-   使用无障碍覆盖层显示，不需要此权限；如果暂停页确实没有显示，再到系统设置
-   → 应用 → Appause → 其他权限中开启后重试。
-
----
+打开 Appause 后，首页会列出尚未开启的权限。**无障碍服务必须开启**，它用于检测当前打开的应用，
+以便在你选择的应用前显示暂停提示。使用情况访问是可选权限，可帮助减少前台应用判断误报。
+“显示悬浮窗 / 在其他应用上层显示”是兼容性备用权限；暂停页通常使用无障碍覆盖层，不需要该权限，
+只有暂停页未显示时再按应用提示尝试开启。部分设备需要将 Appause 加入电池优化或自启动例外，
+具体设置因厂商而异。
 
 ## 常见问题
 
-- **安装被拦截 / 解析失败**：确认 APK 下载完整（重新下载），并检查"未知来源"权限已开。
-- **打开目标应用没有任何反应**：先确认无障碍服务仍在运行，并把电池策略设为
-  「无限制」。如果服务正常但看不到暂停页，再尝试开启「显示悬浮窗」。
-- **装完不拦截**：多半是无障碍服务被关或后台被清理，回设置重开并加白名单。
-- **如何更新**：直接安装新版 APK 覆盖旧版，不要先卸载；卸载会清除本机数据。
-- **换手机 / 恢复出厂**：App 不提供配置或授权的导出 / 导入。分组、推荐应用等本机设置需要在
-  新设备上重新配置；Pro 授权与设备绑定，换机后需要在新设备上重新激活。
-
----
+- **安装被拦截或解析失败**：重新从官方下载页面下载并核对 SHA-256。若安全功能报告具体威胁，停止安装并保持扫描开启。
+- **打开目标应用没有反应**：确认无障碍服务仍在运行；如暂停页没有显示，再检查系统的后台限制和可选悬浮窗权限。
+- **如何更新**：从官方下载页面下载新版本并覆盖安装，不要先卸载；卸载会清除本机数据。若签名或完整性检查失败，请停止并联系维护者。
+- **换手机 / 恢复出厂**：App 不提供配置或授权的导出 / 导入。分组、推荐应用等本机设置需要在新设备上重新配置；Pro 授权与设备绑定，换机后需要在新设备上重新激活。
 
 ## How to install (English)
 
-1. Download `Appause-v0.5.44.apk` from the [latest GitHub Release]. Future
-   public APKs use the `Appause-v<version>.apk` naming convention.
-2. Tap the APK, then allow **"Install unknown apps"** for the app you opened it with.
-3. If Play Protect or your device maker shows a *"harmful app"* warning,
-   choose **"Install anyway"** — this is a generic warning for all non-store APKs,
-   not specific to Appause.
-4. Open Appause and enable **AccessibilityService** so it can detect which app
-   you opened. Usage access is recommended for more accurate foreground checks.
-   "Display over other apps" is an optional fallback if the pause screen does
-   not appear on your device.
-5. Exempt Appause from battery optimization and allow auto-start so it is not
-   killed in the background.
-6. To update, install the new APK over the existing app. Do not uninstall first,
-   because uninstalling removes local configuration.
+Appause is not currently in an app store. The latest **v0.5.46 / versionCode 98**
+is available from [Appause v0.5.46] on Lanzou, password **1234**.
+Select `Appause-v0.5.46.apk`. GitHub still hosts the older v0.5.45.
 
-[GitHub Releases]: https://github.com/Shmily0826/Appause/releases
-[latest GitHub Release]: https://github.com/Shmily0826/Appause/releases/tag/v0.5.44
+### 1. Download from the official page and verify the file
+
+Download `Appause-v0.5.46.apk` from [Appause v0.5.46], password **1234**. Expected SHA-256:
+`ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`.
+Do not install the file if the values differ; download it again from the official page.
+
+- Windows: `Get-FileHash .\Appause-v0.5.46.apk -Algorithm SHA256`
+- macOS / Linux: `shasum -a 256 Appause-v0.5.46.apk`
+
+Android verifies the APK signature during installation. If Android reports an invalid signature, a damaged
+package, or a signature mismatch with the installed app, stop and obtain the APK from the official release.
+Do not try to bypass signature checks.
+
+### 2. Allow installs only from the app opening the APK
+
+On Android 8 (API 26) and later, grant **Install unknown apps** to the specific browser or file manager you
+use to open the APK. Tap the APK; if Android blocks it, open Settings and enable **Allow from this source**
+for that app only, then return to the installer. Wording varies by device. You can turn this per-source
+permission off after installation.
+
+### 3. Respect security warnings
+
+The per-source install permission only permits a user-initiated sideload; it does not mean a security scan
+approved the APK. If Play Protect or your device maker reports a specific threat, blocks installation, or asks
+you to turn off scanning, leave protection enabled and stop. Download again from the official release and
+verify its SHA-256. If the warning remains, wait for official clarification or contact the security feature's
+provider. Do not treat every warning as generic just because the APK is distributed outside an app store, and
+do not disable Play Protect, vendor scanning, or other protections.
+
+### 4. Finish setup
+
+Open Appause and enable **AccessibilityService**. It detects which app is in the foreground so Appause can
+show the pause prompt before a target app. Usage access is optional and can reduce foreground-detection
+false positives. **Display over other apps** is an optional compatibility fallback; the pause screen normally
+uses an accessibility overlay. Try that permission only if the pause screen does not appear. Some devices
+may require a battery-optimization or auto-start exception; the setting varies by manufacturer.
+
+To update, install the newer APK from the official download page over the existing app. Do not uninstall first because
+that removes local data. Stop if Android reports a signature or integrity problem.
+
+[Appause v0.5.46]: https://shmily0826.lanzoup.com/b01eunt29a
