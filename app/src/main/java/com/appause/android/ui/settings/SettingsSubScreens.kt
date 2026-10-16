@@ -550,6 +550,7 @@ fun PauseSettingsScreen(
     val isPro by viewModel.isPro.collectAsStateWithLifecycle()
     val defaultPrompt by viewModel.defaultPrompt.collectAsStateWithLifecycle()
     val reasonCustom by viewModel.reasons.collectAsStateWithLifecycle()
+    val showTemporaryPass by viewModel.showTemporaryPass.collectAsStateWithLifecycle()
     val reasonDefs = listOf(
         R.string.intent_work, R.string.intent_bored,
         R.string.intent_messages, R.string.intent_other
@@ -561,6 +562,28 @@ fun PauseSettingsScreen(
     }
 
     SettingsSubScaffold(R.string.settings_category_pause, onNavigateBack) {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        stringResource(R.string.show_temporary_pass_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = showTemporaryPass,
+                        onCheckedChange = viewModel::setShowTemporaryPass
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    stringResource(R.string.show_temporary_pass_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
         // ── Default prompt (Pro-only edit) ──
         ProLockedCard(isPro = isPro, onNavigateToPro = onNavigateToPro) {
             Column(modifier = Modifier.padding(16.dp)) {

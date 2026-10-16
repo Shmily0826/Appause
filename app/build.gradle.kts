@@ -43,8 +43,8 @@ android {
         minSdk = 26
         targetSdk = 35
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        versionCode = 97
-        versionName = "0.5.45"
+        versionCode = 98
+        versionName = "0.5.46"
         // Baked at build time; lets a shared diagnostics report prove exactly
         // which APK is installed (used by the Diagnostics "build time" row).
         buildConfigField(
@@ -133,13 +133,14 @@ android {
         unitTests.isIncludeAndroidResources = true
     }
 
-    androidResources {
-        // Room's JVM MigrationTestHelper reads schemas from merged assets;
-        // keep them available to both test variants but omit them from APKs.
-        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:.*:<dir>_*:!CVS:!thumbs.db:!picasa.ini:!*.scc:*~:!*.json"
-    }
-
     sourceSets {
+        // Room's exported schema JSONs (1.json/6.json) ship as app assets.
+        // Robolectric unit tests read the SAME merged-asset dir as the APK
+        // (test_config.properties → android_merged_assets), so there is no
+        // way to expose them to tests while hiding them from the APK: an
+        // ignoreAssetsPattern excluding *.json also strips them from unit
+        // tests and breaks the migration test (the regression 37313ba hit).
+        // The schemas are public in this MIT repo anyway (~10 KB, no secrets).
         getByName("main") {
             assets.srcDir("schemas")
         }

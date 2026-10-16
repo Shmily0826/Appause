@@ -3,7 +3,7 @@
 > 复制本文件内容粘贴到 GitHub Release 的 Description 即可。
 > 当前下载：[蓝奏云](https://shmily0826.lanzoup.com/b01eunt29a)，提取密码 **1234**，选择 `Appause-v0.5.46.apk`。
 > SHA-256：`ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`。
-> GitHub v0.5.46 尚未发布；GitHub 备用下载仍为旧版 v0.5.45。
+> [GitHub v0.5.46 APK](https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk) 与蓝奏云提供同一文件。英文官网优先 GitHub，中文官网优先蓝奏云。
 
 > Source note: this release carries the crash-loop and app-picker crash fixes
 > found during the 2026-10-12 overnight release-hardening session. The v0.5.45

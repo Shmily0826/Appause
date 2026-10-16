@@ -2,7 +2,7 @@
 
 Appause 目前未上架应用商店。最新版 **v0.5.46 / versionCode 98** 通过
 [Appause v0.5.46] 分享，蓝奏云提取密码 **1234**，文件名为 `Appause-v0.5.46.apk`。
-GitHub 暂时保留旧版 v0.5.45，下载最新版请选择蓝奏云。
+也可以使用 [GitHub v0.5.46] 备用下载；两个渠道的安装包与校验值相同。
 
 ## 第一步：从官方页面下载并核对文件
 
@@ -47,12 +47,12 @@ Android 8（API 26）及以上，需要给**用来打开 APK 的应用**（浏�
 ## How to install (English)
 
 Appause is not currently in an app store. The latest **v0.5.46 / versionCode 98**
-is available from [Appause v0.5.46] on Lanzou, password **1234**.
-Select `Appause-v0.5.46.apk`. GitHub still hosts the older v0.5.45.
+is available directly from [GitHub v0.5.46]. If GitHub is hard to reach, use
+[Appause v0.5.46] on Lanzou, password **1234**. Both provide the same APK.
 
 ### 1. Download from the official page and verify the file
 
-Download `Appause-v0.5.46.apk` from [Appause v0.5.46], password **1234**. Expected SHA-256:
+Download `Appause-v0.5.46.apk` from [GitHub v0.5.46], or use Lanzou with password **1234**. Expected SHA-256:
 `ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`.
 Do not install the file if the values differ; download it again from the official page.
 
@@ -91,3 +91,4 @@ To update, install the newer APK from the official download page over the existi
 that removes local data. Stop if Android reports a signature or integrity problem.
 
 [Appause v0.5.46]: https://shmily0826.lanzoup.com/b01eunt29a
+[GitHub v0.5.46]: https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk

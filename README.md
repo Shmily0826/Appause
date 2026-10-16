@@ -9,16 +9,17 @@ continue.
 
 ## Latest download: v0.5.46 Public Beta
 
-Download the signed APK from [Lanzou](https://shmily0826.lanzoup.com/b01eunt29a), password **1234**.
-Select **Appause-v0.5.46.apk** on the share page.
+Download the signed [Appause-v0.5.46.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk) directly from GitHub.
+For downloads from China, use [Lanzou](https://shmily0826.lanzoup.com/b01eunt29a), password **1234**.
+Both channels provide the same APK.
 
 - Package: `com.appause.android`
 - versionCode: `98`
 - SHA-256: `ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`
 
 The signed APK passed offline checks and core HyperOS device checks.
-GitHub still hosts the [older v0.5.45 release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.45).
-Its APK has a different checksum; do not use the v0.5.46 checksum for that older file.
+See the [v0.5.46 public beta release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.46) for release notes.
+The English landing page prefers GitHub; the Chinese page prefers Lanzou.
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
 `versionCode` is internal metadata and is not part of the public filename.

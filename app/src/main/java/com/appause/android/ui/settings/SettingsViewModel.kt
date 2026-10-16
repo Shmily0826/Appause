@@ -57,6 +57,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val showNotification: StateFlow<Boolean> = (getApplication<Application>() as AppauseApp).settingsDataStore.showNotification
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
 
+    val showTemporaryPass: StateFlow<Boolean> = (getApplication<Application>() as AppauseApp).settingsDataStore.showTemporaryPass
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     init {
         // Initialise immediately so the permissions screen does not flash red
         // before the first ON_RESUME refresh.
@@ -126,6 +129,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             (getApplication<Application>() as AppauseApp).settingsDataStore.setShowNotification(show)
             AppauseAccessibilityService.instance?.applyNotificationSetting()
+        }
+    }
+
+    fun setShowTemporaryPass(show: Boolean) {
+        viewModelScope.launch {
+            (getApplication<Application>() as AppauseApp).settingsDataStore.setShowTemporaryPass(show)
         }
     }
 }

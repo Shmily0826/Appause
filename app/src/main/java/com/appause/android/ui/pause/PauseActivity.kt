@@ -224,6 +224,7 @@ class PauseActivity : ComponentActivity() {
             val settingsDataStore = (application as AppauseApp).settingsDataStore
             val themeMode by settingsDataStore.themeMode
                 .collectAsState(initial = settingsDataStore.getThemeModeSync())
+            val showTemporaryPass by settingsDataStore.showTemporaryPass.collectAsState(initial = false)
 
             AppauseTheme(darkTheme = appauseDarkTheme(themeMode)) {
                 Surface(modifier = Modifier.fillMaxSize()) {
@@ -289,6 +290,7 @@ class PauseActivity : ComponentActivity() {
                         smoothProgress = countdown.smoothProgress,
                         totalSeconds = session.cooldownSeconds,
                         isFinished = countdown.isFinished,
+                        showTemporaryPassLinkEnabled = showTemporaryPass,
                         onCancel = { handleCancel(session) },
                         onContinueWithReason = { reason -> handleContinueWithReason(session, reason) },
                         onTemporaryPassSelected = { minutes, onFinished ->
@@ -429,8 +431,10 @@ class PauseActivity : ComponentActivity() {
     ) {
         if (!isCurrentPauseSession(session)) return
         val repository = (application as AppauseApp).repository
+        val settingsDataStore = (application as AppauseApp).settingsDataStore
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                if (!settingsDataStore.showTemporaryPass.first()) return@launch
                 val granted = repository.grantTemporaryPass(
                     packageName = session.targetPackage,
                     minutes = minutes,
@@ -586,6 +590,7 @@ internal fun PauseScreenContent(
     smoothProgress: Float,
     totalSeconds: Int,
     isFinished: Boolean,
+    showTemporaryPassLinkEnabled: Boolean = true,
     onCancel: () -> Unit,
     onContinueWithReason: (String) -> Unit,
     onTemporaryPassSelected: (Int, () -> Unit) -> Unit = { _, onFinished -> onFinished() },
@@ -605,6 +610,12 @@ internal fun PauseScreenContent(
     val showTemporaryPassChooser = temporaryPassChooserState.isOpen
     val temporaryPassSelectionInFlight = temporaryPassChooserState.selectionInFlight
     val outerActionsEnabled = !temporaryPassSelectionInFlight
+
+    LaunchedEffect(showTemporaryPassLinkEnabled) {
+        if (!showTemporaryPassLinkEnabled) {
+            temporaryPassChooserState = TemporaryPassChooserState()
+        }
+    }
 
     val handleBack: () -> Unit = {
         when (temporaryPassChooserState.backAction()) {
@@ -647,6 +658,7 @@ internal fun PauseScreenContent(
 
     // A selection is one-shot so rapid taps cannot grant duplicate passes.
     val selectTemporaryPass: (Int) -> Unit = selection@{ minutes ->
+        if (!showTemporaryPassLinkEnabled) return@selection
         val nextState = temporaryPassChooserState.tryStartSelection() ?: return@selection
         temporaryPassChooserState = nextState
         onTemporaryPassSelected(minutes) {
@@ -665,7 +677,7 @@ internal fun PauseScreenContent(
     // and overflow-scroll fallback: only when the measured layout is taller
     // than the viewport (tiny height / huge font scale) does the screen
     // scroll, keeping every action reachable.
-    if (!showTemporaryPassChooser || !useInlineTemporaryPassChooser) {
+    if (!showTemporaryPassChooser || !showTemporaryPassLinkEnabled || !useInlineTemporaryPassChooser) {
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
@@ -732,7 +744,7 @@ internal fun PauseScreenContent(
                             outerActionsEnabled = outerActionsEnabled,
                             onContinueWithReason = onContinueWithReason,
                             onCancel = onCancel,
-                            showTemporaryPassLink = isFinished && !temporaryPassSelectionInFlight,
+                            showTemporaryPassLink = isFinished && showTemporaryPassLinkEnabled && !temporaryPassSelectionInFlight,
                             onOpenTemporaryPassChooser = {
                                 temporaryPassChooserState = temporaryPassChooserStateAfterOpen(
                                     temporaryPassChooserState,
@@ -772,7 +784,7 @@ internal fun PauseScreenContent(
                             outerActionsEnabled = outerActionsEnabled,
                             onContinueWithReason = onContinueWithReason,
                             onCancel = onCancel,
-                            showTemporaryPassLink = isFinished && !temporaryPassSelectionInFlight,
+                            showTemporaryPassLink = isFinished && showTemporaryPassLinkEnabled && !temporaryPassSelectionInFlight,
                             onOpenTemporaryPassChooser = {
                                 temporaryPassChooserState = temporaryPassChooserStateAfterOpen(
                                     temporaryPassChooserState,
@@ -786,7 +798,7 @@ internal fun PauseScreenContent(
         }
     }
 
-    if (showTemporaryPassChooser && useInlineTemporaryPassChooser) {
+    if (showTemporaryPassChooser && showTemporaryPassLinkEnabled && useInlineTemporaryPassChooser) {
         Surface(
             modifier = Modifier
                 .fillMaxSize()
@@ -842,7 +854,7 @@ internal fun PauseScreenContent(
         }
     }
 
-    if (showTemporaryPassChooser && !useInlineTemporaryPassChooser) {
+    if (showTemporaryPassChooser && showTemporaryPassLinkEnabled && !useInlineTemporaryPassChooser) {
         AlertDialog(
             onDismissRequest = {
                 temporaryPassChooserState = temporaryPassChooserState.dismiss()

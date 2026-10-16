@@ -56,12 +56,22 @@ class AppQueryService(private val context: Context) {
 
         val appList = mutableListOf<AppInfo>()
         val myPackageName = context.packageName
+        // One app can expose SEVERAL launcher activities, and
+        // queryIntentActivities() returns one entry per activity (the Google
+        // app does this on Pixel-style images). AppSelectScreen keys its list
+        // items by packageName, so a duplicate entry crashes recomposition
+        // with "Key ... was already used" as soon as both entries are visible
+        // (e.g. right after a search narrows the list). Keep the first entry
+        // per package.
+        val seenPackages = mutableSetOf<String>()
 
         for (resolveInfo in resolveInfoList) {
             val packageName = resolveInfo.activityInfo.packageName
 
             // Skip Appause itself — users should not be able to add it to a group
             if (packageName == myPackageName) continue
+
+            if (!seenPackages.add(packageName)) continue
 
             // Get the user-visible app name from the system.
             // loadLabel() returns the android:label attribute of the app.

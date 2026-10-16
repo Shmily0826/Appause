@@ -6,9 +6,12 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import com.appause.android.util.AppLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -24,10 +27,26 @@ import kotlinx.coroutines.flow.map
  *
  * Why `by preferencesDataStore()`?
  * - This is a Kotlin delegate that creates the DataStore lazily on first access.
- * - The string "settings" is the file name (stored as /data/data/.../preferences/settings).
+ * - The string "settings" is the file name (stored in /data/data/.../datastore).
  * - Using an extension property on Context ensures we always use the same Context.
+ *
+ * Why the corruption handler: NavGraph reads hasCompletedOnboarding.first()
+ * inside a LaunchedEffect before any destination exists. Without a handler,
+ * a corrupted settings file makes every read throw CorruptionException and
+ * the app crash-loops on startup — unreachable until storage is cleared.
+ * With the handler, a corrupt file (already unreadable damage) is replaced
+ * by defaults: the user re-sees onboarding, and Room data (groups, stats)
+ * is untouched. Healthy files never hit the handler, so nothing else changes.
  */
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(
+    name = "settings",
+    corruptionHandler = ReplaceFileCorruptionHandler { error ->
+        AppLogger.e("SettingsDataStore", "settings file corrupt; restarting from defaults", error)
+        emptyPreferences()
+    },
+)
+
+internal fun temporaryPassVisibility(storedValue: Boolean?): Boolean = storedValue ?: true
 
 /**
  * SettingsDataStore — wrapper for simple key-value settings.
@@ -52,6 +71,7 @@ open class SettingsDataStore(private val context: Context) {
         val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
         val RECOMMENDED_APPS_KEY = stringSetPreferencesKey("recommended_apps")
         val SHOW_NOTIFICATION_KEY = booleanPreferencesKey("show_notification")
+        val SHOW_TEMPORARY_PASS_KEY = booleanPreferencesKey("show_temporary_pass")
         val TEMPORARY_PASSES_KEY = stringSetPreferencesKey("temporary_passes")
         // Sibling map of "package|anchorAtGrant" recorded when each pass is
         // granted (same encode format as the passes). Written atomically in
@@ -142,6 +162,14 @@ open class SettingsDataStore(private val context: Context) {
      */
     val showNotification: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[SHOW_NOTIFICATION_KEY] ?: true
+    }
+
+    /**
+     * Whether the Temporary Pass option is shown after the cooldown.
+     * Defaults to the historical behavior until the user changes the setting.
+     */
+    val showTemporaryPass: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        temporaryPassVisibility(preferences[SHOW_TEMPORARY_PASS_KEY])
     }
 
     /**
@@ -387,6 +415,13 @@ open class SettingsDataStore(private val context: Context) {
     suspend fun setShowNotification(show: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[SHOW_NOTIFICATION_KEY] = show
+        }
+    }
+
+    /** Update whether Temporary Pass is available from the interception screen. */
+    suspend fun setShowTemporaryPass(show: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[SHOW_TEMPORARY_PASS_KEY] = show
         }
     }
 

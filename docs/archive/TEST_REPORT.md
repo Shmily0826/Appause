@@ -1528,3 +1528,17 @@ Evidence: ignored output/mirror-verify-APPAUSE-20261017-1027/ (verification.json
 - Baseline: original main501a5c4 with existing dirty work; live remote main34579ec differs only by METRICS.csv / METRICS.md. Independent clean worktree starts at34579ec and preserves that snapshot. Approved input hashes checked before copying the exact allowlist.
 - Prepared website uses Lanzou v0.5.46 / 98 with password1234; GitHub v0.5.45 links are explicitly older fallbacks. Local browser/static/build checks and the distinction between blocked automated mirror-byte verification and user-confirmed normal download are recorded in section49.
 - Publication is verified only after push by checking the Pages build/deployment and live page/assets. Do not treat this pre-push entry as live deployment proof; the dated task handoff records final results and Git state.
+
+## 51. Source-linked GitHub beta and language-specific download acceptance (2026-10-17 — APPAUSE-20261017-1047)
+
+| Check | Result | Evidence / boundary |
+|---|---|---|
+| Authorization / source scope | **PASS** | Direct authorization for GitHub upload and page changes, followed by explicit authorization for11 existing Android source/test files. Independent clean worktree based onc838738. No source fix beyond the previously accepted9 modified files/2 tests. |
+| APK/source linkage | **PASS** | Original pinned APK SHA-256 ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927. All155 Android source/config/schema inputs correspond to that build's manifest;45 checkout differences are text line endings only. Release must tag the committed source tree rather than the oldv0.5.45 source. |
+| Fresh compile/tests | **PASS** | assembleDebug + testDebugUnitTest + testReleaseUnitTest, BUILD SUCCESSFUL in1m35s,78tasks (74executed/4fromcache). Debug293/293 and Release293/293, zero failures/errors/skips. Existing deprecation/nullability warnings remain. No new release APK build or lint rerun; prior final-APK signature/lint/runtime evidence remains separate. |
+| Language priority | **PASS (local)** | index.html primary GitHubv0.5.46 file, zh.html primary Lanzou/password1234; both fallback channels offer the same version. Shared release.js selects using document.documentElement.lang. Static links and JSON-LD match; no device/IP geolocation. Node VM verifies en and zh-CN branches. |
+| Local browser | **PASS** | Shared web-inspector CLI, en/zh desktop1440x900 and mobile390x844 over localhost; no console/page/network errors or horizontal overflow;4 download screenshots viewed. |
+| Publication protocol | **REQUIRES POST-PUBLISH PROOF** | Upload fixed APK/checksum to a draft linked to the accepted-source commit, validate bytes, publish prerelease, then update main/Pages. Final public API/tag/asset download and live web results belong to the task handoff; this pre-push record alone is not online proof. |
+| Scope boundaries | **NOT TESTED / NOT DONE** | No new phone/emulator, activation, temporary-pass expiry, deep-sleep or other-OEM run. Previously user-accepted chooser Back behavior unchanged. No Worker/secret/keystore/SDK dependency or unrelated feature change. |
+
+Release remains a public beta. Mainland access to the GitHub Pages website and automated Lanzou-byte verification are separate from a successful GitHub asset download. User already confirmed the mirrored fixed APK and normal Lanzou download.

@@ -24,6 +24,7 @@ import android.view.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -424,6 +425,7 @@ class OverlayManager {
         // Build the Compose UI
         // Query service for resolving recommended app names.
         val appQueryService = AppQueryService(context.applicationContext)
+        val settingsDataStore = (context.applicationContext as AppauseApp).settingsDataStore
 
         // DEBUG-ONLY auto-continue action: identical to the real "Continue" button
         // path, but invokable programmatically by the headless emulator test so the
@@ -456,6 +458,7 @@ class OverlayManager {
         val temporaryPassAction: (Int, () -> Unit) -> Unit = { minutes, onSelectionFinished ->
             CoroutineScope(Dispatchers.IO).launch {
                 try {
+                    if (!settingsDataStore.showTemporaryPass.first()) return@launch
                     val granted = repository.grantTemporaryPass(
                         packageName = targetPackage,
                         minutes = minutes,
@@ -503,6 +506,7 @@ class OverlayManager {
         composeView.setContent {
             AppauseTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
+                    val showTemporaryPass by settingsDataStore.showTemporaryPass.collectAsState(initial = false)
                     // Load default prompt from DataStore settings
                     var prompt by remember { mutableStateOf(defaultPromptText) }
                     LaunchedEffect(Unit) {
@@ -567,6 +571,7 @@ class OverlayManager {
                         smoothProgress = countdown.smoothProgress,
                         totalSeconds = cooldownSeconds,
                         isFinished = countdown.isFinished,
+                        showTemporaryPassLinkEnabled = showTemporaryPass,
                         reasons = reasons,
                         onCancel = {
                             // Log the cancellation
