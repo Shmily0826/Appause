@@ -26,7 +26,7 @@
 <link rel="preload" href="assets/landing/fonts/appause-serif-600-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/landing/site.css">
 <!-- FAQPage 由 docs/landing-v3/build_jsonld.py --production 从本页 #faq 的可见文字生成，改了问答要重跑。 -->
-<script type="application/ld+json" id="ld">{"@context": "https://schema.org", "@graph": [{"@type": "SoftwareApplication", "name": "Appause", "operatingSystem": "Android 8.0+", "applicationCategory": "UtilitiesApplication", "softwareVersion": "0.5.46", "fileSize": "12.3MB", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "CNY"}, "isAccessibleForFree": true, "license": "https://opensource.org/licenses/MIT", "downloadUrl": "https://shmily0826.lanzoup.com/b01eunt29a", "inLanguage": "zh-CN", "description": "Appause 是一款安卓专注工具：在你选定的应用打开前加几秒冷却，继续还是回桌面由你自己定。核心功能永久免费，MIT 开源。"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "安装时提示「未知应用」或有风险，正常吗？", "acceptedAnswer": {"@type": "Answer", "text": "安卓可能要求你允许用来打开 APK 的浏览器或文件管理器安装未知应用。这项安装许可与 Play 保护机制的安全检查是两回事。Play 保护机制可能建议扫描尚未检查过的应用，也可能提示具体风险；请按实际提示处理。下载区的 SHA-256 可以核对文件是否与开发者发布的版本一致，但不能证明文件没有恶意行为。如果提示具体威胁或阻止安装，请停止安装并反馈警告内容，不要关闭安全检查来绕过提示。"}}, {"@type": "Question", "name": "无障碍服务能看到什么？为什么一定要开？", "acceptedAnswer": {"@type": "Answer", "text": "Appause 只用它判断当前打开的是哪个应用。它读取的只有应用名，不读取屏幕上的文字、消息、截图或键盘输入。没有这项权限，就无法判断你打开了什么，拦截也不会生效。"}}, {"@type": "Question", "name": "会耗电吗？为什么拦截有时会失灵？", "acceptedAnswer": {"@type": "Answer", "text": "无障碍服务只在应用切换时响应，平时不做计算。目前还没有做过系统的耗电测量。拦截失灵时，先检查三项：无障碍服务是否还在运行，电池优化是否设为「无限制」，是否允许了自启动（如果你的手机有这个开关）。这些情况目前只在一台小米 HyperOS 真机和一台模拟器上验证过，覆盖不到所有机型。检查后仍然失灵，请在 App 里通过 设置 → 反馈 提交，可以附上诊断快照。"}}, {"@type": "Question", "name": "暂停页会被其他应用挡住吗？", "acceptedAnswer": {"@type": "Answer", "text": "暂停页用的是较高层级的窗口，盖在普通应用之上，实测在开启了「隐藏悬浮窗」的应用上也能看到。个别机型如果仍然不显示，可以开启「显示悬浮窗」权限，Appause 会改用备用方案。"}}, {"@type": "Question", "name": "没打开那个应用，为什么也弹出了暂停页？", "acceptedAnswer": {"@type": "Answer", "text": "部分机型上，打开最近任务、切换应用或收到媒体通知时，系统发出的事件很像一次应用切换，偶尔会误弹暂停页。开启「使用情况访问」可以减少这种情况，但不能完全避免。"}}, {"@type": "Question", "name": "Pro 要花钱吗？永久授权码怎么申请？", "acceptedAnswer": {"@type": "Answer", "text": "不花钱。先在 Pro 页开始 7 天试用，每台设备一次。试用结束后，通过 设置 → 反馈 申请永久授权码，由开发者手动发放，再回到 Pro 页兑换。一个授权码最多绑定 3 台设备。"}}, {"@type": "Question", "name": "怎么更新？换手机后数据还在吗？", "acceptedAnswer": {"@type": "Answer", "text": "下载新版直接覆盖安装，不要先卸载，卸载会清除本机的分组和统计。分组和统计没有云同步，也不能导出，换手机后需要重新设置。新手机需先在 Pro 页开始并完成 7 天试用，再兑换永久授权码。原授权码最多绑定 3 台设备；还有名额时可以继续使用，若提示设备数量已达上限，请通过「设置 → 反馈」联系开发者处理。"}}]}]}</script>
+<script type="application/ld+json" id="ld">{"@context": "https://schema.org", "@graph": [{"@type": "SoftwareApplication", "name": "Appause", "operatingSystem": "Android 8.0+", "applicationCategory": "UtilitiesApplication", "softwareVersion": "0.5.46", "fileSize": "12.3MB", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "CNY"}, "isAccessibleForFree": true, "license": "https://opensource.org/licenses/MIT", "downloadUrl": "https://shmily0826.lanzoup.com/b01eunt29a", "inLanguage": "zh-CN", "description": "Appause 是一款安卓专注工具：在你选定的应用打开前加几秒冷却，继续还是回桌面由你自己定。核心功能永久免费，MIT 开源。"}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "怎么下载？提取密码是什么？", "acceptedAnswer": {"@type": "Answer", "text": "点击页面上的蓝奏云下载按钮，输入提取密码 1234 即可下载。"}}, {"@type": "Question", "name": "安装时提示「不允许安装未知应用」，怎么办？", "acceptedAnswer": {"@type": "Answer", "text": "按提示允许当前浏览器或文件管理器安装，再返回继续。若系统提示具体安全风险，请先停止安装，并把提示截图发给开发者。"}}, {"@type": "Question", "name": "无障碍服务能看到什么？为什么一定要开？", "acceptedAnswer": {"@type": "Answer", "text": "用来识别当前应用并显示暂停页，不读取屏幕文字或聊天内容。不开启，拦截就无法生效。"}}, {"@type": "Question", "name": "会耗电吗？为什么拦截有时会失灵？", "acceptedAnswer": {"@type": "Answer", "text": "耗电量尚未系统测量。拦截失灵时，先检查无障碍服务、电池「无限制」和自启动设置；仍有问题，可通过 设置 → 反馈 联系开发者。"}}, {"@type": "Question", "name": "暂停页会被其他应用挡住吗？", "acceptedAnswer": {"@type": "Answer", "text": "暂停页用的是较高层级的窗口，盖在普通应用之上，实测在开启了「隐藏悬浮窗」的应用上也能看到。个别机型如果仍然不显示，可以开启「显示悬浮窗」权限，Appause 会改用备用方案。"}}, {"@type": "Question", "name": "没打开那个应用，为什么也弹出了暂停页？", "acceptedAnswer": {"@type": "Answer", "text": "部分机型上，打开最近任务、切换应用或收到媒体通知时，系统发出的事件很像一次应用切换，偶尔会误弹暂停页。开启「使用情况访问」可以减少这种情况，但不能完全避免。"}}, {"@type": "Question", "name": "Pro 要花钱吗？永久授权码怎么申请？", "acceptedAnswer": {"@type": "Answer", "text": "不花钱。先在 Pro 页开始 7 天试用，每台设备一次。试用结束后，通过 设置 → 反馈 申请永久授权码，由开发者手动发放，再回到 Pro 页兑换。一个授权码最多绑定 3 台设备。"}}, {"@type": "Question", "name": "怎么更新？换手机后数据还在吗？", "acceptedAnswer": {"@type": "Answer", "text": "下载新版直接覆盖安装，不要先卸载，卸载会清除本机的分组和统计。分组和统计没有云同步，也不能导出，换手机后需要重新设置。新手机需先在 Pro 页开始并完成 7 天试用，再兑换永久授权码。原授权码最多绑定 3 台设备；还有名额时可以继续使用，若提示设备数量已达上限，请通过「设置 → 反馈」联系开发者处理。"}}]}]}</script>
 </head>
 <body>
 <a class="skip" href="#main">跳到正文</a>
@@ -62,7 +62,7 @@
         <a class="link" href="https://github.com/Shmily0826/Appause">查看源码</a>
       </div>
       <p class="facts">永久免费，安卓 8.0 及以上可用。</p>
-      <p class="facts">蓝奏云提取密码：<strong>1234</strong>。打开分享页后选择 <strong>Appause-v0.5.46.apk</strong>。<a href="#download">下载详情</a></p>
+      <p class="facts">蓝奏云提取密码：<strong>1234</strong>。<a href="#download">下载详情</a></p>
     </div>
 
     <div class="stage" data-demo data-seconds="5"
@@ -144,16 +144,16 @@
       <div>
         <div class="section-head">
           <h2 id="start-title">三步装好</h2>
-          <p>Appause 没有上架应用商店，从蓝奏云下载 APK 安装，提取密码 1234。</p>
+          <p>从蓝奏云下载 APK，按提示安装。</p>
         </div>
         <ol class="install">
           <li>
             <h3>下载并允许安装</h3>
-            <p>点页面上的下载按钮。安卓会提示禁止安装未知应用，按提示只给你用来打开 APK 的浏览器或文件管理器放行。</p>
+            <p>点下载按钮，打开 APK 后按系统提示安装。</p>
           </li>
           <li>
             <h3>打开 Appause，开启权限</h3>
-            <p>首页会列出还差哪几项，按提示逐项开启。哪些手机要开哪几项，<a href="#permissions">下一节</a>有说明。</p>
+            <p>按首页提示完成权限和后台设置，<a href="#permissions">下一节</a>有说明。</p>
           </li>
           <li>
             <h3>建一个分组</h3>
@@ -176,40 +176,40 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="perm-title">要开哪些权限</h2>
-        <p>按你的手机分三种情况。</p>
+        <p>按首页提示完成设置，电池和后台设置也建议一起开好。</p>
       </div>
 
       <div class="perm-group is-all">
-        <h3>所有安卓手机都要开</h3>
+        <h3>必须开启</h3>
         <dl>
           <div>
             <dt>无障碍服务</dt>
-            <dd>识别当前打开的是哪个应用，并在它上面显示暂停页。不读取屏幕内容、消息、截图或键盘输入。没有它，拦截不会生效。</dd>
+            <dd>识别当前应用并显示暂停页，不读取屏幕文字或聊天内容。没有它，拦截不会生效。</dd>
           </div>
         </dl>
       </div>
 
       <div class="perm-group">
-        <h3>后台限制较严的机型还要开（小米、华为等）</h3>
+        <h3>建议一起设置，保持稳定运行</h3>
         <dl>
           <div>
             <dt>电池优化设为「无限制」</dt>
-            <dd>系统省电时会关掉 Appause 的后台服务，而且不会自动重启。表现是你设了冷却的应用打开时没有暂停页。</dd>
+            <dd>建议设为「无限制」或「不限制」，减少系统省电时停止后台运行的情况。</dd>
           </div>
           <div>
             <dt>允许自启动</dt>
-            <dd>手机重启或清理后台后，靠它把服务重新拉起来。不同系统叫法不同，例如华为是「应用启动管理」。原生安卓没有这个开关，就不用管。</dd>
+            <dd>手机有这个开关就建议打开，减少重启或清理后台后拦截失灵的情况。</dd>
+          </div>
+          <div>
+            <dt>使用情况访问</dt>
+            <dd>建议开启，帮助确认当前应用，减少切换应用时误弹暂停页。</dd>
           </div>
         </dl>
       </div>
 
       <div class="perm-group">
-        <h3>可选</h3>
+        <h3>按需开启</h3>
         <dl>
-          <div>
-            <dt>使用情况访问</dt>
-            <dd>确认真正显示在屏幕上的应用。不开的话，打开最近任务或切换应用时，偶尔会为你没打开的应用弹出暂停页。</dd>
-          </div>
           <div>
             <dt>显示悬浮窗</dt>
             <dd>平时用不到。个别机型不显示暂停页时，再开它作为备用方案。</dd>
@@ -236,7 +236,7 @@
         <dl class="facts-list">
           <div>
             <dt>完成</dt>
-            <dd>冷却走完后，你选择了继续。</dd>
+            <dd>冷却结束后，点「继续」进入应用，记为一次完成。</dd>
           </div>
           <div>
             <dt>阻止</dt>
@@ -265,8 +265,8 @@
   <section class="section" id="free" aria-labelledby="free-title">
     <div class="wrap">
       <div class="section-head">
-        <h2 id="free-title">不收费，也没有<span class="nb">付费版</span></h2>
-        <p>Pro 的四项功能也不收费，只是要先试用 7 天，再申请授权码。</p>
+        <h2 id="free-title">免费使用</h2>
+        <p>Pro 先试用 7 天，再申请免费永久授权码，便于收集反馈、持续完善功能。</p>
       </div>
       <div class="plans">
         <div>
@@ -302,16 +302,16 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="source-title">源码可查</h2>
-        <p>Appause 以 MIT 协议开源。这一页写的事，都能在代码里找到对应。</p>
+        <p>代码公开，欢迎查看、反馈和参与改进。</p>
       </div>
       <dl class="facts-list facts-row">
         <div>
           <dt>MIT 协议</dt>
-          <dd>可以阅读、构建、修改。哪天项目停了，源码和你继续使用它的权利都还在。</dd>
+          <dd>代码按 MIT 协议开源，可以查看、使用和修改。</dd>
         </div>
         <div>
-          <dt>无障碍服务只拿应用名</dt>
-          <dd><a href="https://github.com/Shmily0826/Appause/blob/main/app/src/main/res/xml/accessibility_service_config.xml">配置文件</a>里写的是 <code>canRetrieveWindowContent="false"</code>，安卓不会把屏幕内容交给它。</dd>
+          <dt>不读取屏幕内容</dt>
+          <dd>只识别当前打开的应用，不读取屏幕文字或聊天内容。</dd>
         </div>
         <div>
           <dt>激活服务器不存你的使用数据</dt>
@@ -331,22 +331,24 @@
     <div class="wrap faq-split">
       <div class="section-head">
         <h2 id="faq-title">常见问题</h2>
-        <p>没找到答案，可以<a href="https://github.com/Shmily0826/Appause/issues">在 GitHub 提问</a>。</p>
+        <p>没找到答案？发邮件至 <a href="mailto:rng2018520@gmail.com">rng2018520@gmail.com</a>，或<a href="https://github.com/Shmily0826/Appause/issues">在 GitHub 提问</a>。</p>
       </div>
       <div class="faq">
         <details>
-          <summary>安装时提示「未知应用」或有风险，正常吗？</summary>
-          <p>安卓可能要求你允许用来打开 APK 的浏览器或文件管理器安装未知应用。这项安装许可与 Play 保护机制的安全检查是两回事。Play 保护机制可能建议扫描尚未检查过的应用，也可能提示具体风险；请按实际提示处理。下载区的 SHA-256 可以核对文件是否与开发者发布的版本一致，但不能证明文件没有恶意行为。</p>
-          <p>如果提示具体威胁或阻止安装，请停止安装并反馈警告内容，不要关闭安全检查来绕过提示。</p>
+          <summary>怎么下载？提取密码是什么？</summary>
+          <p>点击页面上的蓝奏云下载按钮，输入提取密码 <strong>1234</strong> 即可下载。</p>
+        </details>
+        <details>
+          <summary>安装时提示「不允许安装未知应用」，怎么办？</summary>
+          <p>按提示允许当前浏览器或文件管理器安装，再返回继续。若系统提示具体安全风险，请先停止安装，并把提示截图发给开发者。</p>
         </details>
         <details>
           <summary>无障碍服务能看到什么？为什么一定要开？</summary>
-          <p>Appause 只用它判断当前打开的是哪个应用。它读取的只有应用名，不读取屏幕上的文字、消息、截图或键盘输入。没有这项权限，就无法判断你打开了什么，拦截也不会生效。</p>
+          <p>用来识别当前应用并显示暂停页，不读取屏幕文字或聊天内容。不开启，拦截就无法生效。</p>
         </details>
         <details>
           <summary>会耗电吗？为什么拦截有时会<span class="nb">失灵？</span></summary>
-          <p>无障碍服务只在应用切换时响应，平时不做计算。目前还没有做过系统的耗电测量。拦截失灵时，先检查三项：无障碍服务是否还在运行，电池优化是否设为「无限制」，是否允许了自启动（如果你的手机有这个开关）。</p>
-          <p>这些情况目前只在一台小米 HyperOS 真机和一台模拟器上验证过，覆盖不到所有机型。检查后仍然失灵，请在 App 里通过 <span class="nb">设置 → 反馈</span> 提交，可以附上诊断快照。</p>
+          <p>耗电量尚未系统测量。拦截失灵时，先检查无障碍服务、电池「无限制」和自启动设置；仍有问题，可通过 <span class="nb">设置 → 反馈</span> 联系开发者。</p>
         </details>
         <details>
           <summary>暂停页会被其他应用挡住吗？</summary>
@@ -375,14 +377,14 @@
       <div class="download">
         <div>
           <h2 id="download-title">下载 Appause <span data-r="version">v0.5.46</span></h2>
-          <p class="meta">公开测试版，<span data-r="date">2026-10-17</span> 发布。只有安卓版，没有上架应用商店。</p>
+          <p class="meta">公开测试版，<span data-r="date">2026-10-17</span> 发布。</p>
           <a class="btn" data-apk href="https://shmily0826.lanzoup.com/b01eunt29a">蓝奏云下载（<span data-r="size">12.3 MB</span>）</a>
           <ul class="more-links">
             <li><a data-release href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.46">GitHub v0.5.46 发布页</a></li>
             <li><a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">安装指南</a></li>
             <li><a href="https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk">GitHub 备用下载 v0.5.46</a></li>
           </ul>
-          <p class="download-note">蓝奏云提取密码：<strong>1234</strong>。选择 <strong>Appause-v0.5.46.apk</strong> 下载，无需访问 GitHub。GitHub 备用入口提供同一版本，两个渠道共用下方校验值。</p>
+          <p class="download-note">蓝奏云提取密码：<strong>1234</strong>。也可使用 GitHub 备用下载。</p>
         </div>
         <dl class="spec">
           <div><dt>文件</dt><dd data-r="file">Appause-v0.5.46.apk</dd></div>
@@ -399,7 +401,7 @@
         <code class="hash" data-r="sha256">ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927</code>
         <p>Windows 运行 <code>certutil -hashfile &lt;apk&gt; SHA256</code>；macOS 或 Linux 运行 <code>shasum -a 256 &lt;apk&gt;</code>。</p>
       </details>
-      <p class="ios">目前只有安卓版。Appause 靠安卓的系统能力拦截应用启动，iOS 上的做法完全不同。</p>
+      <p class="ios">受系统限制，目前仅支持安卓。</p>
     </div>
   </section>
 

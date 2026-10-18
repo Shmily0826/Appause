@@ -25,7 +25,7 @@
 <link rel="preload" href="assets/landing/fonts/appause-serif-600-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/landing/site.css">
 <!-- FAQPage is generated from the visible #faq text by docs/landing-v3/build_jsonld.py --production. Re-run it after editing the FAQ. -->
-<script type="application/ld+json" id="ld">{"@context": "https://schema.org", "@graph": [{"@type": "SoftwareApplication", "name": "Appause", "operatingSystem": "Android 8.0+", "applicationCategory": "UtilitiesApplication", "softwareVersion": "0.5.46", "fileSize": "12.3MB", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "isAccessibleForFree": true, "license": "https://opensource.org/licenses/MIT", "downloadUrl": "https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk", "inLanguage": "en", "description": "Appause is an Android focus tool. Before an app you picked opens, it adds a few seconds of cooldown, then you choose to continue or go home. The core stays free and is MIT licensed."}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Android warns about an unknown app. Is that normal?", "acceptedAnswer": {"@type": "Answer", "text": "Android may ask you to allow the browser or file manager that opens the APK to install unknown apps. This install permission is separate from Google Play Protect checks. Play Protect may recommend scanning an app it has not checked before, or warn about a specific risk. Follow the actual warning. The SHA-256 below confirms that the file matches the developer-published version; it does not prove that a file is free of malware. If a warning names a threat or blocks installation, stop and report the warning. Do not disable security checks to bypass it."}}, {"@type": "Question", "name": "What can the accessibility service see? Why is it required?", "acceptedAnswer": {"@type": "Answer", "text": "Appause uses it only to tell which app just opened. It reads the app's name and nothing else: no on-screen text, messages, screenshots or keystrokes. Without it, Appause cannot tell what you opened, so nothing is intercepted."}}, {"@type": "Question", "name": "Does it drain the battery? Why does interception sometimes stop?", "acceptedAnswer": {"@type": "Answer", "text": "The accessibility service only responds when you switch apps and does no work in between. Battery use has not been measured systematically yet. If interception stops, check three things: that the accessibility service is still running, that battery optimization is set to Unrestricted, and that Autostart is allowed if your phone has that switch. So far this has been verified on one Xiaomi phone running HyperOS and one emulator, which does not cover every device. If it still fails, report it in the app through Settings → Feedback, and attach the diagnostic snapshot if you like."}}, {"@type": "Question", "name": "Can other apps cover the pause screen?", "acceptedAnswer": {"@type": "Answer", "text": "The pause screen uses a higher window layer that sits above ordinary apps, and in testing it stayed visible even over apps that hide overlays. If your phone still does not show it, turn on Display over other apps and Appause will use a fallback."}}, {"@type": "Question", "name": "Why did a pause appear for an app I did not open?", "acceptedAnswer": {"@type": "Answer", "text": "On some phones, opening Recents, switching apps or a media notification produces a system event that looks like an app switch, and a pause can appear by mistake. Turning on Usage access makes this rarer, but cannot rule it out."}}, {"@type": "Question", "name": "Does Pro cost money? How do I get a lifetime code?", "acceptedAnswer": {"@type": "Answer", "text": "No. Start the 7-day trial on the Pro screen; each device gets one. After the trial ends, request a lifetime code through Settings → Feedback. The developer issues it by hand, and you redeem it on the Pro screen. One code works on up to 3 devices."}}, {"@type": "Question", "name": "How do I update? What happens when I switch phones?", "acceptedAnswer": {"@type": "Answer", "text": "Install the new APK over the old one. Do not uninstall first, because that deletes your groups and statistics. There is no cloud sync and no export, so you set up groups again on a new phone. On your new phone, start the 7-day trial on the Pro screen and wait for it to end before redeeming a lifetime code. Your existing code can be used on up to 3 devices. If a device slot is available, you can reuse it; if you reach the device limit, contact the developer through Settings → Feedback."}}]}]}</script>
+<script type="application/ld+json" id="ld">{"@context": "https://schema.org", "@graph": [{"@type": "SoftwareApplication", "name": "Appause", "operatingSystem": "Android 8.0+", "applicationCategory": "UtilitiesApplication", "softwareVersion": "0.5.46", "fileSize": "12.3MB", "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}, "isAccessibleForFree": true, "license": "https://opensource.org/licenses/MIT", "downloadUrl": "https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk", "inLanguage": "en", "description": "Appause is an Android focus tool. Before an app you picked opens, it adds a few seconds of cooldown, then you choose to continue or go home. The core stays free and is MIT licensed."}, {"@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "How do I download it? Is there a password?", "acceptedAnswer": {"@type": "Answer", "text": "Download APK gets the file directly from GitHub. If you use the Lanzou mirror, enter password 1234."}}, {"@type": "Question", "name": "What if Android blocks installation from this source?", "acceptedAnswer": {"@type": "Answer", "text": "Open the prompted setting, allow installs from the browser or file manager you used, then return to the installer. If Android reports a specific security risk, stop and send the warning screenshot to the developer."}}, {"@type": "Question", "name": "What can the accessibility service see? Why is it required?", "acceptedAnswer": {"@type": "Answer", "text": "It identifies the current app and shows the pause screen without reading screen text or chats. Pausing cannot work without it."}}, {"@type": "Question", "name": "Does it drain the battery? Why does interception sometimes stop?", "acceptedAnswer": {"@type": "Answer", "text": "Battery use has not been measured systematically yet. If pauses stop, check the accessibility service, Unrestricted battery setting and Autostart. If the problem remains, contact the developer through Settings → Feedback."}}, {"@type": "Question", "name": "Can other apps cover the pause screen?", "acceptedAnswer": {"@type": "Answer", "text": "The pause screen uses a higher window layer that sits above ordinary apps, and in testing it stayed visible even over apps that hide overlays. If your phone still does not show it, turn on Display over other apps and Appause will use a fallback."}}, {"@type": "Question", "name": "Why did a pause appear for an app I did not open?", "acceptedAnswer": {"@type": "Answer", "text": "On some phones, opening Recents, switching apps or a media notification produces a system event that looks like an app switch, and a pause can appear by mistake. Turning on Usage access makes this rarer, but cannot rule it out."}}, {"@type": "Question", "name": "Does Pro cost money? How do I get a lifetime code?", "acceptedAnswer": {"@type": "Answer", "text": "No. Start the 7-day trial on the Pro screen; each device gets one. After the trial ends, request a lifetime code through Settings → Feedback. The developer issues it by hand, and you redeem it on the Pro screen. One code works on up to 3 devices."}}, {"@type": "Question", "name": "How do I update? What happens when I switch phones?", "acceptedAnswer": {"@type": "Answer", "text": "Install the new APK over the old one. Do not uninstall first, because that deletes your groups and statistics. There is no cloud sync and no export, so you set up groups again on a new phone. On your new phone, start the 7-day trial on the Pro screen and wait for it to end before redeeming a lifetime code. Your existing code can be used on up to 3 devices. If a device slot is available, you can reuse it; if you reach the device limit, contact the developer through Settings → Feedback."}}]}]}</script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -60,7 +60,7 @@
         <a class="btn" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk">Download APK (<span data-r="size">12.3 MB</span>)</a>
         <a class="link" href="https://github.com/Shmily0826/Appause">Read the source</a>
       </div>
-      <p class="facts">Free, with no paid version. Android 8.0 and later.</p>
+      <p class="facts">Free to use. Android 8.0 and later.</p>
       <p class="facts">The button downloads the APK directly from GitHub. <a href="#download">Lanzou mirror and download details</a></p>
     </div>
 
@@ -143,16 +143,16 @@
       <div>
         <div class="section-head">
           <h2 id="start-title">Set up in three steps</h2>
-          <p>Appause is not in an app store. Download the APK from GitHub or the Lanzou mirror.</p>
+          <p>Download the APK from GitHub or the Lanzou mirror, then follow the install prompts.</p>
         </div>
         <ol class="install">
           <li>
             <h3>Download and allow the install</h3>
-            <p>Tap a download button on this page. Android will block unknown apps at first; allow installs only for the browser or file manager you use to open the APK.</p>
+            <p>Tap a download button, open the APK, then follow Android's install prompts.</p>
           </li>
           <li>
             <h3>Open Appause and turn on permissions</h3>
-            <p>The home screen lists what is still missing. Turn each one on as prompted. Which phones need which permissions is in <a href="#permissions">the next section</a>.</p>
+            <p>Follow the home screen prompts to set up permissions and background settings. See <a href="#permissions">the next section</a> for details.</p>
           </li>
           <li>
             <h3>Create a group</h3>
@@ -175,40 +175,40 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="perm-title">Which permissions to turn on</h2>
-        <p>It depends on your phone. There are three cases.</p>
+        <p>Follow the home screen prompts, including battery and background settings.</p>
       </div>
 
       <div class="perm-group is-all">
-        <h3>Every Android phone</h3>
+        <h3>Required</h3>
         <dl>
           <div>
             <dt>Accessibility service</dt>
-            <dd>Tells Appause which app just opened, and shows the pause screen on top of it. It does not read screen content, messages, screenshots or keystrokes. Without it, nothing is intercepted.</dd>
+            <dd>Identifies the current app and shows the pause screen. It does not read screen text or chats. Pausing needs this permission.</dd>
           </div>
         </dl>
       </div>
 
       <div class="perm-group">
-        <h3>Also on phones with strict background limits (Xiaomi, Huawei and others)</h3>
+        <h3>Recommended for reliable operation</h3>
         <dl>
           <div>
             <dt>Battery optimization set to Unrestricted</dt>
-            <dd>To save power, the system stops Appause's background service and does not restart it. You notice it when an app in your group opens without a pause.</dd>
+            <dd>Choose Unrestricted or No restrictions to reduce interruptions from battery-saving settings.</dd>
           </div>
           <div>
             <dt>Autostart</dt>
-            <dd>Brings the service back after a restart or after the system clears background apps. The name varies by brand; Huawei calls it App launch. Stock Android has no such switch, so you can skip it there.</dd>
+            <dd>If your phone has this switch, turn it on to help Appause keep working after a restart or background cleanup.</dd>
+          </div>
+          <div>
+            <dt>Usage access</dt>
+            <dd>Recommended to confirm the current app and reduce unwanted pauses when switching apps.</dd>
           </div>
         </dl>
       </div>
 
       <div class="perm-group">
-        <h3>Optional</h3>
+        <h3>When needed</h3>
         <dl>
-          <div>
-            <dt>Usage access</dt>
-            <dd>Confirms which app is really on screen. Without it, opening Recents or switching apps can now and then show a pause for an app you did not open.</dd>
-          </div>
           <div>
             <dt>Display over other apps</dt>
             <dd>Not needed day to day. Turn it on as a fallback only if your phone does not show the pause screen.</dd>
@@ -235,7 +235,7 @@
         <dl class="facts-list">
           <div>
             <dt>Completed</dt>
-            <dd>You waited out the cooldown and continued.</dd>
+            <dd>After the cooldown, tap Continue to enter the app. This counts as one completion.</dd>
           </div>
           <div>
             <dt>Avoided</dt>
@@ -264,8 +264,8 @@
   <section class="section" id="free" aria-labelledby="free-title">
     <div class="wrap">
       <div class="section-head">
-        <h2 id="free-title">Free, with no paid version</h2>
-        <p>Pro&#39;s four features are free too. Try them for 7 days, then request a lifetime code.</p>
+        <h2 id="free-title">Free to use</h2>
+        <p>Try Pro for 7 days, then request a free lifetime code. The trial helps us gather feedback and keep improving it.</p>
       </div>
       <div class="plans">
         <div>
@@ -301,16 +301,16 @@
     <div class="wrap">
       <div class="section-head">
         <h2 id="source-title">Check it in the source</h2>
-        <p>Appause is open source under the MIT license. What this page says can be traced to the code.</p>
+        <p>Browse the code, report a problem, or help improve Appause.</p>
       </div>
       <dl class="facts-list facts-row">
         <div>
           <dt>MIT license</dt>
-          <dd>Read it, build it, change it. If the project ever stops, the source and your right to keep using it remain.</dd>
+          <dd>The code is open source under the MIT license. You can read, use and modify it.</dd>
         </div>
         <div>
-          <dt>The accessibility service only gets app names</dt>
-          <dd>The <a href="https://github.com/Shmily0826/Appause/blob/main/app/src/main/res/xml/accessibility_service_config.xml">config file</a> sets <code>canRetrieveWindowContent="false"</code>, so Android never hands it screen content.</dd>
+          <dt>No screen content is read</dt>
+          <dd>Appause identifies the current app without reading screen text or chats.</dd>
         </div>
         <div>
           <dt>The activation server keeps none of your usage data</dt>
@@ -330,22 +330,24 @@
     <div class="wrap faq-split">
       <div class="section-head">
         <h2 id="faq-title">Questions</h2>
-        <p>Not answered here? <a href="https://github.com/Shmily0826/Appause/issues">Ask on GitHub</a>.</p>
+        <p>Still have a question? Email <a href="mailto:rng2018520@gmail.com">rng2018520@gmail.com</a> or <a href="https://github.com/Shmily0826/Appause/issues">ask on GitHub</a>.</p>
       </div>
       <div class="faq">
         <details>
-          <summary>Android warns about an unknown app. Is that normal?</summary>
-          <p>Android may ask you to allow the browser or file manager that opens the APK to install unknown apps. This install permission is separate from Google Play Protect checks. Play Protect may recommend scanning an app it has not checked before, or warn about a specific risk. Follow the actual warning. The SHA-256 below confirms that the file matches the developer-published version; it does not prove that a file is free of malware.</p>
-          <p>If a warning names a threat or blocks installation, stop and report the warning. Do not disable security checks to bypass it.</p>
+          <summary>How do I download it? Is there a password?</summary>
+          <p>Download APK gets the file directly from GitHub. If you use the Lanzou mirror, enter password <strong>1234</strong>.</p>
+        </details>
+        <details>
+          <summary>What if Android blocks installation from this source?</summary>
+          <p>Open the prompted setting, allow installs from the browser or file manager you used, then return to the installer. If Android reports a specific security risk, stop and send the warning screenshot to the developer.</p>
         </details>
         <details>
           <summary>What can the accessibility service see? Why is it required?</summary>
-          <p>Appause uses it only to tell which app just opened. It reads the app's name and nothing else: no on-screen text, messages, screenshots or keystrokes. Without it, Appause cannot tell what you opened, so nothing is intercepted.</p>
+          <p>It identifies the current app and shows the pause screen without reading screen text or chats. Pausing cannot work without it.</p>
         </details>
         <details>
           <summary>Does it drain the battery? Why does interception sometimes stop?</summary>
-          <p>The accessibility service only responds when you switch apps and does no work in between. Battery use has not been measured systematically yet. If interception stops, check three things: that the accessibility service is still running, that battery optimization is set to Unrestricted, and that Autostart is allowed if your phone has that switch.</p>
-          <p>So far this has been verified on one Xiaomi phone running HyperOS and one emulator, which does not cover every device. If it still fails, report it in the app through <span class="nb">Settings → Feedback</span>, and attach the diagnostic snapshot if you like.</p>
+          <p>Battery use has not been measured systematically yet. If pauses stop, check the accessibility service, Unrestricted battery setting and Autostart. If the problem remains, contact the developer through <span class="nb">Settings → Feedback</span>.</p>
         </details>
         <details>
           <summary>Can other apps cover the pause screen?</summary>
@@ -374,14 +376,14 @@
       <div class="download">
         <div>
           <h2 id="download-title">Download Appause <span data-r="version">v0.5.46</span></h2>
-          <p class="meta">Public beta, released <span data-r="date">2026-10-17</span>. Android only, not in any app store.</p>
+          <p class="meta">Public beta, released <span data-r="date">2026-10-17</span>.</p>
           <a class="btn" data-apk href="https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk">Download APK (<span data-r="size">12.3 MB</span>)</a>
           <ul class="more-links">
             <li><a data-release href="https://github.com/Shmily0826/Appause/releases/tag/v0.5.46">GitHub v0.5.46 release</a></li>
             <li><a href="https://github.com/Shmily0826/Appause/blob/main/docs/INSTALL.md">Install guide</a></li>
             <li><a href="https://shmily0826.lanzoup.com/b01eunt29a">Lanzou mirror (password 1234)</a></li>
           </ul>
-          <p class="download-note">If GitHub is hard to reach, use the Lanzou mirror with password <strong>1234</strong>. Select <strong>Appause-v0.5.46.apk</strong>. Both channels provide the same APK and use the checksum below.</p>
+          <p class="download-note">If GitHub is hard to reach, use the Lanzou mirror with password <strong>1234</strong>.</p>
         </div>
         <dl class="spec">
           <div><dt>File</dt><dd data-r="file">Appause-v0.5.46.apk</dd></div>
@@ -398,7 +400,7 @@
         <code class="hash" data-r="sha256">ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927</code>
         <p>On Windows run <code>certutil -hashfile &lt;apk&gt; SHA256</code>; on macOS or Linux run <code>shasum -a 256 &lt;apk&gt;</code>.</p>
       </details>
-      <p class="ios">Android only for now. Appause intercepts app launches with system features Android provides, and iOS works differently.</p>
+      <p class="ios">Currently Android only, due to system limitations.</p>
     </div>
   </section>
 
