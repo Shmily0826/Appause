@@ -1,7 +1,7 @@
 name: CI
 
 # Every push to main and every PR must pass both unit-test variants, lint both
-# build variants, and compile the debug APK.
+# build variants, compile the debug APK, and run the Worker test suite.
 on:
   push:
     branches: [main]
@@ -36,3 +36,23 @@ jobs:
           name: test-results
           path: app/build/test-results/
           if-no-files-found: ignore
+
+  # The Worker has no build step and needs no dependencies: these three files run
+  # on plain Node, so the job is a single command. It exists because the Worker
+  # is the only part of the project with no other automated coverage, and it is
+  # never deployed by CI (deployment stays a manual step).
+  worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Worker tests
+        working-directory: worker
+        run: |
+          node test/sign-verify.mjs
+          node test/redeem-failure-modes.mjs
+          node test/download-redirect.mjs
