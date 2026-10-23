@@ -7,7 +7,7 @@
 
 Appause 的拦截行为不是一次性设计出来的，而是 v0.5.1 → v0.5.40 期间几十次
 真机排错"长"出来的（HyperOS 事件重放、2032/2038 窗口差异、看门狗、Home 确认……）。
-这些知识原本散落在代码注释、AGENTS.md 注意事项和 PROGRESS.md 的调试记录里。
+这些知识原本散落在代码注释、AGENTS.md 注意事项和早期的调试记录里。
 本文把它们整理成一份人能读的协议，作为以后排查和重构的地图。
 
 ## 1. 组件地图
@@ -250,7 +250,7 @@ PauseAlarmReceiver 广播线程。HashSet 并发读写最坏情况是死循环�
 "不回写 grouped 应用"规则、`isSystemPackage` 的固定清单
 （`com.miui.personalassistant` 等，注释已声明是 whack-a-mole 后的收尾清单）、
 Xiaomi API≥36 的 2032-only 限制。这些**留在原地是合理的**，但每条都应有
-对应的注释出处（目前有），并记录在 TEST_REPORT 的设备矩阵里。
+对应的注释出处（目前有），并记录在当次发版的真机测试记录里。
 
 ### R6（低）——OverlayManager 回调线程模型依赖隐式语义
 `continueAction`/`temporaryPassAction` 在 `Dispatchers.IO` 上调 `dismiss()`，
@@ -268,7 +268,7 @@ Xiaomi API≥36 的 2032-only 限制。这些**留在原地是合理的**，但�
 同一 `handleForegroundChange`；两者现在共同进入 `ForegroundChangeSingleFlight` 的
 `Mutex`，并由 `ForegroundChangeSingleFlightTest` 覆盖。因此不能再描述为“无
 Mutex/队列串行化”。剩余风险是决策→副作用映射、生命周期回调与真实事件时序仍缺
-服务级覆盖，见 `docs/ENGINEERING_REVIEW.md` P1-4。
+服务级覆盖，见历史评审的 P1-4。
 
 ### R9（低）——PauseActivity 兜底链的启动冗余（stale intent 已修复）
 overlay 两级 addView 都失败时：直接 `startActivity` 之后**无条件**排

@@ -102,11 +102,10 @@ keystore, password, private key, activation code, or Worker secret.
 ## Testing status
 
 v0.5.46 is a public beta. Before release, its core interception and in-place
-upgrade were checked on one Xiaomi HyperOS phone running Android 16. That does
-not cover every device, ROM, or long-running scenario. If Appause misbehaves on
-your phone, please [open an issue](https://github.com/Shmily0826/Appause/issues).
-The detailed test log is in
-[docs/archive/TEST_REPORT.md](docs/archive/TEST_REPORT.md).
+upgrade were checked on one Xiaomi HyperOS phone running Android 16, and the
+unit test suite runs in CI on every push. That does not cover every device, ROM,
+or long-running scenario. If Appause misbehaves on your phone, please
+[open an issue](https://github.com/Shmily0826/Appause/issues).
 
 ## Install and feedback
 

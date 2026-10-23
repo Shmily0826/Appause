@@ -1,8 +1,8 @@
 # Appause — Technical Architecture
 
-> Current source baseline: `main` @ `469c780` (2026-09-12), versionName `0.5.40`,
-> versionCode `92`. The public `v0.5.40` tag predates this current-source
-> baseline.
+> Source baseline for the structural notes below: `main` @ `469c780`
+> (2026-09-12), versionName `0.5.40`, versionCode `92`. The module layout has not
+> changed shape since; see `README.md` for the version shipping today.
 
 ---
 
@@ -509,5 +509,6 @@ programmatically.
 - [x] Phase 7: Pause screen shows countdown, cancel/continue work (RC device evidence)
 - [x] Phase 8: Settings persist, debug info accurate
 
-The checklist records implementation status; current build and device evidence,
-including its remaining manual gap, is maintained in `archive/TEST_REPORT.md`.
+The checklist records implementation status. Current build and device evidence,
+including its remaining manual gap, is summarised in the release notes for each
+version on the GitHub Releases page.

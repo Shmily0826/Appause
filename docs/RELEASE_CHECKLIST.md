@@ -6,7 +6,7 @@
 > 最终候选包：`output/release-candidate-APPAUSE-20261016-2356/Appause-v0.5.46.apk`。
 > SHA-256：`ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`。
 > 2026-10-17 已将此 release APK 覆盖升级到 Android 16 / HyperOS 真机：数据可见状态保留、核心拦截和 3 分钟后重新拦截通过。
-> 已测核心真机流程通过。选择器按 Back 回桌面、再开应用重新拦截，用户已确认符合预期，不作为缺陷或发布阻塞（TEST_REPORT §47）。
+> 已测核心真机流程通过。选择器按 Back 回桌面、再开应用重新拦截，用户已确认符合预期，不作为缺陷或发布阻塞。
 > 完整发版清单尚未全部验收：临时通行到期等路径未测。代理下载遇到蓝奏网络验证页，未取得镜像字节；上传文件身份及下载可用性由用户确认。
 > 英文页面优先 GitHub 文件下载，中文页面优先蓝奏云分享页（密码1234）；两个渠道使用同一已验收 APK。部署后核对线上入口和下载文件校验值。
 
@@ -43,8 +43,8 @@
 - [ ] `./gradlew testDebugUnitTest` 全绿（数量以当前运行结果为准）
 - [ ] 模拟器冒烟：安装 → onboarding → 建组 → 拦截 → 暂停屏操作（每轮发版至少一遍）
 - [ ] 真机冒烟（小米 HyperOS 优先）：同上 + P0 导航逃生（Home/Back/Recents 物理按键）
-      模拟器结果**永远不得**记为真机结果（`docs/archive/PROGRESS.md` 惯例）
-- [ ] 测试结果按日期追加到 `docs/archive/TEST_REPORT.md`（PASS/FAIL/NOT TESTED，append-only，不删旧记录）
+      模拟器结果**永远不得**记为真机结果（历史惯例）
+- [ ] 测试结果写进当次发版的 release notes（PASS/FAIL/NOT TESTED，不删旧记录）
 
 ## 5. Debug 与 Release 隔离
 
@@ -62,7 +62,7 @@
 
 ## 7. 发布物料
 
-- [ ] `docs/RELEASE_NOTES.md` 追加本版说明（面向用户语言，不写内部 Task ID）
+- [ ] GitHub Release 的说明写好本版面向用户的变更（不写内部 Task ID）
 - [ ] GitHub Pages（根目录 `index.html` / `privacy-policy.html`）版本信息、下载说明与新版一致
 - [ ] `docs/INSTALL.md` 安装步骤仍准确（权限授予路径、使用情况访问说明）
 - [ ] 应用内 onboarding / About 的版本号显示正确（如有）
@@ -72,7 +72,7 @@
 
 - [ ] 工作区干净：`git status` 无未预期的改动；`build/`、`.gradle/`、APK 不入库
 - [ ] 提交信息描述 what + why；按 AGENTS.md §10，**commit / push / tag / release 每一步都要用户单独授权**
-- [ ] `docs/archive/PROGRESS.md` 追加本阶段记录
+- [ ] 本阶段的取舍与遗留问题写进当次 release notes
 - [ ] （可选）`METRICS.md` 周快照照常更新
 
 ## 9. 发布后

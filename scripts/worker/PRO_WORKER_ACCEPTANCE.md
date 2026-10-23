@@ -42,7 +42,7 @@ The older W4 text in this report is historical. Current bounded evidence:
 
 ## W3 生产一致性 — PASS（行为等价证明 + 诚实边界）
 - 当前生产版本 `4af734fe-1bd8-41da-93c9-9c03d5c2f4ed`（2026-09-11T23:44Z，100%），`wrangler deployments list` 只读核查；此后 worker/src **无任何提交**（最后改动 0256cf5）。
-- **密钥钉扎**：2026-09-17 生产试用冒烟（PROGRESS.md 记录）返回的 token 通过 ServerKeys.kt 钉扎公钥验签（RS256、tier=pro、trial=true、device 匹配、exp==expiresAt、窗恰 604800000ms）→ 线上私钥与钉扎公钥配对成立。
+- **密钥钉扎**：2026-09-17 生产试用冒烟（当时的调试记录）返回的 token 通过 ServerKeys.kt 钉扎公钥验签（RS256、tier=pro、trial=true、device 匹配、exp==expiresAt、窗恰 604800000ms）→ 线上私钥与钉扎公钥配对成立。
 - **bundle 行为归属**：生产观察到的 `trial=true` claim 与 exp 锚定语义由 0256cf5 引入（c2883e9 无）→ 部署发生在提交前 45 分钟但内容含该改动；worker 侧无未部署的后继变更。
 - **当日在线健康**（2026-09-21，只读）：`/api/download-count` HTTP 200 / 0.81s；伪造码 `/api/redeem` → 404（正确拒绝，零状态写入）。
 - 边界（如实）：wrangler 无法下载线上 bundle 做字节对比；0256cf5 中纯内部 metrics 分支不可外部观察。判定采用"全部认证关键路径行为等价 + 无后继提交"标准。
