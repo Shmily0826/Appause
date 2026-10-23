@@ -7,6 +7,8 @@ in groups, and set a cooldown. When a target app comes to the foreground,
 Appause shows a short pause screen so you can breathe and decide whether to
 continue.
 
+**Website:** [shmily0826.github.io/Appause](https://shmily0826.github.io/Appause/) · [中文](https://shmily0826.github.io/Appause/zh.html)
+
 ## Latest download: v0.5.46 Public Beta
 
 Download the signed [Appause-v0.5.46.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk) directly from GitHub.
@@ -40,25 +42,10 @@ See [docs/INSTALL.md](docs/INSTALL.md) before the first sideload.
   settings that matter on Xiaomi/HyperOS and similar devices.
 - **Feedback** — Settings → Feedback lets you review a structured diagnostic
   snapshot before choosing to send a bug report or suggestion.
-- **Appause Pro** — optional access to unlimited groups, re-remind, a custom
-  pause prompt, and custom open reasons. Appause's core remains permanently
-  free, with no subscription or paid version. The Pro page shows an optional,
-  once-per-device 7-day trial while Free; after successful activation it shows
-  a live countdown and hides lifetime-code entry. At expiry, the user can
-  request a free, manually issued lifetime code through Settings → Feedback.
-  Lifetime access shows status only. Android verifies signed, device-bound
-  tokens locally and refreshes timed entitlement state at expiry without
-  background Worker checks.
-
-> **Public beta position (2026-09-22):** Appause remains free during the public
-> beta; no payments, subscriptions, or paid tier are planned. Pro remains a
-> clearly labelled, gated set of experimental features. The one-tap, once-per-
-> device 7-day trial is opt-in and helps us learn about real engagement and
-> invite feedback; without appropriate consented telemetry, it is not a
-> precise D7-retention metric. After the trial, lifetime Pro access remains
-> free and manually issued on request through the in-app feedback path (email or
-> GitHub issue). This is staged access, not a promise that every Pro feature is
-> enabled or bug-free.
+- **Appause Pro** — unlimited groups, re-remind, a custom pause prompt, and
+  custom open reasons. Start a one-time 7-day trial on the Pro page; after it
+  ends, request a free lifetime code through Settings → Feedback. There is no
+  subscription or paid tier, and the core features stay free.
 
 ## Screenshots
 
@@ -112,47 +99,21 @@ DSL. Use JDK 17 and an Android SDK with API 35 available.
 Release signing uses a local, git-ignored signing configuration. Never commit a
 keystore, password, private key, activation code, or Worker secret.
 
-Diagnostics and Pro test controls are isolated to the `debug` build
-(`com.appause.android.debug`). They are not included in the production Release
-APK and are not a production activation path.
+## Testing status
 
-## v0.5.44 Public Beta validation status
-
-> **This section documents the evidence for `v0.5.44` specifically.** It is kept
-> under its own version heading because that is the build the ADB/logcat runs
-> below were actually performed against. It is not a claim about newer builds —
-> see `docs/archive/PROGRESS.md` for per-version status.
-
-- The public GitHub Release is `v0.5.44`, package `com.appause.android`,
-  versionCode `96`. The accepted APK SHA-256 is
-  `B2073E9138EEDF0FD3E31343304C04CFD6DB0D5CC199FBF69E961F34D68FA369`.
-- The Pro trial retry compatibility fix accepts a freshly signed retry token
-  while retaining signature, device-binding, tier, expiry, and exact seven-day
-  window validation.
-- Focused JVM policy tests and `assembleDebug` passed for the current
-  Home/Recents and pause-overlay implementation.
-- Emulator-only smoke verified Home dismisses the active pause presentation,
-  Recents is not treated as Home, and an immediate target reopen is intercepted
-  again.
-- Xiaomi 2410DPN6CC / Android 16 physical validation also passed with objective
-  ADB, logcat, and WindowManager evidence: `reason=homekey` dismissed the
-  overlay; `reason=recentapps` left it present after about 1.8 seconds; and a
-  Home-to-Bilibili reopen about 291 ms later produced a fresh second intercept.
-  No subjective visual-smoothness measurement is claimed.
-- The v0.5.44 Public Beta also passed a bounded Xiaomi Android 16 smoke:
-  Accessibility health showed Enabled/Running before and after one Bilibili
-  type-2032 interception and Home cleanup. This is not full OEM/device QA.
-
-See [docs/archive/PROGRESS.md](docs/archive/PROGRESS.md) and
-[docs/archive/TEST_REPORT.md](docs/archive/TEST_REPORT.md) for the
-full evidence ledger and its remaining boundaries.
+v0.5.46 is a public beta. Before release, its core interception and in-place
+upgrade were checked on one Xiaomi HyperOS phone running Android 16. That does
+not cover every device, ROM, or long-running scenario. If Appause misbehaves on
+your phone, please [open an issue](https://github.com/Shmily0826/Appause/issues).
+The detailed test log is in
+[docs/archive/TEST_REPORT.md](docs/archive/TEST_REPORT.md).
 
 ## Install and feedback
 
 - [Install guide](docs/INSTALL.md)
 - [Privacy policy](PRIVACY.md)
 - [GitHub Issues](https://github.com/Shmily0826/Appause/issues)
-- [v0.5.44 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.44)
+- [v0.5.46 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.46)
 
 ## License
 

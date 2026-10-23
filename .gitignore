@@ -111,3 +111,14 @@ scripts/stress/evidence/
 # path, so running one from the repo root drops the tree next to gradlew
 # instead of under scripts/stress/. Ignore the root copy too (2026-10-02).
 /evidence/
+
+# Android tooling scratch dir written by the local emulator harness. Contains
+# debug.keystore + emulator cache; nothing in here belongs in the repo, but it
+# was NOT covered by .android-task/ or .android-user-home/ above, so a broad
+# `git add -A` would have committed a debug signing key (2026-10-23).
+.android-local/
+
+# Landing page candidates that have not been promoted. Kept out of history so
+# `git log` on the shipped pages stays readable and a broad add cannot publish
+# unreviewed drafts (2026-10-23).
+docs/landing-v3/

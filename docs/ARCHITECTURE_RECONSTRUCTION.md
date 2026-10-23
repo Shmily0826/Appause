@@ -257,7 +257,6 @@ sequenceDiagram
 | `worker/README.md` | **ACCURATE**：试用 endpoint 与 v0.5.43 production verification-key 说明已同步；部署仍是独立操作 |
 | `ARCHITECTURE.md` | **PARTIALLY STALE**：① §8 "Phase 0 ← Current" 明显过期；② §4 entity 表缺大量列（re-remind 系列、reason 等）；③ §4.4 DataStore 只列 2 个 key，实际 15+；④ §6.2 bypass 模型已被 §6.4 session 模型取代（§6.4 本身 ACCURATE）；⑤ 目录结构缺 `interception/`（BurstTracker、InterceptionDecider）、`diagnostics/` 等；⑥ `PauseAlarmReceiver` 在目录树中注释为 "schedule re-remind"，实际主要是兜底拉 PauseActivity |
 | `AGENTS.md` | **ACCURATE**（2032/2038 优先级、debug 诊断页约束与代码一致） |
-| `docs/overseas-route.md` | **规划态**（LS 未接入代码，文档已标注） |
 
 ## R. 30-Minute Reading Path
 
