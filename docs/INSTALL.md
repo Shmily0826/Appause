@@ -37,6 +37,19 @@ Android 8（API 26）及以上，需要给**用来打开 APK 的应用**（浏�
 只有暂停页未显示时再按应用提示尝试开启。部分设备需要将 Appause 加入电池优化或自启动例外，
 具体设置因厂商而异。
 
+### 无障碍里的 Appause 是灰色的（安卓 13 及以上）
+
+安卓 13 起，从浏览器或文件管理器安装的应用默认不能直接开启无障碍服务：Appause 在无障碍列表里
+显示为灰色，点击后提示「受限设置 / Restricted setting」。这是系统对所有侧载应用的保护，不是
+安装包有问题。解除方法：
+
+1. 在无障碍设置里先点一次 Appause，关掉「受限设置」提示。
+2. 打开 设置 → 应用 → Appause（应用信息页）。
+3. 点右上角 ⋮，选择「允许受限设置」，按提示用锁屏密码或指纹确认。
+4. 回到无障碍设置，打开 Appause。
+
+如果 ⋮ 菜单里没有这一项，先回到第 1 步再点一次 Appause。不同品牌的菜单名称可能略有不同。
+
 ## 常见问题
 
 - **安装被拦截或解析失败**：重新从官方下载页面下载并核对 SHA-256。若安全功能报告具体威胁，停止安装并保持扫描开启。
@@ -86,6 +99,20 @@ show the pause prompt before a target app. Usage access is optional and can redu
 false positives. **Display over other apps** is an optional compatibility fallback; the pause screen normally
 uses an accessibility overlay. Try that permission only if the pause screen does not appear. Some devices
 may require a battery-optimization or auto-start exception; the setting varies by manufacturer.
+
+#### Appause is greyed out in Accessibility (Android 13 and later)
+
+From Android 13, apps installed from a browser or file manager cannot turn on an accessibility service
+straight away: Appause appears greyed out in the Accessibility list, and tapping it shows **Restricted
+setting**. Android applies this to every sideloaded app; it does not mean the APK is faulty. To unlock it:
+
+1. In Accessibility settings, tap Appause once and dismiss the **Restricted setting** message.
+2. Open Settings → Apps → Appause (the App info page).
+3. Tap ⋮ in the top-right corner, choose **Allow restricted settings**, and confirm with your screen lock
+   if asked.
+4. Go back to Accessibility settings and turn Appause on.
+
+If **Allow restricted settings** is missing from the ⋮ menu, repeat step 1 first. Menu names vary by brand.
 
 To update, install the newer APK from the official download page over the existing app. Do not uninstall first because
 that removes local data. Stop if Android reports a signature or integrity problem.
