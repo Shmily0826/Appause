@@ -1,6 +1,7 @@
 # Privacy Policy
 
 **Effective date:** 2026-07-29
+**Last updated:** 2026-10-23
 **App:** Appause (Android)
 
 > 🔗 A linkable, hostable version of this policy is available at
@@ -9,7 +10,9 @@
 > privacy-policy link when submitting to an app store or distribution platform.
 > (Enabled 2026-07-29: Settings → Pages → deploy from branch `main`, `/root`.)
 
-Appause is built around a single promise: **your data never leaves your device.**
+Appause is built around a single promise: **your groups, cooldowns, and usage stats never
+leave your device.** The only exceptions are things you start yourself — Pro activation
+and feedback — and this policy spells out exactly what they send.
 
 This document explains what we collect, what we don't, and the permissions the
 app uses. It is written for non-experts. If anything is unclear, open an issue
@@ -29,9 +32,9 @@ and never leave your device.
 - The app makes **no network requests during normal use** — no analytics, no
   crash reporters, no advertisements, and no third-party SDKs.
 - Pro uses the network only when you explicitly start the one-time trial or
-  activate lifetime access. The app sends a non-identifying device fingerprint
-  (a SHA-256 hash of an on-device key) to the activation server, which returns a
-  signed token. The token is **verified on your device** and stored locally.
+  activate lifetime access. The app sends a device fingerprint (a SHA-256
+  hash of an on-device key) to the activation server, which returns a signed token.
+  The server keeps that fingerprint together with the trial or redemption time, the expiry time, and the license status, so each device gets one trial and each code binds to at most 3 devices. The fingerprint is generated on your device and contains no name, phone number, or hardware serial, but it stays the same until Appause is uninstalled, so it is a pseudonymous device identifier. The server never receives your groups, stats, or which apps you use. The token is **verified on your device** and stored locally.
   The seven-day trial starts only after the first successful start and cannot
   be restarted on that device. Lifetime activation remains code-based. Appause
   does not auto-refresh or perform background license checks. No browsing
@@ -84,14 +87,17 @@ security tool.
 
 ### Your control over data
 
-- All data lives on your device. Clearing the app's data or uninstalling the
-  app removes everything permanently.
+- Your groups, cooldowns, and stats live on your device. Clearing the app's data
+  or uninstalling the app removes them permanently.
+- If you started a trial or redeemed a code, the pseudonymous license record
+  described above stays on the activation server; uninstalling does not remove it.
 - You can review or delete any group at any time from within the app.
 
 ### Children
 
-Appause is not directed at children and does not knowingly collect data from
-anyone. (It collects no data from anyone.)
+Appause is not directed at children and does not knowingly collect personal
+information from anyone. Apart from the pseudonymous license record created when you
+start a trial or redeem a code, and feedback you choose to send, it collects no data.
 
 ### Changes
 
@@ -115,8 +121,8 @@ or email [rng2018520@gmail.com](mailto:rng2018520@gmail.com).
 - 没有账号、没有登录、没有注册。
 - 应用**在日常使用中不进行任何网络请求**——没有分析统计、没有崩溃上报、
   没有广告，也没有任何第三方 SDK。
-- Pro 只会在你主动开始一次性试用或激活永久权限时联网：应用向激活服务器发送不带个人
-  身份的「设备指纹」（本机密钥的 SHA-256 哈希），服务器返回经过签名的令牌。令牌会
+- Pro 只会在你主动开始一次性试用或激活永久权限时联网：应用向激活服务器发送「设备指纹」
+  （本机密钥的 SHA-256 哈希），服务器返回经过签名的令牌。服务器会保存这个指纹，以及开始试用或兑换的时间、到期时间和授权状态，用来保证每台设备只能试用一次、一个授权码最多绑定 3 台设备。指纹由 Appause 在本机生成，不包含姓名、手机号或硬件序列号，但在 Appause 卸载前保持不变，所以它是一个匿名的设备标识。服务器收不到你的分组、统计或你用了哪些应用。令牌会
   **在本机校验**并本地保存。7 天试用只从首次成功开始后计时，且同一设备不能重新开始；
   永久权限仍通过激活码获得。应用不会自动刷新或后台联网校验，也不会上传任何浏览记录、
   消息或使用行为。
@@ -150,12 +156,13 @@ Appause 使用系统的 AccessibilityService，**仅用于**检测当前前台�
 
 ### 你对数据的控制权
 
-- 所有数据都在你的设备上。清除应用数据或卸载应用会永久删除全部内容。
+- 你的分组、冷却设置和统计都在你的设备上。清除应用数据或卸载应用会永久删除这些内容。
+- 如果你开始过试用或兑换过授权码，上面说的匿名授权记录会保留在激活服务器上，卸载应用不会删除它。
 - 你可以随时在应用内查看或删除任意分组。
 
 ### 儿童
 
-Appause 不面向儿童，也不会有意收集任何人的数据（事实上它不收集任何人的数据）。
+Appause 不面向儿童，也不会有意收集任何人的个人信息。除了你主动开始试用或兑换时留下的匿名授权记录，以及你主动发送的反馈，它不收集任何数据。
 
 ### 变更
 

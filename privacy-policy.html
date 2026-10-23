@@ -102,11 +102,11 @@
   <div class="wrap">
     <header>
       <h1>Appause 隐私政策</h1>
-      <div class="meta">Privacy Policy · 生效日期 / Effective: 2026-07-29 · App: Appause (Android)</div>
+      <div class="meta">Privacy Policy · 生效日期 / Effective: 2026-07-29 · 更新 / Updated: 2026-10-23 · App: Appause (Android)</div>
     </header>
 
     <p>
-      Appause 围绕一个承诺构建：<strong>你的数据永远不会离开你的设备。</strong>
+      Appause 围绕一个承诺构建：<strong>你的分组、冷却设置和使用统计永远不会离开你的设备。</strong>唯一的例外是你主动发起的 Pro 激活和反馈，下文会写清楚它们发送什么。
       本文说明我们收集什么、不收集什么，以及应用用到的权限。它为非技术读者而写；
       如有疑问，可在项目仓库提交 Issue。
     </p>
@@ -123,7 +123,7 @@
     <ul>
       <li>没有账号、没有登录、没有注册。</li>
       <li>应用<strong>在日常使用中不进行任何网络请求</strong>——没有分析统计、没有崩溃上报、没有广告，也没有任何第三方 SDK。</li>
-      <li>联网只出现在三种<strong>由你发起</strong>的场景：<strong>开始 Pro 试用</strong>、<strong>兑换授权码</strong>、<strong>发送反馈</strong>。开始试用或兑换时会发送一个不带个人身份的「设备指纹」（本机密钥的 SHA-256 哈希）到激活服务器；服务器返回一张经过签名的许可证令牌，令牌在你的设备上<strong>本地校验</strong>，之后完全离线可用。服务器会记录这台设备已开始试用或已兑换，以免重复发放。不会上传任何浏览记录、消息或使用行为。</li>
+      <li>联网只出现在三种<strong>由你发起</strong>的场景：<strong>开始 Pro 试用</strong>、<strong>兑换授权码</strong>、<strong>发送反馈</strong>。开始试用或兑换时会发送一个「设备指纹」（本机密钥的 SHA-256 哈希）到激活服务器；服务器返回一张经过签名的许可证令牌，令牌在你的设备上<strong>本地校验</strong>，之后完全离线可用。服务器会保存这个指纹，以及开始试用或兑换的时间、到期时间和授权状态，用来保证每台设备只能试用一次、一个授权码最多绑定 3 台设备。指纹由 Appause 在本机生成，不包含姓名、手机号或硬件序列号，但在 Appause 卸载前保持不变，所以它是一个匿名的设备标识。服务器收不到你的分组、统计或你用了哪些应用。不会上传任何浏览记录、消息或使用行为。</li>
       <li>反馈<strong>只有你主动选择时才会发送</strong>（设置 → 反馈），应用不会自动上传。发送前会展示留言、可选联系方式、设备/版本信息和诊断快照；诊断可能包含服务与权限状态、最近的前台应用和拦截状态、分组名称及应用包名，但不包含屏幕内容、聊天记录、账号信息或按时间排列的使用历史。你可以通过 Appause、系统邮件或预填的 GitHub Issue 发送同一份报告。</li>
       <li>你的所有配置（应用分组、冷却时间、使用统计）都<strong>仅保存在本机</strong>的数据库（Room）和偏好存储（DataStore）中。</li>
     </ul>
@@ -150,12 +150,13 @@
 
     <h2>你对数据的控制权</h2>
     <ul>
-      <li>所有数据都在你的设备上。清除应用数据或卸载应用会永久删除全部内容。</li>
+      <li>你的分组、冷却设置和统计都在你的设备上。清除应用数据或卸载应用会永久删除这些内容。</li>
+      <li>如果你开始过试用或兑换过授权码，上面说的匿名授权记录会保留在激活服务器上，卸载应用不会删除它。</li>
       <li>你可以随时在应用内查看或删除任意分组。</li>
     </ul>
 
     <h2>儿童</h2>
-    <p>Appause 不面向儿童，也不会有意收集任何人的数据（事实上它不收集任何人的数据）。</p>
+    <p>Appause 不面向儿童，也不会有意收集任何人的个人信息。除了你主动开始试用或兑换时留下的匿名授权记录，以及你主动发送的反馈，它不收集任何数据。</p>
 
     <h2>变更</h2>
     <p>本政策如有变更，更新版本将发布在仓库的 <code>PRIVACY.md</code> 与本页面。</p>
@@ -172,7 +173,7 @@
     <ul>
       <li>There is no account, no login, and no registration.</li>
       <li>The app makes <strong>no network requests during normal use</strong> — no analytics, no crash reporters, no advertisements, and no third-party SDKs.</li>
-      <li>The network is used in <strong>three</strong> situations, all of them things you start: <strong>starting the Pro trial</strong>, <strong>redeeming a code</strong>, and <strong>sending feedback</strong>. Starting a trial or redeeming a code sends a non-identifying device fingerprint (a SHA-256 hash of an on-device key) to the activation server; the server returns a signed license token that is <strong>verified on your device</strong> and works offline afterwards. The server records that this device started a trial or redeemed a code, so it will not issue the same one twice. It holds no browsing history, messages, or app usage.</li>
+      <li>The network is used in <strong>three</strong> situations, all of them things you start: <strong>starting the Pro trial</strong>, <strong>redeeming a code</strong>, and <strong>sending feedback</strong>. Starting a trial or redeeming a code sends a device fingerprint (a SHA-256 hash of an on-device key) to the activation server; the server returns a signed license token that is <strong>verified on your device</strong> and works offline afterwards. The server keeps that fingerprint together with the trial or redemption time, the expiry time, and the license status, so each device gets one trial and each code binds to at most 3 devices. The fingerprint is generated on your device and contains no name, phone number, or hardware serial, but it stays the same until Appause is uninstalled, so it is a pseudonymous device identifier. The server never receives your groups, stats, or which apps you use. It holds no browsing history, messages, or app usage.</li>
       <li>Feedback is sent <strong>only when you choose to</strong> (Settings → Feedback); the app never uploads it automatically. Before sending, the app shows your message, optional contact detail, device/app metadata, and a diagnostic snapshot. The snapshot may include service and permission state, recent foreground/interception state, configured group names, and package names. It does not include screen content, messages, account information, or a chronological usage history. You can send the displayed report through Appause, email, or a pre-filled GitHub issue.</li>
       <li>All configuration (your app groups, cooldowns, and usage stats) is stored <strong>locally</strong> in an on-device database (Room) and preferences store (DataStore).</li>
     </ul>
@@ -201,12 +202,13 @@
 
     <h2>Your control over data</h2>
     <ul>
-      <li>All data lives on your device. Clearing the app's data or uninstalling the app removes everything permanently.</li>
+      <li>Your groups, cooldowns, and stats live on your device. Clearing the app's data or uninstalling the app removes them permanently.</li>
+      <li>If you started a trial or redeemed a code, the pseudonymous license record described above stays on the activation server; uninstalling does not remove it.</li>
       <li>You can review or delete any group at any time from within the app.</li>
     </ul>
 
     <h2>Children</h2>
-    <p>Appause is not directed at children and does not knowingly collect data from anyone. (It collects no data from anyone.)</p>
+    <p>Appause is not directed at children and does not knowingly collect personal information from anyone. Apart from the pseudonymous license record created when you start a trial or redeem a code, and feedback you choose to send, it collects no data.</p>
 
     <h2>Changes</h2>
     <p>If this policy changes, the updated version will be posted in <code>PRIVACY.md</code> and on this page.</p>
