@@ -136,6 +136,8 @@ async function handleRedeem(req, env) {
   if (response.status < 200 || response.status >= 300) return response;
   const result = await response.json();
   await updateActivationIndex(env, code, result);
+  // Stats bookkeeping must never fail a redemption that already succeeded.
+  await linkLifetimeToTrial(env, device, result).catch(() => {});
   return json(result, response.status);
 }
 
@@ -159,12 +161,64 @@ async function handleTrialStart(req, env) {
   const device = (body.device || "").toString().trim();
   if (!device || device.length > 256) return json({ error: "bad_request" }, 400);
 
+  let code;
+  let response;
   try {
-    const code = await trialObjectName(device);
-    return dispatchCodeOperation(env, code, { action: "start_trial", code, device });
+    code = await trialObjectName(device);
+    response = await dispatchCodeOperation(env, code, { action: "start_trial", code, device });
   } catch {
     return json({ error: "trial_unavailable" }, 500);
   }
+  if (response.status < 200 || response.status >= 300) return response;
+  const result = await response.json();
+  // Stats bookkeeping must never fail a trial that already started.
+  await indexTrialStart(env, code, result).catch(() => {});
+  return json(result, response.status);
+}
+
+/**
+ * Self-service trials live only in their Durable Object, which /admin/stats
+ * cannot enumerate. Mirror each one into the KV activation index (keyed by the
+ * hashed trial name, never the raw fingerprint) so the funnel can count it.
+ * A repeat start for a trial that predates this index backfills it once, but
+ * only a genuinely new start records a trial_activated event.
+ */
+async function indexTrialStart(env, code, result) {
+  const key = `${INDEX_PREFIX}${code}`;
+  if (!result.newlyStarted) {
+    const existing = await env.APPAUSE_CODES.get(key);
+    if (existing) return;
+  }
+  await putActivationIndex(env, code, {
+    code,
+    kind: "trial",
+    source: "self_serve",
+    createdAt: result.activatedAt,
+    expiresInDays: 7,
+    activatedAt: result.activatedAt,
+    expiresAt: result.expiresAt,
+    status: "active",
+    linkedTrialCode: null,
+    ...(result.newlyStarted ? {} : { backfilled: true }),
+  });
+  if (result.newlyStarted) await recordEvent(env, "trial_activated", "self_serve");
+}
+
+/**
+ * When a device first binds a lifetime code, mark that device's self-service
+ * trial (if it had one) as converted. The trial is found by re-deriving its
+ * hashed name from the same device fingerprint, so no fingerprint is stored.
+ */
+async function linkLifetimeToTrial(env, device, result) {
+  if (!result.lifetime || !result.newlyBound) return;
+  const trialCode = await trialObjectName(device);
+  const key = `${INDEX_PREFIX}${trialCode}`;
+  const trial = await env.APPAUSE_CODES.get(key, { type: "json" });
+  if (!trial || trial.kind !== "trial" || trial.lifetimeActivatedAt) return;
+  await env.APPAUSE_CODES.put(key, JSON.stringify({
+    ...trial,
+    lifetimeActivatedAt: result.activatedAt || Date.now(),
+  }));
 }
 
 /**
@@ -286,6 +340,9 @@ async function handleAdminStats(req, env) {
   const expiredTrials = trials.filter((item) => item.expiresAt != null && item.expiresAt <= now);
   const requestedTrials = expiredTrials.filter((item) => item.lifetimeRequestedAt != null);
   const convertedTrials = requestedTrials.filter((item) => item.lifetimeActivatedAt != null);
+  // Lifetime requests arrive as free-form feedback, so most never get an admin
+  // lifetimeRequestedAt mark. Count conversions from the redemption itself too.
+  const lifetimeAfterTrial = expiredTrials.filter((item) => item.lifetimeActivatedAt != null);
   return json({
     generatedAt: now,
     events,
@@ -303,6 +360,11 @@ async function handleAdminStats(req, env) {
       lifetimeActivationConversion: requestedTrials.length === 0
         ? 0
         : convertedTrials.length / requestedTrials.length,
+      selfServe: trials.filter((item) => item.source === "self_serve").length,
+      lifetimeAfterTrial: lifetimeAfterTrial.length,
+      lifetimeAfterTrialRate: expiredTrials.length === 0
+        ? 0
+        : lifetimeAfterTrial.length / expiredTrials.length,
     },
     lifetime: {
       issued: activations.filter((item) => item.kind === "lifetime").length,

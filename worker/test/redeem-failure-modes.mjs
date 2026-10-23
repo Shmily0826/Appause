@@ -505,6 +505,77 @@ async function main() {
     check("unbind: redeem + admin-unbind are serializable", admin.status === 200 && adminStored.devices.length === 2 && adminStored.devices.includes("keep") && adminStored.devices.includes("newDevice"));
   }
 
+  // --- 14) self-service trials reach /admin/stats and link to lifetime ------
+  {
+    const kv = makeMemoryKv();
+    const env = makeEnv(kv);
+    const device = "statsDeviceFingerprint";
+    const start = 1_900_200_000_000;
+    const realNow = Date.now;
+    const indexKeys = () => [...kv._raw.keys()].filter((k) => k.startsWith("pro:activation:TRIAL-"));
+    const eventKinds = () => [...kv._raw.entries()]
+      .filter(([k]) => k.startsWith("pro:event:"))
+      .map(([, v]) => JSON.parse(v).kind);
+    const stats = async () => (await worker.fetch(
+      new Request(`${BASE}/admin/stats`, { headers: { "x-admin-key": "test-admin-secret" } }),
+      env
+    )).json();
+    Date.now = () => start;
+    try {
+      await startTrial(env, device);
+      check("trial stats: first start writes one index entry", indexKeys().length === 1);
+      check("trial stats: first start records trial_activated", eventKinds().filter((k) => k === "trial_activated").length === 1);
+      const indexed = kv._raw.get(indexKeys()[0]);
+      check("trial stats: index never stores the raw fingerprint", !indexed.includes(device));
+
+      Date.now = () => start + 86400000;
+      await startTrial(env, device);
+      check("trial stats: repeat start adds no event", eventKinds().filter((k) => k === "trial_activated").length === 1);
+
+      kv._raw.delete(indexKeys()[0]);
+      await startTrial(env, device);
+      const backfilled = JSON.parse(kv._raw.get(indexKeys()[0]));
+      check("trial stats: pre-index trial is backfilled on repeat start", backfilled.backfilled === true && backfilled.activatedAt === start);
+      check("trial stats: backfill adds no event", eventKinds().filter((k) => k === "trial_activated").length === 1);
+
+      Date.now = () => start + 8 * 86400000;
+      const lifetimeCode = "APPAUSE-LIFE-LIFE";
+      kv._raw.set(lifetimeCode, JSON.stringify(codeRecord()));
+      const redeemed = await redeem(env, lifetimeCode, device);
+      check("trial stats: lifetime redeem still succeeds", redeemed.status === 200);
+      const linked = JSON.parse(kv._raw.get(indexKeys()[0]));
+      check("trial stats: lifetime redeem marks the device's trial", linked.lifetimeActivatedAt === start + 8 * 86400000);
+
+      Date.now = () => start + 9 * 86400000;
+      await redeem(env, lifetimeCode, device);
+      check("trial stats: re-redeem keeps first conversion time", JSON.parse(kv._raw.get(indexKeys()[0])).lifetimeActivatedAt === start + 8 * 86400000);
+
+      const noTrial = await redeem(env, lifetimeCode, "deviceWithoutTrial");
+      check("trial stats: lifetime redeem without a trial succeeds", noTrial.status === 200);
+      check("trial stats: no trial entry invented for it", indexKeys().length === 1);
+
+      const s = await stats();
+      check("trial stats: issued counts self-service trial", s.trial.issued === 1 && s.trial.selfServe === 1);
+      check("trial stats: expired trial counted", s.trial.expired === 1 && s.trial.active === 0);
+      check("trial stats: conversion counted", s.trial.lifetimeAfterTrial === 1 && s.trial.lifetimeAfterTrialRate === 1);
+    } finally {
+      Date.now = realNow;
+    }
+  }
+
+  // --- 15) a failing stats write never blocks the license itself -----------
+  {
+    const kv = makeMemoryKv();
+    const env = makeEnv(kv);
+    kv.put = async () => { throw new Error("kv unavailable"); };
+    const trial = await startTrial(env, "kvDownDevice");
+    const trialBody = await trial.json();
+    check("stats KV down: trial still returns a token", trial.status === 200 && typeof trialBody.token === "string");
+    kv._raw.set("APPAUSE-KVDN-KVDN", JSON.stringify(codeRecord()));
+    const lifetime = await redeem(env, "APPAUSE-KVDN-KVDN", "kvDownDevice");
+    check("stats KV down: lifetime redeem still returns 200", lifetime.status === 200);
+  }
+
   console.log(`\n${passed} passed, ${failed} failed`);
   if (failed > 0) {
     console.error("FAILURES:", failures.join(", "));
