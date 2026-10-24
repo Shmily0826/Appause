@@ -11,7 +11,7 @@ var RELEASE = {
   version: '0.5.46',
   versionCode: '98',
   date: '2026-10-17',
-  size: '12.3 MB',
+  size: '12 MB',
   sha256: 'ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927',
   downloadUrl: 'https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk',
   mirrorUrl: 'https://shmily0826.lanzoup.com/b01eunt29a',
@@ -26,7 +26,7 @@ var RELEASE = {
     version: v,
     code: RELEASE.versionCode,
     date: RELEASE.date,
-    size: RELEASE.size,
+    size: (document.documentElement.lang === 'zh-CN' ? '约 ' : 'about ') + RELEASE.size,
     sha256: RELEASE.sha256,
     file: 'Appause-' + v + '.apk'
   };

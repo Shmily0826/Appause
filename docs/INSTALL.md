@@ -4,17 +4,10 @@ Appause 目前未上架应用商店。最新版 **v0.5.46 / versionCode 98** 通
 [Appause v0.5.46] 分享，蓝奏云提取密码 **1234**，文件名为 `Appause-v0.5.46.apk`。
 也可以使用 [GitHub v0.5.46] 备用下载；两个渠道的安装包与校验值相同。
 
-## 第一步：从官方页面下载并核对文件
+## 第一步：下载安装包
 
-从 [Appause v0.5.46] 下载 `Appause-v0.5.46.apk`，密码 **1234**。预期 SHA-256：
-`ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`。
-在本机计算下载文件的值；两者不一致时不要安装，应从官方页面重新下载。
-
-- Windows：`Get-FileHash .\Appause-v0.5.46.apk -Algorithm SHA256`
-- macOS / Linux：`shasum -a 256 Appause-v0.5.46.apk`
-
-Android 会在安装时验证 APK 签名。如果系统报告签名无效、安装包损坏，或更新包与已安装应用
-签名不匹配，请停止安装并重新从官方下载页面获取文件；不要尝试绕过签名检查。
+从 [Appause v0.5.46] 下载 `Appause-v0.5.46.apk`，密码 **1234**，或使用 [GitHub v0.5.46]。
+下载后打开文件，按系统提示安装。
 
 ## 第二步：仅为下载来源允许安装
 
@@ -22,14 +15,7 @@ Android 8（API 26）及以上，需要给**用来打开 APK 的应用**（浏�
 “安装未知应用”权限：点击 APK；如果系统提示禁止安装，进入设置并仅为该来源打开“允许来自此来源”，
 返回安装器继续。不同机型的设置名称可能略有不同。安装后可关闭该来源的安装权限。
 
-## 第三步：认真处理安全提示
-
-“允许来自此来源”只允许用户发起侧载，不代表 APK 已通过安全扫描。若 Play Protect 或设备厂商的
-安全功能显示具体威胁、拦截安装或要求关闭扫描，请保持保护功能开启并停止安装。先从官方下载页面
-重新下载并核对 SHA-256；如提示仍存在，等待官方澄清或联系设备安全功能提供方。不要因 APK 来自
-应用商店之外就把所有安全警告视为通用提示，也不要关闭 Play Protect、厂商扫描或其他安全保护。
-
-## 第四步：完成安装并配置运行权限
+## 第三步：配置运行权限
 
 打开 Appause 后，首页会列出尚未开启的权限。**无障碍服务必须开启**，它用于检测当前打开的应用，
 以便在你选择的应用前显示暂停提示。使用情况访问是可选权限，可帮助减少前台应用判断误报。
@@ -52,10 +38,25 @@ Android 8（API 26）及以上，需要给**用来打开 APK 的应用**（浏�
 
 ## 常见问题
 
-- **安装被拦截或解析失败**：重新从官方下载页面下载并核对 SHA-256。若安全功能报告具体威胁，停止安装并保持扫描开启。
+- **提示安装包损坏、解析失败或签名不匹配**：先停止安装，从官方下载页面重新下载；如果仍然失败，把提示截图发给开发者。
+- **提示有害应用或具体安全风险**：先停止安装，保留系统保护，并把提示截图发给开发者确认。
 - **打开目标应用没有反应**：确认无障碍服务仍在运行；如暂停页没有显示，再检查系统的后台限制和可选悬浮窗权限。
 - **如何更新**：从官方下载页面下载新版本并覆盖安装，不要先卸载；卸载会清除本机数据。若签名或完整性检查失败，请停止并联系维护者。
 - **换手机 / 恢复出厂**：App 不提供配置或授权的导出 / 导入。分组、推荐应用等本机设置需要在新设备上重新配置；Pro 授权与设备绑定，换机后需要在新设备上重新激活。
+
+<details>
+<summary>可选：核对安装包的 SHA-256</summary>
+
+如果你想确认下载的文件与发布版一致，可以在电脑上计算 SHA-256。此步骤不需要在手机上操作。
+
+预期值：`ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`。
+
+- Windows：`Get-FileHash .\Appause-v0.5.46.apk -Algorithm SHA256`
+- macOS / Linux：`shasum -a 256 Appause-v0.5.46.apk`
+
+结果一致，说明文件与发布版相同；不一致时请重新下载。
+
+</details>
 
 ## How to install (English)
 
@@ -63,18 +64,10 @@ Appause is not currently in an app store. The latest **v0.5.46 / versionCode 98*
 is available directly from [GitHub v0.5.46]. If GitHub is hard to reach, use
 [Appause v0.5.46] on Lanzou, password **1234**. Both provide the same APK.
 
-### 1. Download from the official page and verify the file
+### 1. Download the APK
 
-Download `Appause-v0.5.46.apk` from [GitHub v0.5.46], or use Lanzou with password **1234**. Expected SHA-256:
-`ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`.
-Do not install the file if the values differ; download it again from the official page.
-
-- Windows: `Get-FileHash .\Appause-v0.5.46.apk -Algorithm SHA256`
-- macOS / Linux: `shasum -a 256 Appause-v0.5.46.apk`
-
-Android verifies the APK signature during installation. If Android reports an invalid signature, a damaged
-package, or a signature mismatch with the installed app, stop and obtain the APK from the official release.
-Do not try to bypass signature checks.
+Download `Appause-v0.5.46.apk` from [GitHub v0.5.46], or use Lanzou with password **1234**.
+Open the downloaded file and follow Android's installation prompts.
 
 ### 2. Allow installs only from the app opening the APK
 
@@ -83,16 +76,7 @@ use to open the APK. Tap the APK; if Android blocks it, open Settings and enable
 for that app only, then return to the installer. Wording varies by device. You can turn this per-source
 permission off after installation.
 
-### 3. Respect security warnings
-
-The per-source install permission only permits a user-initiated sideload; it does not mean a security scan
-approved the APK. If Play Protect or your device maker reports a specific threat, blocks installation, or asks
-you to turn off scanning, leave protection enabled and stop. Download again from the official release and
-verify its SHA-256. If the warning remains, wait for official clarification or contact the security feature's
-provider. Do not treat every warning as generic just because the APK is distributed outside an app store, and
-do not disable Play Protect, vendor scanning, or other protections.
-
-### 4. Finish setup
+### 3. Finish setup
 
 Open Appause and enable **AccessibilityService**. It detects which app is in the foreground so Appause can
 show the pause prompt before a target app. Usage access is optional and can reduce foreground-detection
@@ -114,8 +98,27 @@ setting**. Android applies this to every sideloaded app; it does not mean the AP
 
 If **Allow restricted settings** is missing from the ⋮ menu, repeat step 1 first. Menu names vary by brand.
 
-To update, install the newer APK from the official download page over the existing app. Do not uninstall first because
-that removes local data. Stop if Android reports a signature or integrity problem.
+### Troubleshooting
+
+- **Damaged APK, parsing error, or signature mismatch**: stop and download the file again from the official page. If it still fails, send the developer a screenshot of the message.
+- **Harmful-app warning or a specific security risk**: stop the installation, leave system protection enabled, and send the developer a screenshot for review.
+- **No pause appears**: check that the accessibility service is running. If needed, check background restrictions and the optional overlay permission.
+- **Updating**: install the newer APK over the existing app. Do not uninstall first, because that removes local data. If Android reports a signature or integrity problem, stop and contact the developer.
+- **Changing phones or resetting the device**: there is no configuration or license export/import. Set up groups and recommended apps again on the new device, then activate Pro there if needed.
+
+<details>
+<summary>Optional: verify the APK's SHA-256</summary>
+
+To check that your download matches the release, calculate its SHA-256 on a computer. You do not need to do this on your phone.
+
+Expected value: `ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`.
+
+- Windows: `Get-FileHash .\Appause-v0.5.46.apk -Algorithm SHA256`
+- macOS / Linux: `shasum -a 256 Appause-v0.5.46.apk`
+
+A matching value confirms the file matches the release. If it differs, download it again.
+
+</details>
 
 [Appause v0.5.46]: https://shmily0826.lanzoup.com/b01eunt29a
 [GitHub v0.5.46]: https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk

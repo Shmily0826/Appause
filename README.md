@@ -1,5 +1,7 @@
 # Appause
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 **App + Pause** — put a brief moment between the impulse and the app.
 
 Appause is a local-first Android focus tool. You choose target apps, place them

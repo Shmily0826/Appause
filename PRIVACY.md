@@ -4,11 +4,7 @@
 **Last updated:** 2026-10-23
 **App:** Appause (Android)
 
-> 🔗 A linkable, hostable version of this policy is available at
-> [`privacy-policy.html`](privacy-policy.html) and is published via GitHub Pages at
-> `https://shmily0826.github.io/Appause/privacy-policy.html` — use this URL as the
-> privacy-policy link when submitting to an app store or distribution platform.
-> (Enabled 2026-07-29: Settings → Pages → deploy from branch `main`, `/root`.)
+[Read this policy on the website](https://shmily0826.github.io/Appause/privacy-policy.html).
 
 Appause is built around a single promise: **your groups, cooldowns, and usage stats never
 leave your device.** The only exceptions are things you start yourself — Pro activation
