@@ -20,11 +20,20 @@ permission off after installation.
 
 ### 3. Finish setup
 
-Open Appause and enable **AccessibilityService**. It detects which app is in the foreground so Appause can
-show the pause prompt before a target app. Usage access is optional and can reduce foreground-detection
-false positives. **Display over other apps** is an optional compatibility fallback; the pause screen normally
-uses an accessibility overlay. Try that permission only if the pause screen does not appear. Some devices
-may require a battery-optimization or auto-start exception; the setting varies by manufacturer.
+Open Appause. The home screen lists whatever is still off, and its button opens those items one at a time.
+
+- **Accessibility service (required)**: it detects which app is in the foreground so Appause can show the
+  pause prompt before a target app.
+- **Usage access (required)**: it confirms which app is really on screen, which reduces false foreground
+  detection.
+- **Battery setting (required)**: set Appause to **Unrestricted** so the system keeps it running. With the
+  default battery setting, a target app is often not paused the first time you open it, and only pauses
+  after you return to Appause.
+- **Allow auto-start (required)**: on phones that expose an auto-start setting, Appause must be allowed
+  there, because the system otherwise stops it from starting on its own. This entry sits apart from the
+  list above.
+- **Display over other apps (only if needed)**: the pause screen normally uses an accessibility overlay.
+  Enable this fallback only if the pause screen does not appear.
 
 #### Appause is greyed out in Accessibility (Android 13 and later)
 
@@ -44,7 +53,7 @@ If **Allow restricted settings** is missing from the ⋮ menu, repeat step 1 fir
 
 - **Damaged APK, parsing error, or signature mismatch**: stop and download the file again from the official page. If it still fails, send the developer a screenshot of the message.
 - **Harmful-app warning or a specific security risk**: stop the installation, leave system protection enabled, and send the developer a screenshot for review.
-- **No pause appears**: check that the accessibility service is running. If needed, check background restrictions and the optional overlay permission.
+- **No pause appears**: check that the accessibility service is running. Also confirm the battery setting is **Unrestricted** and, on phones that have an auto-start setting, that Appause is allowed to start automatically. If the pause screen itself does not appear, try the display-over-other-apps fallback.
 - **Updating**: install the newer APK over the existing app. Do not uninstall first, because that removes local data. If Android reports a signature or integrity problem, stop and contact the developer.
 - **Changing phones or resetting the device**: there is no configuration or license export/import. Set up groups and recommended apps again on the new device, then activate Pro there if needed.
 
@@ -81,11 +90,13 @@ Android 8（API 26）及以上，需要给**用来打开 APK 的应用**（浏�
 
 ### 第三步：配置运行权限
 
-打开 Appause 后，首页会列出尚未开启的权限。**无障碍服务必须开启**，它用于检测当前打开的应用，
-以便在你选择的应用前显示暂停提示。使用情况访问是可选权限，可帮助减少前台应用判断误报。
-“显示悬浮窗 / 在其他应用上层显示”是兼容性备用权限；暂停页通常使用无障碍覆盖层，不需要该权限，
-只有暂停页未显示时再按应用提示尝试开启。部分设备需要将 Appause 加入电池优化或自启动例外，
-具体设置因厂商而异。
+打开 Appause 后，首页会列出还没开启的权限，按钮会按顺序逐项带你开启。
+
+- **无障碍服务（必需）**：用于检测当前打开的应用，Appause 才能在你选择的应用前显示暂停提示。
+- **使用情况访问（必需）**：用于确认真正在屏幕上的是哪个应用，减少前台判断误报。
+- **电池设置（必需）**：把 Appause 设为「无限制」，避免后台被系统关闭。保持默认电池设置时，常见表现是第一次打开目标应用不拦截，切回 Appause 才拦。
+- **允许自启动（必需）**：系统会阻止应用自行在后台启动，需要单独允许。这一项是独立入口，不在上面的列表里。
+- **显示悬浮窗（仅在需要时）**：暂停页通常使用无障碍覆盖层，不需要该权限；只有暂停页不显示时再开启。
 
 #### 无障碍里的 Appause 是灰色的（安卓 13 及以上）
 
@@ -104,7 +115,7 @@ Android 8（API 26）及以上，需要给**用来打开 APK 的应用**（浏�
 
 - **提示安装包损坏、解析失败或签名不匹配**：先停止安装，从官方下载页面重新下载；如果仍然失败，把提示截图发给开发者。
 - **提示有害应用或具体安全风险**：先停止安装，保留系统保护，并把提示截图发给开发者确认。
-- **打开目标应用没有反应**：确认无障碍服务仍在运行；如暂停页没有显示，再检查系统的后台限制和可选悬浮窗权限。
+- **打开目标应用没有反应**：确认无障碍服务仍在运行；再确认电池设置是「无限制」、自启动已允许。如果暂停页本身没有显示，再尝试开启「显示悬浮窗」。
 - **如何更新**：从官方下载页面下载新版本并覆盖安装，不要先卸载；卸载会清除本机数据。若签名或完整性检查失败，请停止并联系维护者。
 - **换手机 / 恢复出厂**：App 不提供配置或授权的导出 / 导入。分组、推荐应用等本机设置需要在新设备上重新配置；Pro 授权与设备绑定，换机后需要在新设备上重新激活。
 
