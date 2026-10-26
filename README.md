@@ -11,18 +11,18 @@ continue.
 
 **Website:** [shmily0826.github.io/Appause](https://shmily0826.github.io/Appause/) · [中文](https://shmily0826.github.io/Appause/zh.html)
 
-## Latest download: v0.5.46 Public Beta
+## Latest download: v0.5.47 Public Beta
 
-Download the signed [Appause-v0.5.46.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.46/Appause-v0.5.46.apk) directly from GitHub.
+Download the signed [Appause-v0.5.47.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.47/Appause-v0.5.47.apk) directly from GitHub.
 For downloads from China, use [Lanzou](https://shmily0826.lanzoup.com/b01eunt29a), password **1234**.
 Both channels provide the same APK.
 
 - Package: `com.appause.android`
-- versionCode: `98`
-- SHA-256: `ab455551b07503a9c3663e6f88759955251c42dd526888c0c874df53506fb927`
+- versionCode: `99`
+- SHA-256: `fce5768b64052e6d8d860dbc97b170e9ff573314b3a8100f93272e450e7e3309`
 
 The signed APK passed offline checks and core HyperOS device checks.
-See the [v0.5.46 public beta release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.46) for release notes.
+See the [v0.5.47 public beta release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.47) for release notes.
 The English landing page prefers GitHub; the Chinese page prefers Lanzou.
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
@@ -103,7 +103,7 @@ keystore, password, private key, activation code, or Worker secret.
 
 ## Testing status
 
-v0.5.46 is a public beta. Before release, its core interception and in-place
+v0.5.47 is a public beta. Before release, its core interception and in-place
 upgrade were checked on one Xiaomi HyperOS phone running Android 16, and the
 unit test suite runs in CI on every push. That does not cover every device, ROM,
 or long-running scenario. If Appause misbehaves on your phone, please
@@ -114,7 +114,7 @@ or long-running scenario. If Appause misbehaves on your phone, please
 - [Install guide](docs/INSTALL.md)
 - [Privacy policy](PRIVACY.md)
 - [GitHub Issues](https://github.com/Shmily0826/Appause/issues)
-- [v0.5.46 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.46)
+- [v0.5.47 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.47)
 
 ## License
 
