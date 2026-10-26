@@ -129,6 +129,36 @@ class InterceptionDeciderTest {
         assertTrue(decision is PreGroupDecision.ProceedToGroupLookup)
     }
 
+    // ── Step 2.55: late event after jumping to a recommended app ──
+
+    @Test
+    fun `late target event after a redirect is skipped even when another app is in front`() {
+        // HyperOS sends a stale target event ~1 s after the recommended app is
+        // already foreground; lastForegroundPackage then points at that app.
+        val decision = decidePre(
+            {
+                it.copy(
+                    redirectedFromPackage = target,
+                    lastForegroundPackage = "com.example.learning",
+                    previousEventPackage = "com.example.learning"
+                )
+            }
+        )
+        assertTrue(decision is PreGroupDecision.SkipStaleRedirect)
+        assertEquals(
+            "SKIP: stale event after opening a recommended app ($target)",
+            decision.diagnosticsReason
+        )
+    }
+
+    @Test
+    fun `redirect suppression only covers the app the user left`() {
+        val decision = decidePre(
+            { it.copy(redirectedFromPackage = "com.example.other") }
+        )
+        assertTrue(decision is PreGroupDecision.ProceedToGroupLookup)
+    }
+
     // ── Step 2.6: poller/duplicate dedup ──
 
     @Test

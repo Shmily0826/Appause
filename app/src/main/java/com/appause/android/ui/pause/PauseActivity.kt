@@ -341,6 +341,9 @@ class PauseActivity : ComponentActivity() {
         // The user chose an alternative app — they are NOT proceeding to the target.
         // Clear any bypass so the target is intercepted again next time.
         InterceptionManager.clearBypass(session.targetPackage)
+        // Ignore the target's late window event so the pause screen does not
+        // pop up again over the chosen app.
+        AppauseAccessibilityService.noteRedirected(session.targetPackage)
 
         startActivity(launchIntent)
         finish()

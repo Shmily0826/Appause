@@ -490,6 +490,31 @@ open class AppauseAccessibilityService : AccessibilityService() {
             cancelClearHandler.removeCallbacksAndMessages(null)
             justCancelledPackage = null
         }
+
+        /**
+         * The target app the user just left by tapping a recommended app on the
+         * pause screen. Events for it are ignored until the timeout below clears it.
+         */
+        @Volatile
+        var redirectedFromPackage: String? = null
+        private val redirectClearHandler = Handler(Looper.getMainLooper())
+
+        /**
+         * Suppress late window events for [packageName] after the user jumped
+         * to a recommended app.
+         *
+         * Why not reuse noteCancelled()? Its check needs lastForegroundPackage
+         * to still be the target, but the recommended app's own event replaces
+         * it first. On HyperOS a stale target event was observed ~1 s after the
+         * jump, re-showing the pause screen over the recommended app. 2 s covers
+         * that, and the user is unlikely to reopen the target that quickly
+         * after deliberately choosing something else.
+         */
+        fun noteRedirected(packageName: String) {
+            redirectedFromPackage = packageName
+            redirectClearHandler.removeCallbacksAndMessages(null)
+            redirectClearHandler.postDelayed({ redirectedFromPackage = null }, 2000L)
+        }
     }
 
     /** Coroutine scope for async work (survives individual event cancellations). */
@@ -1403,7 +1428,8 @@ open class AppauseAccessibilityService : AccessibilityService() {
                 pauseShown = { pauseShown },
                 pauseTargetPackage = currentPauseTarget,
                 isPauseTargetBypassed = currentPauseTarget != null &&
-                    InterceptionManager.isBypassed(currentPauseTarget)
+                    InterceptionManager.isBypassed(currentPauseTarget),
+                redirectedFromPackage = redirectedFromPackage
             )
         )
 
@@ -1423,6 +1449,8 @@ open class AppauseAccessibilityService : AccessibilityService() {
             }
 
             is PreGroupDecision.SkipStaleCancelled -> decide(decision.diagnosticsReason)
+
+            is PreGroupDecision.SkipStaleRedirect -> decide(decision.diagnosticsReason)
 
             is PreGroupDecision.SkipDedup ->
                 // The original step 2.6 logged WITHOUT writing lastDecision.

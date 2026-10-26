@@ -54,6 +54,17 @@ sealed class PreGroupDecision {
     }
 
     /**
+     * Late window event for the app the user just left by tapping a
+     * recommended app. On HyperOS it can arrive ~1 s after the recommended
+     * app is already in front, and would otherwise pop the pause screen again
+     * over the app the user chose.
+     */
+    data class SkipStaleRedirect(val packageName: String) : PreGroupDecision() {
+        override val diagnosticsReason = "SKIP: stale event after opening a recommended app ($packageName)"
+        override val passedSystemGate = false
+    }
+
+    /**
      * Duplicate of the current foreground (poller echo / in-app Activity
      * switch) while no pause is on screen. The original code logged this
      * WITHOUT writing lastDecision, so it carries a logLine, not a reason.
@@ -214,7 +225,9 @@ object InterceptionDecider {
         val pauseShown: () -> Boolean,
         val pauseTargetPackage: String?,
         /** Whether the current pause target (if any) is bypassed. */
-        val isPauseTargetBypassed: Boolean
+        val isPauseTargetBypassed: Boolean,
+        /** The target the user just left via a recommended app, while its short suppression lasts. */
+        val redirectedFromPackage: String? = null
     )
 
     /** Inputs for the post-group stage (after the Room query suspension). */
@@ -247,6 +260,13 @@ object InterceptionDecider {
             && input.lastForegroundPackage == input.justCancelledPackage
         ) {
             return PreGroupDecision.SkipStaleCancelled(pkg)
+        }
+
+        // 2.55. Late event for the app the user just redirected away from.
+        // Unlike 2.5 this does not depend on lastForegroundPackage: by the time
+        // the late event arrives, the recommended app has already replaced it.
+        if (input.redirectedFromPackage != null && pkg == input.redirectedFromPackage) {
+            return PreGroupDecision.SkipStaleRedirect(pkg)
         }
 
         // A persisted Temporary Pass is the most specific decision. It must

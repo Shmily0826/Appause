@@ -613,6 +613,9 @@ class OverlayManager {
                             val launchIntent = context.packageManager.getLaunchIntentForPackage(pkg)
                             if (launchIntent != null) {
                                 InterceptionManager.clearBypass(targetPackage)
+                                // Ignore the target's late window event so the pause
+                                // screen does not pop up again over the chosen app.
+                                AppauseAccessibilityService.noteRedirected(targetPackage)
                                 launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 try {
                                     context.startActivity(launchIntent)
