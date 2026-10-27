@@ -64,7 +64,11 @@ class ForegroundChangeOrchestrationTest : ServiceOrchestrationTestBase() {
 
         service.onAccessibilityEvent(event)
         event.recycle()
-        drainNow()
+        // The callback launches a coroutine that awaits real Room/DataStore IO.
+        val deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5)
+        while (service.shownCooldowns.isEmpty() && System.nanoTime() < deadline) {
+            drainNow()
+        }
 
         assertEquals("INTERCEPT: $target → group=orch-event, cooldown=5s", AppauseAccessibilityService.lastTargetDecision)
         assertEquals(1, service.shownCooldowns.size)
@@ -156,26 +160,15 @@ class ForegroundChangeOrchestrationTest : ServiceOrchestrationTestBase() {
         )
         assertFalse(AppauseAccessibilityService.pauseShown)
 
-        // The stale window event the target fires right before the launcher
-        // takes over (within the 800 ms suppression window). Characterization:
-        // noteCancelled() resets lastForegroundPackage, so this echo no longer
-        // matches the SkipStaleCancelled precondition (which requires
-        // lastForegroundPackage == justCancelledPackage) and falls through to
-        // the normal interception path.
+        // This used to accept INTERCEPT as success, hiding the duplicate popup.
+        val shownBeforeEcho = service.shownCooldowns.size
         handleForeground(target)
-        val echoDecision = AppauseAccessibilityService.lastTargetDecision.orEmpty()
-        assertTrue(
-            "stale echo within the suppression window: got '$echoDecision'",
-            echoDecision.startsWith("INTERCEPT") || echoDecision.startsWith("SKIP")
-        )
-        simulateOverlayDismiss()
+        assertEquals("stale Cancel echo must not show another pause", shownBeforeEcho, service.shownCooldowns.size)
+        assertFalse(AppauseAccessibilityService.pauseShown)
+        assertTrue(AppauseAccessibilityService.lastDecision.orEmpty().contains("stale event for just-cancelled"))
 
-        // The 800 ms suppression timer runs on the wall-clock handler.
+        // Without foreground evidence, only the short fallback grace applies.
         idleMainLooperFor(800)
-        assertNull(
-            "suppression must self-clear after its grace window",
-            AppauseAccessibilityService.justCancelledPackage
-        )
 
         // Going Home, then genuinely reopening the app must re-intercept.
         handleForeground("com.android.systemui")
@@ -190,6 +183,75 @@ class ForegroundChangeOrchestrationTest : ServiceOrchestrationTestBase() {
             AppauseAccessibilityService.lastTargetDecision.orEmpty().startsWith("INTERCEPT")
         )
         controller.destroy()
+    }
+
+    @Test
+    fun `redirect ignores late target events beyond two seconds but permits a real quick reopen`() = runBlocking<Unit> {
+        val target = "com.orch.redirect.target"
+        val learning = "com.orch.redirect.learning"
+        seedGroup("orch-redirect", listOf(target), cooldownSeconds = 5)
+        handleForeground(target)
+        AppauseAccessibilityService.noteRedirected(target)
+        simulateOverlayDismiss()
+        handleForeground(learning)
+        idleMainLooperFor(3_000)
+        setForegroundEvidence(learning)
+
+        handleForeground(target)
+        assertEquals("late redirect echo must not show a second pause", 1, service.shownCooldowns.size)
+        assertFalse(AppauseAccessibilityService.pauseShown)
+
+        idleMainLooperFor(1)
+        setForegroundEvidence(target)
+        handleForeground(target)
+        assertEquals("a real reopen inside the guard must still intercept", 2, service.shownCooldowns.size)
+    }
+
+    @Test
+    fun `cancel keeps protection after Home and accepts a confirmed immediate reopen`() = runBlocking<Unit> {
+        val target = "com.orch.cancel.evidence.target"
+        seedGroup("orch-cancel-evidence", listOf(target), cooldownSeconds = 5)
+        handleForeground(target)
+        tapCancel(target)
+        handleForeground("com.android.systemui")
+        idleMainLooperFor(300)
+        setForegroundEvidence("com.example.launcher")
+
+        handleForeground(target)
+        assertEquals(1, service.shownCooldowns.size)
+        assertFalse(AppauseAccessibilityService.pauseShown)
+
+        idleMainLooperFor(1)
+        setForegroundEvidence(target)
+        handleForeground(target)
+        assertEquals("confirmed quick reopen must get a new pause", 2, service.shownCooldowns.size)
+    }
+
+    @Test
+    fun `event queued before Cancel remains stale even when the old app is briefly foreground`() = runBlocking<Unit> {
+        val target = "com.orch.queued.target"
+        seedGroup("orch-queued", listOf(target), cooldownSeconds = 5)
+        handleForeground(target)
+        val oldEventUptime = android.os.SystemClock.uptimeMillis()
+        idleMainLooperFor(1)
+        tapCancel(target)
+        idleMainLooperFor(300)
+        setForegroundEvidence(target)
+
+        service.handleForegroundChange(target, eventUptime = oldEventUptime)
+        assertEquals(1, service.shownCooldowns.size)
+        assertFalse(AppauseAccessibilityService.pauseShown)
+    }
+
+    private fun setForegroundEvidence(packageName: String) {
+        val manager = service.getSystemService(android.content.Context.USAGE_STATS_SERVICE) as android.app.usage.UsageStatsManager
+        shadowOf(manager).addEvent(
+            org.robolectric.shadows.ShadowUsageStatsManager.EventBuilder.buildEvent()
+                .setPackage(packageName)
+                .setTimeStamp(System.currentTimeMillis() - 1)
+                .setEventType(android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED)
+                .build()
+        )
     }
 
     // ── C. destroy / recreate state boundaries ───────────────────────────

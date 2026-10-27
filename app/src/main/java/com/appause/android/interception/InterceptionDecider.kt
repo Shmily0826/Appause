@@ -227,7 +227,9 @@ object InterceptionDecider {
         /** Whether the current pause target (if any) is bypassed. */
         val isPauseTargetBypassed: Boolean,
         /** The target the user just left via a recommended app, while its short suppression lasts. */
-        val redirectedFromPackage: String? = null
+        val redirectedFromPackage: String? = null,
+        /** Exit-specific timestamp and foreground evidence, resolved by the service. */
+        val suppressExitEvent: Boolean = false
     )
 
     /** Inputs for the post-group stage (after the Room query suspension). */
@@ -256,16 +258,15 @@ object InterceptionDecider {
         if (input.isOwnPackage) return PreGroupDecision.SkipSelf(pkg)
 
         // 2.5. Stale event for the just-cancelled app.
-        if (input.justCancelledPackage != null && pkg == input.justCancelledPackage
-            && input.lastForegroundPackage == input.justCancelledPackage
+        if (input.suppressExitEvent && pkg == input.justCancelledPackage
         ) {
             return PreGroupDecision.SkipStaleCancelled(pkg)
         }
 
         // 2.55. Late event for the app the user just redirected away from.
-        // Unlike 2.5 this does not depend on lastForegroundPackage: by the time
-        // the late event arrives, the recommended app has already replaced it.
-        if (input.redirectedFromPackage != null && pkg == input.redirectedFromPackage) {
+        // Both exit paths use evidence supplied by the service, independent
+        // of the duplicate tracker (which Cancel resets).
+        if (input.suppressExitEvent && pkg == input.redirectedFromPackage) {
             return PreGroupDecision.SkipStaleRedirect(pkg)
         }
 

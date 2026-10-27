@@ -109,9 +109,9 @@ class InterceptionDeciderTest {
     @Test
     fun `stale event for just-cancelled app is suppressed`() {
         // State right after Cancel, before the launcher takes over:
-        // justCancelled == target AND lastForegroundPackage still == target.
+        // Cancel clears lastForegroundPackage; exit evidence still suppresses the echo.
         val decision = decidePre(
-            { it.copy(justCancelledPackage = target, lastForegroundPackage = target) }
+            { it.copy(justCancelledPackage = target, lastForegroundPackage = null, suppressExitEvent = true) }
         )
         assertTrue(decision is PreGroupDecision.SkipStaleCancelled)
         assertEquals("SKIP: stale event for just-cancelled app ($target)", decision.diagnosticsReason)
@@ -139,6 +139,7 @@ class InterceptionDeciderTest {
             {
                 it.copy(
                     redirectedFromPackage = target,
+                    suppressExitEvent = true,
                     lastForegroundPackage = "com.example.learning",
                     previousEventPackage = "com.example.learning"
                 )
@@ -154,7 +155,7 @@ class InterceptionDeciderTest {
     @Test
     fun `redirect suppression only covers the app the user left`() {
         val decision = decidePre(
-            { it.copy(redirectedFromPackage = "com.example.other") }
+            { it.copy(redirectedFromPackage = "com.example.other", suppressExitEvent = true) }
         )
         assertTrue(decision is PreGroupDecision.ProceedToGroupLookup)
     }

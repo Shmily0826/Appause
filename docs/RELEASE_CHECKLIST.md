@@ -1,18 +1,14 @@
 # Appause 发版清单（Release Checklist）
 
-> 面向"准备给陌生用户使用"的发版流程。每次发 release 前**从上到下过一遍**，
-> 全部勾完才打包。当前候选版本为 v0.5.47 / versionCode 99（上一个已发布版本 v0.5.46 / 98）。
-> v0.5.47 只修一个问题：在暂停屏点推荐应用跳转后，目标应用的迟到窗口事件会让暂停屏再弹一次。
-> 2026-10-26 已完成候选 APK 的版本、签名（证书与 v0.5.46 一致）、双变体单元测试（各 295 个通过）与 lintRelease（0 error）检查。
-> 最终候选包：`output/Appause-v0.5.47.apk`。
-> SHA-256：`fce5768b64052e6d8d860dbc97b170e9ff573314b3a8100f93272e450e7e3309`。
-> 2026-10-26 已将此 APK 覆盖升级到 Android 16 / HyperOS 真机：无障碍服务自动重连；Cancel 回桌面、跳转推荐应用后不再二次弹出、倒计时结束后 Continue 进入目标应用，均通过。
-> 未测：3 分钟离开后重新拦截、临时通行到期等路径。GitHub Release 与蓝奏云上传尚未进行。
-> 英文页面优先 GitHub 文件下载，中文页面优先蓝奏云分享页（密码1234）；两个渠道使用同一已验收 APK。部署后核对线上入口和下载文件校验值。
+> 面向准备给陌生用户使用的发版流程。当前候选版本为 v0.5.48 / versionCode 100，上一版为 v0.5.47 / 99。
+> 安装包：`output/Appause-v0.5.48.apk`。
+> SHA-256：`b6117fd4fe5ee1d8b2d9d421bdb8573bd1a515a61ac12932acbdd31240eadded`。
+> 本次修复取消或跳转推荐应用后暂停页重复弹出的问题。验证结果与未测范围记录在本版 GitHub Release 中。
+> 英文页面优先 GitHub 文件下载，中文页面优先蓝奏云分享页（密码 1234）。部署前核对两个渠道的文件版本，部署后核对公开入口。
 
 ## 1. 版本与构建配置
 
-- [ ] `app/build.gradle.kts`：相对上一版递增 versionCode（当前 99 / v0.5.47；上一版 98 / v0.5.46），`versionName` 按语义更新
+- [ ] `app/build.gradle.kts`：相对上一版递增 versionCode（当前 100 / v0.5.48；上一版 99 / v0.5.47），`versionName` 按语义更新
   - debug flavor 的 `versionNameSuffix = "-debug"` 依赖 **更高的** versionCode 保证共存，勿降
 - [ ] minSdk 26 / targetSdk 未被意外改动；新增依赖在 version catalog（`gradle/libs.versions.toml`），未硬编码版本号
 - [ ] `./gradlew assembleDebug` 与 `./gradlew assembleRelease` 均通过（需 `JAVA_HOME=D:\Dev-Setup\jdk`）

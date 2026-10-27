@@ -312,26 +312,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
                 }
             }
 
-        /**
-         * The package the user just cancelled out of on the Pause screen.
-         *
-         * Why we need this (this was a real bug):
-         * - When the user taps Cancel, we dismiss the overlay and send them home.
-         * - But the target app's window fires one more TYPE_WINDOW_STATE_CHANGED
-         *   event in the brief moment before the launcher takes over the screen.
-         * - By then `pauseShown` is already false, and `lastForegroundPackage`
-         *   has been overwritten (by the overlay's own Appause-owned window event),
-         *   so the duplicate check no longer protects us.
-         * - Result: the cooldown overlay popped up again on the home screen
-         *   without the user opening any app.
-         *
-         * How it works:
-         * - Set to the target package right before we dismiss on Cancel.
-         * - handleForegroundChange ignores events for this package.
-         * - Cleared as soon as any OTHER app (e.g. the launcher) becomes
-         *   foreground, so a genuine re-open of the app later is intercepted
-         *   normally.
-         */
+        /** Recently cancelled target; only exit-specific evidence may suppress its events. */
         @Volatile
         var justCancelledPackage: String? = null
 
@@ -444,26 +425,14 @@ open class AppauseAccessibilityService : AccessibilityService() {
         @Volatile
         var lastOverlayResult: String? = null
 
-        /**
-         * Mark an app as "just cancelled" and schedule the suppression to clear
-         * after a short grace window.
-         *
-         * Why a timeout (instead of only clearing on the next non-system app)?
-         * After Cancel we send the user to the home screen (a system/launcher
-         * package). The original code only cleared this flag when a *non-system*
-         * app became foreground, so while the user sat on the launcher the flag
-         * was never cleared — and from then on every foreground event for the
-         * cancelled app matched the suppression, permanently exempting it from
-         * interception ("tap Cancel once → can switch freely forever").
-         *
-         * The timeout keeps the original purpose (suppress the stale window
-         * event that fires for the target app in the brief moment before the
-         * launcher takes over — which can arrive within ~1.5s of Cancel), then
-         * re-enables interception so the next genuine open is caught normally.
-         */
+        // Keep a bounded evidence window, not an unconditional bypass.
+        private var pauseExitAtUptime = 0L
         private val cancelClearHandler = Handler(Looper.getMainLooper())
         fun noteCancelled(packageName: String) {
             justCancelledPackage = packageName
+            pauseExitAtUptime = SystemClock.uptimeMillis()
+            redirectClearHandler.removeCallbacksAndMessages(null)
+            redirectedFromPackage = null
             // Reset the last-foreground tracker so an immediate re-open of the
             // same app is treated as a genuine new foreground (not a stale echo).
             // Without this, lastForegroundPackage would still equal the cancelled
@@ -472,20 +441,11 @@ open class AppauseAccessibilityService : AccessibilityService() {
             // flows through the normal foreground check (step 6.5) and re-cools.
             lastForegroundPackage = null
             cancelClearHandler.removeCallbacksAndMessages(null)
-            // Keep the suppression SHORT. Its only job is to swallow the single
-            // stale window event that fires for the cancelled app in the brief
-            // moment before the launcher takes over — which arrives within a few
-            // hundred ms of Cancel. A long window (the old 1500ms) also swallowed
-            // the user's *immediate* re-open of the same app, so Cancel then let
-            // them back in with no cooldown if they were quick. 800ms is enough
-            // to catch the stale event but lets a genuine quick re-open re-trigger.
-            cancelClearHandler.postDelayed({ justCancelledPackage = null }, 800L)
+            // Evidence can arrive after the navigation animation has settled.
+            cancelClearHandler.postDelayed({ justCancelledPackage = null }, PauseExitPolicy.EVIDENCE_WINDOW_MS)
         }
 
-        /**
-         * A confirmed system Home already proves the target was left. Do not
-         * start a new stale-event suppression window in that case.
-         */
+        /** Clear the Cancel marker when a genuine reopen is accepted. */
         fun clearCancelledPackage() {
             cancelClearHandler.removeCallbacksAndMessages(null)
             justCancelledPackage = null
@@ -499,21 +459,13 @@ open class AppauseAccessibilityService : AccessibilityService() {
         var redirectedFromPackage: String? = null
         private val redirectClearHandler = Handler(Looper.getMainLooper())
 
-        /**
-         * Suppress late window events for [packageName] after the user jumped
-         * to a recommended app.
-         *
-         * Why not reuse noteCancelled()? Its check needs lastForegroundPackage
-         * to still be the target, but the recommended app's own event replaces
-         * it first. On HyperOS a stale target event was observed ~1 s after the
-         * jump, re-showing the pause screen over the recommended app. 2 s covers
-         * that, and the user is unlikely to reopen the target that quickly
-         * after deliberately choosing something else.
-         */
+        /** Share the exit guard with Cancel, while allowing a confirmed quick reopen. */
         fun noteRedirected(packageName: String) {
+            clearCancelledPackage()
             redirectedFromPackage = packageName
+            pauseExitAtUptime = SystemClock.uptimeMillis()
             redirectClearHandler.removeCallbacksAndMessages(null)
-            redirectClearHandler.postDelayed({ redirectedFromPackage = null }, 2000L)
+            redirectClearHandler.postDelayed({ redirectedFromPackage = null }, PauseExitPolicy.EVIDENCE_WINDOW_MS)
         }
     }
 
@@ -1002,6 +954,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
         if (event.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
 
         val packageName = event.packageName?.toString() ?: return
+        val eventUptime = event.eventTime
 
 
         // Diagnostics: proves the service is genuinely receiving events.
@@ -1139,7 +1092,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
         } else {
             serviceScope.launch {
                 try {
-                    handleForegroundChange(packageName)
+                    handleForegroundChange(packageName, eventUptime = eventUptime)
                 } catch (e: Exception) {
                     AppLogger.e(TAG, "Error in handleForegroundChange for $packageName", e)
                 }
@@ -1251,7 +1204,6 @@ open class AppauseAccessibilityService : AccessibilityService() {
         if (targetPackage != null) {
             InterceptionManager.clearBypass(targetPackage)
             cancelReRemind(targetPackage)
-            clearCancelledPackage()
         }
         AppLogger.d(TAG, "Confirmed system Home — dismissing standalone overlay")
         overlayManager.dismiss()
@@ -1284,7 +1236,6 @@ open class AppauseAccessibilityService : AccessibilityService() {
                     val targetPackage = pauseTargetPackage
                     if (targetPackage != null) {
                         InterceptionManager.clearBypass(targetPackage)
-                        clearCancelledPackage()
                     }
                     AppLogger.d(
                         TAG,
@@ -1341,7 +1292,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
      * effects the original inline code performed — timers, bypass changes,
      * overlay calls, diagnostics writes, and the lastForegroundPackage /
      * justCancelledPackage bookkeeping). The decision order, the exact reason
-     * strings, and every effect are byte-for-byte the original behavior.
+     * strings remain shared with the pure decision layer.
      *
      * Decision flow (unchanged):
      * 1. Is Appause disabled? → skip
@@ -1357,14 +1308,16 @@ open class AppauseAccessibilityService : AccessibilityService() {
     // decision→side-effect boundary the poller and the event path both use.
     internal suspend fun handleForegroundChange(
         packageName: String,
-        homeEventConfirmed: Boolean = false
+        homeEventConfirmed: Boolean = false,
+        eventUptime: Long = SystemClock.uptimeMillis()
     ) = foregroundChangeSingleFlight.run {
-        handleForegroundChangeImpl(packageName, homeEventConfirmed)
+        handleForegroundChangeImpl(packageName, homeEventConfirmed, eventUptime)
     }
 
     private suspend fun handleForegroundChangeImpl(
         packageName: String,
-        homeEventConfirmed: Boolean = false
+        homeEventConfirmed: Boolean,
+        eventUptime: Long
     ) {
         // Capture the package from the PREVIOUS call before overwriting, so the
         // dedup guards below can distinguish a genuine re-open from an in-app
@@ -1379,6 +1332,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
         // read inside the old step 4.5 (a volatile field must not be read twice
         // where the original read it once).
         val currentPauseTarget = pauseTargetPackage
+        val suppressExitEvent = shouldSuppressPauseExitEvent(packageName, eventUptime)
 
         if (shouldSkipLateSystemHomeTarget(packageName)) {
             decide("SKIP: stale target event after system Home")
@@ -1429,16 +1383,10 @@ open class AppauseAccessibilityService : AccessibilityService() {
                 pauseTargetPackage = currentPauseTarget,
                 isPauseTargetBypassed = currentPauseTarget != null &&
                     InterceptionManager.isBypassed(currentPauseTarget),
-                redirectedFromPackage = redirectedFromPackage
+                redirectedFromPackage = redirectedFromPackage,
+                suppressExitEvent = suppressExitEvent
             )
         )
-
-        // 3.5. A real (non-system) app came to the foreground → clear the cancel
-        //      suppression (the user has moved on). Only for decisions that
-        //      passed the system gate, exactly like the original step 3.5.
-        if (decision.passedSystemGate && justCancelledPackage != null) {
-            justCancelledPackage = null
-        }
 
         when (decision) {
             is PreGroupDecision.SkipDisabled -> decide(decision.diagnosticsReason)
@@ -1448,9 +1396,15 @@ open class AppauseAccessibilityService : AccessibilityService() {
                 lastForegroundPackage = packageName
             }
 
-            is PreGroupDecision.SkipStaleCancelled -> decide(decision.diagnosticsReason)
+            is PreGroupDecision.SkipStaleCancelled -> {
+                lastEventForeground = prevForeground
+                decide(decision.diagnosticsReason)
+            }
 
-            is PreGroupDecision.SkipStaleRedirect -> decide(decision.diagnosticsReason)
+            is PreGroupDecision.SkipStaleRedirect -> {
+                lastEventForeground = prevForeground
+                decide(decision.diagnosticsReason)
+            }
 
             is PreGroupDecision.SkipDedup ->
                 // The original step 2.6 logged WITHOUT writing lastDecision.
@@ -1478,12 +1432,6 @@ open class AppauseAccessibilityService : AccessibilityService() {
                 // bug: opening a gallery/chooser/player used to clear the bypass and
                 // re-pop the cooldown. Now the session survives short detours.
                 maybeStartLeaveTimerFor(lastForegroundPackage, packageName)
-                // If the app we just left is the one the user cancelled out of,
-                // confirm it has genuinely left the foreground: clear the cancel
-                // suppression so an immediate re-open re-triggers the cooldown.
-                if (justCancelledPackage != null && lastForegroundPackage == justCancelledPackage) {
-                    justCancelledPackage = null
-                }
                 lastForegroundPackage = packageName
             }
 
@@ -1581,6 +1529,11 @@ open class AppauseAccessibilityService : AccessibilityService() {
                         decideTarget(packageName, postDecision.diagnosticsReason)
 
                     is PostGroupDecision.Intercept -> {
+                        // Cancel/redirect can happen while the repository query is suspended.
+                        if (shouldSuppressPauseExitEvent(packageName, eventUptime)) {
+                            decide("SKIP: late target event after leaving pause ($packageName)")
+                            return
+                        }
                         // 7. Intercept! Show the cooldown overlay.
                         decideTarget(packageName, postDecision.diagnosticsReason)
                         // The decider only returns Intercept when the group
@@ -1731,6 +1684,36 @@ open class AppauseAccessibilityService : AccessibilityService() {
         reRemindEscalate: Boolean = false
     ) {
         overlayManager.show(this, packageName, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, isReRemind, reRemindRepeat, reRemindEscalate)
+    }
+
+    private suspend fun shouldSuppressPauseExitEvent(packageName: String, eventUptime: Long): Boolean {
+        if (packageName != justCancelledPackage && packageName != redirectedFromPackage) return false
+        val exitedAt = pauseExitAtUptime
+        val foreground = withContext(Dispatchers.IO) {
+            ForegroundChecker.getForegroundPackage(applicationContext)
+        }
+        // A newer exit may have been recorded while the query was suspended.
+        if (exitedAt != pauseExitAtUptime) {
+            return packageName == justCancelledPackage || packageName == redirectedFromPackage
+        }
+        val suppress = PauseExitPolicy.shouldSuppress(
+            exitedAtUptime = exitedAt,
+            eventUptime = eventUptime,
+            nowUptime = SystemClock.uptimeMillis(),
+            targetPackage = packageName,
+            currentForegroundPackage = foreground,
+            ownPackage = applicationContext.packageName
+        )
+        if (!suppress) {
+            if (justCancelledPackage == packageName) clearCancelledPackage()
+            if (redirectedFromPackage == packageName) {
+                redirectClearHandler.removeCallbacksAndMessages(null)
+                redirectedFromPackage = null
+            }
+            // A confirmed reopen must not fall into the old duplicate guard.
+            lastForegroundPackage = null
+        }
+        return suppress
     }
 
     private suspend fun shouldSkipLateSystemHomeTarget(packageName: String): Boolean {

@@ -80,7 +80,8 @@ abstract class ServiceOrchestrationTestBase {
         // starts from a clean companion/singleton state.
         InterceptionManager.bypassedSnapshot().forEach(InterceptionManager::clearBypass)
         AppauseAccessibilityService.pauseShown = false
-        AppauseAccessibilityService.justCancelledPackage = null
+        AppauseAccessibilityService.clearCancelledPackage()
+        AppauseAccessibilityService.redirectedFromPackage = null
         AppauseAccessibilityService.lastForegroundPackage = null
         AppauseAccessibilityService.lastEventForeground = null
         AppauseAccessibilityService.pauseActivityVisible = false
