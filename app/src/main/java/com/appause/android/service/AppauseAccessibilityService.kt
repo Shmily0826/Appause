@@ -1009,7 +1009,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
             if (!isRecentAppsTransitionActive()) {
                 scheduleHomeTransitionConfirmation(
                     homePackage = packageName,
-                    homeEventTime = event.eventTime,
+                    homeEventTime = eventUptime,
                     allowStaleForegroundFallback = pauseGuardWatchdogExpired
                 )
                 // A launcher event plus a matching UsageStats foreground result is
@@ -1028,7 +1028,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
                                 homePackage = packageName,
                                 lastObservedNavigationPackage = lastObservedNavigationPackage,
                                 pauseShown = pausePresentationActive(includeTarget = true) { pauseShown },
-                                homeEventTime = event.eventTime,
+                                homeEventTime = eventUptime,
                                 latestRealForegroundEventTime = latestRealForegroundEventTime,
                                 currentForegroundPackage = currentForegroundPackage
                             ) && dismissAttachedOverlayForConfirmedHome(
@@ -1058,8 +1058,8 @@ open class AppauseAccessibilityService : AccessibilityService() {
             // the final destination. Its normal foreground handling below is
             // still responsible for dismissing an active cooldown if needed.
             lastObservedNavigationPackage = packageName
-            if (event.eventTime > latestRealForegroundEventTime) {
-                latestRealForegroundEventTime = event.eventTime
+            if (eventUptime > latestRealForegroundEventTime) {
+                latestRealForegroundEventTime = eventUptime
             }
             if (watchdogHomeConfirmationPending) {
                 // Keep the bounded Home confirmation alive. A late target
@@ -1075,7 +1075,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
         AppLogger.d(
             TAG,
             "Event received: package=$packageName, class=${event.className}, " +
-                "eventTime=${event.eventTime}, deliveryUptime=${SystemClock.uptimeMillis()}"
+                "eventTime=${eventUptime}, deliveryUptime=${SystemClock.uptimeMillis()}"
         )
 
         // Record the burst fingerprint for Recents-replay detection (step 6.5
@@ -1204,6 +1204,8 @@ open class AppauseAccessibilityService : AccessibilityService() {
         if (targetPackage != null) {
             InterceptionManager.clearBypass(targetPackage)
             cancelReRemind(targetPackage)
+            // Home can emit the same late target events as the Cancel button.
+            noteCancelled(targetPackage)
         }
         AppLogger.d(TAG, "Confirmed system Home — dismissing standalone overlay")
         overlayManager.dismiss()
@@ -1236,6 +1238,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
                     val targetPackage = pauseTargetPackage
                     if (targetPackage != null) {
                         InterceptionManager.clearBypass(targetPackage)
+                        noteCancelled(targetPackage)
                     }
                     AppLogger.d(
                         TAG,

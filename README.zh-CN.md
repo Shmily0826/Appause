@@ -9,18 +9,18 @@ Appause 是一款以本地存储为主的安卓专注工具。你可以选择目
 
 **官网：** [中文](https://shmily0826.github.io/Appause/zh.html) · [English](https://shmily0826.github.io/Appause/)
 
-## 最新下载：v0.5.48 公开测试版
+## 最新下载：v0.5.49 公开测试版
 
-从[蓝奏云](https://shmily0826.lanzoup.com/b01eunt29a)下载 `Appause-v0.5.48.apk`，提取密码 **1234**。
-也可以从 [GitHub 直接下载](https://github.com/Shmily0826/Appause/releases/download/v0.5.48/Appause-v0.5.48.apk)。
+从[蓝奏云](https://shmily0826.lanzoup.com/b01eunt29a)下载 `Appause-v0.5.49.apk`，提取密码 **1234**。
+也可以从 [GitHub 直接下载](https://github.com/Shmily0826/Appause/releases/download/v0.5.49/Appause-v0.5.49.apk)。
 两个渠道提供相同的签名安装包。
 
 - 包名：`com.appause.android`
-- versionCode：`100`
-- SHA-256：`b6117fd4fe5ee1d8b2d9d421bdb8573bd1a515a61ac12932acbdd31240eadded`
+- versionCode：`101`
+- SHA-256：`7fb1f88a3b2d3821e7517789d65347970f75852e48d4db8ef979b3a0d3f14b57`
 
-签名安装包已通过离线检查及 HyperOS 真机核心功能检查。
-本版变更见 [v0.5.48 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.48)。
+签名安装包已通过离线检查；本次导航修复已在 HyperOS 真机上验证。
+本版变更见 [v0.5.49 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.49)。
 英文官网优先使用 GitHub 下载，中文官网优先使用蓝奏云。
 
 后续公开发布的 APK 使用 `Appause-v<版本号>.apk` 命名。
@@ -88,7 +88,7 @@ Appause 是辅助用户调整使用习惯的无障碍工具，不是监控、安
 
 ## 测试情况
 
-v0.5.48 是公开测试版。发布前，已在一台运行安卓 16 的小米 HyperOS 手机上检查核心拦截和覆盖升级流程；
+v0.5.49 是公开测试版。发布前，已在一台运行安卓 16 的小米 HyperOS 手机上验证本次主页键 / 最近任务键修复及主动重开行为；
 CI 会在每次推送时运行单元测试。这些检查尚未覆盖所有设备、系统和长时间运行场景。
 如果 Appause 在你的手机上出现问题，欢迎[提交 Issue](https://github.com/Shmily0826/Appause/issues)。
 
@@ -97,7 +97,7 @@ CI 会在每次推送时运行单元测试。这些检查尚未覆盖所有设�
 - [安装指南](docs/INSTALL.md)
 - [隐私政策](PRIVACY.md#中文简体)
 - [GitHub Issues](https://github.com/Shmily0826/Appause/issues)
-- [v0.5.48 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.48)
+- [v0.5.49 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.49)
 
 ## 开源协议
 

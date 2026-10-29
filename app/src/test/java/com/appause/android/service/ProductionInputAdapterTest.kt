@@ -136,4 +136,62 @@ class ProductionInputAdapterTest : ServiceOrchestrationTestBase() {
             AppauseAccessibilityService.lastDecision
         )
     }
+    @Test
+    fun `launcher Home dismissal protects against a late target echo and allows a real reopen`() = runBlocking<Unit> {
+        verifySystemHomeExit("com.test.launcher")
+    }
+
+    @Test
+    fun `SystemUI Home confirmation protects against a late target echo and allows a real reopen`() = runBlocking<Unit> {
+        verifySystemHomeExit("com.android.systemui")
+    }
+
+    private suspend fun verifySystemHomeExit(eventPackage: String) {
+        // Robolectric boots at uptime 100ms, inside the Recents guard's 1s window.
+        idleMainLooperFor(2_000)
+        val home = "com.test.launcher"
+        val target = "com.test.home.target"
+        registerHomeLauncher(home)
+        service.refreshHomePackages()
+        seedGroup("system-home", listOf(target), cooldownSeconds = 10)
+        handleForeground(target)
+        assertEquals(1, service.shownCooldowns.size)
+        setForegroundEvidence(home)
+        val event = android.view.accessibility.AccessibilityEvent.obtain(
+            android.view.accessibility.AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+        ).apply {
+            packageName = eventPackage
+            eventTime = android.os.SystemClock.uptimeMillis()
+        }
+        service.onAccessibilityEvent(event)
+        event.recycle()
+        // SystemUI confirms after 750ms; drain after that without expiring the 1500ms launch grace.
+        idleMainLooperFor(1_000)
+        val deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5)
+        while (AppauseAccessibilityService.pauseShown && System.nanoTime() < deadline) drainNow()
+        org.junit.Assert.assertFalse("Home must dismiss the active pause: " + com.appause.android.util.LogBuffer.dump(), AppauseAccessibilityService.pauseShown)
+        assertEquals("Home must arm the same exit protection as Cancel", target, AppauseAccessibilityService.justCancelledPackage)
+
+        idleMainLooperFor(1_000)
+        handleForeground(target)
+        assertEquals("old target echo after Home must not reopen the pause", 1, service.shownCooldowns.size)
+        org.junit.Assert.assertFalse(AppauseAccessibilityService.pauseShown)
+
+        idleMainLooperFor(1)
+        setForegroundEvidence(target)
+        handleForeground(target)
+        assertEquals("a genuine reopen must still intercept", 2, service.shownCooldowns.size)
+    }
+
+    private fun setForegroundEvidence(packageName: String) {
+        val manager = service.getSystemService(android.content.Context.USAGE_STATS_SERVICE) as android.app.usage.UsageStatsManager
+        shadowOf(manager).addEvent(
+            org.robolectric.shadows.ShadowUsageStatsManager.EventBuilder.buildEvent()
+                .setPackage(packageName)
+                .setTimeStamp(System.currentTimeMillis() - 1)
+                .setEventType(android.app.usage.UsageEvents.Event.ACTIVITY_RESUMED)
+                .build()
+        )
+    }
+
 }

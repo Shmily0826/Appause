@@ -2,13 +2,13 @@
 
 ## English
 
-Appause is not currently in an app store. The latest **v0.5.48 / versionCode 100**
-is available directly from [GitHub v0.5.48]. If GitHub is hard to reach, use
-[Appause v0.5.48] on Lanzou, password **1234**. Both provide the same APK.
+Appause is not currently in an app store. The latest **v0.5.49 / versionCode 101**
+is available directly from [GitHub v0.5.49]. If GitHub is hard to reach, use
+[Appause v0.5.49] on Lanzou, password **1234**. Both provide the same APK.
 
 ### 1. Download the APK
 
-Download `Appause-v0.5.48.apk` from [GitHub v0.5.48], or use Lanzou with password **1234**.
+Download `Appause-v0.5.49.apk` from [GitHub v0.5.49], or use Lanzou with password **1234**.
 Open the downloaded file and follow Android's installation prompts.
 
 ### 2. Allow installs only from the app opening the APK
@@ -62,10 +62,10 @@ If **Allow restricted settings** is missing from the ⋮ menu, repeat step 1 fir
 
 To check that your download matches the release, calculate its SHA-256 on a computer. You do not need to do this on your phone.
 
-Expected value: `b6117fd4fe5ee1d8b2d9d421bdb8573bd1a515a61ac12932acbdd31240eadded`.
+Expected value: `7fb1f88a3b2d3821e7517789d65347970f75852e48d4db8ef979b3a0d3f14b57`.
 
-- Windows: `Get-FileHash .\Appause-v0.5.48.apk -Algorithm SHA256`
-- macOS / Linux: `shasum -a 256 Appause-v0.5.48.apk`
+- Windows: `Get-FileHash .\Appause-v0.5.49.apk -Algorithm SHA256`
+- macOS / Linux: `shasum -a 256 Appause-v0.5.49.apk`
 
 A matching value confirms the file matches the release. If it differs, download it again.
 
@@ -73,13 +73,13 @@ A matching value confirms the file matches the release. If it differs, download 
 
 ## 中文
 
-Appause 目前未上架应用商店。最新版 **v0.5.48 / versionCode 100** 通过
-[Appause v0.5.48] 分享，蓝奏云提取密码 **1234**，文件名为 `Appause-v0.5.48.apk`。
-也可以使用 [GitHub v0.5.48] 备用下载；两个渠道的安装包与校验值相同。
+Appause 目前未上架应用商店。最新版 **v0.5.49 / versionCode 101** 通过
+[Appause v0.5.49] 分享，蓝奏云提取密码 **1234**，文件名为 `Appause-v0.5.49.apk`。
+也可以使用 [GitHub v0.5.49] 备用下载；两个渠道的安装包与校验值相同。
 
 ### 第一步：下载安装包
 
-从 [Appause v0.5.48] 下载 `Appause-v0.5.48.apk`，密码 **1234**，或使用 [GitHub v0.5.48]。
+从 [Appause v0.5.49] 下载 `Appause-v0.5.49.apk`，密码 **1234**，或使用 [GitHub v0.5.49]。
 下载后打开文件，按系统提示安装。
 
 ### 第二步：仅为下载来源允许安装
@@ -124,14 +124,14 @@ Android 8（API 26）及以上，需要给**用来打开 APK 的应用**（浏�
 
 如果你想确认下载的文件与发布版一致，可以在电脑上计算 SHA-256。此步骤不需要在手机上操作。
 
-预期值：`b6117fd4fe5ee1d8b2d9d421bdb8573bd1a515a61ac12932acbdd31240eadded`。
+预期值：`7fb1f88a3b2d3821e7517789d65347970f75852e48d4db8ef979b3a0d3f14b57`。
 
-- Windows：`Get-FileHash .\Appause-v0.5.48.apk -Algorithm SHA256`
-- macOS / Linux：`shasum -a 256 Appause-v0.5.48.apk`
+- Windows：`Get-FileHash .\Appause-v0.5.49.apk -Algorithm SHA256`
+- macOS / Linux：`shasum -a 256 Appause-v0.5.49.apk`
 
 结果一致，说明文件与发布版相同；不一致时请重新下载。
 
 </details>
 
-[Appause v0.5.48]: https://shmily0826.lanzoup.com/b01eunt29a
-[GitHub v0.5.48]: https://github.com/Shmily0826/Appause/releases/download/v0.5.48/Appause-v0.5.48.apk
+[Appause v0.5.49]: https://shmily0826.lanzoup.com/b01eunt29a
+[GitHub v0.5.49]: https://github.com/Shmily0826/Appause/releases/download/v0.5.49/Appause-v0.5.49.apk

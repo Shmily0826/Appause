@@ -11,18 +11,18 @@ continue.
 
 **Website:** [shmily0826.github.io/Appause](https://shmily0826.github.io/Appause/) · [中文](https://shmily0826.github.io/Appause/zh.html)
 
-## Latest download: v0.5.48 Public Beta
+## Latest download: v0.5.49 Public Beta
 
-Download the signed [Appause-v0.5.48.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.48/Appause-v0.5.48.apk) directly from GitHub.
+Download the signed [Appause-v0.5.49.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.49/Appause-v0.5.49.apk) directly from GitHub.
 For downloads from China, use [Lanzou](https://shmily0826.lanzoup.com/b01eunt29a), password **1234**.
 Both channels provide the same APK.
 
 - Package: `com.appause.android`
-- versionCode: `100`
-- SHA-256: `b6117fd4fe5ee1d8b2d9d421bdb8573bd1a515a61ac12932acbdd31240eadded`
+- versionCode: `101`
+- SHA-256: `7fb1f88a3b2d3821e7517789d65347970f75852e48d4db8ef979b3a0d3f14b57`
 
-The signed APK passed offline checks and core HyperOS device checks.
-See the [v0.5.48 public beta release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.48) for release notes.
+The signed APK passed offline checks; the navigation fix was checked on a HyperOS phone.
+See the [v0.5.49 public beta release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.49) for release notes.
 The English landing page prefers GitHub; the Chinese page prefers Lanzou.
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
@@ -103,8 +103,8 @@ keystore, password, private key, activation code, or Worker secret.
 
 ## Testing status
 
-v0.5.48 is a public beta. Before release, its core interception and in-place
-upgrade were checked on one Xiaomi HyperOS phone running Android 16, and the
+v0.5.49 is a public beta. The Home / Recents fix and genuine reopen behavior
+were checked on one Xiaomi HyperOS phone running Android 16, and the
 unit test suite runs in CI on every push. That does not cover every device, ROM,
 or long-running scenario. If Appause misbehaves on your phone, please
 [open an issue](https://github.com/Shmily0826/Appause/issues).
@@ -114,7 +114,7 @@ or long-running scenario. If Appause misbehaves on your phone, please
 - [Install guide](docs/INSTALL.md)
 - [Privacy policy](PRIVACY.md)
 - [GitHub Issues](https://github.com/Shmily0826/Appause/issues)
-- [v0.5.48 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.48)
+- [v0.5.49 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.49)
 
 ## License
 

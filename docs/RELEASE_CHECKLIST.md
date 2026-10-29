@@ -1,14 +1,14 @@
 # Appause 发版清单（Release Checklist）
 
-> 面向准备给陌生用户使用的发版流程。当前候选版本为 v0.5.48 / versionCode 100，上一版为 v0.5.47 / 99。
-> 安装包：`output/Appause-v0.5.48.apk`。
-> SHA-256：`b6117fd4fe5ee1d8b2d9d421bdb8573bd1a515a61ac12932acbdd31240eadded`。
-> 本次修复取消或跳转推荐应用后暂停页重复弹出的问题。验证结果与未测范围记录在本版 GitHub Release 中。
+> 面向准备给陌生用户使用的发版流程。当前候选版本为 v0.5.49 / versionCode 101，上一版为 v0.5.48 / 100。
+> 安装包：`output/Appause-v0.5.49.apk`。
+> SHA-256：`7fb1f88a3b2d3821e7517789d65347970f75852e48d4db8ef979b3a0d3f14b57`。
+> 本次修复划掉目标应用后台并重新打开后，按主页键或最近任务键导致暂停页重复弹出的问题。验证结果与未测范围记录在本版 GitHub Release 中。
 > 英文页面优先 GitHub 文件下载，中文页面优先蓝奏云分享页（密码 1234）。部署前核对两个渠道的文件版本，部署后核对公开入口。
 
 ## 1. 版本与构建配置
 
-- [ ] `app/build.gradle.kts`：相对上一版递增 versionCode（当前 100 / v0.5.48；上一版 99 / v0.5.47），`versionName` 按语义更新
+- [ ] `app/build.gradle.kts`：相对上一版递增 versionCode（当前 101 / v0.5.49；上一版 100 / v0.5.48），`versionName` 按语义更新
   - debug flavor 的 `versionNameSuffix = "-debug"` 依赖 **更高的** versionCode 保证共存，勿降
 - [ ] minSdk 26 / targetSdk 未被意外改动；新增依赖在 version catalog（`gradle/libs.versions.toml`），未硬编码版本号
 - [ ] `./gradlew assembleDebug` 与 `./gradlew assembleRelease` 均通过（需 `JAVA_HOME=D:\Dev-Setup\jdk`）
