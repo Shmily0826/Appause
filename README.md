@@ -104,9 +104,25 @@ keystore, password, private key, activation code, or Worker secret.
 ## Testing status
 
 v0.5.49 is a public beta. The Home / Recents fix and genuine reopen behavior
-were checked on one Xiaomi HyperOS phone running Android 16, and the
-unit test suite runs in CI on every push. That does not cover every device, ROM,
-or long-running scenario. If Appause misbehaves on your phone, please
+were checked on one Xiaomi HyperOS phone running Android 16. The same signed
+v0.5.49 APK also passed manual core-flow checks on these cloud-hosted physical devices:
+
+| Device | Android | Test date | Result |
+|---|---|---|---|
+| Samsung Galaxy S24 | 14 | 2026-11-03 | Core flow passed; 7-day trial activation also checked. |
+| Google Pixel 9 | 16 | 2026-11-04 | Core flow passed; the recovery prompt appeared after accessibility was disabled. |
+
+Core-flow checks covered enabling accessibility, showing the pause screen,
+Cancel returning home, Continue opening the target app, interception on reopening,
+and opening a recommended app. Screenshots, device-state snapshots, and local logs
+were saved; log review found no app crashes or ANRs during these sessions.
+
+Both cloud tests used ADB installation. They do not verify browser sideloading,
+long-running background operation, screen-off behavior, reboot recovery, or every
+device and ROM. The Samsung session worked without a battery exemption or the
+display-over-other-apps permission; this short test does not establish long-term
+background reliability. The unit test suite runs in CI on every push.
+If Appause misbehaves on your phone, please
 [open an issue](https://github.com/Shmily0826/Appause/issues).
 
 ## Install and feedback
