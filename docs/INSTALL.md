@@ -1,4 +1,6 @@
-# How to install Appause / 如何安装 Appause（侧载 / 直链安装指南）
+# How to install Appause
+
+[English](#english) | [简体中文](#中文)
 
 ## English
 
@@ -71,7 +73,11 @@ A matching value confirms the file matches the release. If it differs, download 
 
 </details>
 
+---
+
 ## 中文
+
+### 如何安装 Appause
 
 Appause 目前未上架应用商店。最新版 **v0.5.49 / versionCode 101** 通过
 [Appause v0.5.49] 分享，蓝奏云提取密码 **1234**，文件名为 `Appause-v0.5.49.apk`。

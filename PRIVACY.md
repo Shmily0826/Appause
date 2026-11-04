@@ -1,5 +1,9 @@
 # Privacy Policy
 
+[English](#english) | [简体中文](#中文简体)
+
+## English
+
 **Effective date:** 2026-07-29
 **Last updated:** 2026-10-23
 **App:** Appause (Android)
@@ -13,10 +17,6 @@ and feedback — and this policy spells out exactly what they send.
 This document explains what we collect, what we don't, and the permissions the
 app uses. It is written for non-experts. If anything is unclear, open an issue
 on the project repository.
-
----
-
-## English
 
 ### What we collect
 
@@ -108,6 +108,12 @@ or email [rng2018520@gmail.com](mailto:rng2018520@gmail.com).
 ---
 
 ## 中文（简体）
+
+**生效日期：** 2026-07-29
+**最后更新：** 2026-10-23
+**应用：** Appause（安卓）
+
+[在网站阅读中文版隐私政策](https://shmily0826.github.io/Appause/privacy-policy.zh-CN.html)。
 
 ### 我们收集什么
 
