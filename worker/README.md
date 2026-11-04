@@ -113,6 +113,22 @@ Note the worker URL (e.g. `https://appause-pro.<subdomain>.workers.dev`).
 - In `app/.../data/pro/ProConfig.kt`, set `WORKER_BASE_URL` to your worker URL.
 - Rebuild + release.
 
+## Landing source counters
+
+After deploying the Worker and landing pages, share
+`https://shmily0826.github.io/Appause/?src=reddit` or
+`https://shmily0826.github.io/Appause/?src=v2ex`.
+Other/missing tags are unknown. The language switch preserves the tag.
+GET `/api/source-metrics` returns public aggregate totals; POST accepts only
+`reddit|v2ex|unknown` and `visit|github_click|lanzou_click` from the landing origin.
+Run `node worker/scripts/source-stats.mjs` from the repo root to query.
+Counters live in a separate Durable Object to avoid concurrent lost updates.
+There is no history backfill, user identification, installation attribution,
+or bot-proof counting. Origin validation is not authentication; counts can be inflated.
+Local previews and webdriver inspections never send production events.
+The local operations collector and workbook builder include source snapshots.
+Deploy the Worker migration first, then publish the website. No Android update is required.
+
 ## Local testing
 
 ```bash

@@ -4,6 +4,19 @@
 
 ## English
 
+### Website source counters
+
+The landing website counts page loads and download-link clicks by Reddit, V2EX,
+or unknown source. Only aggregate counts are stored; no cookies, browser storage,
+IP addresses, full referring URLs or device identifiers are stored by this feature.
+These counts include repeat visits and are not installation or unique-user counts.
+Hosting providers may process ordinary network requests under their own policies.
+This website feature does not add any network requests to the Android app.
+
+网站来源统计：落地页按 Reddit、V2EX 或未知来源累计页面访问与下载链接点击。
+本功能不保存 Cookie、浏览器存储、IP、完整来源网址或设备标识；重复访问也计数，
+不能作为安装量或独立人数。托管服务商仍按其政策处理普通网络请求。Android 应用不增加联网行为。
+
 **Effective date:** 2026-07-29
 **Last updated:** 2026-10-23
 **App:** Appause (Android)

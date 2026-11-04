@@ -24,6 +24,8 @@
  */
 
 import { ActivationCodeDurableObject } from "./activation-code-do.js";
+import { SourceMetrics, sourceMetrics } from "./source-metrics.js";
+export { SourceMetrics };
 
 export { ActivationCodeDurableObject };
 
@@ -503,6 +505,8 @@ export default {
     }
 
     switch (url.pathname) {
+      case "/api/source-metrics":
+        return sourceMetrics(request, env);
       case "/api/redeem":
         if (!isPost) return json({ error: "method_not_allowed" }, 405);
         return handleRedeem(request, env);

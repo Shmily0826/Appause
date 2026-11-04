@@ -21,6 +21,14 @@ class_name = "ActivationCodeDurableObject"
 tag = "v1"
 new_sqlite_classes = ["ActivationCodeDurableObject"]
 
+[[durable_objects.bindings]]
+name = "SOURCE_METRICS"
+class_name = "SourceMetrics"
+
+[[migrations]]
+tag = "v2-source-metrics"
+new_sqlite_classes = ["SourceMetrics"]
+
 # Secrets (DO NOT put these in this file or commit them):
 #   wrangler secret put APPAUSE_PRIVATE_KEY   # PKCS#8 PEM from `npm run genkeys`
 #   wrangler secret put ADMIN_KEY             # any strong random string
