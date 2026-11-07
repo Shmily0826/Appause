@@ -11,19 +11,17 @@ continue.
 
 **Website:** [shmily0826.github.io/Appause](https://shmily0826.github.io/Appause/) · [中文](https://shmily0826.github.io/Appause/zh.html)
 
-## Latest download: v0.5.49 Public Beta
+## Latest download: v0.5.50 Public Beta
 
-Download the signed [Appause-v0.5.49.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.49/Appause-v0.5.49.apk) directly from GitHub.
-For downloads from China, use [Lanzou](https://shmily0826.lanzoup.com/b01eunt29a), password **1234**.
-Both channels provide the same APK.
+Download the signed [Appause-v0.5.50.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.50/Appause-v0.5.50.apk) directly from GitHub.
+The [Lanzou archive](https://shmily0826.lanzoup.com/b01eunt29a) provides v0.5.49, password **1234**.
 
 - Package: `com.appause.android`
-- versionCode: `101`
-- SHA-256: `7fb1f88a3b2d3821e7517789d65347970f75852e48d4db8ef979b3a0d3f14b57`
+- versionCode: `102`
+- SHA-256: `b05b5fadcac3b7ed6013ab96b7bbcf01b220c180bc7f2e41ae084002c11f3daa`
 
-The signed APK passed offline checks; the navigation fix was checked on a HyperOS phone.
-See the [v0.5.49 public beta release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.49) for release notes.
-The English landing page prefers GitHub; the Chinese page prefers Lanzou.
+This release fixes countdowns closing or restarting after temporary system window events.
+See the [v0.5.50 public beta release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.50) for release notes.
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
 `versionCode` is internal metadata and is not part of the public filename.
@@ -103,6 +101,8 @@ keystore, password, private key, activation code, or Worker secret.
 
 ## Testing status
 
+The v0.5.50 signed APK was checked on a HyperOS phone for service status and the cooldown when opening Bilibili.
+
 v0.5.49 is a public beta. The Home / Recents fix and genuine reopen behavior
 were checked on one Xiaomi HyperOS phone running Android 16. The same signed
 v0.5.49 APK also passed manual core-flow checks on these cloud-hosted physical devices:
@@ -130,6 +130,7 @@ If Appause misbehaves on your phone, please
 - [Install guide](docs/INSTALL.md)
 - [Privacy policy](PRIVACY.md)
 - [GitHub Issues](https://github.com/Shmily0826/Appause/issues)
+- [v0.5.50 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.50)
 - [v0.5.49 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.49)
 
 ## License

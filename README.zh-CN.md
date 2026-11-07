@@ -9,19 +9,17 @@ Appause 是一款以本地存储为主的安卓专注工具。你可以选择目
 
 **官网：** [中文](https://shmily0826.github.io/Appause/zh.html) · [English](https://shmily0826.github.io/Appause/)
 
-## 最新下载：v0.5.49 公开测试版
+## 最新下载：v0.5.50 公开测试版
 
-从[蓝奏云](https://shmily0826.lanzoup.com/b01eunt29a)下载 `Appause-v0.5.49.apk`，提取密码 **1234**。
-也可以从 [GitHub 直接下载](https://github.com/Shmily0826/Appause/releases/download/v0.5.49/Appause-v0.5.49.apk)。
-两个渠道提供相同的签名安装包。
+从 [GitHub 下载签名安装包 Appause-v0.5.50.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.50/Appause-v0.5.50.apk)。
+[蓝奏云归档](https://shmily0826.lanzoup.com/b01eunt29a)提供 v0.5.49，提取密码 **1234**。
 
 - 包名：`com.appause.android`
-- versionCode：`101`
-- SHA-256：`7fb1f88a3b2d3821e7517789d65347970f75852e48d4db8ef979b3a0d3f14b57`
+- versionCode：`102`
+- SHA-256：`b05b5fadcac3b7ed6013ab96b7bbcf01b220c180bc7f2e41ae084002c11f3daa`
 
-签名安装包已通过离线检查；本次导航修复已在 HyperOS 真机上验证。
-本版变更见 [v0.5.49 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.49)。
-英文官网优先使用 GitHub 下载，中文官网优先使用蓝奏云。
+本版修复了临时系统窗口导致倒计时提前关闭或重新开始的问题。
+本版变更见 [v0.5.50 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.50)。
 
 后续公开发布的 APK 使用 `Appause-v<版本号>.apk` 命名。
 `versionCode` 是内部版本编号，不属于公开文件名。
@@ -88,6 +86,8 @@ Appause 是辅助用户调整使用习惯的无障碍工具，不是监控、安
 
 ## 测试情况
 
+v0.5.50 签名安装包已在 HyperOS 真机上核对服务状态和打开 B 站时的倒计时。
+
 v0.5.49 是公开测试版。发布前，已在一台运行安卓 16 的小米 HyperOS 手机上验证本次主页键 / 最近任务键修复及主动重开行为。
 同一份 v0.5.49 签名 APK 还在以下云端真实设备上通过了人工核心流程检查：
 
@@ -109,6 +109,7 @@ CI 会在每次推送时运行单元测试。
 - [安装指南](docs/INSTALL.md)
 - [隐私政策](PRIVACY.md#中文简体)
 - [GitHub Issues](https://github.com/Shmily0826/Appause/issues)
+- [v0.5.50 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.50)
 - [v0.5.49 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.49)
 
 ## 开源协议
