@@ -8,6 +8,8 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -1103,7 +1105,8 @@ open class AppauseAccessibilityService : AccessibilityService() {
     private fun scheduleHomeTransitionConfirmation(
         homePackage: String,
         homeEventTime: Long,
-        allowStaleForegroundFallback: Boolean = false
+        allowStaleForegroundFallback: Boolean = false,
+        retryForegroundCheck: Boolean = true
     ) {
         cancelPendingHomeTransition()
         val confirmation = Runnable {
@@ -1120,46 +1123,41 @@ open class AppauseAccessibilityService : AccessibilityService() {
             }
             serviceScope.launch {
                 try {
-                val currentForegroundPackage = withContext(Dispatchers.IO) {
-                    HomeTransitionPolicy.resolveForegroundEvidence(
-                        ForegroundChecker.getForegroundPackage(applicationContext),
-                        applicationContext.packageName
-                    )
-                }
-                if (!HomeTransitionPolicy.shouldConfirm(
+                    val currentForegroundPackage = withContext(Dispatchers.IO) {
+                        HomeTransitionPolicy.resolveForegroundEvidence(
+                            ForegroundChecker.getForegroundPackage(applicationContext),
+                            applicationContext.packageName
+                        )
+                    }
+                    if (!HomeTransitionPolicy.shouldConfirm(
                             homePackage = homePackage,
                             lastObservedNavigationPackage = lastObservedNavigationPackage,
                             pauseShown = pausePresentationActive(includeTarget = true) { pauseShown },
-                                    homeEventTime = homeEventTime,
+                            homeEventTime = homeEventTime,
                             latestRealForegroundEventTime = latestRealForegroundEventTime,
                             currentForegroundPackage = currentForegroundPackage,
                             allowStaleForegroundFallback = allowStaleForegroundFallback
                         )
                     ) {
-                        // UsageStats can still name the target briefly after a
-                        // real launcher event. Give accessibility delivery one
-                        // more bounded window to report a newer real-app event;
-                        // if it does not, fail open and remove the standalone
-                        // overlay rather than leaving 2032 over the launcher.
-                        if (!allowStaleForegroundFallback &&
+                        // UsageStats can lag a real Home transition. Recheck once,
+                        // but keep the countdown if another app is still resumed.
+                        if (retryForegroundCheck && !allowStaleForegroundFallback &&
+                            pendingHomeTransition == null && !isRecentAppsTransitionActive() &&
                             currentForegroundPackage != null &&
                             currentForegroundPackage != homePackage &&
                             HomeTransitionPolicy.shouldConfirm(
                                 homePackage = homePackage,
                                 lastObservedNavigationPackage = lastObservedNavigationPackage,
                                 pauseShown = pausePresentationActive(includeTarget = true) { pauseShown },
-                                            homeEventTime = homeEventTime,
-                                latestRealForegroundEventTime = latestRealForegroundEventTime,
-                                allowStaleForegroundFallback = true
+                                homeEventTime = homeEventTime,
+                                latestRealForegroundEventTime = latestRealForegroundEventTime
                             )
                         ) {
-                            if (!isRecentAppsTransitionActive()) {
-                                scheduleHomeTransitionConfirmation(
-                                    homePackage = homePackage,
-                                    homeEventTime = homeEventTime,
-                                    allowStaleForegroundFallback = true
-                                )
-                            }
+                            scheduleHomeTransitionConfirmation(
+                                homePackage = homePackage,
+                                homeEventTime = homeEventTime,
+                                retryForegroundCheck = false
+                            )
                         }
                         return@launch
                     }
@@ -1174,7 +1172,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
                     }
                     // The launcher remained the last observed user destination
                     // through the settle window. This event-based confirmation
-                    // is the fallback when UsageStats is still stale.
+                    // covers devices where UsageStats cannot identify the foreground.
                     handleForegroundChange(homePackage, homeEventConfirmed = true)
                 } catch (e: Exception) {
                     AppLogger.e(TAG, "Error confirming Home transition", e)
@@ -1455,6 +1453,34 @@ open class AppauseAccessibilityService : AccessibilityService() {
             }
 
             is PreGroupDecision.AbandonCooldown -> {
+                if (!homePackages.contains(packageName)) {
+                    val pauseStartedAt = pauseGuardRaisedAt
+                    val stillInTarget = withContext(Dispatchers.IO) {
+                        // OEM panels can report a preinstalled app's window over a resumed target.
+                        val flags = try {
+                            packageManager.getApplicationInfo(packageName, 0).flags
+                        } catch (_: PackageManager.NameNotFoundException) {
+                            0
+                        }
+                        val systemApp = flags and (ApplicationInfo.FLAG_SYSTEM or
+                            ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+                        systemApp && ForegroundChecker.getForegroundPackage(applicationContext) ==
+                            decision.targetPackage
+                    }
+                    if (pauseTargetPackage != decision.targetPackage || pauseGuardRaisedAt != pauseStartedAt) {
+                        return
+                    }
+                    if (stillInTarget) {
+                        if (lastEventForeground == packageName) lastEventForeground = prevForeground
+                        if (lastObservedNavigationPackage == packageName &&
+                            latestRealForegroundEventTime == eventUptime
+                        ) {
+                            lastObservedNavigationPackage = decision.targetPackage
+                        }
+                        decide("KEEP COOLDOWN: $packageName window over ${decision.targetPackage}")
+                        return
+                    }
+                }
                 // Mid-cooldown switch-away: a DIFFERENT real app just became
                 // foreground while the pause screen was up and the user never
                 // tapped Continue. On HyperOS the accessibility overlay can be

@@ -1,6 +1,8 @@
 package com.appause.android.service
 
 import android.content.Intent
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.provider.Settings
@@ -144,6 +146,63 @@ class ProductionInputAdapterTest : ServiceOrchestrationTestBase() {
     @Test
     fun `SystemUI Home confirmation protects against a late target echo and allows a real reopen`() = runBlocking<Unit> {
         verifySystemHomeExit("com.android.systemui")
+    }
+
+    @Test
+    fun `launcher retry keeps the cooldown when the target remains foreground`() = runBlocking<Unit> {
+        idleMainLooperFor(2_000)
+        val home = "com.test.launcher"
+        val target = "com.test.home.target"
+        registerHomeLauncher(home)
+        service.refreshHomePackages()
+        seedGroup("launcher-retry", listOf(target), cooldownSeconds = 10)
+        setForegroundEvidence(target)
+        handleForeground(target)
+        AppauseAccessibilityService.pauseActivityVisible = true
+        val event = android.view.accessibility.AccessibilityEvent.obtain(
+            android.view.accessibility.AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED
+        ).apply {
+            packageName = home
+            eventTime = android.os.SystemClock.uptimeMillis()
+        }
+        service.onAccessibilityEvent(event)
+        event.recycle()
+
+        repeat(2) {
+            idleMainLooperFor(800)
+            repeat(5) { drainNow() }
+        }
+
+        assertTrue(AppauseAccessibilityService.pauseShown)
+        assertEquals(target, AppauseAccessibilityService.pauseTargetPackage)
+        assertEquals(1, service.shownCooldowns.size)
+    }
+
+    @Test
+    fun `preinstalled window keeps the countdown until another app actually resumes`() = runBlocking<Unit> {
+        val target = "com.test.cooldown.target"
+        val systemApp = "com.test.device.panel"
+        shadowOf(service.packageManager).installPackage(PackageInfo().apply {
+            packageName = systemApp
+            applicationInfo = ApplicationInfo().apply {
+                packageName = systemApp
+                flags = ApplicationInfo.FLAG_SYSTEM
+            }
+        })
+        seedGroup("transient-window", listOf(target), cooldownSeconds = 10)
+        setForegroundEvidence(target)
+        handleForeground(target)
+
+        handleForeground(systemApp)
+        handleForeground(target)
+        assertTrue(AppauseAccessibilityService.pauseShown)
+        assertEquals(1, service.shownCooldowns.size)
+
+        idleMainLooperFor(1)
+        setForegroundEvidence(systemApp)
+        handleForeground(systemApp)
+        org.junit.Assert.assertFalse(AppauseAccessibilityService.pauseShown)
+        assertEquals(target, AppauseAccessibilityService.justCancelledPackage)
     }
 
     private suspend fun verifySystemHomeExit(eventPackage: String) {

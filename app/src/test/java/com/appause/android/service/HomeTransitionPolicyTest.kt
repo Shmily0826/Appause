@@ -60,7 +60,7 @@ class HomeTransitionPolicyTest {
     }
 
     @Test
-    fun `stale target foreground is accepted by the bounded fail-open retry`() {
+    fun `watchdog recovery can accept stale foreground evidence`() {
         assertTrue(
             HomeTransitionPolicy.shouldConfirm(
                 homePackage = "com.google.android.apps.nexuslauncher",
