@@ -11,17 +11,17 @@ continue.
 
 **Website:** [shmily0826.github.io/Appause](https://shmily0826.github.io/Appause/) · [中文](https://shmily0826.github.io/Appause/zh.html)
 
-## Latest download: v0.5.50 Public Beta
+## Latest download: v0.5.51 Public Beta
 
-Download the signed [Appause-v0.5.50.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.50/Appause-v0.5.50.apk) directly from GitHub.
+Download the signed [Appause-v0.5.51.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.51/Appause-v0.5.51.apk) directly from GitHub.
 The [Lanzou archive](https://shmily0826.lanzoup.com/b01eunt29a) provides v0.5.49, password **1234**.
 
 - Package: `com.appause.android`
-- versionCode: `102`
-- SHA-256: `b05b5fadcac3b7ed6013ab96b7bbcf01b220c180bc7f2e41ae084002c11f3daa`
+- versionCode: `103`
+- SHA-256: `943fb1e92a7e4eb0c6cfbe18ee6cd6842e6aee63a9edbde72415803da51dffbf`
 
-This release fixes countdowns closing or restarting after temporary system window events.
-See the [v0.5.50 public beta release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.50) for release notes.
+This release adds a button to request a free lifetime Pro code by email after your trial.
+See the [v0.5.51 public beta release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.51) for release notes.
 
 Future public release APKs use `Appause-v<version>.apk`. The Android
 `versionCode` is internal metadata and is not part of the public filename.
@@ -43,9 +43,10 @@ See [docs/INSTALL.md](docs/INSTALL.md) before the first sideload.
 - **Feedback** — Settings → Feedback lets you review a structured diagnostic
   snapshot before choosing to send a bug report or suggestion.
 - **Appause Pro** — unlimited groups, re-remind, a custom pause prompt, and
-  custom open reasons. Start a one-time 7-day trial on the Pro page; after it
-  ends, request a free lifetime code through Settings → Feedback. There is no
-  subscription or paid tier, and the core features stay free.
+  custom open reasons. Start a one-time 7-day trial on the Appause Pro screen.
+  After the trial, tap **Request lifetime Pro code** on the same screen and send
+  the pre-filled email. When you receive your free code, redeem it there.
+  There is no subscription or paid tier, and the core features stay free.
 
 ## Screenshots
 
@@ -130,6 +131,7 @@ If Appause misbehaves on your phone, please
 - [Install guide](docs/INSTALL.md)
 - [Privacy policy](PRIVACY.md)
 - [GitHub Issues](https://github.com/Shmily0826/Appause/issues)
+- [v0.5.51 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.51)
 - [v0.5.50 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.50)
 - [v0.5.49 Public Beta Release](https://github.com/Shmily0826/Appause/releases/tag/v0.5.49)
 

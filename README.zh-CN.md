@@ -9,17 +9,17 @@ Appause 是一款以本地存储为主的安卓专注工具。你可以选择目
 
 **官网：** [中文](https://shmily0826.github.io/Appause/zh.html) · [English](https://shmily0826.github.io/Appause/)
 
-## 最新下载：v0.5.50 公开测试版
+## 最新下载：v0.5.51 公开测试版
 
-从 [GitHub 下载签名安装包 Appause-v0.5.50.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.50/Appause-v0.5.50.apk)。
+从 [GitHub 下载签名安装包 Appause-v0.5.51.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.51/Appause-v0.5.51.apk)。
 [蓝奏云归档](https://shmily0826.lanzoup.com/b01eunt29a)提供 v0.5.49，提取密码 **1234**。
 
 - 包名：`com.appause.android`
-- versionCode：`102`
-- SHA-256：`b05b5fadcac3b7ed6013ab96b7bbcf01b220c180bc7f2e41ae084002c11f3daa`
+- versionCode：`103`
+- SHA-256：`943fb1e92a7e4eb0c6cfbe18ee6cd6842e6aee63a9edbde72415803da51dffbf`
 
-本版修复了临时系统窗口导致倒计时提前关闭或重新开始的问题。
-本版变更见 [v0.5.50 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.50)。
+本版新增申请永久 Pro 码的按钮，试用结束后可以发送预填好的邮件，申请免费永久码。
+本版变更见 [v0.5.51 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.51)。
 
 后续公开发布的 APK 使用 `Appause-v<版本号>.apk` 命名。
 `versionCode` 是内部版本编号，不属于公开文件名。
@@ -34,7 +34,7 @@ Appause 是一款以本地存储为主的安卓专注工具。你可以选择目
 - **推荐应用与深色模式**：设置替代应用入口，并跟随系统切换主题。
 - **厂商设置指引**：说明小米 / HyperOS 等系统上的电池、自启动和后台运行设置。
 - **反馈**：通过「设置 → 反馈」查看整理好的诊断信息，再自行决定是否发送问题或建议。
-- **Appause Pro**：包含无限分组、再次提醒、自定义暂停提示和打开原因。可在 Pro 页面开启一次七天试用；结束后，通过「设置 → 反馈」申请免费永久授权码。没有订阅或付费版本，核心功能保持免费。
+- **Appause Pro**：包含无限分组、再次提醒、自定义暂停提示和打开原因。可在 Appause Pro 页开启一次 7 天试用。试用结束后，在同一页点「申请永久 Pro 码」并发送预填好的邮件，收到免费永久码后回到同一页兑换。没有订阅或付费版本，核心功能保持免费。
 
 ## 截图
 
@@ -109,6 +109,7 @@ CI 会在每次推送时运行单元测试。
 - [安装指南](docs/INSTALL.md)
 - [隐私政策](PRIVACY.md#中文简体)
 - [GitHub Issues](https://github.com/Shmily0826/Appause/issues)
+- [v0.5.51 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.51)
 - [v0.5.50 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.50)
 - [v0.5.49 发布说明](https://github.com/Shmily0826/Appause/releases/tag/v0.5.49)
 
