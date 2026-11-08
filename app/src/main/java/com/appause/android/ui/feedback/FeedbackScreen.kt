@@ -42,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.appause.android.BuildConfig
 import com.appause.android.R
+import com.appause.android.util.supportEmailIntent
 import java.net.URLEncoder
 import java.util.Locale
 
@@ -271,10 +272,7 @@ fun FeedbackScreen(
  */
 private fun sendEmail(context: Context, type: String, body: String) {
     val subject = if (type == "bug") "Appause Bug Report" else "Appause Suggestion"
-    val uri = Uri.parse(
-        "mailto:rng2018520@gmail.com?subject=${encode(subject)}&body=${encode(body)}"
-    )
-    val intent = Intent(Intent.ACTION_SENDTO, uri)
+    val intent = supportEmailIntent(subject, body)
     context.startActivity(Intent.createChooser(intent, context.getString(R.string.feedback_send_email)))
 }
 

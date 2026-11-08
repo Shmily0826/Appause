@@ -1,7 +1,8 @@
 package com.appause.android.ui.pro
 
-import android.widget.Toast
+import android.content.ActivityNotFoundException
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +57,7 @@ import com.appause.android.data.pro.ProEntitlement
 import com.appause.android.data.pro.RedeemResult
 import com.appause.android.data.pro.canRedeemLifetimeCode
 import com.appause.android.data.pro.remainingTrialMillis
+import com.appause.android.util.supportEmailIntent
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -209,6 +211,27 @@ fun ProScreen(
                         ProAccessStatus.DEBUG -> R.string.pro_status_debug
                     }
                     Text(stringResource(stageDescription), style = MaterialTheme.typography.bodySmall)
+                    if (actions.showLifetimeCode) {
+                        val subject = stringResource(R.string.pro_request_code_email_subject)
+                        val body = stringResource(R.string.pro_request_code_email_body)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = {
+                                try {
+                                    context.startActivity(supportEmailIntent(subject, body))
+                                } catch (_: ActivityNotFoundException) {
+                                    Toast.makeText(
+                                        context,
+                                        R.string.pro_request_code_no_email_app,
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(R.string.pro_request_code))
+                        }
+                    }
                 }
             }
 
