@@ -3,16 +3,16 @@
    Every [data-r] / [data-apk] / [data-release] element on the page is filled from it.
 
    Still edited by hand on release (crawlers and no-JS visitors do not run this file):
-   - the literal "v0.5.50" fallbacks and download hrefs in both HTML files
+   - the literal "v0.5.51" fallbacks and download hrefs in both HTML files
    - softwareVersion / fileSize / downloadUrl in each page's JSON-LD
    Both pages use the GitHub APK for this release. */
 var RELEASE = {
-  version: '0.5.50',
-  versionCode: '102',
+  version: '0.5.51',
+  versionCode: '103',
   size: '12 MB',
-  sha256: 'b05b5fadcac3b7ed6013ab96b7bbcf01b220c180bc7f2e41ae084002c11f3daa',
-  downloadUrl: 'https://github.com/Shmily0826/Appause/releases/download/v0.5.50/Appause-v0.5.50.apk',
-  githubReleaseUrl: 'https://github.com/Shmily0826/Appause/releases/tag/v0.5.50'
+  sha256: '943fb1e92a7e4eb0c6cfbe18ee6cd6842e6aee63a9edbde72415803da51dffbf',
+  downloadUrl: 'https://github.com/Shmily0826/Appause/releases/download/v0.5.51/Appause-v0.5.51.apk',
+  githubReleaseUrl: 'https://github.com/Shmily0826/Appause/releases/tag/v0.5.51'
 };
 
 (function () {
