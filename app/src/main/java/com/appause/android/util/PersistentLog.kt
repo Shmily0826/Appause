@@ -8,7 +8,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * File-backed debug logger for service lifecycle events.
+ * File-backed debug logger for service lifecycle and interception diagnostics.
  *
  * Why we need this:
  * - LogBuffer is in-memory; if the AccessibilityService process is killed,
@@ -17,12 +17,13 @@ import java.util.Locale
  *   service process was ever created, whether onServiceConnected ran,
  *   and whether startForeground() failed — even after a crash/kill.
  *
- * Release builds: all methods are no-ops (BuildConfig.DEBUG == false).
+ * The diagnostic log is Debug-only. Release builds keep only the separate
+ * package-free accessibility lifecycle breadcrumbs.
  */
 object PersistentLog {
     private const val FILE_NAME = "appause-service.log"
     private const val ACCESSIBILITY_LIFECYCLE_FILE_NAME = "accessibility-lifecycle.log"
-    private const val MAX_BYTES = 128 * 1024L
+    private const val MAX_BYTES = 512 * 1024L
     private const val MAX_LIFECYCLE_BYTES = 8 * 1024L
 
     enum class AccessibilityLifecycleEvent(val label: String) {
@@ -33,6 +34,7 @@ object PersistentLog {
         DESTROYED("destroyed")
     }
 
+    @Synchronized
     fun log(context: Context, tag: String, message: String) {
         if (!BuildConfig.DEBUG) return
         try {
@@ -98,8 +100,8 @@ object PersistentLog {
     private fun trim(file: File, maxBytes: Long) {
         if (file.length() > maxBytes) {
             val text = file.readText()
-            val drop = text.length / 4
-            file.writeText(text.drop(drop))
+            val firstCompleteLine = text.indexOf('\n', text.length / 4) + 1
+            file.writeText(text.drop(firstCompleteLine))
         }
     }
 }

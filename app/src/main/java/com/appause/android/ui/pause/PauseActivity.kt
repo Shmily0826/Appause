@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import com.appause.android.util.PersistentLog
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -346,6 +347,7 @@ class PauseActivity : ComponentActivity() {
         AppauseAccessibilityService.noteRedirected(session.targetPackage)
 
         startActivity(launchIntent)
+        PersistentLog.log(this, "PauseActivity", "${session.targetPackage}: closing (recommended app)")
         finish()
     }
 
@@ -379,6 +381,7 @@ class PauseActivity : ComponentActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(homeIntent)
+        PersistentLog.log(this, "PauseActivity", "${session.targetPackage}: closing (cancel or Back)")
         finish()
     }
 
@@ -398,6 +401,7 @@ class PauseActivity : ComponentActivity() {
         }
 
         startSessionAfterProceed(session)
+        PersistentLog.log(this, "PauseActivity", "${session.targetPackage}: closing (continue)")
         finish()
     }
 
@@ -465,6 +469,7 @@ class PauseActivity : ComponentActivity() {
                         // earlier Continue so expiry cannot leave a stale
                         // runtime exception behind.
                         InterceptionManager.clearBypass(session.targetPackage)
+                        PersistentLog.log(this@PauseActivity, "PauseActivity", "${session.targetPackage}: closing (temporary pass)")
                         finish()
                     }
                 }
@@ -489,6 +494,7 @@ class PauseActivity : ComponentActivity() {
 
     override fun onStop() {
         super.onStop()
+        PersistentLog.log(this, "PauseActivity", "$targetPackage: stopped (finishing=$isFinishing)")
         // Covered or backgrounded (e.g. an anti-tamper app re-fronted itself),
         // so the user can no longer see the pause screen. Dropping this lets
         // the watchdog release the guard instead of blocking every later

@@ -19,6 +19,7 @@ import com.appause.android.util.PersistentLog
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.app.NotificationCompat
 import com.appause.android.AppauseApp
+import com.appause.android.BuildConfig
 import com.appause.android.R
 import com.appause.android.data.settings.TemporaryPassWakePolicy
 import com.appause.android.interception.BurstTracker
@@ -291,12 +292,14 @@ open class AppauseAccessibilityService : AccessibilityService() {
                     PauseGuardPolicy.GuardAction.KEEP,
                     PauseGuardPolicy.GuardAction.KEEP_WITHIN_GRACE -> true
                     PauseGuardPolicy.GuardAction.RELEASE_MAX -> {
+                        instance?.let { PersistentLog.log(it, "Overlay", "guard released target=$pauseTargetPackage reason=max hold exceeded") }
                         releasePauseGuard(watchdogExpired = true)
                         lastDecision = "WATCHDOG: released stale guard (exceeded max hold)"
                         AppLogger.w(TAG, "Pause guard watchdog: exceeded max hold — releasing guard")
                         false
                     }
                     PauseGuardPolicy.GuardAction.RELEASE_STALE -> {
+                        instance?.let { PersistentLog.log(it, "Overlay", "guard released target=$pauseTargetPackage reason=no visible pause") }
                         releasePauseGuard(watchdogExpired = false)
                         lastDecision = "WATCHDOG: released a stale cooldown guard (nothing on screen)"
                         AppLogger.w(TAG, "Pause guard watchdog: no overlay and no visible PauseActivity — releasing guard")
@@ -609,6 +612,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
     private var pollJob: Job? = null
     private val POLL_INTERVAL_MS = 1500L
     private var lastPolledPackage: String? = null
+    private var lastDiagnosticSkip: Pair<String, String>? = null
 
     /**
      * Log an interception decision AND remember it, so the Diagnostics screen
@@ -629,6 +633,24 @@ open class AppauseAccessibilityService : AccessibilityService() {
         lastDecision = message
         lastTargetDecision = message
         AppLogger.d(TAG, message)
+        lastDiagnosticSkip = null
+        recordInterception(packageName, message, knownTarget = true)
+    }
+
+    private fun recordInterception(packageName: String, reason: String, knownTarget: Boolean = false) {
+        if (!BuildConfig.DEBUG) return
+        if (!knownTarget) {
+            val skip = packageName to reason
+            if (skip == lastDiagnosticSkip) return
+            lastDiagnosticSkip = skip
+        }
+        serviceScope.launch(Dispatchers.IO) {
+            val repository = (applicationContext as AppauseApp).repository
+            // Keep browsing unrelated apps out of the diagnostic file.
+            if (knownTarget || runCatching { repository.findGroupForPackage(packageName) }.getOrNull() != null) {
+                PersistentLog.log(applicationContext, "Intercept", "$packageName: $reason")
+            }
+        }
     }
 
     /**
@@ -903,6 +925,9 @@ open class AppauseAccessibilityService : AccessibilityService() {
                 // NON-grouped app (launcher / system / other) is genuinely on top.
                 val isGrouped = repository.findGroupForPackage(fg) != null
                 if (isGrouped) {
+                    if (fg != lastPolledPackage) {
+                        recordInterception(fg, "UsageStats observed target; poller leaves interception to window events", knownTarget = true)
+                    }
                     lastPolledPackage = fg
                     continue
                 }
@@ -1206,7 +1231,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
             noteCancelled(targetPackage)
         }
         AppLogger.d(TAG, "Confirmed system Home — dismissing standalone overlay")
-        overlayManager.dismiss()
+        overlayManager.dismiss("confirmed Home")
         lastForegroundPackage = homePackage
         lastEventForeground = homePackage
         return true
@@ -1242,7 +1267,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
                         TAG,
                         "Confirmed system UI Home — dismissing standalone overlay"
                     )
-                    overlayManager.dismiss()
+                    overlayManager.dismiss("confirmed Home via SystemUI")
                     lastForegroundPackage = currentForegroundPackage
                     lastEventForeground = currentForegroundPackage
                 } catch (e: Exception) {
@@ -1337,6 +1362,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
 
         if (shouldSkipLateSystemHomeTarget(packageName)) {
             decide("SKIP: stale target event after system Home")
+            recordInterception(packageName, "SKIP: stale target event after system Home")
             return
         }
 
@@ -1389,6 +1415,11 @@ open class AppauseAccessibilityService : AccessibilityService() {
             )
         )
 
+        val skipReason = if (decision is PreGroupDecision.SkipDedup) "SKIP: duplicate foreground"
+            else decision.diagnosticsReason
+        if (skipReason != null && decision !is PreGroupDecision.SkipSelf) {
+            recordInterception(packageName, skipReason)
+        }
         when (decision) {
             is PreGroupDecision.SkipDisabled -> decide(decision.diagnosticsReason)
 
@@ -1489,7 +1520,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
                 // window). Dismiss it now so the guard is released and the next
                 // genuine open re-cools instead of being silently skipped forever.
                 AppLogger.w(TAG, decision.warnLine)
-                overlayManager.dismiss()
+                overlayManager.dismiss("foreground changed to ${decision.userWentTo}")
                 InterceptionManager.clearBypass(decision.targetPackage)
                 noteCancelled(decision.targetPackage)
                 pauseTargetPackage = null
@@ -1561,6 +1592,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
                         // Cancel/redirect can happen while the repository query is suspended.
                         if (shouldSuppressPauseExitEvent(packageName, eventUptime)) {
                             decide("SKIP: late target event after leaving pause ($packageName)")
+                            recordInterception(packageName, "SKIP: late target event after leaving pause", knownTarget = true)
                             return
                         }
                         // 7. Intercept! Show the cooldown overlay.
@@ -1815,6 +1847,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
         cancelReRemind(targetPackage, endSession = false)
 
         AppLogger.d(TAG, "Scheduling re-remind loop for $targetPackage every $minutes min (repeat=$repeat, escalate=$escalate)")
+        PersistentLog.log(this, "Reminder", "$targetPackage: scheduled intervalMin=$minutes repeat=$repeat")
 
         val repository = (applicationContext as AppauseApp).repository
         val job = serviceScope.launch {
@@ -1831,6 +1864,8 @@ open class AppauseAccessibilityService : AccessibilityService() {
             initialSignal.await()
             var lastContinueAt = System.currentTimeMillis()
             AppLogger.d(TAG, "Re-remind CLOCK START (initial continue) @ $lastContinueAt for $targetPackage")
+            var previousDelayReason: String? = null
+            PersistentLog.log(this@AppauseAccessibilityService, "Reminder", "$targetPackage: timer started")
             while (true) {
                 // A temporary pass pauses the existing re-remind clock without
                 // changing the saved group rule. Once it expires, the normal
@@ -1840,6 +1875,11 @@ open class AppauseAccessibilityService : AccessibilityService() {
                     System.currentTimeMillis()
                 )
                 if (temporaryPassExpiresAt != null) {
+                    val reason = "temporary pass active"
+                    if (previousDelayReason != reason) {
+                        PersistentLog.log(this@AppauseAccessibilityService, "Reminder", "$targetPackage: deferred ($reason)")
+                        previousDelayReason = reason
+                    }
                     val waitMs = (temporaryPassExpiresAt - System.currentTimeMillis())
                         .coerceAtLeast(100L)
                     delay(waitMs)
@@ -1858,6 +1898,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
                 // Session was re-armed (left > cooldown window, or cancelled) → stop looping.
                 if (!sessionState.isForegroundActive(targetPackage)) {
                     AppLogger.d(TAG, "Re-remind loop ends: $targetPackage session ended")
+                    PersistentLog.log(this@AppauseAccessibilityService, "Reminder", "$targetPackage: stopped (session ended)")
                     break
                 }
 
@@ -1869,13 +1910,17 @@ open class AppauseAccessibilityService : AccessibilityService() {
                 // so if the user stays put (no new event) it goes stale and the
                 // loop would wrongly think they left and never re-pop. Fall back
                 // to the naive signal only when usage access hasn't been granted.
-                val stillInApp = if (ForegroundChecker.isUsageAccessGranted(applicationContext)) {
-                    ForegroundChecker.getForegroundPackage(applicationContext) == targetPackage
+                val usageAccess = ForegroundChecker.isUsageAccessGranted(applicationContext)
+                val foreground = if (usageAccess) {
+                    ForegroundChecker.getForegroundPackage(applicationContext)
                 } else {
-                    lastForegroundPackage == targetPackage
+                    lastForegroundPackage
                 }
+                val stillInApp = foreground == targetPackage
                 if (stillInApp && !pauseShown) {
+                    previousDelayReason = null
                     AppLogger.d(TAG, "Re-remind fired: user still in $targetPackage, showing overlay")
+                    PersistentLog.log(this@AppauseAccessibilityService, "Reminder", "$targetPackage: requested cooldown")
                     // Clear bypass so the overlay shows; the loop keeps running and the
                     // user re-bypasses on Continue (countdown finish → startBypass).
                     InterceptionManager.clearBypass(targetPackage)
@@ -1891,6 +1936,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
                         )
                     ) {
                         AppLogger.d(TAG, "Re-remind fired once (repeat off), stopping loop")
+                        PersistentLog.log(this@AppauseAccessibilityService, "Reminder", "$targetPackage: stopped (one reminder configured)")
                         break
                     }
                     val signal = CompletableDeferred<Unit>()
@@ -1903,12 +1949,24 @@ open class AppauseAccessibilityService : AccessibilityService() {
                     // If the user cancelled (bypass cleared) or left, stop the loop.
                     if (!sessionState.isForegroundActive(targetPackage)) {
                         AppLogger.d(TAG, "Re-remind loop ends: user did not continue")
+                        PersistentLog.log(this@AppauseAccessibilityService, "Reminder", "$targetPackage: stopped (session ended after reminder)")
                         break
                     }
                 } else {
                     // User away (or a pop is mid-show) — re-check soon instead of waiting
                     // another full `minutes` (which would make the gap ~2× and feel "stuck").
                     AppLogger.d(TAG, "Re-remind tick but user away from $targetPackage, re-checking soon")
+                    if (BuildConfig.DEBUG) {
+                        val reason = when {
+                            stillInApp -> "another cooldown is active"
+                            foreground == null -> "foreground unknown (usageAccess=$usageAccess)"
+                            else -> "different app in foreground (usageAccess=$usageAccess)"
+                        }
+                        if (previousDelayReason != reason) {
+                            PersistentLog.log(this@AppauseAccessibilityService, "Reminder", "$targetPackage: deferred ($reason)")
+                            previousDelayReason = reason
+                        }
+                    }
                     delay(2000L)
                 }
             }
@@ -1923,7 +1981,10 @@ open class AppauseAccessibilityService : AccessibilityService() {
      * Called when the user leaves the app (bypass cleanup) or the service is destroyed.
      */
     internal fun cancelReRemind(packageName: String, endSession: Boolean = true) {
-        reRemindJobs.remove(packageName)?.cancel()
+        reRemindJobs.remove(packageName)?.let { job ->
+            PersistentLog.log(this, "Reminder", "$packageName: stopped (endSession=$endSession)")
+            job.cancel()
+        }
         // Cancel any pending "user continued" signal so the loop's await() ends.
         reRemindContinue.remove(packageName)?.cancel()
         if (endSession) {
@@ -2101,7 +2162,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
                     },
                     onFailure = { ReRemindProStatus.UNKNOWN }
                 )
-                ReRemindSchedulePolicy.request(
+                val request = ReRemindSchedulePolicy.request(
                     targetPackage = targetPackage,
                     groupId = groupId,
                     cooldownSeconds = cooldownSeconds,
@@ -2110,7 +2171,10 @@ open class AppauseAccessibilityService : AccessibilityService() {
                     repeat = reRemindRepeat,
                     escalate = reRemindEscalate,
                     proStatus = proStatus
-                )?.let { request ->
+                )
+                if (request == null) {
+                    PersistentLog.log(this@AppauseAccessibilityService, "Reminder", "$targetPackage: not scheduled (Pro=$proStatus)")
+                } else {
                     scheduleReRemind(
                         targetPackage = request.targetPackage,
                         groupId = request.groupId,
@@ -2122,6 +2186,9 @@ open class AppauseAccessibilityService : AccessibilityService() {
                     )
                 }
             }
+        } else {
+            val reason = if (reRemindMinutes <= 0) "disabled for group" else "temporary pass session"
+            PersistentLog.log(this, "Reminder", "$targetPackage: not scheduled ($reason)")
         }
     }
 
@@ -2239,7 +2306,7 @@ open class AppauseAccessibilityService : AccessibilityService() {
 
         // Clean up the overlay if it's showing when the service is destroyed
         if (overlayManager.isShowing) {
-            overlayManager.dismiss()
+            overlayManager.dismiss("service destroyed")
         }
 
         AppLogger.d(TAG, "AccessibilityService destroyed")

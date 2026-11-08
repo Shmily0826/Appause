@@ -18,6 +18,7 @@ import android.window.OnBackInvokedDispatcher
 import java.util.Locale
 import com.appause.android.util.AppLogger
 import com.appause.android.util.PersistentLog
+import com.appause.android.BuildConfig
 import android.view.Gravity
 import android.view.WindowManager
 import android.view.WindowInsets
@@ -449,7 +450,7 @@ class OverlayManager {
                 service.completeInitialContinue(targetPackage)
                 service.onSessionStart(targetPackage, groupId, cooldownSeconds, reRemindMinutes, reRemindCooldownSeconds, reRemindRepeat, reRemindEscalate)
             }
-            dismiss()
+            dismiss("continue")
         }
 
         // Persist the intentional, bounded exception before dismissing the
@@ -490,7 +491,7 @@ class OverlayManager {
                             // earlier Continue so expiry cannot leave a stale
                             // runtime exception behind.
                             InterceptionManager.clearBypass(targetPackage)
-                            dismiss()
+                            dismiss("temporary pass")
                         }
                     }
                 } catch (e: Exception) {
@@ -588,7 +589,7 @@ class OverlayManager {
                             // noteCancelled() also auto-clears after a short grace
                             // window so the app is intercepted again on the next open.
                             AppauseAccessibilityService.noteCancelled(targetPackage)
-                            dismiss()
+                            dismiss("cancel or Back")
                             // Send user to home screen so they don't land on the target app.
                             // Same behavior as PauseActivity.handleCancel().
                             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
@@ -623,7 +624,7 @@ class OverlayManager {
                                     AppLogger.w(TAG, "Failed to open recommended app", e)
                                 }
                             }
-                            dismiss()
+                            dismiss("recommended app")
                         }
                     )
                 }
@@ -644,6 +645,17 @@ class OverlayManager {
 
         var overlayAdded = false
         var usedType = preferredType
+        if (BuildConfig.DEBUG) {
+            overlayHost.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(view: View) = Unit
+
+                override fun onViewDetachedFromWindow(view: View) {
+                    if (overlayView === view) {
+                        PersistentLog.log(context, "Overlay", "unexpected window detach target=$targetPackage")
+                    }
+                }
+            })
+        }
         if (presentationPath != OverlayPresentationPolicy.Path.ACTIVITY) {
             try {
                 windowManager.addView(overlayHost, params)
@@ -658,7 +670,7 @@ class OverlayManager {
                 overlayAdded = true
                 AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
                 AppLogger.d(TAG, "Overlay shown for $targetPackage (type=$usedType)")
-                PersistentLog.log(context, "Overlay", "Overlay shown for $targetPackage type=$usedType")
+                PersistentLog.log(context, "Overlay", "Overlay shown for $targetPackage type=$usedType cooldownSec=$cooldownSeconds reminder=$isReRemind")
             } catch (e: Exception) {
                 AppLogger.w(TAG, "addView failed with type $usedType: ${e.javaClass.simpleName}: ${e.message}")
                 PersistentLog.log(context, "Overlay", "addView FAILED ($usedType): ${e.javaClass.simpleName}: ${e.message}")
@@ -678,7 +690,7 @@ class OverlayManager {
                         overlayAdded = true
                         AppauseAccessibilityService.lastOverlayResult = "overlay_ok"
                         AppLogger.d(TAG, "Overlay added with alternate type $altType")
-                        PersistentLog.log(context, "Overlay", "addView OK with alternate type $altType")
+                        PersistentLog.log(context, "Overlay", "Overlay shown for $targetPackage type=$altType cooldownSec=$cooldownSeconds reminder=$isReRemind")
                     } catch (e2: Exception) {
                         AppLogger.w(TAG, "addView also failed with alternate type $altType: ${e2.javaClass.simpleName}: ${e2.message}")
                         PersistentLog.log(context, "Overlay", "addView FAILED ($altType): ${e2.javaClass.simpleName}: ${e2.message}")
@@ -809,7 +821,7 @@ class OverlayManager {
      * the main thread, so it must not interleave with either.
      */
     @Synchronized
-    fun dismiss() {
+    fun dismiss(reason: String) {
         val view = overlayView
 
         // Stop rotation tracking before the window goes away.
@@ -826,6 +838,9 @@ class OverlayManager {
         }
 
         if (view != null) {
+            val targetPackage = AppauseAccessibilityService.pauseTargetPackage
+            val ageMs = android.os.SystemClock.uptimeMillis() - overlayShownAtMs
+            PersistentLog.log(view.context, "Overlay", "dismiss requested target=$targetPackage ageMs=$ageMs reason=$reason")
             // Remove via the SAME WindowManager that added the view (stored in
             // overlayWindowManager). Falling back to the view's own context is a
             // safety net, but normally they must match or removeView can throw.
@@ -846,6 +861,7 @@ class OverlayManager {
                         AppLogger.d(TAG, "Overlay dismissed")
                     } catch (e: Exception) {
                         AppLogger.w(TAG, "Error removing overlay", e)
+                        PersistentLog.log(view.context, "Overlay", "dismiss failed target=$targetPackage error=${e.javaClass.simpleName}")
                     }
                 }
             }
