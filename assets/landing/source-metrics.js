@@ -19,7 +19,7 @@
     var link = event.target.closest('a[href]');
     if (!link) return;
     var url = new URL(link.href);
-    if (url.hostname === 'github.com' && url.pathname.endsWith('.apk')) count('github_click');
+    if (url.hostname === 'github.com' && (url.pathname.endsWith('.apk') || url.pathname === '/Shmily0826/Appause/releases/latest')) count('github_click');
     else if (url.hostname === 'shmily0826.lanzoup.com') count('lanzou_click');
   });
 })();

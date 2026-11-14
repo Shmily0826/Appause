@@ -13,8 +13,8 @@ continue.
 
 ## Latest download: v0.5.51 Public Beta
 
-Download the signed [Appause-v0.5.51.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.51/Appause-v0.5.51.apk) directly from GitHub.
-The [Lanzou archive](https://shmily0826.lanzoup.com/b01eunt29a) provides v0.5.49, password **1234**.
+Download the signed APK from the [latest GitHub release](https://github.com/Shmily0826/Appause/releases/latest). Expand **Assets** and choose the `.apk` file.
+For downloads from China, use the [Lanzou mirror](https://shmily0826.lanzoup.com/b01eunt29a), currently v0.5.51, password **1234**.
 
 - Package: `com.appause.android`
 - versionCode: `103`

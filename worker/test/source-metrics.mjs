@@ -31,6 +31,11 @@ for (const src of ['reddit','v2ex','bad']) {
   click({target:{closest:()=>({href:'https://github.com/Shmily0826/Appause/releases/download/v0.5.49/Appause-v0.5.49.apk'})}});
   assert.equal(calls[0].source,src==='bad'?'unknown':src);
   assert.equal(calls[1].event,'github_click');
+  click({target:{closest:()=>({href:'https://github.com/Shmily0826/Appause/releases/latest'})}});
+  assert.equal(calls[2].event,'github_click');
+  const beforeUnrelated=calls.length;
+  click({target:{closest:()=>({href:'https://github.com/another/repo/releases/latest'})}});
+  assert.equal(calls.length,beforeUnrelated);
   assert.equal(new URL(language.href).searchParams.get('src'),calls[0].source);
   const before=calls.length;context.navigator.webdriver=true;vm.runInNewContext(code,context);assert.equal(calls.length,before);
 }

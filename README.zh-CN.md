@@ -11,8 +11,8 @@ Appause 是一款以本地存储为主的安卓专注工具。你可以选择目
 
 ## 最新下载：v0.5.51 公开测试版
 
-从 [GitHub 下载签名安装包 Appause-v0.5.51.apk](https://github.com/Shmily0826/Appause/releases/download/v0.5.51/Appause-v0.5.51.apk)。
-[蓝奏云归档](https://shmily0826.lanzoup.com/b01eunt29a)提供 v0.5.49，提取密码 **1234**。
+从 [GitHub 最新发布页](https://github.com/Shmily0826/Appause/releases/latest) 下载签名安装包：展开 **Assets**，选择 `.apk` 文件。
+国内可使用[蓝奏云镜像](https://shmily0826.lanzoup.com/b01eunt29a)，目前为 v0.5.51，提取密码 **1234**。
 
 - 包名：`com.appause.android`
 - versionCode：`103`

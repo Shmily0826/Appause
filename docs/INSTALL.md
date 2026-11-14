@@ -5,12 +5,12 @@
 ## English
 
 Appause is not currently in an app store. The latest **v0.5.51 / versionCode 103**
-is available directly from [GitHub v0.5.51]. The [Lanzou archive][Appause v0.5.49]
-provides v0.5.49, password **1234**.
+is available directly from [GitHub latest]. The [Lanzou mirror][Lanzou]
+currently provides v0.5.51, password **1234**.
 
 ### 1. Download the APK
 
-Download `Appause-v0.5.51.apk` from [GitHub v0.5.51].
+Open [GitHub latest], expand **Assets**, and download the `.apk` file (currently `Appause-v0.5.51.apk`).
 Open the downloaded file and follow Android's installation prompts.
 
 ### 2. Allow installs only from the app opening the APK
@@ -80,11 +80,11 @@ A matching value confirms the file matches the release. If it differs, download 
 ### 如何安装 Appause
 
 Appause 目前未上架应用商店。最新版 **v0.5.51 / versionCode 103** 可从
-[GitHub v0.5.51] 下载。[蓝奏云归档][Appause v0.5.49] 提供 v0.5.49，提取密码 **1234**。
+[GitHub latest] 下载。[蓝奏云镜像][Lanzou] 目前提供 v0.5.51，提取密码 **1234**。
 
 ### 第一步：下载安装包
 
-从 [GitHub v0.5.51] 下载 `Appause-v0.5.51.apk`。
+打开 [GitHub latest]（最新发布页），展开 **Assets**，下载 `.apk` 文件（目前为 `Appause-v0.5.51.apk`）。
 下载后打开文件，按系统提示安装。
 
 ### 第二步：仅为下载来源允许安装
@@ -138,5 +138,5 @@ Android 8（API 26）及以上，需要给**用来打开 APK 的应用**（浏�
 
 </details>
 
-[Appause v0.5.49]: https://shmily0826.lanzoup.com/b01eunt29a
-[GitHub v0.5.51]: https://github.com/Shmily0826/Appause/releases/download/v0.5.51/Appause-v0.5.51.apk
+[Lanzou]: https://shmily0826.lanzoup.com/b01eunt29a
+[GitHub latest]: https://github.com/Shmily0826/Appause/releases/latest
